@@ -91,10 +91,16 @@ suite under concurrent GPU load, name lost to output truncation).
   `0.75 x rank + 0.25 x exp(-age/90d) + 0.10 x confidence`. Scopes: one `user` profile joined to every
   search, plus per-project scopes; a project fact never leaks into another project's recall. Dedup by
   normalized text per scope.
-- **Injection:** the recalled block is a hidden leading `system` turn (`<server_memory version=... scope=...>`),
-  capped by characters (default 6000 ≈ 1.5K tokens at IQ3_S tokenizer rates). **Pinned per conversation**
-  (key: scope + first user message, LRU 64): the bytes stay stable while the store changes underneath, so
-  Strata's prompt checkpoints keep reusing them; new conversations pick up the current store version.
+- **Injection:** the recalled block is merged into the head of the conversation's leading `system` turn
+  (`<server_memory version=... scope=...>` + the client's own system text after it) - the Qwen chat
+  template raises "System message must be at the beginning" for anything but exactly one system message
+  at index 0, so a SECOND system turn is not an option (found live: OpenCode, which always sends its own
+  system first, 400'd the moment a conversation's query first matched a fact - which is also why clients
+  without a recall hit never saw the bug). With no leading system in the request, the block rides as its
+  own system turn. Capped by characters (default 6000 ≈ 1.5K tokens at IQ3_S tokenizer rates).
+  **Pinned per conversation** (key: scope + first user message, LRU 64): the bytes stay stable while the
+  store changes underneath, so Strata's prompt checkpoints keep reusing them; new conversations pick up
+  the current store version.
 - **Per-request controls (headers):** `X-Strata-Memory-Scope: <name>` names the project bucket (clients
   opt in; default "default"); `X-Strata-Memory: off` mutes injection and journaling for one request.
 - **Journal:** every completed chat-completions exchange is appended to `turns` (raw material for the

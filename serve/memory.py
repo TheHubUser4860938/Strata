@@ -2,8 +2,10 @@
 
 The server keeps a persistent memory of what it has been told through any client, and answers future
 clients from it without the harness ever resending memory text: retrieval happens here, the recalled
-block is injected as a hidden leading system turn, and every completed turn is journaled for curation.
-Design, measured constraints and the cartridge research track: docs/MEMORY_CORE.md.
+block is merged into the head of the conversation's leading system turn (the Qwen template allows one
+system message only, at index 0 - with no system sent, the block rides as one), and every completed
+turn is journaled for curation. Design, measured constraints and the cartridge research track:
+docs/MEMORY_CORE.md.
 
 Off unless the engine config carries a "memory" block or the server runs with --memory DIR; with it
 absent every code path stays byte-identical to upstream Strata. Storage is one SQLite file (WAL) with
@@ -349,6 +351,22 @@ def request_state(mem: "MemoryService | None", messages: list[dict], headers, re
     last_user = next((u for u in reversed(users) if u.strip()), "")
     ctx = {"scope": scope, "user": last_user, "model": req.get("model"), "query": query,
            "hits": [h["id"] for h in hits]}
+    # The Qwen chat template allows ONE system message, at index 0 ("System message must be at the
+    # beginning"), and openai_to_messages has already folded "developer" into system and turned late
+    # systems into user - so the block cannot ride as a second system turn. When the client sent its
+    # own leading system (OpenCode, Claude Code, ...), merge ours in front of ITS text instead of
+    # prepending: the merged head keeps the block's stable bytes at the very front of the prompt,
+    # the template sees exactly one system, and the client's instruction is untouched in substance.
+    head = messages[0] if messages and isinstance(messages[0], dict) else None
+    if head is not None and head.get("role") in ("system", "developer"):
+        c = head.get("content")
+        if isinstance(c, list):
+            merged = dict(head, content=[{"type": "text", "text": block}] + list(c))
+        elif isinstance(c, str) and c.strip():
+            merged = dict(head, content=f"{block}\n\n{c}")
+        else:
+            merged = dict(head, content=block)
+        return [merged] + list(messages[1:]), ctx
     return [{"role": "system", "content": block}] + list(messages), ctx
 
 

@@ -78,6 +78,26 @@ class Store(unittest.TestCase):
         self.assertIs(out, msgs)
         self.assertIsNone(ctx)
 
+    def test_request_state_merges_into_leading_system(self):
+        """The OpenCode shape: the client sends its own system at index 0 and the template allows
+        exactly one system message - the block must MERGE into it, never ride beside it as a second."""
+        self.mem.remember("the zebra-mango deploy window is 04:40 UTC", scope="ops")
+        msgs = [{"role": "system", "content": "You are OpenCode, an agent."},
+                {"role": "user", "content": "when does the zebra-mango deploy run?"}]
+        out, ctx = request_state(self.mem, msgs, {"X-Strata-Memory-Scope": "ops"}, {"model": "m"})
+        self.assertIsNotNone(ctx)
+        self.assertEqual(len(out), 2, "still ONE system message, not two")
+        self.assertEqual(out[0]["role"], "system")
+        self.assertTrue(out[0]["content"].startswith("<server_memory"), "the block heads the merged turn")
+        self.assertIn("You are OpenCode, an agent.", out[0]["content"], "the client's own instruction survives")
+        self.assertEqual(out[1], msgs[1])
+
+    def test_request_state_no_hit_no_lead(self):
+        msgs = [{"role": "system", "content": "sys"}, {"role": "user", "content": "quantum basketweaving?"}]
+        out, ctx = request_state(self.mem, msgs, {"X-Strata-Memory-Scope": "ops"}, {"model": "m"})
+        self.assertIsNone(ctx)
+        self.assertEqual(out, msgs, "nothing recalled: the list rides through untouched")
+
     def test_turn_journal(self):
         tid = self.mem.journal_turn("fw", "the question", "the answer", "m")
         pend = self.mem.pending_turns()
@@ -165,6 +185,22 @@ class ServerMemory(unittest.TestCase):
         self.assertTrue(body["forgotten"])
         st, body = self.http("GET", "/memory?q=which+port+is+the+modded+build&scope=fw")
         self.assertFalse([h for h in body["hits"] if h["id"] == fid], "forgotten facts stop recalling")
+
+    def test_opencode_shape_over_http(self):
+        """The regression that the real harness hit: a client system message at index 0 plus a recalled
+        fact. Before the merge fix the Qwen template raised "System message must be at the beginning"
+        and every such request was a 400."""
+        st, body = self.http("POST", "/memory", {"op": "remember", "scope": "ops",
+                                                 "text": "the zebra-mango deploy window is 04:40 UTC"})
+        self.assertEqual(st, 200, body)
+        st, body = self.http("POST", "/v1/chat/completions",
+                             {"model": "m", "messages": [{"role": "system", "content": "You are OpenCode."},
+                                                         {"role": "user",
+                                                          "content": "when does the zebra-mango deploy run?"}],
+                              "max_tokens": 64, "reasoning_effort": "off"},
+                             headers=[("X-Strata-Memory-Scope", "ops")])
+        self.assertEqual(st, 200, body)
+        self.assertEqual(body["choices"][0]["message"]["content"], "the mock answer")
 
     def test_bad_requests_are_400(self):
         st, body = self.http("POST", "/memory", {"op": "remember", "text": ""})
