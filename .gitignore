@@ -61,3 +61,8 @@ build-vision-cuda12.bat
 
 /.ccache/
 /.rocm-win/
+
+# memory-core fork: shared model-data symlink and the dev-cycle console logs
+/Strata-data
+/dev-server.out
+/dev-cycle-server.out
