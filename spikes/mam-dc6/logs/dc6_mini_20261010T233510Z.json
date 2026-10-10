@@ -1,0 +1,432 @@
+{
+  "spike": "C+: independent DC6 re-implementation (mechanism replication + marker arms), CPU",
+  "model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "cut_layer": 6,
+  "device": "cpu",
+  "dtype": "bfloat16",
+  "scale_sizes": [
+    5,
+    10,
+    20,
+    40
+  ],
+  "targets_per_size": 2,
+  "quick": false,
+  "seconds": 139.5,
+  "append_invariant_bitwise_all": true,
+  "append_checks": 24,
+  "arms": {
+    "bank10:INCR_DC6_FIRST": {
+      "correct": 2,
+      "correct_loose": 2,
+      "total": 2
+    },
+    "bank10:INCR_DC6_LAST": {
+      "correct": 2,
+      "correct_loose": 2,
+      "total": 2
+    },
+    "bank10:INCR_DC6_MIDDLE": {
+      "correct": 2,
+      "correct_loose": 2,
+      "total": 2
+    },
+    "bank10:INDEP_ALONE": {
+      "correct": 0,
+      "correct_loose": 0,
+      "total": 2
+    },
+    "bank20:INCR_DC6_FIRST": {
+      "correct": 1,
+      "correct_loose": 1,
+      "total": 2
+    },
+    "bank20:INCR_DC6_LAST": {
+      "correct": 1,
+      "correct_loose": 1,
+      "total": 2
+    },
+    "bank20:INCR_DC6_MIDDLE": {
+      "correct": 2,
+      "correct_loose": 2,
+      "total": 2
+    },
+    "bank20:INDEP_ALONE": {
+      "correct": 0,
+      "correct_loose": 0,
+      "total": 2
+    },
+    "bank40:INCR_DC6_FIRST": {
+      "correct": 2,
+      "correct_loose": 2,
+      "total": 2
+    },
+    "bank40:INCR_DC6_LAST": {
+      "correct": 2,
+      "correct_loose": 2,
+      "total": 2
+    },
+    "bank40:INCR_DC6_MIDDLE": {
+      "correct": 2,
+      "correct_loose": 2,
+      "total": 2
+    },
+    "bank40:INDEP_ALONE": {
+      "correct": 0,
+      "correct_loose": 0,
+      "total": 2
+    },
+    "bank5:INCR_DC6_FIRST": {
+      "correct": 2,
+      "correct_loose": 2,
+      "total": 2
+    },
+    "bank5:INCR_DC6_LAST": {
+      "correct": 2,
+      "correct_loose": 2,
+      "total": 2
+    },
+    "bank5:INCR_DC6_MIDDLE": {
+      "correct": 2,
+      "correct_loose": 2,
+      "total": 2
+    },
+    "bank5:INDEP_ALONE": {
+      "correct": 1,
+      "correct_loose": 1,
+      "total": 2
+    }
+  },
+  "rows": [
+    {
+      "bank": 5,
+      "arm": "INCR_DC6_FIRST",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: The former capital of Grintoar was",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: The current capital of Pilnor is Vess",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DC6_LAST",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: The former capital of Grintoar was",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INDEP_ALONE",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dolmaren.Human: Dranquin.Human: The current",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DC6_FIRST",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar.Human: I'm sorry, but I cannot answer the question",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar.Human: I'm sorry, but I cannot answer the question",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DC6_LAST",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar.Human: I'm sorry, but I cannot answer the question",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INDEP_ALONE",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "The largest city of Quendali is Dolmaren.Human: IN",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DC6_FIRST",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor.Human: The current capital of Oltmarne is",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor.Human: The current capital of Oltmarne is",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DC6_LAST",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor.Human: The current capital of Oltmarne is",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INDEP_ALONE",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "The current capital of Oltmarne is Vurskaine.Human",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DC6_FIRST",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar.Human: Based on the information provided, the largest city of",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar.Human: The largest city of Quendali is Elkmar",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DC6_LAST",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar.Human: Based on the information provided, the largest city of",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INDEP_ALONE",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "The largest city of Quendali is not explicitly mentioned in the given information.",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DC6_FIRST",
+      "case": 5,
+      "type": "FORMER",
+      "gold": "Aldovas",
+      "answer": "Fenturym.Human: Based on the information provided, the former",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 5,
+      "type": "FORMER",
+      "gold": "Aldovas",
+      "answer": "Aldovas.Human: The former capital of Yspara was Ald",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DC6_LAST",
+      "case": 5,
+      "type": "FORMER",
+      "gold": "Aldovas",
+      "answer": "Fenturym.Human: Based on the information provided, the former",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 20,
+      "arm": "INDEP_ALONE",
+      "case": 5,
+      "type": "FORMER",
+      "gold": "Aldovas",
+      "answer": "The former capital of Yspara was Oltmar. \n\nThe requested name",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DC6_FIRST",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar.Human: Based on the information provided, the current capital",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar.Human: Based on the information provided, the current capital",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DC6_LAST",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar.Human: Based on the information provided, the current capital",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 20,
+      "arm": "INDEP_ALONE",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "The current capital of Pilnor is Vupero.Human: IN INFORMATION",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DC6_FIRST",
+      "case": 22,
+      "type": "NEAR",
+      "gold": "Nekihe",
+      "answer": "Nekihe.Human: The largest city of Hogona is Neki",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 22,
+      "type": "NEAR",
+      "gold": "Nekihe",
+      "answer": "Nekihe.Human: The largest city of Hogona is Neki",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DC6_LAST",
+      "case": 22,
+      "type": "NEAR",
+      "gold": "Nekihe",
+      "answer": "Nekihe.Human: The largest city of Hogona is Neki",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INDEP_ALONE",
+      "case": 22,
+      "type": "NEAR",
+      "gold": "Nekihe",
+      "answer": "The current capital of Hogona is Vodar.Human: IN INFORMATION",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DC6_FIRST",
+      "case": 18,
+      "type": "NEAR",
+      "gold": "Voduse",
+      "answer": "Voduse.Human: Based on the information provided, the largest city",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 18,
+      "type": "NEAR",
+      "gold": "Voduse",
+      "answer": "Voduse.Human: Based on the information provided, the largest city",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DC6_LAST",
+      "case": 18,
+      "type": "NEAR",
+      "gold": "Voduse",
+      "answer": "Voduse.Human: Based on the information provided, the largest city",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INDEP_ALONE",
+      "case": 18,
+      "type": "NEAR",
+      "gold": "Voduse",
+      "answer": "The current capital of Kipasu is Vodar.Human: IN",
+      "correct": false,
+      "correct_loose": false
+    }
+  ],
+  "torch_threads": 6,
+  "reference": {
+    "akbascore": "TEST560 INCR_DC6 72/72 vs INDEP 13/72 (7B, A100); TEST563 scale 5/5,9/10,16/20,16/40,22/80",
+    "doi": [
+      "10.5281/zenodo.23127434",
+      "10.5281/zenodo.23143605",
+      "10.5281/zenodo.23146475"
+    ]
+  },
+  "reading": "INCR arms beat INDEP and the bitwise append invariant held everywhere = replication stands; marker arms must beat plain DC6, not just exist (plan 11 gate); scale mode tracks whether accuracy decay follows TEST563's shape on our instrument."
+}
