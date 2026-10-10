@@ -1,7 +1,7 @@
 # Memory Core — server-side, harness-independent memory (this fork's track)
 
-**Status: Stage 0 — dev install scaffolded; engine and server code untouched so far.
-Phase 1 (memory service) is next. Last updated: 2026-10-10.**
+**Status: Stage 0 complete — dev build verified live on :8005 (health, parity, session-save smoke; restore
+guard characterized). Next: Phase 1 memory service. Last updated: 2026-10-10 (night).**
 
 This fork explores built-in long-term memory for Strata: recall that lives at the inference server, shared by
 every client (OpenCode, Odysseus AI, the web app), with **no harness ever resending memory text into the
@@ -43,9 +43,14 @@ production up only ~5 GiB is free — so **exactly one engine runs at a time**:
   **server** flag / config key — the *engine* binary rejects it (`unknown argument`, found on the first dev
   boot 2026-10-10). A template ships as `strata-dev.json.example` — set your own paths and the `$HOME/Strata`
   fallback for `PRODROOT` if your production install lives elsewhere.
-- Session-file sizing (docs/DETAILS.md, measured upstream): ~**1.2 GB per 63K-token conversation** (~19 KB/token
-  for k8v4 KV + draft state), files mode 0600, **nothing deletes them automatically** — the sessions-dev dir
-  needs periodic cleanup. This number sizes the Phase 1/2 memory-prefix persistence budget.
+- Session-file sizing measured on this box (see smoke table): **13.3 KB per token** of conversation state
+  (k8v4 KV + MTP draft state) — 3.35 GB for a 251K-token snapshot; ~2.2 GB/s save speed. Files are mode 0600,
+  dir 0700, and **nothing deletes them automatically** — cleanup policy is a Phase 1 design item.
+- Restore RAM guard (from #1601, 0.1.42): a restore needs free RAM = file size + a 2,560 MiB floor, read from
+  the real `MemAvailable`. With the 51 GiB engine resident this machine has ~4.8 GiB free, so files up to
+  **~2.27 GiB (≈170K-token snapshots) still restore live**; bigger ones are refused cleanly with the numbers
+  in the error and the slot stays usable. `--session-save-reclaim` (0.1.42) frees retained K/V, parked
+  conversations and unpinned checkpoints and retries a refused save/restore.
 - **Testing protocol on this machine (one engine at a time, 62 GB RAM):** testing the dev build pauses this
   agent (the assistant itself is served by whichever engine is up on :8004). The swap is coordinated with the
   human: agent says "ready to test dev", human closes the main build and starts dev (or the agent runs
@@ -56,15 +61,22 @@ production up only ~5 GiB is free — so **exactly one engine runs at a time**:
   official filenames — check identity with `tools/strata_inspect.py`, not names), with the
   `sleepyeldrazi` **Q8_0 PLE** n-gram shard.
 
-## Stage 0 smoke (measured)
-
-Baseline from production `:8004`, greedy, thinking off, `strata_checkpoint: false`:
+## Stage 0 smoke (measured 2026-10-10, dev build on RTX 4090 / 62 GB, engine = this fork's copy of v0.1.42)
 
 | check | :8004 (production) | :8005 (dev) | verdict |
 | --- | --- | --- | --- |
-| `/health` | ok (max_context 524288, model qwen3.8-flash-next-iq3_s) | pending | pending |
-| greedy echo "STRATA-SMOKE-7790-OK" | `STRATA-SMOKE-7790-OK` | pending | pending |
-| load time to health | — | pending | pending |
+| `/health` | ok (max_context 524288) | ok (max_context 524288, images true, 1 slot) | **pass** |
+| `/props` | n_ctx 524288 | n_ctx 524288, alias `qwen3.8-flash-next-iq3_s` | **pass** |
+| greedy echo, temp 0, thinking off, `strata_checkpoint:false` | `STRATA-SMOKE-7790-OK` | `STRATA-SMOKE-7790-OK` | **byte-identical** |
+| session save (`/slots/0?action=save`, conversation at 251,339 tokens) | — | 3,350,729,196 B in 1,543.8 ms, file mode 0600 | **pass** — #1444's `invalid K/V extent` does NOT reproduce on this config (k8v4 + MTP + YaRN×2 + Q8 PLE) |
+| session restore of that 3.35 GB file | — | refused: `3213 MiB plus a floor of 2560 MiB needed, 4830 MiB available` | **guard behaves as designed** (file too big for free RAM while engine resident); slot unharmed |
+| generation after refused restore | — | `STRATA-POSTRESTORE-4413-OK` | **pass** (clean failure, no state damage) |
+
+Notes: dev boot was human-initiated this round, so load-to-health seconds weren't captured; next scripted
+`./dev-up.sh` records them. The live agent conversation being served by the dev engine during these tests was
+itself at 248,369 prompt tokens (≈47% of the 524K window) — the real workload this project exists to shrink.
+Remaining of Spike A proper: restore across an engine restart and restore into a *different* conversation
+(pending — needs its own coordinated window).
 
 ## Phase 1 design (summary)
 
