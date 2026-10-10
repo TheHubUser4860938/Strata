@@ -37,11 +37,10 @@
     "--adapt-swaps",
     "80",
     "--adapt-decay",
-    "0.97",
-    "--slot-save-path",
-    "$HOME/Projects/Strata-MAM-cartrige-mod/Strata-data/sessions-dev"
+    "0.97"
   ],
   "cwd": "$HOME/Projects/Strata-MAM-cartrige-mod",
+  "slot_save_path": "Strata-data/sessions-dev",
   "tokenizer": "$HOME/Projects/Strata-MAM-cartrige-mod/Strata-data/packs/iq3_s/tokenizer",
   "model_name": "qwen3.8-flash-next-iq3_s",
   "log": "$HOME/Projects/Strata-MAM-cartrige-mod/strata-dev.log",

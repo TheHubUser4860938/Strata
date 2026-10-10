@@ -6,6 +6,12 @@ DEVROOT="$(cd "$(dirname "$0")" && pwd)"
 PRODROOT="${PRODROOT:-$HOME/Strata}"
 SRV='serve/[s]erver.py --engine strata --config'
 
+# Politeness guard: production is someone else's terminal process. This script only stops it when
+# asked (--force) or when it is already down (the coordinated flow: user closes main, then we start dev).
+if [ "${1:-}" != "--force" ] && pgrep -f "$SRV $PRODROOT/strata-iq3_s.json" >/dev/null 2>&1; then
+  echo "production :8004 is still running. Close the main build first (or pass --force to let this script stop it)."; exit 2
+fi
+
 echo "[dev-up 1/4] Stopping production (:8004) ..."
 pkill -TERM -f "$SRV $PRODROOT/strata-iq3_s.json" 2>/dev/null
 pkill -TERM -f "$PRODROOT/[e]ngine/strata" 2>/dev/null

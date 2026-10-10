@@ -39,9 +39,19 @@ production up only ~5 GiB is free — so **exactly one engine runs at a time**:
   copied (CMake caches are path-baked); first C++ work regenerates it (nvcc wants production down: ~1-2 GiB
   per parallel job against ~5 GiB spare).
 - Engine config: `strata-dev.json` (git-ignored per upstream convention), port **8005**, same tuning args as
-  production plus `--slot-save-path Strata-data/sessions-dev`. A template ships as
-  `strata-dev.json.example` — set your own paths and the `$HOME/Strata` fallback for `PRODROOT` if your
-  production install lives elsewhere.
+  production plus the config key `"slot_save_path": "Strata-data/sessions-dev"`. Note: `--slot-save-path` is a
+  **server** flag / config key — the *engine* binary rejects it (`unknown argument`, found on the first dev
+  boot 2026-10-10). A template ships as `strata-dev.json.example` — set your own paths and the `$HOME/Strata`
+  fallback for `PRODROOT` if your production install lives elsewhere.
+- Session-file sizing (docs/DETAILS.md, measured upstream): ~**1.2 GB per 63K-token conversation** (~19 KB/token
+  for k8v4 KV + draft state), files mode 0600, **nothing deletes them automatically** — the sessions-dev dir
+  needs periodic cleanup. This number sizes the Phase 1/2 memory-prefix persistence budget.
+- **Testing protocol on this machine (one engine at a time, 62 GB RAM):** testing the dev build pauses this
+  agent (the assistant itself is served by whichever engine is up on :8004). The swap is coordinated with the
+  human: agent says "ready to test dev", human closes the main build and starts dev (or the agent runs
+  `./dev-up.sh --force` once agreed), tests run against :8005, then `./dev-down.sh` hands :8004 back.
+  `dev-up.sh` refuses to stop a live production without `--force`. Optionally, adding a provider for
+  `http://127.0.0.1:8005/v1` in the harness lets the agent keep talking *on the dev model* while dev is up.
 - Running model on this machine: SC117 `Qwen3.8-Flash-Next-GSQ-RCO-abliterated-GGUF` IQ3_S (saved under the
   official filenames — check identity with `tools/strata_inspect.py`, not names), with the
   `sleepyeldrazi` **Q8_0 PLE** n-gram shard.

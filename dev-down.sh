@@ -18,6 +18,9 @@ done
 curl -s -m 2 http://127.0.0.1:8005/health >/dev/null 2>&1 && echo "  WARNING: :8005 still answers" || echo "  dev down"
 
 echo "[dev-down 2/3] Starting production (:8004) ..."
+if curl -s -m 2 http://127.0.0.1:8004/health >/dev/null 2>&1; then
+  echo "  production already answers on :8004 - nothing to start; back home."; exit 0
+fi
 cd "$PRODROOT" || exit 1
 nohup .venv/bin/python serve/server.py --engine strata --config "$PRODROOT/strata-iq3_s.json" --port 8004 >> "$PRODROOT/dev-cycle-server.out" 2>&1 &
 echo "  server pid $!"
