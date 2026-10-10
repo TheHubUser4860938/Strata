@@ -78,7 +78,39 @@ itself at 248,369 prompt tokens (≈47% of the 524K window) — the real workloa
 Remaining of Spike A proper: restore across an engine restart and restore into a *different* conversation
 (pending — needs its own coordinated window).
 
-## Phase 1 design (summary)
+## Phase 1 — status: implemented, unit + mock-server tested; live smoke on :8005 pending
+
+`serve/memory.py` (new) + eight small guarded hooks in `serve/server.py`. Off unless `"memory"` is in the
+engine config (or `--memory DIR`); with it absent every path is the upstream one. Checked: two full runs of
+the GPU-free `serve/test_*.py` suite against the changed `server.py` — 699 tests, OK (11 skips are the
+GPU/Windows-only ones); one failure in an early run did not reproduce across those two re-runs (timing
+suite under concurrent GPU load, name lost to output truncation).
+
+- **Store:** one SQLite file (WAL, dir mode 0700): `Strata-data/memory/memory.db` on this machine. Stdlib
+  only - FTS5 (porter+unicode61) index, BM25 candidates re-ranked by
+  `0.75 x rank + 0.25 x exp(-age/90d) + 0.10 x confidence`. Scopes: one `user` profile joined to every
+  search, plus per-project scopes; a project fact never leaks into another project's recall. Dedup by
+  normalized text per scope.
+- **Injection:** the recalled block is a hidden leading `system` turn (`<server_memory version=... scope=...>`),
+  capped by characters (default 6000 ≈ 1.5K tokens at IQ3_S tokenizer rates). **Pinned per conversation**
+  (key: scope + first user message, LRU 64): the bytes stay stable while the store changes underneath, so
+  Strata's prompt checkpoints keep reusing them; new conversations pick up the current store version.
+- **Per-request controls (headers):** `X-Strata-Memory-Scope: <name>` names the project bucket (clients
+  opt in; default "default"); `X-Strata-Memory: off` mutes injection and journaling for one request.
+- **Journal:** every completed chat-completions exchange is appended to `turns` (raw material for the
+  Stage 3 curation loop and the eval harness) - collected transparently from the streamed chunks; a store
+  error never breaks an answer.
+- **Control API:** `GET /memory` (stats + recent facts; `?q=` for a recall probe, `?scope=`, `?limit=`) and
+  `POST /memory` `{"op": "remember|forget|search|turn|turns", ...}` - for the web app, for operators, and
+  for the eval harness (hand-posted turns). Gated by the API key like `/props` and `/slots`.
+- **Tests:** `python -m unittest serve.test_memory` (9 tests, no GPU): store/dedup/scope/stickiness units,
+  a mock-engine HTTP end-to-end (inject → journal → mute → forget), memory-off 404 + byte-identical chat,
+  and 400s for bad input. The full `serve/test_*.py` suite (699 tests) guards the untouched default path.
+- **Known gaps for the live pass:** injection currently rides `/v1/chat/completions` only (Anthropic and
+  Responses dialects are next); no embeddings in ranking yet (lexical + recency first, embedder when the
+  eval says it pays); curation loop is Stage 3 (the `turns` table is its queue).
+
+## Phase 1 design (superseded note: implemented as above)
 
 Store: `Strata-data/memory/` (SQLite WAL; records with text, provenance, confidence, decay; namespaces:
 one `user` profile shared across harnesses + per-project overlays). Retrieval: FTS5 + local ONNX MiniLM-class

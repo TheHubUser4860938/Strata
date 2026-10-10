@@ -41,6 +41,11 @@
   ],
   "cwd": "$HOME/Projects/Strata-MAM-cartrige-mod",
   "slot_save_path": "Strata-data/sessions-dev",
+  "memory": {
+    "dir": "Strata-data/memory",
+    "recall_limit": 8,
+    "max_block_chars": 6000
+  },
   "tokenizer": "$HOME/Projects/Strata-MAM-cartrige-mod/Strata-data/packs/iq3_s/tokenizer",
   "model_name": "qwen3.8-flash-next-iq3_s",
   "log": "$HOME/Projects/Strata-MAM-cartrige-mod/strata-dev.log",

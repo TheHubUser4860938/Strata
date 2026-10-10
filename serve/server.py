@@ -64,6 +64,7 @@ from serve.winjob import contain  # noqa: E402
 from serve.structured import StructuredOutputError, prepare_format, validated_json  # noqa: E402
 from serve import responses as responses_api  # noqa: E402
 from serve.responses import ResponsesError, error_body as responses_error_body  # noqa: E402
+from serve import memory as memory_api  # noqa: E402  # memory-core fork: built-in harness-independent recall
 
 IM_END = "<|im_end|>"
 IMAGE_PAD = "<|image_pad|>"
@@ -2875,6 +2876,7 @@ class Service:
         self.keep_awake = None                        # #1727 (opt-in): serve.keepawake.KeepAwake, the config's "prevent_sleep"
         self.fifo = threading.Lock()
         self.slot_save_path = None                    # --slot-save-path: /slots/0?action=save|restore (off when None)
+        self.memory = None                            # memory-core fork: serve/memory.py store (off unless configured)
         self.embeddings = threading.local()           # the current request's image embeddings file (GENI)
         self.api_key = ""                              # when set, /v1/* needs it (Bearer or x-api-key)
         # #458 (opt-in, the config's "effort_position": "end"): a non-default reasoning effort goes in a short system
@@ -5103,6 +5105,9 @@ def make_handler(svc: Service):
             elif path == "/props":
                 if self._authorized():
                     self._props()
+            elif path == "/memory":
+                if self._authorized():                # memory-core: stats, the stored facts, or a ?q= recall
+                    self._memory_get()
             elif path == "/slots":
                 if self._authorized():
                     loaded = not hasattr(svc.engine, "alive") or svc.engine.alive()
@@ -5177,6 +5182,9 @@ def make_handler(svc: Service):
                 req = json.loads(self._body() or b"{}")
                 if not isinstance(req, dict):
                     raise ValueError("send a JSON object")
+                if path == "/memory":                     # memory-core: {"op": "remember|forget|search|turn|turns"}
+                    self._memory_post(req)
+                    return
                 if path.startswith("/v1/responses/"):        # retrieve/delete/cancel/compact: nothing is stored
                     self._json(404, responses_error_body("this server keeps no responses (stateless); send the "
                                                          "whole conversation to POST /v1/responses", code="not_found"))
@@ -5290,6 +5298,58 @@ def make_handler(svc: Service):
                         record["finished_at"] = time.time()
                         record["state"] = "error" if record.get("error") else record.get("outcome", "completed")
                     svc.request_trace.record = None
+
+        def _memory_get(self):
+            """memory-core: GET /memory - store stats and the recent facts; with ?q=, a recall search.
+            ?scope= filters (or searches that project plus the user scope); ?limit= caps the list."""
+            if svc.memory is None:
+                self._json(404, {"error": {"message": 'memory is off: add "memory" to the engine config, or '
+                                                      "start the server with --memory DIR"}})
+                return
+            qs = parse_qs(urlsplit(self.path).query)
+            try:
+                limit = max(1, min(200, int((qs.get("limit") or ["50"])[0])))
+            except ValueError:
+                limit = 50
+            q = (qs.get("q") or [""])[0]
+            scope = (qs.get("scope") or [""])[0]
+            if q:
+                self._json(200, {"query": q, "scope": memory_api.scope_name(scope),
+                                 "hits": svc.memory.search(q, scope=scope, limit=limit)})
+                return
+            self._json(200, {"stats": svc.memory.stats(),
+                             "memories": svc.memory.list_memories(scope=memory_api.scope_name(scope, "") or None,
+                                                                  limit=limit)})
+
+        def _memory_post(self, req):
+            """memory-core: POST /memory - manage the store over HTTP: {"op": "remember", "text": ..., "scope"?,
+            "source"?, "confidence"?} add a fact; "forget" {"id"}; "search" {"q", "scope"?, "limit"?};
+            "turn" {"user", "assistant", "scope"?, "model"?} journal one exchange by hand (what the eval
+            harness posts); "turns" {} list the un-curated journaled turns. Bad fields are 400s like any other
+            malformed request."""
+            if svc.memory is None:
+                self._json(404, {"error": {"message": 'memory is off: add "memory" to the engine config, or '
+                                                      "start the server with --memory DIR"}})
+                return
+            op = str(req.get("op") or "").lower()
+            if op == "remember":
+                r = svc.memory.remember(str(req.get("text") or ""), scope=str(req.get("scope") or "user"),
+                                        source=str(req.get("source") or "manual"),
+                                        confidence=req.get("confidence"))
+            elif op == "forget":
+                r = {"forgotten": svc.memory.forget(int(req.get("id") or 0))}
+            elif op == "search":
+                lim = int(req.get("limit") or 0) or None
+                r = {"hits": svc.memory.search(str(req.get("q") or ""), scope=str(req.get("scope") or "default"),
+                                               limit=lim)}
+            elif op == "turn":
+                r = {"id": svc.memory.journal_turn(str(req.get("scope") or "default"), str(req.get("user") or ""),
+                                                   str(req.get("assistant") or ""), req.get("model"))}
+            elif op == "turns":
+                r = {"turns": svc.memory.pending_turns(int(req.get("limit") or 50))}
+            else:
+                raise ValueError('op: one of "remember", "forget", "search", "turn", "turns"')
+            self._json(200, {"ok": True, **r})
 
         def _props(self):
             model = parse_qs(urlsplit(self.path).query).get("model", [svc.model])[0]
@@ -5496,6 +5556,10 @@ def make_handler(svc: Service):
             bias_api.normalize(req.get("logit_bias"), len(getattr(svc.tok, "tokens", ())) or None)
             messages, tools, kw = openai_to_messages(req)
             self._no_local_images(messages)
+            # memory-core fork: when the store is on and the request is not muted (X-Strata-Memory: off), a
+            # hidden system block of recalled facts is prepended and mem_ctx says what to journal after.
+            # With memory off or nothing recalled, messages comes back the exact list it was - upstream path.
+            messages, mem_ctx = memory_api.request_state(svc.memory, messages, self.headers, req)
             if tool_choice_of(req.get("tool_choice"))[0] == "none":   # as the Responses route: no tools are offered
                 tools = None
             force = forced_call(req.get("tool_choice"), tools)      # a bad value is a 400 before anything is sent
@@ -5526,6 +5590,8 @@ def make_handler(svc: Service):
             run = run_with_mcp(svc, svc.mcp, messages, tools, kw, ids, thinking, max_new, max_req, req, cancel,
                                {t["name"] for t in extra}) if use_mcp else None
             chunks = openai_chunks(svc, req, ids, thinking, tools, max_new, cancel, run=run, force=force)
+            if mem_ctx is not None:                       # memory-core: journal this exchange when it completes
+                chunks = memory_api.journal_chunks(chunks, svc.memory, mem_ctx)
             if validator is not None:
                 chunks = structured_chunks(chunks, validator)
             chunks = self._capture(chunks, "openai")
@@ -6340,6 +6406,10 @@ def main() -> int:
     ap.add_argument("--slot-save-path", default=None, metavar="DIR",
                     help="enable POST /slots/0?action=save|restore {\"filename\": NAME} (llama-server's API): the "
                          "conversation the engine holds, to or from DIR/NAME (also \"slot_save_path\" in the config)")
+    ap.add_argument("--memory", metavar="DIR", default=None,
+                    help="memory-core fork: the built-in memory store DIR (also \"memory\" in the config): "
+                         "harness-independent recall injected server-side, journaled turns, GET/POST /memory; "
+                         "off unless set (docs/MEMORY_CORE.md)")
     ap.add_argument("--replicas", type=int, default=None, metavar="N",
                     help="data-parallel replicas (opt-in): cut the \"gpu\" list into N equal groups and run one engine on "
                          "each, requests spread over them (also \"replicas\" in the config: a number, or "
@@ -6514,6 +6584,24 @@ def main() -> int:
             raise SystemExit(f"[strata] {e}")
         print(f"[strata] slot save/restore on: {svc.slot_save_path} (session files are kept until deleted: "
               "about 1.2 GB per 63K-token conversation; restore only files this server wrote)", flush=True)
+    # memory-core fork: the built-in memory store, opt-in like slot_save_path - absent keeps every path
+    # byte-identical to upstream. The config's "memory" is an object {"dir", "max_block_chars", "recall_limit",
+    # "inject"} or a plain DIR string; --memory DIR on the command line is the quick way.
+    if a.memory or cfg.get("memory"):
+        mcfg = cfg.get("memory") or {}
+        if isinstance(mcfg, str):
+            mcfg = {"dir": mcfg}
+        try:
+            svc.memory = memory_api.MemoryService(
+                a.memory or memory_api.memory_dir(mcfg.get("dir", "memory"), cfg.get("cwd")),
+                max_block_chars=mcfg.get("max_block_chars") or 6000,
+                recall_limit=mcfg.get("recall_limit") or 8,
+                inject=mcfg.get("inject") is not False)
+        except (ValueError, OSError, TypeError) as e:
+            raise SystemExit(f"[strata] memory: {e}")
+        print(f"[strata] memory core on: {svc.memory.db_path} "
+              f"(inject {'on' if svc.memory.inject else 'off'}, recall {svc.memory.recall_limit} notes "
+              f"<= {svc.memory.max_block_chars} chars; GET /memory to inspect)", flush=True)
     mode = str(cfg.get("anthropic_thinking") or "model")   # #278: "on_request" = only when the request asks
     if mode not in ("model", "on_request"):
         raise SystemExit(f"[strata] config anthropic_thinking must be \"model\" or \"on_request\", not {mode!r}")
