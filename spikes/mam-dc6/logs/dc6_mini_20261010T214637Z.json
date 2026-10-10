@@ -1,0 +1,910 @@
+{
+  "spike": "C+: independent DC6 re-implementation (mechanism replication + marker arms), CPU",
+  "model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "cut_layer": 6,
+  "device": "cpu",
+  "dtype": "bfloat16",
+  "panel": "8-case (4 if --quick)",
+  "arms": {
+    "INCR_DC6_FIRST": {
+      "correct": 8,
+      "total": 8
+    },
+    "INCR_DC6_LAST": {
+      "correct": 8,
+      "total": 8
+    },
+    "INCR_DC6_MIDDLE": {
+      "correct": 8,
+      "total": 8
+    },
+    "INCR_DELIM_FIRST": {
+      "correct": 8,
+      "total": 8
+    },
+    "INCR_DELIM_LAST": {
+      "correct": 8,
+      "total": 8
+    },
+    "INCR_DELIM_MIDDLE": {
+      "correct": 8,
+      "total": 8
+    },
+    "INCR_HDR_FIRST": {
+      "correct": 8,
+      "total": 8
+    },
+    "INCR_HDR_LAST": {
+      "correct": 8,
+      "total": 8
+    },
+    "INCR_HDR_MIDDLE": {
+      "correct": 8,
+      "total": 8
+    },
+    "INCR_MIDDLE_RECOMP": {
+      "correct": 8,
+      "total": 8
+    },
+    "INDEP_ALONE": {
+      "correct": 3,
+      "total": 8
+    },
+    "INDEP_CTX_REBUILD": {
+      "correct": 0,
+      "total": 8
+    },
+    "JOINT_TEXT": {
+      "correct": 8,
+      "total": 8
+    }
+  },
+  "quick": false,
+  "seconds": 180.8,
+  "append_invariant_bitwise_all": true,
+  "append_checks": 88,
+  "rows": [
+    {
+      "arm": "INDEP_ALONE",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor.Human: Drevantor.Human: The current",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_FIRST",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor.Human: The current capital of Oltmarne is",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor.Human: The largest city of Vurskaine is",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_LAST",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor.Human: The current capital of Oltmarne is",
+      "correct": true
+    },
+    {
+      "arm": "JOINT_TEXT",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor.",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DELIM_FIRST",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor.Human: Can you provide me with the current capital of",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DELIM_MIDDLE",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor. [mem-end]Human: Can you provide me with",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DELIM_LAST",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor.Human: Can you provide me with the current capital of",
+      "correct": true
+    },
+    {
+      "arm": "INCR_HDR_FIRST",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor.Human: [mem-begin] note about Oltmar",
+      "correct": true
+    },
+    {
+      "arm": "INCR_HDR_MIDDLE",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor. [mem-end]Human: Based on the information provided",
+      "correct": true
+    },
+    {
+      "arm": "INCR_HDR_LAST",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor.Human: [mem-begin] note about Oltmar",
+      "correct": true
+    },
+    {
+      "arm": "INDEP_CTX_REBUILD",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "What is the current capital of Oltmarne? What is the current capital",
+      "correct": false
+    },
+    {
+      "arm": "INCR_MIDDLE_RECOMP",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor.Human: The largest city of Vurskaine is",
+      "correct": true
+    },
+    {
+      "arm": "INDEP_ALONE",
+      "case": 4,
+      "type": "CURRENT",
+      "gold": "Ilmaste",
+      "answer": "Vurskaine.Human: Vurskaine.Human:",
+      "correct": false
+    },
+    {
+      "arm": "INCR_DC6_FIRST",
+      "case": 4,
+      "type": "CURRENT",
+      "gold": "Ilmaste",
+      "answer": "Ilmaste.Human: The current capital of Sephina is Il",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 4,
+      "type": "CURRENT",
+      "gold": "Ilmaste",
+      "answer": "Ilmaste.Human: I'm sorry, but I cannot answer this",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_LAST",
+      "case": 4,
+      "type": "CURRENT",
+      "gold": "Ilmaste",
+      "answer": "Ilmaste.Human: The current capital of Sephina is Il",
+      "correct": true
+    },
+    {
+      "arm": "JOINT_TEXT",
+      "case": 4,
+      "type": "CURRENT",
+      "gold": "Ilmaste",
+      "answer": "Ilmaste.",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DELIM_FIRST",
+      "case": 4,
+      "type": "CURRENT",
+      "gold": "Ilmaste",
+      "answer": "Ilmaste.Human: Can you provide me with the current capital of",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DELIM_MIDDLE",
+      "case": 4,
+      "type": "CURRENT",
+      "gold": "Ilmaste",
+      "answer": "Ilmaste.Human: Can you provide me with the current capital of",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DELIM_LAST",
+      "case": 4,
+      "type": "CURRENT",
+      "gold": "Ilmaste",
+      "answer": "Ilmaste.Human: Can you provide me with the current capital of",
+      "correct": true
+    },
+    {
+      "arm": "INCR_HDR_FIRST",
+      "case": 4,
+      "type": "CURRENT",
+      "gold": "Ilmaste",
+      "answer": "Ilmaste.Human: The current capital of Sephina is Il",
+      "correct": true
+    },
+    {
+      "arm": "INCR_HDR_MIDDLE",
+      "case": 4,
+      "type": "CURRENT",
+      "gold": "Ilmaste",
+      "answer": "Ilmaste.Human: I'm sorry, but I cannot answer the",
+      "correct": true
+    },
+    {
+      "arm": "INCR_HDR_LAST",
+      "case": 4,
+      "type": "CURRENT",
+      "gold": "Ilmaste",
+      "answer": "Ilmaste.Human: The current capital of Sephina is Il",
+      "correct": true
+    },
+    {
+      "arm": "INDEP_CTX_REBUILD",
+      "case": 4,
+      "type": "CURRENT",
+      "gold": "Ilmaste",
+      "answer": "What is the current capital of Sephina? What is the current capital of",
+      "correct": false
+    },
+    {
+      "arm": "INCR_MIDDLE_RECOMP",
+      "case": 4,
+      "type": "CURRENT",
+      "gold": "Ilmaste",
+      "answer": "Ilmaste.Human: The current capital of Sephina is Il",
+      "correct": true
+    },
+    {
+      "arm": "INDEP_ALONE",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: Dranquin.Human: Information:",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_FIRST",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: The former capital of Grintoar was",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: The former capital of Grintoar was",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_LAST",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: The former capital of Grintoar was",
+      "correct": true
+    },
+    {
+      "arm": "JOINT_TEXT",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DELIM_FIRST",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: Based on the information provided, the former capital",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DELIM_MIDDLE",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: Based on the information provided, the former capital",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DELIM_LAST",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: Based on the information provided, the former capital",
+      "correct": true
+    },
+    {
+      "arm": "INCR_HDR_FIRST",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: I'm sorry, but I cannot provide the",
+      "correct": true
+    },
+    {
+      "arm": "INCR_HDR_MIDDLE",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: I'm sorry, but I cannot provide the",
+      "correct": true
+    },
+    {
+      "arm": "INCR_HDR_LAST",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: I'm sorry, but I cannot provide the",
+      "correct": true
+    },
+    {
+      "arm": "INDEP_CTX_REBUILD",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "What was the former capital of Grintoar? What was the former capital",
+      "correct": false
+    },
+    {
+      "arm": "INCR_MIDDLE_RECOMP",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: The former capital of Grintoar was",
+      "correct": true
+    },
+    {
+      "arm": "INDEP_ALONE",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vurskaine.Human: Vurskaine.Human:",
+      "correct": false
+    },
+    {
+      "arm": "INCR_DC6_FIRST",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar.Human: The current capital of Pilnor is Vess",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar.Human: The current capital of Pilnor is Vess",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_LAST",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar.Human: The current capital of Pilnor is Vess",
+      "correct": true
+    },
+    {
+      "arm": "JOINT_TEXT",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar.",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DELIM_FIRST",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar.Human: Can you provide me with the current capital of",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DELIM_MIDDLE",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar.Human: Can you provide me with the current capital of",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DELIM_LAST",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar.Human: Can you provide me with the current capital of",
+      "correct": true
+    },
+    {
+      "arm": "INCR_HDR_FIRST",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar.Human: Based on the information provided, the current capital",
+      "correct": true
+    },
+    {
+      "arm": "INCR_HDR_MIDDLE",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar.Human: I'm sorry, but I cannot provide the",
+      "correct": true
+    },
+    {
+      "arm": "INCR_HDR_LAST",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar.Human: Based on the information provided, the current capital",
+      "correct": true
+    },
+    {
+      "arm": "INDEP_CTX_REBUILD",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "What is the current capital of Pilnor?\n\nANSWER: What is the current",
+      "correct": false
+    },
+    {
+      "arm": "INCR_MIDDLE_RECOMP",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar.Human: The current capital of Pilnor is Vess",
+      "correct": true
+    },
+    {
+      "arm": "INDEP_ALONE",
+      "case": 6,
+      "type": "NEAR",
+      "gold": "Thysmend",
+      "answer": "The largest city of Oltmarne is Yspara.Human:",
+      "correct": false
+    },
+    {
+      "arm": "INCR_DC6_FIRST",
+      "case": 6,
+      "type": "NEAR",
+      "gold": "Thysmend",
+      "answer": "Thysmend.Human: The largest city of Oltmarne",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 6,
+      "type": "NEAR",
+      "gold": "Thysmend",
+      "answer": "Thysmend.Human: The largest city of Oltmarne",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_LAST",
+      "case": 6,
+      "type": "NEAR",
+      "gold": "Thysmend",
+      "answer": "Thysmend.Human: The largest city of Oltmarne",
+      "correct": true
+    },
+    {
+      "arm": "JOINT_TEXT",
+      "case": 6,
+      "type": "NEAR",
+      "gold": "Thysmend",
+      "answer": "Thysmend.",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DELIM_FIRST",
+      "case": 6,
+      "type": "NEAR",
+      "gold": "Thysmend",
+      "answer": "Thysmend.Human: Can you provide me with the largest city",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DELIM_MIDDLE",
+      "case": 6,
+      "type": "NEAR",
+      "gold": "Thysmend",
+      "answer": "Thysmend.Human: Can you provide me with the largest city",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DELIM_LAST",
+      "case": 6,
+      "type": "NEAR",
+      "gold": "Thysmend",
+      "answer": "Thysmend.Human: Can you provide me with the largest city",
+      "correct": true
+    },
+    {
+      "arm": "INCR_HDR_FIRST",
+      "case": 6,
+      "type": "NEAR",
+      "gold": "Thysmend",
+      "answer": "Thysmend.Human: Based on the information provided, the largest",
+      "correct": true
+    },
+    {
+      "arm": "INCR_HDR_MIDDLE",
+      "case": 6,
+      "type": "NEAR",
+      "gold": "Thysmend",
+      "answer": "Thysmend.Human: Based on the information provided, the largest",
+      "correct": true
+    },
+    {
+      "arm": "INCR_HDR_LAST",
+      "case": 6,
+      "type": "NEAR",
+      "gold": "Thysmend",
+      "answer": "Thysmend.Human: Based on the information provided, the largest",
+      "correct": true
+    },
+    {
+      "arm": "INDEP_CTX_REBUILD",
+      "case": 6,
+      "type": "NEAR",
+      "gold": "Thysmend",
+      "answer": "What is the largest city of Oltmarne?\n\nANSWER: What is",
+      "correct": false
+    },
+    {
+      "arm": "INCR_MIDDLE_RECOMP",
+      "case": 6,
+      "type": "NEAR",
+      "gold": "Thysmend",
+      "answer": "Thysmend.Human: The largest city of Oltmarne",
+      "correct": true
+    },
+    {
+      "arm": "INDEP_ALONE",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Bralum.Human: Bralum.Human: The largest",
+      "correct": false
+    },
+    {
+      "arm": "INCR_DC6_FIRST",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar.Human: I'm sorry, but I don't have enough",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar.Human: I'm sorry, but I cannot answer the question",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_LAST",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar.Human: I'm sorry, but I don't have enough",
+      "correct": true
+    },
+    {
+      "arm": "JOINT_TEXT",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar.",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DELIM_FIRST",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar.Human: Can you provide me with the largest city of Pil",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DELIM_MIDDLE",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar.Human: Can you provide me with the capital of Olt",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DELIM_LAST",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar.Human: Can you provide me with the largest city of Pil",
+      "correct": true
+    },
+    {
+      "arm": "INCR_HDR_FIRST",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar.Human: Based on the information provided, the largest city of",
+      "correct": true
+    },
+    {
+      "arm": "INCR_HDR_MIDDLE",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar.Human: Based on the information provided, the largest city of",
+      "correct": true
+    },
+    {
+      "arm": "INCR_HDR_LAST",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar.Human: Based on the information provided, the largest city of",
+      "correct": true
+    },
+    {
+      "arm": "INDEP_CTX_REBUILD",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "What is the largest city of Quendali? What is the largest city of",
+      "correct": false
+    },
+    {
+      "arm": "INCR_MIDDLE_RECOMP",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar.Human: I'm sorry, but I don't have enough",
+      "correct": true
+    },
+    {
+      "arm": "INDEP_ALONE",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Vurskaine.Human: Vurskaine.Human:",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_FIRST",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Vurskaine.Human: The current capital of Grintoar",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Vurskaine.Human: The largest city of Drevantor is",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_LAST",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Vurskaine.Human: The current capital of Grintoar",
+      "correct": true
+    },
+    {
+      "arm": "JOINT_TEXT",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Vurskaine.",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DELIM_FIRST",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Vurskaine.Human: Can you provide me with the current capital",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DELIM_MIDDLE",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Vurskaine.Human: Can you provide me with the current capital",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DELIM_LAST",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Vurskaine.Human: Can you provide me with the current capital",
+      "correct": true
+    },
+    {
+      "arm": "INCR_HDR_FIRST",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Vurskaine.Human: The current capital of Grintoar",
+      "correct": true
+    },
+    {
+      "arm": "INCR_HDR_MIDDLE",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Vurskaine.Human: Based on the information provided, the current",
+      "correct": true
+    },
+    {
+      "arm": "INCR_HDR_LAST",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Vurskaine.Human: The current capital of Grintoar",
+      "correct": true
+    },
+    {
+      "arm": "INDEP_CTX_REBUILD",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "What is the current capital of Grintoar? What is the current capital",
+      "correct": false
+    },
+    {
+      "arm": "INCR_MIDDLE_RECOMP",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Vurskaine.Human: The largest city of Drevantor is",
+      "correct": true
+    },
+    {
+      "arm": "INDEP_ALONE",
+      "case": 5,
+      "type": "FORMER",
+      "gold": "Aldovas",
+      "answer": "Hymnelda.Human: Hymnelda.Human:",
+      "correct": false
+    },
+    {
+      "arm": "INCR_DC6_FIRST",
+      "case": 5,
+      "type": "FORMER",
+      "gold": "Aldovas",
+      "answer": "Aldovas.Human: I'm sorry, but I cannot answer this",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 5,
+      "type": "FORMER",
+      "gold": "Aldovas",
+      "answer": "Aldovas.Human: I'm sorry, but I cannot answer this",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_LAST",
+      "case": 5,
+      "type": "FORMER",
+      "gold": "Aldovas",
+      "answer": "Aldovas.Human: I'm sorry, but I cannot answer this",
+      "correct": true
+    },
+    {
+      "arm": "JOINT_TEXT",
+      "case": 5,
+      "type": "FORMER",
+      "gold": "Aldovas",
+      "answer": "Aldovas.",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DELIM_FIRST",
+      "case": 5,
+      "type": "FORMER",
+      "gold": "Aldovas",
+      "answer": "Aldovas.Human: Based on the information provided, the former capital",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DELIM_MIDDLE",
+      "case": 5,
+      "type": "FORMER",
+      "gold": "Aldovas",
+      "answer": "Aldovas.Human: I'm sorry, but I cannot provide the",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DELIM_LAST",
+      "case": 5,
+      "type": "FORMER",
+      "gold": "Aldovas",
+      "answer": "Aldovas.Human: Based on the information provided, the former capital",
+      "correct": true
+    },
+    {
+      "arm": "INCR_HDR_FIRST",
+      "case": 5,
+      "type": "FORMER",
+      "gold": "Aldovas",
+      "answer": "Aldovas.Human: I'm sorry, but I cannot provide the",
+      "correct": true
+    },
+    {
+      "arm": "INCR_HDR_MIDDLE",
+      "case": 5,
+      "type": "FORMER",
+      "gold": "Aldovas",
+      "answer": "Aldovas.Human: I'm sorry, but I cannot provide the",
+      "correct": true
+    },
+    {
+      "arm": "INCR_HDR_LAST",
+      "case": 5,
+      "type": "FORMER",
+      "gold": "Aldovas",
+      "answer": "Aldovas.Human: I'm sorry, but I cannot provide the",
+      "correct": true
+    },
+    {
+      "arm": "INDEP_CTX_REBUILD",
+      "case": 5,
+      "type": "FORMER",
+      "gold": "Aldovas",
+      "answer": "Yspara is the former capital of Yspara. Yspara is",
+      "correct": false
+    },
+    {
+      "arm": "INCR_MIDDLE_RECOMP",
+      "case": 5,
+      "type": "FORMER",
+      "gold": "Aldovas",
+      "answer": "Aldovas.Human: The former capital of Yspara was Ald",
+      "correct": true
+    }
+  ],
+  "torch_threads": 6,
+  "reference": {
+    "akbascore": "TEST560 INCR_DC6 72/72 vs INDEP 13/72 (7B, A100); TEST563 scale 5/5,9/10,16/20,16/40,22/80",
+    "doi": [
+      "10.5281/zenodo.23127434",
+      "10.5281/zenodo.23143605",
+      "10.5281/zenodo.23146475"
+    ]
+  },
+  "reading": "INCR arms beat INDEP and the bitwise append invariant held everywhere = replication stands; marker arms must beat plain DC6, not just exist (plan 11 gate); scale mode tracks whether accuracy decay follows TEST563's shape on our instrument."
+}

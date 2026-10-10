@@ -1,0 +1,242 @@
+{
+  "spike": "C+: independent DC6 re-implementation (mechanism replication + marker arms), CPU",
+  "model": "Qwen/Qwen2.5-0.5B-Instruct",
+  "cut_layer": 6,
+  "device": "cpu",
+  "dtype": "bfloat16",
+  "panel": "8-case (4 if --quick)",
+  "arms": {
+    "INCR_DC6_FIRST": {
+      "correct": 4,
+      "total": 4
+    },
+    "INCR_DC6_LAST": {
+      "correct": 4,
+      "total": 4
+    },
+    "INCR_DC6_MIDDLE": {
+      "correct": 3,
+      "total": 4
+    },
+    "INDEP_ALONE": {
+      "correct": 1,
+      "total": 4
+    },
+    "INDEP_CTX_REBUILD": {
+      "correct": 2,
+      "total": 4
+    },
+    "JOINT_TEXT": {
+      "correct": 4,
+      "total": 4
+    }
+  },
+  "quick": true,
+  "seconds": 19.5,
+  "append_invariant_bitwise_all": true,
+  "append_checks": 12,
+  "rows": [
+    {
+      "arm": "INDEP_ALONE",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Fenturym. \n\nThe information provided does not contain any details about the",
+      "correct": false
+    },
+    {
+      "arm": "INCR_DC6_FIRST",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor. \n\nThe information provided does not mention the capital of Olt",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor. \n\nThe information provided does not mention the current capital of O",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_LAST",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor. \n\nThe information provided does not mention the capital of Olt",
+      "correct": true
+    },
+    {
+      "arm": "JOINT_TEXT",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor\n\nI found this answer by analyzing the given information about the capitals",
+      "correct": true
+    },
+    {
+      "arm": "INDEP_CTX_REBUILD",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Grintoar. \n\nThe information provided does not mention the current capital of",
+      "correct": false
+    },
+    {
+      "arm": "INDEP_ALONE",
+      "case": 4,
+      "type": "CURRENT",
+      "gold": "Ilmaste",
+      "answer": "Vurskaine. \n\nThe information provided does not contain any details about the",
+      "correct": false
+    },
+    {
+      "arm": "INCR_DC6_FIRST",
+      "case": 4,
+      "type": "CURRENT",
+      "gold": "Ilmaste",
+      "answer": "Ilmaste. \n\nThe information provided does not mention the capital of Seph",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 4,
+      "type": "CURRENT",
+      "gold": "Ilmaste",
+      "answer": "Ilmaste. \n\nThe information provided does not mention the capital of Seph",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_LAST",
+      "case": 4,
+      "type": "CURRENT",
+      "gold": "Ilmaste",
+      "answer": "Ilmaste. \n\nThe information provided does not mention the capital of Seph",
+      "correct": true
+    },
+    {
+      "arm": "JOINT_TEXT",
+      "case": 4,
+      "type": "CURRENT",
+      "gold": "Ilmaste",
+      "answer": "Ilmaste",
+      "correct": true
+    },
+    {
+      "arm": "INDEP_CTX_REBUILD",
+      "case": 4,
+      "type": "CURRENT",
+      "gold": "Ilmaste",
+      "answer": "Ilmaste. \n\nThe information provided does not mention the name of the current",
+      "correct": true
+    },
+    {
+      "arm": "INDEP_ALONE",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin. \n\nThe information provided does not mention the name of the former",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_FIRST",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin. \n\nThe information provided does not mention Dranquin as the",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Brethorn. \n\nThe information provided does not mention the former capital of G",
+      "correct": false
+    },
+    {
+      "arm": "INCR_DC6_LAST",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin. \n\nThe information provided does not mention Dranquin as the",
+      "correct": true
+    },
+    {
+      "arm": "JOINT_TEXT",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin\nThis answer is based on the given information, which states that",
+      "correct": true
+    },
+    {
+      "arm": "INDEP_CTX_REBUILD",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin. \n\nThe information provided does not mention the former capital of G",
+      "correct": true
+    },
+    {
+      "arm": "INDEP_ALONE",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vurskaine. \n\nThe information provided does not contain any details about the",
+      "correct": false
+    },
+    {
+      "arm": "INCR_DC6_FIRST",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar. \n\nThe information provided does not mention any capital of Pilnor",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar. \n\nThe information provided does not mention the capital of Pilnor",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_LAST",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar. \n\nThe information provided does not mention any capital of Pilnor",
+      "correct": true
+    },
+    {
+      "arm": "JOINT_TEXT",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar",
+      "correct": true
+    },
+    {
+      "arm": "INDEP_CTX_REBUILD",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Ilmaste. \n\nThe information provided does not mention the current capital of Pil",
+      "correct": false
+    }
+  ],
+  "torch_threads": 8,
+  "reference": {
+    "akbascore": "TEST560 INCR_DC6 72/72 vs INDEP 13/72 (7B, A100); TEST563 scale 5/5,9/10,16/20,16/40,22/80",
+    "doi": [
+      "10.5281/zenodo.23127434",
+      "10.5281/zenodo.23143605",
+      "10.5281/zenodo.23146475"
+    ]
+  },
+  "reading": "INCR arms beat INDEP and the bitwise append invariant held everywhere = replication stands; marker arms must beat plain DC6, not just exist (plan 11 gate); scale mode tracks whether accuracy decay follows TEST563's shape on our instrument."
+}

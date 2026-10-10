@@ -1,0 +1,432 @@
+{
+  "spike": "C+: independent DC6 re-implementation (mechanism replication + marker arms), CPU",
+  "model": "Qwen/Qwen2.5-0.5B-Instruct",
+  "cut_layer": 6,
+  "device": "cpu",
+  "dtype": "bfloat16",
+  "scale_sizes": [
+    5,
+    10,
+    20,
+    40
+  ],
+  "targets_per_size": 2,
+  "quick": false,
+  "seconds": 51.9,
+  "append_invariant_bitwise_all": true,
+  "append_checks": 24,
+  "arms": {
+    "bank10:INCR_DC6_FIRST": {
+      "correct": 1,
+      "correct_loose": 1,
+      "total": 2
+    },
+    "bank10:INCR_DC6_LAST": {
+      "correct": 1,
+      "correct_loose": 1,
+      "total": 2
+    },
+    "bank10:INCR_DC6_MIDDLE": {
+      "correct": 1,
+      "correct_loose": 1,
+      "total": 2
+    },
+    "bank10:INDEP_ALONE": {
+      "correct": 0,
+      "correct_loose": 0,
+      "total": 2
+    },
+    "bank20:INCR_DC6_FIRST": {
+      "correct": 1,
+      "correct_loose": 1,
+      "total": 2
+    },
+    "bank20:INCR_DC6_LAST": {
+      "correct": 1,
+      "correct_loose": 1,
+      "total": 2
+    },
+    "bank20:INCR_DC6_MIDDLE": {
+      "correct": 1,
+      "correct_loose": 1,
+      "total": 2
+    },
+    "bank20:INDEP_ALONE": {
+      "correct": 0,
+      "correct_loose": 0,
+      "total": 2
+    },
+    "bank40:INCR_DC6_FIRST": {
+      "correct": 2,
+      "correct_loose": 2,
+      "total": 2
+    },
+    "bank40:INCR_DC6_LAST": {
+      "correct": 2,
+      "correct_loose": 2,
+      "total": 2
+    },
+    "bank40:INCR_DC6_MIDDLE": {
+      "correct": 1,
+      "correct_loose": 1,
+      "total": 2
+    },
+    "bank40:INDEP_ALONE": {
+      "correct": 0,
+      "correct_loose": 0,
+      "total": 2
+    },
+    "bank5:INCR_DC6_FIRST": {
+      "correct": 2,
+      "correct_loose": 2,
+      "total": 2
+    },
+    "bank5:INCR_DC6_LAST": {
+      "correct": 2,
+      "correct_loose": 2,
+      "total": 2
+    },
+    "bank5:INCR_DC6_MIDDLE": {
+      "correct": 2,
+      "correct_loose": 2,
+      "total": 2
+    },
+    "bank5:INDEP_ALONE": {
+      "correct": 0,
+      "correct_loose": 0,
+      "total": 2
+    }
+  },
+  "rows": [
+    {
+      "bank": 5,
+      "arm": "INCR_DC6_FIRST",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin. \n\nThe information provided does not mention Dranquin as the",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin. \n\nThe information provided does not mention the former capital of G",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DC6_LAST",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin. \n\nThe information provided does not mention Dranquin as the",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INDEP_ALONE",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dolmaren. \n\nThe information provided does not contain any details about the capital",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DC6_FIRST",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar. \n\nThe information provided does not mention any cities in Quendali",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar. \n\nThe information provided does not mention any cities in Quendali",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DC6_LAST",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar. \n\nThe information provided does not mention any cities in Quendali",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INDEP_ALONE",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Vessmar. \n\nThe information provided does not contain any details about the capital",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DC6_FIRST",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor. \n\nThe information provided does not mention the capital of Olt",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor. \n\nThe information provided does not mention the current capital of O",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DC6_LAST",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor. \n\nThe information provided does not mention the capital of Olt",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INDEP_ALONE",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Oltmarne. \n\nThe information provided does not contain any information about the",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DC6_FIRST",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Belvarre. \n\nThe information provided does not mention Belvarre as the",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Belvarre. \n\nThe information provided does not mention Belvarre, so",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DC6_LAST",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Belvarre. \n\nThe information provided does not mention Belvarre as the",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 10,
+      "arm": "INDEP_ALONE",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Sarnobel. \n\nThe information provided does not mention the capital of Quend",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DC6_FIRST",
+      "case": 5,
+      "type": "FORMER",
+      "gold": "Aldovas",
+      "answer": "Fenturym. \n\nThe information provided does not mention Fenturym",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 5,
+      "type": "FORMER",
+      "gold": "Aldovas",
+      "answer": "Fenturym. \n\nThe information provided does not mention the former capital of",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DC6_LAST",
+      "case": 5,
+      "type": "FORMER",
+      "gold": "Aldovas",
+      "answer": "Fenturym. \n\nThe information provided does not mention Fenturym",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 20,
+      "arm": "INDEP_ALONE",
+      "case": 5,
+      "type": "FORMER",
+      "gold": "Aldovas",
+      "answer": "Ondalith. \n\nThe information provided does not contain the requested name,",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DC6_FIRST",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar. \n\nThe information provided does not mention the capital of Pilnor",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar. \n\nThe information provided does not mention the capital of Pilnor",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DC6_LAST",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar. \n\nThe information provided does not mention the capital of Pilnor",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 20,
+      "arm": "INDEP_ALONE",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vurskaina. \n\nThe information provided does not provide the name of the",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DC6_FIRST",
+      "case": 22,
+      "type": "NEAR",
+      "gold": "Nekihe",
+      "answer": "Nekihe. \n\nThe information provided does not mention any city named Hogona",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 22,
+      "type": "NEAR",
+      "gold": "Nekihe",
+      "answer": "Grintoar. \n\nThe information provided does not mention any cities in Hog",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DC6_LAST",
+      "case": 22,
+      "type": "NEAR",
+      "gold": "Nekihe",
+      "answer": "Nekihe. \n\nThe information provided does not mention any city named Hogona",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INDEP_ALONE",
+      "case": 22,
+      "type": "NEAR",
+      "gold": "Nekihe",
+      "answer": "Vuposo\n\nThe information provided does not provide the name of the largest city",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DC6_FIRST",
+      "case": 18,
+      "type": "NEAR",
+      "gold": "Voduse",
+      "answer": "Voduse. \n\nThe information provided does not mention any cities of Kip",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 18,
+      "type": "NEAR",
+      "gold": "Voduse",
+      "answer": "Voduse. \n\nThe information provided does not mention any cities in Kip",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DC6_LAST",
+      "case": 18,
+      "type": "NEAR",
+      "gold": "Voduse",
+      "answer": "Voduse. \n\nThe information provided does not mention any cities of Kip",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INDEP_ALONE",
+      "case": 18,
+      "type": "NEAR",
+      "gold": "Voduse",
+      "answer": "Vuposo\n\nThe information provided does not provide the name of the largest city",
+      "correct": false,
+      "correct_loose": false
+    }
+  ],
+  "torch_threads": 6,
+  "reference": {
+    "akbascore": "TEST560 INCR_DC6 72/72 vs INDEP 13/72 (7B, A100); TEST563 scale 5/5,9/10,16/20,16/40,22/80",
+    "doi": [
+      "10.5281/zenodo.23127434",
+      "10.5281/zenodo.23143605",
+      "10.5281/zenodo.23146475"
+    ]
+  },
+  "reading": "INCR arms beat INDEP and the bitwise append invariant held everywhere = replication stands; marker arms must beat plain DC6, not just exist (plan 11 gate); scale mode tracks whether accuracy decay follows TEST563's shape on our instrument."
+}
