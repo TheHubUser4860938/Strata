@@ -1,3 +1,30 @@
+# Strata — MAM Cartridge Fork
+
+**What this fork is for: building memory into Strata — a persistent, harness-independent long-term memory
+that lives at the inference server.** Every client (OpenCode, Odysseus AI, the web app) shares one memory,
+and no harness ever resends memory text into the context window.
+
+- **Phase 1 — memory service:** curated store + automatic server-side recall injected as a stable hidden
+  system block, riding on Strata's existing checkpoint / parked-conversation / session save-restore machinery.
+- **Phase 2 — numerical memory (cartridges):** feasibility experiments porting the *AKBASCORE MAM / NIRVANA
+  cognitive cartridge* idea — source knowledge stored as model-produced K/V + hidden-state representations,
+  read back by the frozen model without the source text ever re-entering the prompt.
+  Upstream research: [ceceli33/titan-cognitive-core-v2](https://github.com/ceceli33/titan-cognitive-core-v2)
+  (technical disclosures: [10.5281/zenodo.23127434](https://doi.org/10.5281/zenodo.23127434),
+  [10.5281/zenodo.23143605](https://doi.org/10.5281/zenodo.23143605),
+  [10.5281/zenodo.23146475](https://doi.org/10.5281/zenodo.23146475)).
+
+On this fork's target model (Qwen3.8-Flash-Next: 36 Gated DeltaNet layers + 12 Qwen Sparse Attention layers,
+quantized KV) the cartridge port is **open research, not an established result**: MAM's published evidence covers
+dense full-attention BF16 models and seals a scaling ceiling (22/80 at 80 cartridges). This fork documents
+positive *and* negative results as they land, in `docs/MEMORY_CORE.md`.
+
+Engine and server changes live on the `memory-core` branch; `main` stays a near-mirror of
+[upstream Strata](https://github.com/Niko1221/Strata) (MIT, by Niko1221). MAM-derived code carries the
+attribution and license terms of the AkbasCore repository (Copyright © 2026 Mustafa Akbaş).
+
+---
+
 <h1 align="center">Strata</h1>
 
 **English** · [简体中文](README.zh-CN.md) · [日本語](README.ja.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [Español](README.es.md) · [Português](README.pt-BR.md)
