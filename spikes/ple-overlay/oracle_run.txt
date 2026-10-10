@@ -1,0 +1,8 @@
+# spikes/ple-overlay oracle run record - regenerate with the command below (D2/D3 re-run before patching anything)
+# date: 2026-10-10T23:08:32Z  host: 7.2.9-2-cachyos  python: Python 3.14.7
+# sha256 src/kernels/ple_oracle_vectors.inc: 81db49806af4a3c8d333cb00ad0353a322b61f34f62e96a1eaffe4b782611fd3
+$ ~/Strata-data/venvs/spikeC/bin/python spikes/ple-overlay/ple_ngram.py --oracle
+oracle: 19 token rows checked vs ref/ngram.py vectors, 0 differ
+$ ~/Strata-data/venvs/spikeC/bin/python spikes/ple-overlay/ple_ngram.py --selftest
+oracle vectors: 19 token rows vs ref/ngram.py ground truth, 0 differ
+selftest: ALL PASS
