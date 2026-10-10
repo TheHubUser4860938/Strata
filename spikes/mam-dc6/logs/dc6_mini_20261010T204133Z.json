@@ -1,0 +1,364 @@
+{
+  "spike": "C: independent DC6 re-implementation (mechanism replication, 0.5B dense, CPU)",
+  "model": "Qwen/Qwen2.5-0.5B-Instruct",
+  "cut_layer": 6,
+  "device": "cpu",
+  "dtype": "bfloat16",
+  "quick": false,
+  "seconds": 23.7,
+  "append_invariant_bitwise_all": true,
+  "append_checks": 24,
+  "arms": {
+    "INCR_DC6_FIRST": {
+      "correct": 8,
+      "total": 8
+    },
+    "INCR_DC6_LAST": {
+      "correct": 8,
+      "total": 8
+    },
+    "INCR_DC6_MIDDLE": {
+      "correct": 5,
+      "total": 8
+    },
+    "INDEP_ALONE": {
+      "correct": 0,
+      "total": 8
+    },
+    "JOINT_TEXT": {
+      "correct": 8,
+      "total": 8
+    }
+  },
+  "rows": [
+    {
+      "arm": "INCR_DC6_FIRST",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor. \n\nThe information provided does not mention the current capital of O",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Fenturym. \n\nThe information provided does not mention the current capital of",
+      "correct": false
+    },
+    {
+      "arm": "INCR_DC6_LAST",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor. \n\nThe information provided does not mention the current capital of O",
+      "correct": true
+    },
+    {
+      "arm": "JOINT_TEXT",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor\n\nI found this answer by analyzing the given information:\n\n1.",
+      "correct": true
+    },
+    {
+      "arm": "INDEP_ALONE",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Fenturym. \n\nThe information provided does not contain any details about the",
+      "correct": false
+    },
+    {
+      "arm": "INCR_DC6_FIRST",
+      "case": 4,
+      "type": "CURRENT",
+      "gold": "Ilmaste",
+      "answer": "Ilmaste. \n\nThe information provided does not mention any capital cities for Sep",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 4,
+      "type": "CURRENT",
+      "gold": "Ilmaste",
+      "answer": "Ilmaste. \n\nThe information provided does not mention the current capital of Sep",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_LAST",
+      "case": 4,
+      "type": "CURRENT",
+      "gold": "Ilmaste",
+      "answer": "Ilmaste. \n\nThe information provided does not mention any capital cities for Sep",
+      "correct": true
+    },
+    {
+      "arm": "JOINT_TEXT",
+      "case": 4,
+      "type": "CURRENT",
+      "gold": "Ilmaste",
+      "answer": "Ilmaste. \n\nI have used the given information to answer this question by",
+      "correct": true
+    },
+    {
+      "arm": "INDEP_ALONE",
+      "case": 4,
+      "type": "CURRENT",
+      "gold": "Ilmaste",
+      "answer": "Elkmar. \n\nThe information provided does not contain any details about the capital of",
+      "correct": false
+    },
+    {
+      "arm": "INCR_DC6_FIRST",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin. \n\nThe information provided does not mention the former capital of G",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Oontar. \n\nThe information provided does not mention the former capital of G",
+      "correct": false
+    },
+    {
+      "arm": "INCR_DC6_LAST",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin. \n\nThe information provided does not mention the former capital of G",
+      "correct": true
+    },
+    {
+      "arm": "JOINT_TEXT",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin\nThis answer is based on the given information, which states that",
+      "correct": true
+    },
+    {
+      "arm": "INDEP_ALONE",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Quendali. \n\nThe information provided does not contain any details about the former",
+      "correct": false
+    },
+    {
+      "arm": "INCR_DC6_FIRST",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar. \n\nThe information provided does not mention the capital of Pilnor",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar. \n\nThe information provided does not mention the current capital of Pil",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_LAST",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar. \n\nThe information provided does not mention the capital of Pilnor",
+      "correct": true
+    },
+    {
+      "arm": "JOINT_TEXT",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar. \n\nThis answer directly responds to the given information by identifying the",
+      "correct": true
+    },
+    {
+      "arm": "INDEP_ALONE",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vurskaine. \n\nThe information provided does not contain any details about the",
+      "correct": false
+    },
+    {
+      "arm": "INCR_DC6_FIRST",
+      "case": 6,
+      "type": "NEAR",
+      "gold": "Thysmend",
+      "answer": "Thysmend. \n\nThe information provided does not mention the largest city of",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 6,
+      "type": "NEAR",
+      "gold": "Thysmend",
+      "answer": "Ondalith. \n\nThe information provided does not mention Oltmarne",
+      "correct": false
+    },
+    {
+      "arm": "INCR_DC6_LAST",
+      "case": 6,
+      "type": "NEAR",
+      "gold": "Thysmend",
+      "answer": "Thysmend. \n\nThe information provided does not mention the largest city of",
+      "correct": true
+    },
+    {
+      "arm": "JOINT_TEXT",
+      "case": 6,
+      "type": "NEAR",
+      "gold": "Thysmend",
+      "answer": "Thysmend\n\nI found this answer by analyzing the given information:\n\n1",
+      "correct": true
+    },
+    {
+      "arm": "INDEP_ALONE",
+      "case": 6,
+      "type": "NEAR",
+      "gold": "Thysmend",
+      "answer": "Grintoar. \n\nThe information provided does not contain any details about the",
+      "correct": false
+    },
+    {
+      "arm": "INCR_DC6_FIRST",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar. \n\nThe information provided does not mention any cities in Quendali",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar. \n\nThe information provided does not mention any cities in Quendali",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_LAST",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar. \n\nThe information provided does not mention any cities in Quendali",
+      "correct": true
+    },
+    {
+      "arm": "JOINT_TEXT",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar\n\nI found this answer by analyzing the given information:\n\n1. The",
+      "correct": true
+    },
+    {
+      "arm": "INDEP_ALONE",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Grintoar. \n\nThe information provided does not contain any details about the",
+      "correct": false
+    },
+    {
+      "arm": "INCR_DC6_FIRST",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Vurskaine. \n\nThe information provided does not mention the capital of G",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Vurskaine. \n\nThe information provided does not mention the current capital of",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_LAST",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Vurskaine. \n\nThe information provided does not mention the capital of G",
+      "correct": true
+    },
+    {
+      "arm": "JOINT_TEXT",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Vurskaine\nThis answer is based on the given information, which states",
+      "correct": true
+    },
+    {
+      "arm": "INDEP_ALONE",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Fenturym. \n\nThe information provided does not contain any details about the",
+      "correct": false
+    },
+    {
+      "arm": "INCR_DC6_FIRST",
+      "case": 5,
+      "type": "FORMER",
+      "gold": "Aldovas",
+      "answer": "Aldovas. \n\nThe information provided does not mention the former capital of Y",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 5,
+      "type": "FORMER",
+      "gold": "Aldovas",
+      "answer": "Aldovas. \n\nThe information provided does not mention the former capital of Y",
+      "correct": true
+    },
+    {
+      "arm": "INCR_DC6_LAST",
+      "case": 5,
+      "type": "FORMER",
+      "gold": "Aldovas",
+      "answer": "Aldovas. \n\nThe information provided does not mention the former capital of Y",
+      "correct": true
+    },
+    {
+      "arm": "JOINT_TEXT",
+      "case": 5,
+      "type": "FORMER",
+      "gold": "Aldovas",
+      "answer": "Aldovas\n\nI used the given information to answer this question by identifying the",
+      "correct": true
+    },
+    {
+      "arm": "INDEP_ALONE",
+      "case": 5,
+      "type": "FORMER",
+      "gold": "Aldovas",
+      "answer": "Oontar. \n\nThe information provided does not mention the former capital of Y",
+      "correct": false
+    }
+  ],
+  "reference": {
+    "akbascore": "TEST560 INCR_DC6 72/72 vs INDEP 13/72 (7B, A100); TEST563 scale 5/5,9/10,16/20,16/40,22/80",
+    "doi": [
+      "10.5281/zenodo.23127434",
+      "10.5281/zenodo.23143605",
+      "10.5281/zenodo.23146475"
+    ]
+  },
+  "reading": "PASS = INCR_DC6 arms beat INDEP and the bitwise append invariant held everywhere; absolute accuracy is expected to trail the 7B records (0.5B model)."
+}
