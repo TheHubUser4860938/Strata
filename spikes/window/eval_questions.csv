@@ -1,0 +1,15 @@
+question,expected_answer_contains,scope,source_hint,asked_cold_harness,notes
+# Gate-1 personal QA set (plan section 8 Stage 2): ~50 rows of facts you actually want remembered.
+# HOW TO FILL (5 min): one fact per row. expected_answer_contains = comma-separated words a correct
+# answer MUST include (scoring is strict word-boundary, like the spikes). scope = the project bucket
+# the fact belongs to (user = shared across everything; a project name = only that project recalls it).
+# source_hint = where/when you told it (blank is fine). asked_cold_harness = which harness you will
+# ASK FROM (opencode / odysseus / webapp) - the test is cross-harness: facts learned in one harness
+# must answer in another. Keep answers SHORT (a name, a number, a date) - that is what Gate-1 scores.
+# Mix: ~20 project facts (the repo/toolchain facts you re-explain weekly), ~20 life facts (schedule,
+# preferences, names, decisions), ~10 dated/decay-sensitive ones. Avoid facts whose exact wording a
+# search engine could fake (Gate-1 measures MY memory, not the model's general knowledge) - prefer
+# things only you could have told the server.
+who is the fleetmaster of the Zorvane Convocation,Quendefin Marsh,user,-,webapp,EXAMPLE ROW - delete me
+what port does the dev engine use,8005,Strata-MAM,docs/MEMORY_CORE.md,opencode,EXAMPLE ROW - delete me
+when does the coordinated window start,evening,user,-,opencode,EXAMPLE ROW - delete me
