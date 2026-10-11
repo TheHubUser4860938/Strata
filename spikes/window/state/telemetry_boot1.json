@@ -1,0 +1,17 @@
+{
+ "tag": "boot1",
+ "utc": "2026-10-11T11:42:11Z",
+ "memory": {
+  "version": 1,
+  "memories": 0,
+  "by_scope": {},
+  "turns": 0,
+  "turns_pending": 0,
+  "inject": true,
+  "recall_limit": 8,
+  "max_block_chars": 6000,
+  "pinned_blocks": 0,
+  "db": "/home/eugene/Projects/Strata-MAM-cartrige-mod/Strata-data/memory-eval/memory.db"
+ },
+ "prefix_counters": {}
+}

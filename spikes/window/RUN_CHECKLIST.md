@@ -47,10 +47,13 @@ chat and returns the model's reply to the agent verbatim.
 - [ ] smoke on dev :8005 (first act after boot 1 - see Phase 1 box 2)
 
 ## Phase 1 - boot 1 (stock dev)
-- [ ] [YOU] stop main (its console Ctrl-C), boot dev: `cd ~/Projects/Strata-MAM-cartrige-mod
-      && ./dev-up.sh` ; wait for :8005 weights warm (~1-3 min)
-- [ ] [ME] sanity: `curl :8005/v1/models` 200 + `curl :8005/memory` stats shows
+- [x] [YOU] stop main (its console Ctrl-C), boot dev: `cd ~/Projects/Strata-MAM-cartrige-mod
+      && ./dev-up.sh` ; wait for :8005 weights warm (~1-3 min) — verified 2026-10-11: :8004
+      down, :8005 loaded (below)
+- [x] [ME] sanity: `curl :8005/v1/models` 200 + `curl :8005/memory` stats shows
       dir memory-eval + `python3 spikes/window/gate1_driver.py telemetry --tag boot1`
+      — verified: models 200 status:loaded; /memory db=.../memory-eval/memory.db 0 memories;
+      set_ple_venue --show = STOCK shard (boot-1 condition); telemetry state/telemetry_boot1.json
 - [ ] [ME] smoke: `gate1_driver.py smoke --url http://127.0.0.1:8005` -> PASS, store back to
       0 facts after forgets (expect: 3 taught, 3 search hits, recall chat PASS, 0 left)
 - [ ] [ME] telemetry --tag M0-pre ; [PASTE] M block -> fresh chat :8005 ; reply -> agent

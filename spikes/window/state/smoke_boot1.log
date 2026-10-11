@@ -1,0 +1,24 @@
+# smoke --url http://127.0.0.1:8005 — boot 1 (stock venue), 2026-10-11 ~11:41Z
+# run 1 (VERDICT run — store and pin-cache both empty at boot, evidence:
+# telemetry_boot1.json shows memories 0 + /memory stats pinned_blocks 0):
+smoke taught ids: [1, 2, 3]
+smoke search hits: 3 (expect 3)
+smoke chat: 'The bridge of Smokeport is Zivvleax18933-1.' (0.8s, ptok=259) -> PASS (recall reached the answer)
+smoke forgotten; search hits now: 0 (expect 0)
+# => ALL FOUR expectations met: 3 taught, 3 hits, chat PASS, 0 left.
+
+# run 2 (same uptime, ~11:43Z):
+smoke taught ids: [4, 5, 6]
+smoke search hits: 3 (expect 3)
+smoke chat: 'The bridge of Smokeport is Zivvleax18933-1.' (0.8s, ptok=259) -> FAIL
+smoke forgotten; search hits now: 0 (expect 0)
+# Diagnosis (benign, by design): the recall block is pinned per
+# (scope, hash-of-first-user-message) for prompt byte-stability (serve/memory.py L101,
+# L263-266: cache hit returns the pinned bytes + empty delta). Smoke's question is a
+# fixed string, so run 2 = same key -> run 1's stale pinned block injected (old nonce
+# token), new facts never entered the prompt. The model answered correctly FROM the
+# block it was actually given. Not a recall failure; a same-uptime re-run artifact.
+# Consequence for Gate-1: an identical chunk-1 first message re-pasted within one
+# server uptime will reuse the pinned block; across the Phase-2 restart the cache is
+# empty again. Scratch store left clean: memories 0; journal holds 2 pending smoke
+# turns (informational, scratch store only).
