@@ -84,3 +84,14 @@ flips 3-8 answers per 100 between passes; single-shot verdicts are VOID by proto
   before any C2 ask on the boot; a C1 failure blocks C2 entirely.
 - One engine, one slot: the driver serializes everything through the server FIFO by construction
   (sequential requests); no concurrency assumptions.
+
+## Amendment (dated 2026-10-11, written BEFORE any C2 ask - guard-3 evidence source only)
+
+The code audit found that `RESUME <n>`/`REUSED <n>` print to the engine's **stdout**
+(`src/program/generate.cpp:10512/11102`), which the server **pipes** (`serve/server.py:672-673`) -
+they never reach `strata-dev.log`, so the promised corroboration would have been structurally
+unobtainable (always "captured on 0/9"). The same numbers arrive on stderr as the per-request
+DONE summary `prompt N tokens = R reused + T read in X ms` (the line the server itself parses,
+`serve/server.py:355`), so guard-3's capture targets THAT (RESUME/REUSED still matched if they
+ever appear). Guard 3 remains corroboration-only: absence recorded, never VOID, timings guard
+primary. No band, threshold, venue, or channel changed by this amendment.

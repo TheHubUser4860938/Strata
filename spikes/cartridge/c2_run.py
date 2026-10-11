@@ -13,8 +13,9 @@ identity the ride guard measures):
     C2a ask = question continues the encode conversation in the live engine (recall alone, no
               restore in the loop); ride guard: cache_n >= n_saved - slack, prompt_n <= tail + slack;
     C2b ask = restore the bank file, send the IDENTICAL message list + question (the product
-              shape); same guards against n_restored + capture of the engine's RESUME/REUSED lines
-              from strata-dev.log as corroboration;
+              shape); same guards against n_restored + capture of the engine's per-request
+              reuse-summary line from strata-dev.log as corroboration (stderr; dated PRE_REG
+              amendment 2026-10-11);
     controls = cold (question only), plumbing (fact + question in one prompt - the read-path
               gate), decoy-real (unrelated bank installed, real cue - leak discriminator),
               decoy-own (unrelated bank, its own cue - recorded bonus, never scored).
@@ -55,7 +56,11 @@ DECOY_FACTS = [
 LOG = ROOT / "strata-dev.log"
 
 
-def http(url, payload=None, headers=None, timeout=600):
+def http(url, payload=None, headers=None, timeout=960):
+    """-> (status, parsed_body). Transport errors (socket.timeout included) come back as
+    (0, {"raw": ...}): the worst-case in-request engine reload is ENGINE_READY_S=900
+    (server.py:265) and idle_unload_s=700 makes it reachable; a failure is RECORDED, and the
+    per-ask status checks below decide, never a lost-evidence traceback (audit 2026-10-11)."""
     data = json.dumps(payload).encode() if payload is not None else None
     req = U.Request(url, data=data, method="POST" if data is not None else "GET")
     req.add_header("Content-Type", "application/json")
@@ -70,6 +75,8 @@ def http(url, payload=None, headers=None, timeout=600):
             return e.code, json.loads(raw)
         except ValueError:
             return e.code, {"raw": raw}
+    except OSError as e:  # URLError/socket.timeout/connection-reset are OSError subclasses
+        return 0, {"raw": f"transport error: {e}"}
 
 
 def slot(url, action, filename):
@@ -85,14 +92,20 @@ def log_mark():
 
 
 def log_since(off):
-    """the engine's RESUME/REUSED lines printed between two byte offsets of strata-dev.log
-    (binary seek: text-mode seek only trusts tell()-cookies, and the log mixes encodings)."""
+    """the engine's per-request reuse bookkeeping printed between two byte offsets of
+    strata-dev.log (binary seek: text-mode seek only trusts tell()-cookies, and the log mixes
+    encodings). RESUME/REUSED go to engine STDOUT, which the server PIPES (generate.cpp:10512/
+    11102 vs server.py:672-673) - they never reach this file; the same numbers arrive on stderr
+    as the DONE summary "prompt N tokens = R reused + T read" (the line the server itself
+    parses, server.py:355), so the regex matches both spellings. Dated amendment in
+    C2_PRE_REG.md, 2026-10-11 audit."""
     if not LOG.exists():
         return []
     with LOG.open("rb") as f:
         f.seek(off)
         new = f.read().decode("utf-8", "replace")
-    return [ln.strip() for ln in new.splitlines() if re.search(r"\b(RESUME|REUSED) \d+", ln)][:6]
+    return [ln.strip() for ln in new.splitlines()
+            if re.search(r"\b(RESUME|REUSED) \d+|= \d+ reused \+ \d+ read", ln)][:6]
 
 
 def classify(ans, name, golds_by_pair):
@@ -103,7 +116,7 @@ def classify(ans, name, golds_by_pair):
     for other, gs in golds_by_pair.items():
         if other != name and any(g in low for g in gs):
             return "distractor"
-    if any(w in low for w in (CUE_ECHO.get(name),) if w):
+    if any(w in low for w in CUE_ECHO.values() if w):  # PRE_REG:73-74 names all three cue words
         return "idk" if "idk" in low else "cue-echo"
     if "idk" in low:
         return "idk"
@@ -130,6 +143,9 @@ def main():
     a = ap.parse_args()
     url = a.url.rstrip("/")
     tag = re.sub(r"[^A-Za-z0-9_-]", "_", a.tag)
+    if a.repeats < 3:
+        raise SystemExit("--repeats >= 3 is mandatory protocol (C2_PRE_REG.md: temp-0.8 "
+                         "single-shot verdicts are VOID by protocol)")
 
     tok = load_tokenizer()
     tpl = load_template()
@@ -170,7 +186,7 @@ def main():
                 dconv.append({"role": "user", "content": d["fact"]})
                 dconv.append({"role": "assistant", "content": "OK."})
             ids, _ = live_render(tok, tpl, dconv + [{"role": "user", "content": question(nm)}], "off")
-            out.append({"arm": "decoy-real", "name": nm, "expect_ptok": len(ids)})
+            out.append({"arm": "decoy_real", "name": nm, "expect_ptok": len(ids)})
             for d in DECOY_FACTS:
                 ids, _ = live_render(tok, tpl,
                                      dconv + [{"role": "user", "content": f"{CUE_PREAMBLE} {d['cue']}"}], "off")
@@ -238,8 +254,12 @@ def main():
                      {"model": model, "messages": dconv, "temperature": a.temp,
                       "reasoning_effort": "off", "max_tokens": a.acktok, "stream": False},
                      headers={"X-Strata-Memory": "off"})
+        if st != 200:  # audit: an unchecked 5xx here would append an EMPTY ack and silently
+            raise SystemExit(f"decoy encode {d['name']} -> {st}: {json.dumps(r)[:160]} "
+                             "(the bank's fact->ack adjacency would be silently broken)")
         dconv.append({"role": "assistant",
-                      "content": ((r.get("choices") or [{}])[0].get("message") or {}).get("content", "").strip()})
+                      "content": (((r.get("choices") or [{}])[0].get("message") or {}).get("content")
+                                  or "").strip()})  # the server emits content None for empties
     sv = slot(url, "save", f"c2_decoy_{tag}")
     decoy_base = sv["n_saved"]
     print(f"decoy bank: n_saved={decoy_base} save_ms={sv['timings']['save_ms']}")
@@ -256,8 +276,12 @@ def main():
                              {"model": model, "messages": conv, "temperature": a.temp,
                               "reasoning_effort": "off", "max_tokens": a.acktok, "stream": False},
                              headers={"X-Strata-Memory": "off"})
+                if st != 200:  # audit: a 5xx mid-encode would build a degenerate bank with
+                    raise SystemExit(f"encode {other} -> {st}: {json.dumps(r)[:160]} "
+                                     "(empty ack; the geometry guard cannot see this)")
                 conv.append({"role": "assistant",
-                             "content": ((r.get("choices") or [{}])[0].get("message") or {}).get("content", "").strip()})
+                             "content": (((r.get("choices") or [{}])[0].get("message") or {})
+                                         .get("content") or "").strip()})
             fname = f"c2_bank_{tag}_p{cur_pass}_{nm.split('-', 1)[1]}"
             sv = slot(url, "save", fname)
             n_saved = sv["n_saved"]
@@ -275,13 +299,13 @@ def main():
             ask("plumbing", nm, [{"role": "user",
                                   "content": f"{pair[nm]['fact_text']} Given only that, answer.\n\n"
                                              f"{question(nm)}"}], golds_by_pair[nm])
-            slot(url, "restore", f"c2_decoy_{tag}")
+            rs = slot(url, "restore", f"c2_decoy_{tag}")
             ask("decoy_real", nm, dconv + [{"role": "user", "content": question(nm)}],
-                golds_by_pair[nm], n_base=decoy_base)
-            slot(url, "restore", f"c2_decoy_{tag}")
+                golds_by_pair[nm], n_base=rs["n_restored"])  # PRE_REG:47 decoy base = the
+            rs = slot(url, "restore", f"c2_decoy_{tag}")     # restore's own n_restored
             d = DECOY_FACTS[MARKERS.index(nm)]
             ask("decoy_own", d["name"], dconv + [{"role": "user", "content": f"{CUE_PREAMBLE} {d['cue']}"}],
-                d["expect"], n_base=decoy_base, decoy_gold=True)
+                d["expect"], n_base=rs["n_restored"], decoy_gold=True)
 
     # ---- verdict, mechanically per C2_PRE_REG.md --------------------------------------------
     def scored(arm):
@@ -298,10 +322,21 @@ def main():
     controls = scored("cold") + scored("decoy_real")
     leaks = [r for r in controls if r["leak"]]
     by_a, by_b = gold_passes("c2a"), gold_passes("c2b")
-    rides = [r for r in scored("c2b")]
-    ride_all_ok = bool(rides) and all(r["ride_ok"] for r in rides)
-    arm_a = any(v >= 2 for v in by_a.values())
-    arm_b = ride_all_ok and any(v >= 2 for v in by_b.values())
+    rides_a, rides_b = scored("c2a"), scored("c2b")
+    ride_a_ok = bool(rides_a) and all(r["ride_ok"] for r in rides_a)
+    ride_b_ok = bool(rides_b) and all(r["ride_ok"] for r in rides_b)
+
+    def band_ok(by):
+        # PRE_REG:59 "gold >= 2/3 markers in >= 2 of 3 passes": TWO qualifying passes. The
+        # original any() accepted ONE lucky pass - looser than registered (audit 2026-10-11).
+        return sum(1 for v in by.values() if v >= 2) >= 2
+    # guard 2 covers C2a/C2b/decoy asks, and an arm's PASS requires "guards green" (PRE_REG:59):
+    # C2a's own ride result is now part of arm_a (finding 7 - a silently-failed C2a ride turns
+    # the ask into plumbing-by-reread, not activation recall).
+    guards_green_all = all(r["ride_ok"] for r in rides_a + rides_b + scored("decoy_real")
+                           + scored("decoy_own"))
+    arm_a = ride_a_ok and band_ok(by_a)
+    arm_b = ride_b_ok and band_ok(by_b)
     geom_all = all(r["geom_ok"] for r in recs)
 
     if len(plumbing) < 9 or plumb_gold < len(plumbing):
@@ -313,27 +348,28 @@ def main():
     elif not geom_all:
         n_bad = sum(1 for r in recs if not r["geom_ok"])
         verdict = f"VOID - geometry guard failed on {n_bad} ask(s); renders do not match the engine"
-    elif arm_a and arm_b:
-        verdict = (f"PASS - CARTRIDGE RECALL WORKS on Strata: C2a per-pass {by_a}, C2b per-pass "
-                   f"{by_b} (ride guards all-OK); proceed to C3 (100-fact head-to-head)")
-    elif arm_a and not ride_all_ok:
-        bad = [r for r in rides if not r["ride_ok"]]
+    elif arm_a and not ride_b_ok:
+        bad = [r for r in rides_b if not r["ride_ok"]]
         sample = f" (cache_n {bad[0]['cache_n']} vs base {bad[0]['n_base']} typical)" if bad else ""
-        verdict = (f"INSTALL-BROKEN - C2a passes (per-pass {by_a}) but C2b ride guard failed on "
-                   f"{len(bad)}/{len(rides)} asks{sample}: the memory works, the install path is "
-                   "the suspect - C1-level ride debugging first, not a memory verdict")
+        verdict = (f"INSTALL-BROKEN - C2a passes (per-pass {by_a}, rides green) but C2b ride "
+                   f"guard failed on {len(bad)}/{len(rides_b)} asks{sample}: the memory works, "
+                   "the install path is the suspect - C1-level ride debugging first, not a "
+                   "memory verdict")
     elif arm_a or arm_b:
-        verdict = (f"MECHANISM-SENSITIVE - C2a per-pass {by_a}, C2b per-pass {by_b}, ride all-OK="
-                   f"{ride_all_ok}; one arm in band, the other not - recorded, stop, no "
-                   "venue-hunting without a new pre-registration")
-    elif all(v == 0 for v in list(by_a.values()) + list(by_b.values())) and ride_all_ok:
-        verdict = (f"READOUT MISS - gold 0/9 in BOTH arms over {a.repeats} passes at temp {a.temp}, "
-                   f"plumbing {plumb_gold}/9, ride guards green: whole-state activation replay "
-                   "does not surface the gold -> tier-2 needs MAM-style cut-layer surgery or the "
-                   "grafting tier; the lease is up for renegotiation")
+        verdict = (f"PASS - CARTRIDGE RECALL WORKS on Strata (PRE_REG:60: EITHER arm alone is a "
+                   f"PASS): C2a per-pass {by_a} (rides green={ride_a_ok}), C2b per-pass {by_b} "
+                   f"(rides green={ride_b_ok}); proceed to C3 (100-fact head-to-head)")
+    elif all(v == 0 for v in list(by_a.values()) + list(by_b.values())) and guards_green_all:
+        verdict = (f"READOUT MISS - gold 0/{len(rides_a)} + 0/{len(rides_b)} in BOTH arms over "
+                   f"{a.repeats} passes at temp {a.temp}, plumbing {plumb_gold}/{len(plumbing)}, "
+                   "ride guards green: whole-state activation replay does not surface the gold "
+                   "-> tier-2 needs MAM-style cut-layer surgery or the grafting tier; the lease "
+                   "is up for renegotiation")
     else:
-        verdict = (f"MECHANISM-SENSITIVE - C2a per-pass {by_a}, C2b per-pass {by_b}, "
-                   f"ride all-OK={ride_all_ok}; between bands")
+        verdict = (f"MECHANISM-SENSITIVE - C2a per-pass {by_a} (rides green={ride_a_ok}), C2b "
+                   f"per-pass {by_b} (rides green={ride_b_ok}), all guarded rides green="
+                   f"{guards_green_all}; between bands - recorded, stop, no venue-hunting "
+                   "without a new pre-registration")
 
     dist = {}
     for r in scored("c2a") + scored("c2b"):
@@ -342,8 +378,9 @@ def main():
     tail = (f"\nC2 verdict @{datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds')} "
             f"tag={tag} channel=off/temp{a.temp}/memory-muted repeats={a.repeats}\n"
             f"  plumbing {plumb_gold}/{len(plumbing)} | controls {len(controls)} asks, leaks "
-            f"{len(leaks)} | C2a gold per-pass {by_a} | C2b gold per-pass {by_b} (ride all-OK="
-            f"{ride_all_ok}) | C2b engine-log RESUME/REUSED captured on "
+            f"{len(leaks)} | C2a gold per-pass {by_a} (rides green={ride_a_ok}) | C2b gold "
+            f"per-pass {by_b} (rides green={ride_b_ok}) | all guarded rides green="
+            f"{guards_green_all} | C2b engine-log reuse-summary captured on "
             f"{sum(1 for r in recs if r.get('engine_log'))}/{len(scored('c2b'))} asks | "
             f"decoy-own bonus {sum(1 for r in decoy_own if r['cls'] == 'gold')}/{len(decoy_own)} | "
             f"answer classes (both marker arms) {dist}\n"
@@ -354,7 +391,7 @@ def main():
                   f"ptok={r['ptok']}/{r['expect_ptok']} cache_n={r['cache_n']} "
                   f"prompt_n={r['prompt_n']} base={r['n_base']} ride={r['ride_ok']} :: {r['answer']}"
                   for r in recs) + tail)
-    return 0
+    return 1 if verdict.startswith("VOID") else 0  # scripting can gate on the exit code too
 
 
 if __name__ == "__main__":

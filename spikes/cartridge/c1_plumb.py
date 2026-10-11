@@ -7,7 +7,8 @@ fingerprint - see C0_save_restore_code_map.md) make 0.1.43 + 393216/yarn-1.5 a d
 class, so the plumbing must be re-established before any C2 ask is trusted.
 
 Checks, in order (a failure blocks C2):
-  1. the endpoint is live (501 = the boot lacks --slot-save-path -> print the fix, exit 2);
+  1. the endpoint is live (501 = the boot lacks the slot_save_path SERVER config key -> print
+     the fix, exit 2);
   2. tiny encode conversation (one user message with a nonce codeword, short ack), save -> file
      appears in the slot dir, n_saved/n_written/save_ms recorded;
   3. restore -> n_restored == n_saved, restore_ms recorded (the attach cost on this build);
@@ -36,8 +37,11 @@ sys.path.insert(0, str(ROOT / "spikes" / "d2_dissect"))
 from venue_render import load_tokenizer, load_template, live_render  # noqa: E402
 
 
-def http(url, payload=None, headers=None, timeout=600):
-    """-> (status, parsed_body); HTTPError bodies are parsed, not raised."""
+def http(url, payload=None, headers=None, timeout=960):
+    """-> (status, parsed_body); HTTPError bodies are parsed, not raised. Transport errors
+    (socket.timeout included) come back as (0, {"raw": ...}): the worst-case IN-request engine
+    reload is ENGINE_READY_S=900 (server.py:265) and idle_unload_s=700 makes it reachable, so
+    960 s covers it and a transport failure is RECORDED, never a lost-evidence traceback."""
     data = json.dumps(payload).encode() if payload is not None else None
     req = U.Request(url, data=data, method="POST" if data is not None else "GET")
     req.add_header("Content-Type", "application/json")
@@ -52,6 +56,8 @@ def http(url, payload=None, headers=None, timeout=600):
             return e.code, json.loads(raw)
         except ValueError:
             return e.code, {"raw": raw}
+    except OSError as e:  # URLError/socket.timeout/connection-reset are OSError subclasses
+        return 0, {"raw": f"transport error: {e}"}
 
 
 def main():
@@ -78,8 +84,12 @@ def main():
     say(f"health: {health.get('status')} model={model} max_context={health.get('max_context')}")
 
     nonce = format(int(time.time()) % 100000, "05d")
-    tok = load_tokenizer()
-    tpl = load_template()
+    try:  # the docstring's promise: an offline render failure is exit 3, not a traceback
+        tok = load_tokenizer()
+        tpl = load_template()
+    except Exception as e:
+        print(f"offline render venue unavailable: {e} - exit 3, no ask sent")
+        return 3
 
     # 2. tiny encode conversation + save
     conv = [{"role": "user", "content": f"Remember exactly this codeword: zephyr-quill-{nonce}. "
@@ -91,16 +101,20 @@ def main():
     conv.append({"role": "assistant", "content": ack.strip()})
     say(f"encode: ack={ack.strip()!r} ptok={(r.get('usage') or {}).get('prompt_tokens')}")
 
-    st, sv = http(url + f"/slots/0?action=save", {"filename": a.filename})
+    st, sv = http(url + "/slots/0?action=save", {"filename": a.filename})
     if st == 501:
-        say(f"SAVE -> 501: {sv['error']['message']}")
-        say("FIX: add  \"--slot-save-path\", \"" + str(Path(a.slot_dir).resolve()) +
-            "\"  to strata-dev.json args and restart the dev boot (./dev-up.sh --force). C2 is blocked until C1 passes.")
+        say("SAVE -> 501: " + str((sv.get("error") or {}).get("message") or json.dumps(sv)[:160]))
+        say("FIX: set the SERVER config key  \"slot_save_path\": \"Strata-data/sessions-dev\"  in "
+            "strata-dev.json (NOT an engine arg - the engine rejects unknown flags and dies "
+            "before READY, audit 2026-10-11) and restart the dev boot (./dev-down.sh && "
+            "./dev-up.sh --force). C2 is blocked until C1 passes.")
         (HERE / "state").mkdir(parents=True, exist_ok=True)
         (HERE / "state/c1_plumb.txt").write_text("\n".join(lines) + "\n")
         return 2
     if st != 200:
         say(f"SAVE -> {st}: {json.dumps(sv)[:200]}  FAIL - C2 blocked")
+        (HERE / "state").mkdir(parents=True, exist_ok=True)
+        (HERE / "state/c1_plumb.txt").write_text("\n".join(lines) + "\n")
         return 1
     n_saved, save_ms = sv["n_saved"], sv["timings"]["save_ms"]
     path = Path(a.slot_dir) / a.filename
@@ -117,26 +131,44 @@ def main():
     if st != 200 or rs.get("n_restored") != n_saved:
         fails.append(f"restore status/{rs.get('n_restored')} vs n_saved {n_saved}")
 
-    # 4. immediate re-save, byte-compare (round-trip integrity)
+    # 4. immediate re-save, byte-compare (round-trip integrity). The status is CHECKED (audit
+    # 2026-10-11): a failed re-save used to skip this headline check silently - h2 None, no fail
+    # recorded - and C1 could print PASS with the integrity check never executed.
     st, sv2 = http(url + "/slots/0?action=save", {"filename": a.filename + "_rt"})
-    h2 = hashlib.sha256((Path(a.slot_dir) / (a.filename + "_rt")).read_bytes()).hexdigest() \
-        if sv2.get("n_written") else None
+    if st != 200:
+        fails.append(f"re-save -> {st}: {json.dumps(sv2)[:120]} - round-trip integrity NOT proven")
+    rt = Path(a.slot_dir) / (a.filename + "_rt")
+    h2 = hashlib.sha256(rt.read_bytes()).hexdigest() if st == 200 and rt.exists() else None
+    if st == 200 and h2 is None:
+        fails.append(f"re-save 200 but {rt} not found in --slot-dir - integrity NOT proven")
     if h1 and h2:
         if h1 == h2:
             say(f"re-save byte-exact: sha256 match ({h2[:16]}) - round-trip integrity PASS")
         else:
-            b1, b2 = path.read_bytes(), (Path(a.slot_dir) / (a.filename + "_rt")).read_bytes()
+            b1, b2 = path.read_bytes(), rt.read_bytes()
             off = next((i for i in range(min(len(b1), len(b2))) if b1[i] != b2[i]), min(len(b1), len(b2)))
             say(f"re-save DIFFERS at byte {off} (len {len(b1)} vs {len(b2)}): header re-save "
                 f"content is not specced timestamp-free - recorded honestly, first diff "
                 f"{b1[off:off+16]!r} vs {b2[off:off+16]!r}")
             fails.append("re-save not byte-exact (see line above)")
 
-    # 5. restore + continuation ask THROUGH THE SERVER (the ride + the recall of the nonce)
+    # 5. restore + continuation ask THROUGH THE SERVER (the ride + the recall of the nonce).
+    # The status is CHECKED (audit 2026-10-11): if THIS restore failed, the ask below may ride
+    # RESIDUAL live state (step 4's re-save left the bank live) - everything could print green
+    # while the restore->ask adjacency that C2b's whole shape depends on stays unproven.
     st, rs = http(url + "/slots/0?action=restore", {"filename": a.filename})
+    if st != 200:
+        fails.append(f"restore #2 -> {st}: {json.dumps(rs)[:120]} - the ask below may ride "
+                     "residual live, not the restore (the C2b shape is exactly what it tests)")
     ask = conv + [{"role": "user", "content": "And the answer: what codeword were you asked to "
                                               "remember? Answer with just the codeword."}]
-    ids, _ = live_render(tok, tpl, ask, "off")
+    try:
+        ids, _ = live_render(tok, tpl, ask, "off")
+    except Exception as e:
+        say(f"render of the continuation ask failed: {e} - exit 3, no ask sent")
+        (HERE / "state").mkdir(parents=True, exist_ok=True)
+        (HERE / "state/c1_plumb.txt").write_text("\n".join(lines) + "\n")
+        return 3
     body = {"model": model, "messages": ask, "temperature": 0.8, "reasoning_effort": "off",
             "max_tokens": 24, "stream": False}
     st, r = http(url + "/v1/chat/completions", body, headers={"X-Strata-Memory": "off"})

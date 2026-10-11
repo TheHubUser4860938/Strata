@@ -16,16 +16,20 @@ Channel (fixed by the pre-registration): /v1, reasoning_effort off, temperature 
 usage.prompt_tokens must equal the local venue_render render or the ask is VOID (v2's rule -
 the memory-eval store is live on this boot and would silently prepend ~300 tokens).
 
-Scoring: steer hit = 'year' as a word (controls are the defense: any control 'year' = leak =
-VOID); marker gold = own pair's expect substring; control leak = any bank gold string in a
+Scoring: steer hit = 'year' as a word (controls are the defense: any control 'year' anywhere =
+leak = VOID); marker gold = own pair's expect substring; control leak = any bank gold string in a
 control answer; plumbing must be 9/9 or the whole run is VOID. Verdict matrix: V3_PRE_REG.md.
+Robustness (audit 2026-10-11): HTTP/transport failures are RECORDED per ask (a transient 503
+must not crash a single-use boot's run before the verdict file exists); the boot-mount evidence
+line ("PLE on, table ...", engine stderr = strata-dev.log) is captured before scoring and
+recorded in the verdict file, as V3_PRE_REG §Venue requires.
 
 Usage: python3 spikes/d2_dissect/v3_run.py [--url http://127.0.0.1:8005] [--venue all]
            [--temp 0.8] [--repeats 3] [--tag NAME] [--no-verdict] [--note TEXT] [--dry-run]
 Writes state/v3_run.jsonl (append) + state/v3_verdict_<tag>.txt.
 """
 from __future__ import annotations
-import argparse, datetime, json, re, sys, time, urllib.request as U
+import argparse, datetime, json, re, sys, time, urllib.error, urllib.request as U
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -42,14 +46,27 @@ YEAR_RE = re.compile(r"(?<!\w)year")
 MARKERS = ("d2-archivist", "d2-metalsmith", "d2-recipe")
 
 
-def http(url, payload=None, headers=None, timeout=600):
+def http(url, payload=None, headers=None, timeout=960):
+    """-> (status, parsed_body). A 4xx/5xx (503 engine starting/stuck, 409 ModelBusy, ...) or a
+    transport error is RETURNED, not raised - one transient failure must not crash the run
+    before the verdict file is written (audit 2026-10-11). 960 s covers the worst-case
+    in-request engine reload (ENGINE_READY_S=900, server.py:265; idle_unload_s=700 reachable)."""
     data = json.dumps(payload).encode() if payload is not None else None
     req = U.Request(url, data=data, method="POST" if data is not None else "GET")
     req.add_header("Content-Type", "application/json")
     for k, v in (headers or {}).items():
         req.add_header(k, v)
-    with U.urlopen(req, timeout=timeout) as r:
-        return json.loads(r.read().decode("utf-8", "replace"))
+    try:
+        with U.urlopen(req, timeout=timeout) as r:
+            return r.status, json.loads(r.read().decode("utf-8", "replace"))
+    except urllib.error.HTTPError as e:
+        raw = e.read().decode("utf-8", "replace")
+        try:
+            return e.code, json.loads(raw)
+        except ValueError:
+            return e.code, {"raw": raw}
+    except OSError as e:  # URLError/socket.timeout/connection-reset are OSError subclasses
+        return 0, {"raw": f"transport error: {e}"}
 
 
 def main():
@@ -65,6 +82,9 @@ def main():
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
     url = a.url.rstrip("/")
+    a.tag = re.sub(r"[^A-Za-z0-9_-]", "_", a.tag)  # the tag lands in output filenames (c2 rule)
+    if a.repeats < 3:
+        raise SystemExit("--repeats >= 3 is mandatory protocol (V3_PRE_REG.md: >= 3 passes)")
 
     tok = load_tokenizer()
     tpl = load_template()
@@ -103,10 +123,24 @@ def main():
                           for q in asks], indent=1))
         return 0
 
-    health = http(url + "/health")
+    st, health = http(url + "/health")
+    if st != 200:
+        raise SystemExit(f"/health -> {st}: {json.dumps(health)[:160]} - no run")
     model = health.get("model") or "strata"
+    # V3_PRE_REG §Venue: the boot-mount evidence ("PLE on, table ... d2v3") is engine stderr
+    # (generate.cpp:4267 -> strata-dev.log), captured HERE - before any scoring - and recorded.
+    ple_line = ""
+    try:
+        for ln in reversed((ROOT / "strata-dev.log").read_bytes()
+                           .decode("utf-8", "replace").splitlines()):
+            if "PLE on, table" in ln:
+                ple_line = ln.strip()[:200]
+                break
+    except OSError:
+        pass
     print(f"health {health.get('status')} model={model} venue={a.venue} tag={a.tag} "
           f"channel=reasoning_effort=off,temperature={a.temp},memory-muted repeats={a.repeats}")
+    print(f"boot evidence: {ple_line or 'NO \"PLE on, table\" line found in strata-dev.log'}")
     out_jsonl = HERE / "state/v3_run.jsonl"
     (HERE / "state").mkdir(exist_ok=True)
     recs = []
@@ -116,8 +150,11 @@ def main():
                     "temperature": a.temp, "reasoning_effort": "off",
                     "max_tokens": a.maxtok, "stream": False}
             t0 = time.time()
-            r = http(url + "/v1/chat/completions", body, headers={"X-Strata-Memory": "off"})
-            ans = (((r.get("choices") or [{}])[0].get("message") or {}).get("content") or "").strip()
+            st, r = http(url + "/v1/chat/completions", body, headers={"X-Strata-Memory": "off"})
+            if st != 200:  # recorded per-ask and continued: the run survives to the verdict
+                ans = f"HTTP {st}: {json.dumps(r)[:110]}"
+            else:
+                ans = (((r.get("choices") or [{}])[0].get("message") or {}).get("content") or "").strip()
             ptok = (r.get("usage") or {}).get("prompt_tokens")
             low = ans.lower()
             rec = {"ts": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
@@ -126,7 +163,7 @@ def main():
                    "expect_ptok": q["expect_ptok"], "geom_ok": ptok == q["expect_ptok"],
                    "year_hit": bool(YEAR_RE.search(low)) if q["kind"] in ("steer", "steer_ctrl") else None,
                    "gold_hit": any(w in low for w in q["want"]) if q["want"] else None,
-                   "leak": ((bool(YEAR_RE.search(low)) if q["kind"] == "steer_ctrl" else
+                   "leak": ((("year" in low) if q["kind"] == "steer_ctrl" else   # PRE_REG: "anywhere"
                              any(g in low for g in all_golds))
                             if q["kind"] in ("steer_ctrl", "control") else False),
                    "channel": f"off/temp{a.temp}", "memory_muted": "X-Strata-Memory: off",
@@ -141,40 +178,49 @@ def main():
                   f"{'OK' if rec['geom_ok'] else 'MISMATCH-VOID'} -> {ans[:70]!r} {flag}")
 
     # ---- verdict, mechanically per V3_PRE_REG.md --------------------------------------------
-    geom_ok = all(r["geom_ok"] for r in recs)
-    pos = [r for r in recs if r["kind"] == "positive"]
-    plumb_ok = bool(pos) and all(r["gold_hit"] for r in pos)
-    leaks = [r for r in recs if r["leak"]]
-    tgt = [r for r in recs if r["kind"] == "steer"]
-    ctrl = [r for r in recs if r["kind"] == "steer_ctrl"]
+    # Geometry is a PER-ASK VOID here (V3_PRE_REG:26-27: "or the ask is VOID" - unlike C2's
+    # run-level rule; audit finding 12: the code used to void the WHOLE run on one mismatch).
+    # Bands compute over the surviving records; a VOIDed plumbing ask simply cannot reach 9/9.
+    def scored(kind=None):
+        return [r for r in recs if r["geom_ok"] and (kind is None or r["kind"] == kind)]
+    n_geom_bad = sum(1 for r in recs if not r["geom_ok"])
+    pos = scored("positive")
+    plumb_gold = sum(1 for r in pos if r["gold_hit"])
+    plumb_ok = len(pos) == 3 * a.repeats and plumb_gold == len(pos)
+    leaks = [r for r in scored() if r["leak"]]
+    tgt = scored("steer")
+    ctrl = scored("steer_ctrl")
     tgt_hits = sum(1 for r in tgt if r["year_hit"])
     tgt_by_pass = {p: sum(1 for r in tgt if r["pass"] == p and r["year_hit"])
                    for p in range(1, a.repeats + 1)}
     ctrl_year = sum(1 for r in ctrl if r["year_hit"])
-    mkr = [r for r in recs if r["kind"] == "marker"]
+    mkr = scored("marker")
     mkr_by_pass = {p: sum(1 for r in mkr if r["pass"] == p and r["gold_hit"])
                    for p in range(1, a.repeats + 1)}
     mkr_gold = sum(1 for r in mkr if r["gold_hit"])
 
     def band():
-        if not geom_ok:
-            return ("VOID - geometry guard: the live prompt differs from the rendered venue "
-                    "(memory muted? same channel?) - no verdict")
+        note_geom = (f"{n_geom_bad} ask(s) VOID by the geometry guard (per-ask rule); "
+                     if n_geom_bad else "")
         if leaks:
             return ("VOID - control leak: " +
                     str([{"kind": x["kind"], "name": x["name"], "answer": x["answer"][:60]}
                          for x in leaks]))
-        if pos and not plumb_ok:
-            return (f"VOID - plumbing {sum(1 for r in pos if r['gold_hit'])}/{len(pos)}: this "
-                    "boot cannot support any v3 verdict (read path broken)")
+        if a.venue in ("all", "plumb") and not plumb_ok:
+            return (f"VOID - plumbing gate {plumb_gold}/{len(pos)} (9/9 registered; VOIDed asks "
+                    "count against the 9): this boot cannot support any v3 verdict")
         if a.venue != "all" or a.no_verdict:
-            return (f"PARTIAL RUN (venue={a.venue}, no-verdict={a.no_verdict}) - counts only: "
-                    f"steer {tgt_hits}/{len(tgt)} per-pass {tgt_by_pass}, steer-ctrl 'year' "
-                    f"{ctrl_year}/{len(ctrl)}, markers {mkr_gold}/{len(mkr)} per-pass "
-                    f"{mkr_by_pass}, plumbing {sum(1 for r in pos if r['gold_hit'])}/{len(pos)}")
-        steers = tgt_hits >= 2 * (len(tgt) // 3 or 1) or any(v >= 2 for v in tgt_by_pass.values())
+            return (note_geom + f"PARTIAL RUN (venue={a.venue}, no-verdict={a.no_verdict}) - "
+                    f"counts only: steer {tgt_hits}/{len(tgt)} per-pass {tgt_by_pass}, "
+                    f"steer-ctrl 'year' {ctrl_year}/{len(ctrl)}, markers {mkr_gold}/{len(mkr)} "
+                    f"per-pass {mkr_by_pass}, plumbing {plumb_gold}/{len(pos)}")
+        # PRE_REG bands: STEERS = "target in >= 2 of 3 passes" (one target ask per pass, so
+        # count QUALIFYING PASSES); markers ">= 2/3 in >= 2 passes" - TWO qualifying passes, the
+        # original any() accepted one lucky pass (audit finding 8).
+        steer_passes = sum(1 for v in tgt_by_pass.values() if v >= 1)
+        steers = steer_passes >= 2
+        mk_live = sum(1 for v in mkr_by_pass.values() if v >= 2) >= 2
         inert = tgt_hits == 0 and ctrl_year == 0 and mkr_gold == 0
-        mk_live = any(v >= 2 for v in mkr_by_pass.values())
         mk_dead = mkr_gold == 0
         if steers:
             if mk_live:
@@ -190,21 +236,24 @@ def main():
                     f"markers {mkr_gold}/{len(mkr)} per-pass {mkr_by_pass}: between bands")
         if inert:
             return ("INERT - table-row writes are inert as a readout at this dosage on this "
-                    "architecture (H7): steer 0/3, controls 0/6 'year', markers 0/9, plumbing "
-                    "green - tier-1 closes, the cartridge tier owns numerical memory")
+                    f"architecture (H7): steer 0/{len(tgt)}, controls 0/{len(ctrl)} 'year', "
+                    f"markers 0/{len(mkr)}, plumbing green - tier-1 closes, the cartridge tier "
+                    "owns numerical memory")
         return ("MECHANISM-SENSITIVE - "
                 f"steer {tgt_hits}/{len(tgt)} per-pass {tgt_by_pass}, ctrl 'year' {ctrl_year}/"
                 f"{len(ctrl)}, markers {mkr_gold}/{len(mkr)} per-pass {mkr_by_pass}: recorded, "
                 "stop, no venue-hunting without a new pre-registration")
 
+    verdict = band()
     tail = (f"\nv3 verdict @{datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds')} "
             f"tag={a.tag} venue={a.venue} channel=off/temp{a.temp} repeats={a.repeats}\n"
+            f"  boot evidence: {ple_line or 'NOT FOUND in strata-dev.log'}\n"
             f"  steer {tgt_hits}/{len(tgt)} per-pass {tgt_by_pass} | steer-ctrl 'year' "
             f"{ctrl_year}/{len(ctrl)} | markers {mkr_gold}/{len(mkr)} per-pass {mkr_by_pass} | "
-            f"plumbing {sum(1 for r in pos if r['gold_hit'])}/{len(pos)} | leaks {len(leaks)} | "
-            f"geometry {'all-OK' if geom_ok else 'BROKEN'} | sanity "
+            f"plumbing {plumb_gold}/{len(pos)} | leaks {len(leaks)} | geometry "
+            f"{len(recs) - n_geom_bad}/{len(recs)} scored ({n_geom_bad} per-ask VOID) | sanity "
             f"{[r['answer'][:40] for r in recs if r['kind'] == 'sanity'][:1]}\n"
-            f"  {band()}\n")
+            f"  {verdict}\n")
     if a.note:
         tail += "note: " + a.note.strip() + "\n"
     print(tail)
@@ -212,7 +261,7 @@ def main():
         "\n".join(f"[{r['tag']}/p{r['pass']}/{r['kind']}] {r['name']} ptok={r['ptok']}/"
                   f"{r['expect_ptok']} year={r['year_hit']} gold={r['gold_hit']} "
                   f"leak={r['leak']} :: {r['answer']}" for r in recs) + tail)
-    return 0
+    return 1 if verdict.startswith("VOID") else 0  # scripting can gate on the exit code too
 
 
 if __name__ == "__main__":
