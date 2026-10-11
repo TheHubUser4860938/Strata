@@ -8,6 +8,7 @@ injected block is byte-stable for a conversation while the store changes underne
 """
 import http.client
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -109,6 +110,45 @@ class Store(unittest.TestCase):
         out, ctx = request_state(self.mem, msgs, {"X-Strata-Memory-Scope": "ops"}, {"model": "m"})
         self.assertIsNone(ctx)
         self.assertEqual(out, msgs)
+
+    def test_budget_default_unlimited(self):
+        # opt-in rule: no max_memories -> no cap, the path is byte-identical to every earlier release
+        self.assertEqual(self.mem.max_memories, 0)
+        for i in range(30):
+            self.mem.remember(f"fact number {i} about widget-{i}", scope="fw")
+        self.assertEqual(self.mem.stats()["memories"], 30)
+        self.assertFalse(self.mem.stats()["pressure"])
+
+    def test_budget_evicts_worst_never_recalled_first(self):
+        mem = MemoryService(os.path.join(self.tmp.name, "cap"), max_memories=6)
+        try:
+            kept = mem.remember("a fact the recall has served", scope="fw", confidence=0.1)["id"]
+            mem.conn.execute("update memories set hits=3 where id=?", (kept,))   # served: never evicted
+            low = mem.remember("low confidence never seen", scope="fw", confidence=0.2)["id"]
+            for i in range(5):
+                mem.remember(f"solid fact {i}", scope="fw", confidence=0.9)
+            # the cap is enforced on every write that sits over it: by now "low" is already gone
+            # (evicted when the cap was first crossed) and this write evicts the oldest 0.9 row
+            r = mem.remember("the seventh solid fact", scope="fw", confidence=0.9)
+            self.assertIn("evicted", r, "the crossing write reports what it evicted")
+            ids = {m["id"] for m in mem.list_memories(limit=100)}
+            self.assertIn(kept, ids, "a recalled fact is never evicted without a human")
+            self.assertNotIn(low, ids, "the worst zero-hits row goes first")
+            self.assertEqual(len(ids), 6)
+            st = mem.stats()
+            self.assertEqual(st["max_memories"], 6)
+            self.assertTrue(st["pressure"], "6/6 >= 80% of the cap")
+        finally:
+            mem.close()
+
+    def test_budget_never_evicts_the_write_that_triggers_it(self):
+        mem = MemoryService(os.path.join(self.tmp.name, "cap2"), max_memories=1)
+        try:
+            r = mem.remember("only fact, lowest confidence", scope="fw", confidence=0.05)
+            self.assertNotIn("evicted", r, "the new row is exempt: a budget that eats its own input makes a sieve")
+            self.assertEqual(len(mem.list_memories(limit=10)), 1)
+        finally:
+            mem.close()
 
     def test_turn_journal(self):
         tid = self.mem.journal_turn("fw", "the question", "the answer", "m")

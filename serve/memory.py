@@ -99,7 +99,8 @@ class MemoryService:
 
     def __init__(self, directory: str, *, max_block_chars: int = 6000, recall_limit: int = 8,
                  cache_entries: int = 64, inject: bool = True, per_turn: bool = True,
-                 turn_recall_limit: int = 8, turn_block_chars: int = 2000):
+                 turn_recall_limit: int = 8, turn_block_chars: int = 2000,
+                 max_memories: int = 0):
         self.directory = memory_dir(directory)      # absolute, created 0700 - same rules as slot_save_path
         self.db_path = os.path.join(self.directory, "memory.db")
         self.max_block_chars = max(200, int(max_block_chars))
@@ -108,6 +109,12 @@ class MemoryService:
         self.turn_recall_limit = max(1, min(50, int(turn_recall_limit)))
         self.turn_block_chars = max(200, int(turn_block_chars))
         self.inject = bool(inject)
+        # budget (M2 job 5, opt-in: 0 = no cap, the path stays byte-identical to every earlier release).
+        # Over-cap writes evict the WORST never-recalled rows first (lowest confidence, then oldest) and
+        # NEVER touch a fact the recall has actually served (hits>0) - those retire only by human review
+        # or the curation loop.  stats() reports "pressure" at 80% of the cap (the MemGPT watermark idea:
+        # say so before the wall, so the sweep consolidates instead of the store silently overflowing).
+        self.max_memories = max(0, int(max_memories))
         self.lock = threading.Lock()
         self._blocks: OrderedDict[tuple[str, str], tuple[str, list[int]]] = OrderedDict()  # (scope, key) -> pinned (block, shown ids)
         self._cache_entries = max(1, int(cache_entries))
@@ -194,9 +201,26 @@ class MemoryService:
                 " values(?,?,?,?,?,?,?)",
                 (scope, text, str(source)[:40], json.dumps(provenance, ensure_ascii=False) if provenance else None,
                  conf, now, now))
+            evicted: list[int] = []
+            if self.max_memories:
+                # the budget line: over cap, the worst NEVER-RECALLED rows go first (lowest confidence,
+                # then oldest) - a fact the recall has served is never deleted without a human. The row
+                # just written is exempt: an eviction that eats its own input makes the store a sieve.
+                n = self.conn.execute("select count(*) from memories").fetchone()[0]
+                over = n - self.max_memories
+                if over > 0:
+                    gone = self.conn.execute(
+                        "select id from memories where hits=0 and id!=? order by confidence asc, created_at asc"
+                        " limit ?", (cur.lastrowid, over)).fetchall()
+                    if gone:
+                        self.conn.executemany("delete from memories where id=?", [(g[0],) for g in gone])
+                        evicted = [g[0] for g in gone]
             self._bump()
             self.conn.commit()
-            return {"id": cur.lastrowid, "deduped": False}
+            out = {"id": cur.lastrowid, "deduped": False}
+            if evicted:
+                out["evicted"] = evicted
+            return out
 
     def forget(self, memory_id: int) -> bool:
         with self.lock:
@@ -383,6 +407,8 @@ class MemoryService:
             turns = self.conn.execute("select count(*) from turns").fetchone()[0]
         return {"version": self.version(), "memories": memories, "by_scope": by_scope,
                 "turns": turns, "turns_pending": pending, "inject": self.inject,
+                "max_memories": self.max_memories,
+                "pressure": bool(self.max_memories) and memories >= 0.8 * self.max_memories,
                 "recall_limit": self.recall_limit, "max_block_chars": self.max_block_chars,
                 "per_turn": self.per_turn, "turn_recall_limit": self.turn_recall_limit,
                 "turn_block_chars": self.turn_block_chars,

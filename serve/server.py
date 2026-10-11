@@ -6603,13 +6603,15 @@ def main() -> int:
                 per_turn=mcfg.get("per_turn") is not False,
                 turn_recall_limit=mcfg.get("turn_recall_limit") or 8,
                 turn_block_chars=mcfg.get("turn_block_chars") or 2000,
+                max_memories=mcfg.get("max_memories") or 0,
                 inject=mcfg.get("inject") is not False)
         except (ValueError, OSError, TypeError) as e:
             raise SystemExit(f"[strata] memory: {e}")
         print(f"[strata] memory core on: {svc.memory.db_path} "
               f"(inject {'on' if svc.memory.inject else 'off'}, recall {svc.memory.recall_limit} notes "
               f"<= {svc.memory.max_block_chars} chars; per-turn {'on ' if svc.memory.per_turn else 'off'}"
-              f"{svc.memory.turn_recall_limit} notes <= {svc.memory.turn_block_chars} chars; GET /memory to inspect)", flush=True)
+              f"{svc.memory.turn_recall_limit} notes <= {svc.memory.turn_block_chars} chars; "
+              f"budget {svc.memory.max_memories or 'unlimited'}; GET /memory to inspect)", flush=True)
     mode = str(cfg.get("anthropic_thinking") or "model")   # #278: "on_request" = only when the request asks
     if mode not in ("model", "on_request"):
         raise SystemExit(f"[strata] config anthropic_thinking must be \"model\" or \"on_request\", not {mode!r}")
