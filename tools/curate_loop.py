@@ -106,7 +106,12 @@ CTRL_LITERALS: list[str] = []
 def scrub(s: str) -> str:
     for lit in CTRL_LITERALS:
         s = s.replace(lit, "<ctrl>")
-    return CTRL.sub("<ctrl>", s or "")
+    s = CTRL.sub("<ctrl>", s or "")
+    # Final belt for EVERY downstream stream (2026-10-11, the user's rule): space-break the
+    # bare pipe combos so the delimiter can never be reassembled intact by anything that
+    # reads this text - the serving template treats the sequence as end-of-turn, and any
+    # stream that reproduces it (assistant included, several times tonight) dies mid-sentence.
+    return s.replace("<|", "< |").replace("|>", "| >")
 
 
 def classify(cold: list[dict]) -> tuple[str, bool]:
@@ -149,10 +154,10 @@ def main():
     def rec(obj):
         obj = {"ts": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
                "tag": a.tag, **obj}
-        js.write(json.dumps(obj, ensure_ascii=False) + "\n")
+        js.write(scrub(json.dumps(obj, ensure_ascii=False)) + "\n")   # scrub at the choke
         js.flush()
-        print(json.dumps({k: v for k, v in obj.items() if k not in ("ts", "tag")},
-                         ensure_ascii=False)[:220], flush=True)
+        print(scrub(json.dumps({k: v for k, v in obj.items() if k not in ("ts", "tag")},
+                               ensure_ascii=False))[:220], flush=True)  # point: no field
 
     st, health = http(url + "/health", timeout=15)
     if st != 200:
@@ -338,8 +343,8 @@ def main():
              f"  marked_processed={len(processed_ids) if not a.no_store else 0} "
              f"db_pending_after={pend_after}"]
     txt = "\n".join(lines)
-    print("\n" + txt)
-    (state / f"curate_{a.tag}.review.txt").write_text("\n".join(review) + "\n\n" + txt + "\n",
+    print("\n" + scrub(txt))
+    (state / f"curate_{a.tag}.review.txt").write_text(scrub("\n".join(review) + "\n\n" + txt + "\n"),
                                                       encoding="utf-8")
     js.close()
     return 0
