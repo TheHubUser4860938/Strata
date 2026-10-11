@@ -29,8 +29,8 @@ production up only ~5 GiB is free — so **exactly one engine runs at a time**:
 
 ```
 ./dev-up.sh     # stops production, starts this tree's engine on :8005 (1-3 min weight load, page-cache warm)
-./dev-down.sh   # stops dev, brings production :8004 back (detached, no browser; checkpoints are gone -
-                # first request re-reads prompt history, ~1-2 min on long sessions)
+./dev-down.sh   # stops dev AND production if running - nothing auto-starts. Bring :8004 back
+                # yourself (START-HERE / your launcher) when you want the main build again.
 ```
 
 - Model files are **not duplicated**: `Strata-data -> ~/Strata-data` (a symlink; git-ignored) shares
@@ -57,7 +57,8 @@ production up only ~5 GiB is free — so **exactly one engine runs at a time**:
 - **Testing protocol on this machine (one engine at a time, 62 GB RAM):** testing the dev build pauses this
   agent (the assistant itself is served by whichever engine is up on :8004). The swap is coordinated with the
   human: agent says "ready to test dev", human closes the main build and starts dev (or the agent runs
-  `./dev-up.sh --force` once agreed), tests run against :8005, then `./dev-down.sh` hands :8004 back.
+  `./dev-up.sh --force` once agreed), tests run against :8005, then `./dev-down.sh` stops everything -
+  the human starts production back on :8004 when they want it (nothing auto-restarts).
   `dev-up.sh` refuses to stop a live production without `--force`. Optionally, adding a provider for
   `http://127.0.0.1:8005/v1` in the harness lets the agent keep talking *on the dev model* while dev is up.
 - Running model on this machine: SC117 `Qwen3.8-Flash-Next-GSQ-RCO-abliterated-GGUF` IQ3_S (saved under the
