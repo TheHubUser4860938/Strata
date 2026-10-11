@@ -5317,13 +5317,16 @@ def make_handler(svc: Service):
                 self._json(200, {"query": q, "scope": memory_api.scope_name(scope),
                                  "hits": svc.memory.search(q, scope=scope, limit=limit)})
                 return
+            inv = (qs.get("include_invalid") or [""])[0]   # ?include_invalid=1 walks the version history too
             self._json(200, {"stats": svc.memory.stats(),
                              "memories": svc.memory.list_memories(scope=memory_api.scope_name(scope, "") or None,
-                                                                  limit=limit)})
+                                                                  limit=limit, include_invalid=inv not in ("", "0"))})
 
         def _memory_post(self, req):
             """memory-core: POST /memory - manage the store over HTTP: {"op": "remember", "text": ..., "scope"?,
-            "source"?, "confidence"?} add a fact; "forget" {"id"}; "search" {"q", "scope"?, "limit"?};
+            "source"?, "confidence"?} add a fact; "forget" {"id"}; "invalidate" {"id", "by"?} retire a fact
+            from recall keeping the version history; "correct" {"id", "text", ...} store a replacement and
+            supersede the fact it replaces; "search" {"q", "scope"?, "limit"?};
             "turn" {"user", "assistant", "scope"?, "model"?} journal one exchange by hand (what the eval
             harness posts); "turns" {} list the un-curated journaled turns. Bad fields are 400s like any other
             malformed request."""
@@ -5341,6 +5344,18 @@ def make_handler(svc: Service):
                 # to its evidence; absent -> byte-identical to before (remember() defaults provenance=None)
             elif op == "forget":
                 r = {"forgotten": svc.memory.forget(int(req.get("id") or 0))}
+            elif op == "invalidate":
+                # M2 job 7 (Zep pattern): retire a fact from recall, keep the history; "by" points
+                # the version chain at the fact that replaced it
+                r = {"invalidated": svc.memory.invalidate(int(req.get("id") or 0),
+                                                          req.get("by") and int(req["by"]))}
+            elif op == "correct":
+                # one step: store the new fact and supersede the old one it replaces
+                r = svc.memory.correct(str(req.get("text") or ""), int(req.get("id") or 0),
+                                       scope=str(req.get("scope") or "user"),
+                                       source=str(req.get("source") or "manual"),
+                                       confidence=req.get("confidence"),
+                                       provenance=req.get("provenance"))
             elif op == "search":
                 lim = int(req.get("limit") or 0) or None
                 r = {"hits": svc.memory.search(str(req.get("q") or ""), scope=str(req.get("scope") or "default"),
@@ -5351,7 +5366,8 @@ def make_handler(svc: Service):
             elif op == "turns":
                 r = {"turns": svc.memory.pending_turns(int(req.get("limit") or 50))}
             else:
-                raise ValueError('op: one of "remember", "forget", "search", "turn", "turns"')
+                raise ValueError('op: one of "remember", "forget", "invalidate", "correct", '
+                                 '"search", "turn", "turns"')
             self._json(200, {"ok": True, **r})
 
         def _props(self):

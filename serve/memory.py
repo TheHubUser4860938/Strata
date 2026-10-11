@@ -166,6 +166,16 @@ class MemoryService:
             if row is None:
                 self.conn.execute("insert into meta values('version','1')")
                 self.conn.commit()
+            # M2 job 7 (the Zep/Graphiti pattern): a correction SUPERSEDES the fact it replaces -
+            # invalid_at + superseded_by turn every overwrite into a version chain the review list
+            # can walk, instead of a delete that loses the ledger. Two plain ALTERs: SQLite keeps
+            # them instant, and old db files migrate on first open.
+            cols = [r[1] for r in self.conn.execute("pragma table_info(memories)")]
+            if "invalid_at" not in cols:
+                self.conn.execute("alter table memories add column invalid_at REAL")
+            if "superseded_by" not in cols:
+                self.conn.execute("alter table memories add column superseded_by INTEGER")
+            self.conn.commit()
 
     # ---- store ---------------------------------------------------------------
 
@@ -189,7 +199,8 @@ class MemoryService:
         conf = 0.8 if confidence is None else max(0.0, min(1.0, float(confidence)))
         now = time.time()
         with self.lock:
-            same = self.conn.execute("select id, text from memories where scope=?", (scope,)).fetchall()
+            same = self.conn.execute(
+                "select id, text from memories where scope=? and invalid_at is null", (scope,)).fetchall()
             hit = next((r for r in same if norm_text(r[1]) == norm_text(text)), None)
             if hit:
                 self.conn.execute("update memories set updated_at=?, confidence=max(confidence,?) where id=?",
@@ -206,12 +217,12 @@ class MemoryService:
                 # the budget line: over cap, the worst NEVER-RECALLED rows go first (lowest confidence,
                 # then oldest) - a fact the recall has served is never deleted without a human. The row
                 # just written is exempt: an eviction that eats its own input makes the store a sieve.
-                n = self.conn.execute("select count(*) from memories").fetchone()[0]
+                n = self.conn.execute("select count(*) from memories where invalid_at is null").fetchone()[0]
                 over = n - self.max_memories
                 if over > 0:
                     gone = self.conn.execute(
-                        "select id from memories where hits=0 and id!=? order by confidence asc, created_at asc"
-                        " limit ?", (cur.lastrowid, over)).fetchall()
+                        "select id from memories where hits=0 and invalid_at is null and id!=?"
+                        " order by confidence asc, created_at asc limit ?", (cur.lastrowid, over)).fetchall()
                     if gone:
                         self.conn.executemany("delete from memories where id=?", [(g[0],) for g in gone])
                         evicted = [g[0] for g in gone]
@@ -229,16 +240,50 @@ class MemoryService:
             self.conn.commit()
             return gone.rowcount > 0
 
-    def list_memories(self, scope: str | None = None, limit: int = 100) -> list[dict]:
+    def invalidate(self, memory_id: int, by_id: int | None = None) -> bool:
+        """Take a fact out of recall WITHOUT deleting it: invalid_at marks when the store stopped
+        trusting it, superseded_by points at the fact that replaced it (the version chain). Search,
+        recall and the budget see only active rows; the review list and any as-of query can still
+        walk the history - the honest-ledger rule the merge deletes quietly broke."""
         with self.lock:
-            rows = (self.conn.execute(
-                "select id,scope,text,source,confidence,created_at,updated_at,hits from memories"
-                " where scope=? order by updated_at desc limit ?", (scope, max(1, min(500, int(limit))))).fetchall()
-                if scope else self.conn.execute(
-                "select id,scope,text,source,confidence,created_at,updated_at,hits from memories"
-                " order by updated_at desc limit ?", (max(1, min(500, int(limit))),)).fetchall())
+            r = self.conn.execute(
+                "update memories set invalid_at=?, superseded_by=?, updated_at=? where id=? and invalid_at is null",
+                (time.time(), int(by_id) if by_id else None, time.time(), int(memory_id)))
+            self._bump()
+            self.conn.commit()
+            return r.rowcount > 0
+
+    def correct(self, text: str, old_id: int, scope: str = USER_SCOPE, source: str = "manual",
+                confidence: float | None = None, provenance: dict | None = None) -> dict:
+        """One step, Zep-style: the new fact lands, the old one is invalidated pointing at it.
+        An unknown old_id still stores the new fact (a correction of a forgotten fact is a fill)."""
+        new = self.remember(text, scope=scope, source=source, confidence=confidence, provenance=provenance)
+        self.invalidate(old_id, by_id=new["id"])
+        new["invalidated"] = int(old_id)
+        return new
+
+    def list_memories(self, scope: str | None = None, limit: int = 100,
+                      include_invalid: bool = False) -> list[dict]:
+        """The store newest-first. Invalidated (superseded) rows are hidden by default - the caller
+        wants what the recall can serve; include_invalid brings back the version history with its
+        invalid_at / superseded_by chain for the review list and as-of inspection."""
+        conds, params = [], []
+        if scope:
+            conds.append("scope=?")
+            params.append(scope)
+        if not include_invalid:
+            conds.append("invalid_at is null")
+        params.append(max(1, min(500, int(limit))))
+        cols = ",invalid_at,superseded_by" if include_invalid else ""
+        where = (" where " + " and ".join(conds)) if conds else ""
+        with self.lock:
+            rows = self.conn.execute(
+                "select id,scope,text,source,confidence,created_at,updated_at,hits" + cols
+                + " from memories" + where + " order by updated_at desc limit ?", params).fetchall()
         return [dict(id=r[0], scope=r[1], text=r[2], source=r[3], confidence=r[4],
-                     created_at=round(r[5], 1), updated_at=round(r[6], 1), hits=r[7]) for r in rows]
+                     created_at=round(r[5], 1), updated_at=round(r[6], 1), hits=r[7],
+                     **({"invalid_at": round(r[8], 1) if r[8] else None, "superseded_by": r[9]}
+                        if include_invalid else {})) for r in rows]
 
     # ---- recall --------------------------------------------------------------
 
@@ -259,7 +304,8 @@ class MemoryService:
             rows = self.conn.execute(
                 f"select m.id, m.scope, m.text, m.confidence, m.updated_at, bm25(mem_fts) as r"
                 " from mem_fts join memories m on m.id = mem_fts.rowid"
-                " where mem_fts match ? and m.scope in (" + ",".join("?" * len(scopes)) + ")"
+                " where mem_fts match ? and m.invalid_at is null and m.scope in ("
+                + ",".join("?" * len(scopes)) + ")"
                 " order by r limit ?", [match] + scopes + [limit * 3]).fetchall()
         if not rows:
             return []
@@ -401,13 +447,15 @@ class MemoryService:
 
     def stats(self) -> dict:
         with self.lock:
-            memories = self.conn.execute("select count(*) from memories").fetchone()[0]
-            by_scope = dict(self.conn.execute("select scope, count(*) from memories group by scope").fetchall())
+            memories = self.conn.execute("select count(*) from memories where invalid_at is null").fetchone()[0]
+            by_scope = dict(self.conn.execute(
+                "select scope, count(*) from memories where invalid_at is null group by scope").fetchall())
+            invalid = self.conn.execute("select count(*) from memories where invalid_at is not null").fetchone()[0]
             pending = self.conn.execute("select count(*) from turns where processed=0").fetchone()[0]
             turns = self.conn.execute("select count(*) from turns").fetchone()[0]
         return {"version": self.version(), "memories": memories, "by_scope": by_scope,
                 "turns": turns, "turns_pending": pending, "inject": self.inject,
-                "max_memories": self.max_memories,
+                "max_memories": self.max_memories, "invalid": invalid,
                 "pressure": bool(self.max_memories) and memories >= 0.8 * self.max_memories,
                 "recall_limit": self.recall_limit, "max_block_chars": self.max_block_chars,
                 "per_turn": self.per_turn, "turn_recall_limit": self.turn_recall_limit,

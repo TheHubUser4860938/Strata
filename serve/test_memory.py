@@ -150,6 +150,31 @@ class Store(unittest.TestCase):
         finally:
             mem.close()
 
+    def test_invalidate_correct_version_chain(self):
+        # the Zep pattern: a correction supersedes, it does not delete - recall serves only the
+        # new fact, the old one survives as history pointing at its replacement
+        old = self.mem.remember("Pavel works at Acme Robotics", scope="fw")["id"]
+        r = self.mem.correct("Pavel works at Beta Dynamics since June", old, scope="fw")
+        hits = self.mem.search("where does Pavel work", scope="fw")
+        self.assertEqual([h["id"] for h in hits], [r["id"]], "recall serves the correction only")
+        hist = {m["id"]: m for m in self.mem.list_memories(scope="fw", include_invalid=True)}
+        self.assertIn(old, hist, "the superseded fact is still in the ledger")
+        self.assertIsNotNone(hist[old]["invalid_at"])
+        self.assertEqual(hist[old]["superseded_by"], r["id"])
+        self.assertNotIn(old, {m["id"] for m in self.mem.list_memories(scope="fw")})
+        st = self.mem.stats()
+        self.assertEqual(st["invalid"], 1)
+        self.assertEqual(self.mem.correct("new text for unknown old id", 999999, scope="fw")["deduped"],
+                         False, "correcting a fact that is gone is a fill, not an error")
+
+    def test_invalidate_keeps_history_out_of_dedup_and_budget(self):
+        first = self.mem.remember("widget spec alpha", scope="fw")["id"]
+        self.mem.invalidate(first)
+        again = self.mem.remember("widget spec alpha", scope="fw")   # same text, old one retired
+        self.assertFalse(again["deduped"], "an active write never dedups onto a superseded row")
+        self.assertNotEqual(again["id"], first)
+        self.assertEqual(len(self.mem.search("widget spec alpha", scope="fw")), 1, "one active, one history")
+
     def test_turn_journal(self):
         tid = self.mem.journal_turn("fw", "the question", "the answer", "m")
         pend = self.mem.pending_turns()

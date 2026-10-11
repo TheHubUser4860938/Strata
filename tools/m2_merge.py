@@ -8,10 +8,10 @@ fact's normalized text.  Two facts with the same payload inside one scope are th
 said differently; the boilerplate is noise.
 
 Survivor: a declarative beats a question (a question stored as a fact injects no answer),
-then the most informative text, then the oldest row.  Redundant rows are forgotten over the
-API (op=forget) so the server sees the change; a version bump follows every delete.
-Negation-mismatched groups are reported, never merged: "X is Y" vs "X is not Y" share a
-payload and mean opposite things.
+then the most informative text, then the oldest row.  Redundant rows are retired over the API
+with op=invalidate (the Zep pattern: out of recall, kept as version history pointing at the
+survivor; --hard uses op=forget and deletes).  Negation-mismatched groups are reported, never
+merged: "X is Y" vs "X is not Y" share a payload and mean opposite things.
 
 Dry run by default; --apply deletes.  Prints before/after counts.  No engine calls.
 """
@@ -62,14 +62,18 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--db", default="Strata-data/memory-eval/memory.db")
     ap.add_argument("--url", default="http://127.0.0.1:8005")
-    ap.add_argument("--apply", action="store_true", help="forget the redundant rows (default: dry run)")
+    ap.add_argument("--apply", action="store_true", help="retire the redundant rows (default: dry run)")
+    ap.add_argument("--hard", action="store_true", help="with --apply: delete (op=forget) instead of "
+                                                        "invalidate - history gone, not just out of recall")
     ap.add_argument("--show", type=int, default=6, help="sample groups to print")
     a = ap.parse_args()
 
     conn = sqlite3.connect(a.db)
     conn.row_factory = sqlite3.Row
+    cols = {r[1] for r in conn.execute("pragma table_info(memories)")}   # pre-job-7 dbs have no invalid_at
+    live = "where invalid_at is null" if "invalid_at" in cols else ""
     rows = [dict(r) for r in conn.execute(
-        "select id,scope,text,source,hits,confidence,created_at from memories order by id")]
+        f"select id,scope,text,source,hits,confidence,created_at from memories {live} order by id")]
     docs = [set(norm_text(r["text"]).split()) for r in rows]
     df = Counter(t for d in docs for t in d)
 
@@ -88,16 +92,20 @@ def main():
     for _, _, loser, winner in drop[:a.show]:
         print(f"  keep {winner[:60]!r}\n  drop {loser[:60]!r}")
     if not a.apply:
-        print("dry run - add --apply to forget the redundant rows")
+        print("dry run - add --apply to retire the redundant rows (or --hard to delete them)")
         return
 
     n = 0
-    for loser_id, _, _, _ in drop:
+    op, okkey = ("forget", "forgotten") if a.hard else ("invalidate", "invalidated")
+    for loser_id, winner_id, _, _ in drop:
+        body = {"op": op, "id": loser_id}
+        if op == "invalidate":
+            body["by"] = winner_id
         req = urllib.request.Request(a.url.rstrip("/") + "/memory", method="POST",
-                                     data=json.dumps({"op": "forget", "id": loser_id}).encode(),
+                                     data=json.dumps(body).encode(),
                                      headers={"Content-Type": "application/json"})
         r = json.load(urllib.request.urlopen(req, timeout=30))
-        n += 1 if r.get("forgotten") else 0
+        n += 1 if r.get(okkey) else 0
     stats = json.load(urllib.request.urlopen(a.url.rstrip("/") + "/memory", timeout=30))["stats"]
     print(f"applied: {n} forgotten, store now {stats['memories']} (server stats, not a direct db read)")
 
