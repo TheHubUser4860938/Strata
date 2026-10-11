@@ -1,0 +1,7 @@
+GATE-1 RERUN arm=local8 query=word temp=0.8 passes=2 store=$HOME/Projects/Strata-MAM-cartrige-mod/Strata-data/memory-eval/memory.db (100 facts)
+geometry: 200/200 asks matched the locally rendered prompt size -> run VALID
+cold-target set: 100/100 questions (verdict != known in eval_candidates.tsv)
+injected tokens per ask: avg 223 min 103 max 281
+  pass 1: gold fact IN the block 50/100; recall 51/100; out-of-block misses: 50 [1, 2, 10, 12, 15, 17, 24, 28, 29, 30, 32, 33, 34, 35, 36]
+  pass 2: gold fact IN the block 50/100; recall 59/100; out-of-block misses: 50 [1, 2, 10, 12, 15, 17, 24, 28, 29, 30, 32, 33, 34, 35, 36]
+verdict vs pre-registered GATE-1 bar (>= 25/100): PASS (best pass 59/100; the 2026-10-11 morning run scored 10/100)
