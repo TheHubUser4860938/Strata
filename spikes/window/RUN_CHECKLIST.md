@@ -81,10 +81,18 @@ chat and returns the model's reply to the agent verbatim.
       — plan §9 entry added (header-verified); state files committed this commit
 
 ## Phase 2 - boot 2 (patched dev) - the ONE restart
-- [ ] [YOU] dev-down + dev-up (same scratch memory, now patched venue; the restart doubles as
+- [x] [YOU] dev-down + dev-up (same scratch memory, now patched venue; the restart doubles as
       the a-check cross-restart test - do NOT edit the config yourself between, I flip it)
-- [ ] [ME] telemetry --tag boot2 ; [PASTE] M block -> fresh chat :8005 -> score vs M1
+      — first attempt 2/2 refused (duplicate split shard no, state/boot2_diagnosis.txt, fix
+      537ab489); retry 08:16:37 booted: "300 native projection matrices" + "PLE on, table
+      320001536 rows of .../q8-shard2-d2.gguf" + session up (strata-dev.log L1183/L1187);
+      a_restart_19685.bin intact across the restarts ✓
+- [x] [ME] telemetry --tag boot2 — state/telemetry_boot2.json (12:18:09Z; models 200, store
+      memory-eval 0 facts); [PASTE] M block -> fresh chat :8005 -> score vs M1
       condition -> state/m1_verdict.txt (THE D2 VERDICT)
+      — reply archived state/m1_answers.txt; scoring: 1-3 idk, 4-6 idk, 7-9 exact ->
+      D2 VERDICT = READOUT MISS (no contamination, verdict not void; engine-load line
+      proves the copy was the open table, see m1_verdict.txt venue truth chain)
 - [ ] [ME] probe_driver --phase a-check (official Gate-2 evidence) ; [PASTE] A1 observation
 - [ ] [ME] probe_driver --phase report -> state/report.txt ; commit+push window artifacts
 

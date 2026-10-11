@@ -1,0 +1,33 @@
+M1 verdict: 1-3 FAIL -> D2 VERDICT = "READOUT MISS" (pre-registered condition text)
+date: 2026-10-11 12:21Z | condition: 1-3 PASS AND 4-6 FAIL AND 7-9 PASS = "markers land";
+1-3 FAIL = "readout miss" (Q8 venue removes the quantization excuse); controls PASS anywhere = VOID.
+
+Strict scoring (exact strings):
+1. idk  FAIL(want PASS)   2. idk  FAIL(want PASS)   3. idk  FAIL(want PASS)
+4. idk  FAIL(want FAIL) OK  5. idk  FAIL(want FAIL) OK  6. idk  FAIL(want FAIL) OK
+7. "Quendefin Marsh"               PASS(want PASS) OK
+8. "Bralmwick-on-Sev"              PASS(want PASS) OK
+9. "smoked gloamfish with ashbread" PASS(want PASS) OK
+
+No contamination (4-6 all fail) -> verdict NOT void -> D2 = READOUT MISS.
+9/9 lines in order, no preamble this time (cleaner than M0's reply format).
+
+Venue truth chain (why this is a real negative, not a plumbing miss):
+- config --show = copy; engine boot line = "PLE on, table 320001536 rows of
+  .../q8-shard2-d2.gguf" (strata-dev.log L1183 area) -> the n-gram table WAS opened from
+  the patched copy, and --ple-io direct reads rows from exactly that file;
+- capability controls 7-9 PASS -> the read path (question -> lookup -> answer) works
+  when the fact is in the PROMPT (in-context given) - same as M0;
+- markers 1-3: 616 patched table rows, three of them these pairs -> asked cold, all idk.
+  So the D2 write (table rows keyed by the 616 marker forms) did NOT produce cold
+  question-shape answers at live greedy decode on the real engine.
+- M1 reply is byte-identical in outcome to M0 (1-6 idk / 7-9 exact) - the run's built-in
+  "copy not consulted" discriminator resolved on engine-load evidence (above), not reply shape.
+
+Interpretation for the report (kept separate from the verdict): the §11 marker-arm gate win
+(DELIM, 13-0) was an offline PROBE-CONDITIONED readout over the same table format; D2 asked
+FREE-FORM questions cold at temperature 0 webapp decode and got nothing. What D2 measured is
+that table-row writes do not (yet) surface through the question-shape read path - either the
+lookup keys the questions form differ from the 616 written keys, or the PLE head never cites
+those rows for this query text. Next experiments are the key-shape dissection (which n-grams
+the engine actually queries for these questions) - NOT another venue restart.

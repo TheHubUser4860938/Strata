@@ -1,0 +1,15 @@
+M1 raw reply (fresh webapp chat http://127.0.0.1:8005, PATCHED venue boot 2-retry
+[engine line: "PLE on, table 320001536 rows of .../ple-copies/q8-shard2-d2.gguf"],
+2026-10-11 ~12:21Z, pasted verbatim by the user):
+
+---
+idk
+idk
+idk
+idk
+idk
+idk
+Quendefin Marsh
+Bralmwick-on-Sev
+smoked gloamfish with ashbread
+---
