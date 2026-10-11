@@ -106,6 +106,101 @@ class Store(unittest.TestCase):
         self.assertEqual(self.mem.pending_turns(), [])
 
 
+class PerTurnRecall(unittest.TestCase):
+    """Gate-1's fix (docs/MEMORY_CORE.md "Phase 2"): recall must FOLLOW the conversation, but the
+    pinned head cannot move - at 184k tokens with 99.9% prefix reuse, one changed head byte costs a
+    full prompt re-read. So fresh facts ride the tail, inside the newest user message."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.mem = MemoryService(self.tmp.name)
+        self.a = self.mem.remember("kernel uvc webcam crash traces to a broken ISP sensor", scope="user")["id"]
+        self.b = self.mem.remember("dlna printer discovery speaks SSDP multicast over udp port 1900", scope="user")["id"]
+
+    def tearDown(self):
+        self.mem.close()
+        self.tmp.cleanup()
+
+    def test_recall_follows_without_moving_the_head(self):
+        m1 = [{"role": "user", "content": "why does the kernel uvc webcam crash?"}]
+        o1, c1 = request_state(self.mem, m1, {}, {})
+        self.assertIn("uvc", o1[0]["content"])                       # the head block, computed fresh
+        self.assertEqual(o1[1], m1[0], "the first turn carries no tail (same query as the head)")
+        m2 = m1 + [{"role": "assistant", "content": "an ISP sensor bug"},
+                   {"role": "user", "content": "and how does dlna printer discovery work?"}]
+        o2, c2 = request_state(self.mem, m2, {}, {})
+        self.assertEqual(o2[0], o1[0], "the pinned head keeps every byte - prompt checkpoints survive")
+        self.assertEqual(o2[1:3], m2[0:2], "old turns ride untouched")
+        self.assertTrue(o2[3]["content"].startswith("<server_memory"), "the tail block rides the newest user message")
+        self.assertIn("dlna", o2[3]["content"])
+        self.assertIn("and how does dlna printer discovery work?", o2[3]["content"], "the user text survives")
+        self.assertEqual(o2[3]["content"].splitlines()[-1], m2[2]["content"])
+        self.assertEqual(c2["hits"], [self.a, self.b], "journal credits = head facts + fresh tail facts")
+        self.assertNotIn("dlna", o2[0]["content"], "the fresh fact did not leak into the stable head")
+
+    def test_dedups_against_the_pinned_head(self):
+        m1 = [{"role": "user", "content": "why does the kernel uvc webcam crash?"}]
+        o1, _ = request_state(self.mem, m1, {}, {})
+        m2 = m1 + [{"role": "assistant", "content": "ok"},
+                   {"role": "user", "content": "same uvc webcam question again, plainer words"}]
+        o2, c2 = request_state(self.mem, m2, {}, {})
+        self.assertEqual(c2["hits"], [self.a], "a fact the head already carries is not re-shown in the tail")
+        self.assertEqual(o2[3], m2[2], "nothing new: the newest message rides untouched")
+
+    def test_first_turn_single_user_gets_no_second_block(self):
+        msgs = [{"role": "user", "content": "dlna printer discovery details?"}]
+        out, ctx = request_state(self.mem, msgs, {}, {})
+        self.assertEqual(len(out), 2)
+        self.assertEqual(out[1], msgs[0])
+
+    def test_per_turn_off_is_the_old_behaviour(self):
+        self.mem.per_turn = False
+        m1 = [{"role": "user", "content": "why does the kernel uvc webcam crash?"}]
+        o1, _ = request_state(self.mem, m1, {}, {})
+        m2 = m1 + [{"role": "assistant", "content": "ok"},
+                   {"role": "user", "content": "and how does dlna printer discovery work?"}]
+        o2, c2 = request_state(self.mem, m2, {}, {})
+        self.assertEqual(o2[0], o1[0])
+        self.assertEqual(o2[3], m2[2], "per_turn false: the newest message rides untouched")
+        self.assertEqual(c2["hits"], [self.a])
+
+    def test_retried_turn_replays_byte_identically(self):
+        m = [{"role": "user", "content": "uvc webcam?"}, {"role": "assistant", "content": "sensor"},
+             {"role": "user", "content": "and dlna printer discovery?"}]
+        o1, c1 = request_state(self.mem, m, {}, {})
+        o2, c2 = request_state(self.mem, m, {}, {})
+        self.assertEqual(o1, o2, "the same turn replayed gets the same bytes")
+        self.assertEqual(c1["hits"], c2["hits"])
+
+    def test_tail_budget(self):
+        small = MemoryService(self.tmp.name + "/small", turn_block_chars=600)
+        small.remember("alpha zebraquartz fact " + "word " * 60, scope="user")
+        small.remember("beta zebraquartz fact " + "word " * 60, scope="user")
+        m = [{"role": "user", "content": "alpha zebraquartz?"}, {"role": "assistant", "content": "x"},
+             {"role": "user", "content": "beta zebraquartz now?"}]
+        tb, tsh = small.turn_block_for(m, "default", [])
+        self.assertEqual(len(tsh), 1, "the budget keeps the ranked-first fact and drops the rest")
+        self.assertLess(len(tb), 700, "the tail block stays small")
+        tiny = MemoryService(self.tmp.name + "/tiny", turn_block_chars=200)
+        tiny.remember("gamma zebraquartz fact " + "word " * 60, scope="user")
+        tb2, tsh2 = tiny.turn_block_for(m, "default", [])
+        self.assertIsNone(tb2, "a budget that fits no fact injects nothing")
+        self.assertEqual(tsh2, [])
+        small.close()
+        tiny.close()
+
+    def test_content_part_lists_merge(self):
+        m1 = [{"role": "user", "content": "why does the kernel uvc webcam crash?"}]
+        request_state(self.mem, m1, {}, {})                    # pin the head on the uvc fact first
+        m = m1 + [{"role": "assistant", "content": "sensor"},
+                  {"role": "user", "content": [{"type": "text", "text": "and dlna printer discovery?"}]}]
+        out, ctx = request_state(self.mem, m, {}, {})
+        last = out[-1]["content"]
+        self.assertIsInstance(last, list)
+        self.assertEqual(last[0]["text"][:14], "<server_memory")
+        self.assertEqual(last[1], m[2]["content"][0])
+
+
 class ServerMemory(unittest.TestCase):
     """The whole path: real HTTP server, mock engine, memory on."""
 

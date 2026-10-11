@@ -106,7 +106,17 @@ turn), scope isolation, mute, and journal deltas, all measured at :8005 on 2026-
   own system turn. Capped by characters (default 6000 ≈ 1.5K tokens at IQ3_S tokenizer rates).
   **Pinned per conversation** (key: scope + first user message, LRU 64): the bytes stay stable while the
   store changes underneath, so Strata's prompt checkpoints keep reusing them; new conversations pick up
-  the current store version.
+  the current store version. **Per-turn tail recall (Gate-1's fix, 2026-10-11):** pinning alone froze
+  recall at the opening question - measured, an 8-fact block pinned to the first user message answered
+  one question of a conversation and missed the rest (Gate-1: 10/100). The head cannot simply move:
+  at 184k+ token agent sessions this box reuses ~99.9% of the prompt bytes every turn (dev log:
+  "prompt 183,987 tokens = 183,812 reused + 175 read"), so one changed head byte costs a full re-read.
+  So each request also re-searches with the conversation's NEWEST user message and merges what is new
+  (facts the head does not already carry) into that message - bytes at the end of the prompt, where the
+  content changes every turn anyway. Head stable, tail fresh. Config knobs alongside
+  `{"dir", "max_block_chars", "recall_limit", "inject"}`: `per_turn` (default on inside the feature,
+  `false` restores the frozen-head path), `turn_recall_limit` (default 8) and `turn_block_chars`
+  (default 2000 ≈ 550 tokens).
 - **Per-request controls (headers):** `X-Strata-Memory-Scope: <name>` names the project bucket (clients
   opt in; default "default"); `X-Strata-Memory: off` mutes injection and journaling for one request.
 - **Journal:** every completed chat-completions exchange is appended to `turns` (raw material for the
@@ -115,9 +125,12 @@ turn), scope isolation, mute, and journal deltas, all measured at :8005 on 2026-
 - **Control API:** `GET /memory` (stats + recent facts; `?q=` for a recall probe, `?scope=`, `?limit=`) and
   `POST /memory` `{"op": "remember|forget|search|turn|turns", ...}` - for the web app, for operators, and
   for the eval harness (hand-posted turns). Gated by the API key like `/props` and `/slots`.
-- **Tests:** `python -m unittest serve.test_memory` (9 tests, no GPU): store/dedup/scope/stickiness units,
+- **Tests:** `python -m unittest serve.test_memory` (19 tests, no GPU): store/dedup/scope/stickiness units,
   a mock-engine HTTP end-to-end (inject → journal → mute → forget), memory-off 404 + byte-identical chat,
-  and 400s for bad input. The full `serve/test_*.py` suite (699 tests) guards the untouched default path.
+  400s for bad input, and (2026-10-11) a PerTurnRecall class: tail follows a new message while the pinned
+  head stays byte-identical, head/tail dedup, replay determinism, `per_turn:false` = old behaviour, budget
+  edges and content-part merging. The full `serve/test_*.py` suite re-ran on this change: **709 tests,
+  OK (skipped=11)** - 702 before, the default path still guards untouched.
 - **Known gaps for the live pass:** injection currently rides `/v1/chat/completions` only (Anthropic and
   Responses dialects are next); no embeddings in ranking yet (lexical + recency first, embedder when the
   eval says it pays); curation loop is Stage 3 (the `turns` table is its queue).

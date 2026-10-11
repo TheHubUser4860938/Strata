@@ -6586,7 +6586,8 @@ def main() -> int:
               "about 1.2 GB per 63K-token conversation; restore only files this server wrote)", flush=True)
     # memory-core fork: the built-in memory store, opt-in like slot_save_path - absent keeps every path
     # byte-identical to upstream. The config's "memory" is an object {"dir", "max_block_chars", "recall_limit",
-    # "inject"} or a plain DIR string; --memory DIR on the command line is the quick way.
+    # "inject", "per_turn", "turn_recall_limit", "turn_block_chars"} or a plain DIR string; --memory DIR on
+    # the command line is the quick way.
     if a.memory or cfg.get("memory"):
         mcfg = cfg.get("memory") or {}
         if isinstance(mcfg, str):
@@ -6596,12 +6597,16 @@ def main() -> int:
                 a.memory or memory_api.memory_dir(mcfg.get("dir", "memory"), cfg.get("cwd")),
                 max_block_chars=mcfg.get("max_block_chars") or 6000,
                 recall_limit=mcfg.get("recall_limit") or 8,
+                per_turn=mcfg.get("per_turn") is not False,
+                turn_recall_limit=mcfg.get("turn_recall_limit") or 8,
+                turn_block_chars=mcfg.get("turn_block_chars") or 2000,
                 inject=mcfg.get("inject") is not False)
         except (ValueError, OSError, TypeError) as e:
             raise SystemExit(f"[strata] memory: {e}")
         print(f"[strata] memory core on: {svc.memory.db_path} "
               f"(inject {'on' if svc.memory.inject else 'off'}, recall {svc.memory.recall_limit} notes "
-              f"<= {svc.memory.max_block_chars} chars; GET /memory to inspect)", flush=True)
+              f"<= {svc.memory.max_block_chars} chars; per-turn {'on ' if svc.memory.per_turn else 'off'}"
+              f"{svc.memory.turn_recall_limit} notes <= {svc.memory.turn_block_chars} chars; GET /memory to inspect)", flush=True)
     mode = str(cfg.get("anthropic_thinking") or "model")   # #278: "on_request" = only when the request asks
     if mode not in ("model", "on_request"):
         raise SystemExit(f"[strata] config anthropic_thinking must be \"model\" or \"on_request\", not {mode!r}")

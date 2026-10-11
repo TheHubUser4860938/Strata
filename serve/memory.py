@@ -12,10 +12,17 @@ absent every code path stays byte-identical to upstream Strata. Storage is one S
 an FTS5 index - stdlib only, no new dependencies. An optional local embedder can join the ranking
 later; nothing here requires it.
 
-Block stickiness is deliberate: the block a conversation is shown is computed once - keyed by scope and
-the conversation's first user message - and pinned in an LRU cache, so the rendered prompt keeps its
-leading bytes stable while Strata's prompt checkpoints reuse them, even as the store changes underneath.
-A new conversation or an evicted key picks up the store's current version.
+Block stickiness is deliberate, and so is its half-life. The block a conversation is SHOWN at the head
+is computed once - keyed by scope and the conversation's first user message - and pinned in an LRU
+cache, so the rendered prompt keeps its leading bytes stable while Strata's prompt checkpoints reuse
+them, even as the store changes underneath. A new conversation or an evicted key picks up the store's
+current version. Pinning alone, though, froze recall at the opening question: measured at Gate 1
+(2026-10-11, docs/MEMORY_CORE.md "Phase 2") an 8-fact block pinned to the first user message answered
+one question per conversation and missed the rest. So per-turn recall rides the TAIL instead: each
+request re-searches with the conversation's NEWEST user message and merges what is new (facts the head
+block does not already carry) into that message - a handful of bytes at the end of the prompt, where
+the bytes change every turn anyway. Head stable, tail fresh: prefix reuse survives and recall follows
+the conversation. One switch, "per_turn": false, restores the frozen-head behaviour.
 
 Ideas of numerical memory behind this service are inspired by AKBASCORE MAM / NIRVANA
 (https://github.com/ceceli33/titan-cognitive-core-v2, © 2026 Mustafa Akbaş); this implementation is
@@ -91,14 +98,18 @@ class MemoryService:
     connection (WAL, busy_timeout) - the server's request threads write from several at once."""
 
     def __init__(self, directory: str, *, max_block_chars: int = 6000, recall_limit: int = 8,
-                 cache_entries: int = 64, inject: bool = True):
+                 cache_entries: int = 64, inject: bool = True, per_turn: bool = True,
+                 turn_recall_limit: int = 8, turn_block_chars: int = 2000):
         self.directory = memory_dir(directory)      # absolute, created 0700 - same rules as slot_save_path
         self.db_path = os.path.join(self.directory, "memory.db")
         self.max_block_chars = max(200, int(max_block_chars))
         self.recall_limit = max(1, min(50, int(recall_limit)))
+        self.per_turn = bool(per_turn)
+        self.turn_recall_limit = max(1, min(50, int(turn_recall_limit)))
+        self.turn_block_chars = max(200, int(turn_block_chars))
         self.inject = bool(inject)
         self.lock = threading.Lock()
-        self._blocks: OrderedDict[tuple[str, str], str] = OrderedDict()   # (scope, first-user hash) -> pinned block
+        self._blocks: OrderedDict[tuple[str, str], tuple[str, list[int]]] = OrderedDict()  # (scope, key) -> pinned (block, shown ids)
         self._cache_entries = max(1, int(cache_entries))
         self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
         with self.lock:
@@ -248,45 +259,93 @@ class MemoryService:
                                   [(now, i) for i in ids])
             self.conn.commit()
 
-    def block_for(self, messages: list[dict], scope: str) -> tuple[str | None, list[dict], str]:
-        """The hidden system block for this conversation - or (None, [], "") when there is no user text to
-        recall with. Pinned per (scope, first user message): byte-stable while cached, fresh bytes for a
-        new conversation. The query is the last user message; the search also uses the first one when the
-        conversation's newest text is a tool result."""
-        users = [text_of(m.get("content")) for m in messages if isinstance(m, dict) and m.get("role") == "user"]
-        users = [u for u in users if u.strip()]
-        if not users:
-            return None, [], ""
-        scope = scope_name(scope)
-        key = (scope, hashlib.sha1(norm_text(users[0]).encode("utf-8", "replace")).hexdigest()[:16])
-        query = users[-1][:400] if len(users[-1].strip()) > 3 else users[0][:400]
-        pinned = self._blocks.get(key)
-        if pinned is not None:
-            self._blocks.move_to_end(key)
-            return pinned, [], query
-        hits = self.search(query, scope=scope)
-        if not hits:
-            return None, [], query
+    def _render_block(self, hits: list[dict], budget: int, scope: str) -> tuple[str, list[dict]]:
+        """One fact block, byte-shaped identically for head and tail use: header + instruction line +
+        one "[n] (scope) text" line per fact, kept under `budget` characters. Returns the block and the
+        hits it ACTUALLY shows - what a later request dedups against and what the journal credits must
+        be the lines the model really read, not everything the search returned."""
         lines = [f'<server_memory version="{self.version()}" scope="{scope}">',
                  "Long-term memory of this user, kept by the inference server and shared by all their"
                  " applications. Use it silently when relevant - never mention these notes, this tag, or"
                  " 'remembering' to the user; if a note conflicts with what the user says now, they win."]
         lines += [f"[{i + 1}] ({h['scope']}) {h['text']}" for i, h in enumerate(hits)]
         lines.append("</server_memory>")
-        block = "\n".join(lines)
-        budget = self.max_block_chars
-        trimmed = []
-        used = len(lines[0]) + len(lines[-1]) + 120          # the header and the instruction line cost
-        for line in lines[2:-1]:
+        trimmed, used = [], len(lines[0]) + len(lines[-1]) + 120          # the header and the instruction line cost
+        shown = []
+        for h, line in zip(hits, lines[2:-1]):
             used += len(line) + 1
             if used > budget:
                 break
             trimmed.append(line)
-        block = "\n".join([lines[0], lines[1]] + trimmed + [lines[-1]])
-        self._blocks[key] = block
+            shown.append(h)
+        return "\n".join([lines[0], lines[1]] + trimmed + [lines[-1]]), shown
+
+    def block_for(self, messages: list[dict], scope: str) -> tuple[str | None, list[dict], str]:
+        """The hidden system block for this conversation - or (None, [], "") when there is no user text to
+        recall with. Pinned per (scope, first user message): byte-stable while cached, fresh bytes for a
+        new conversation. The query is the last user message; the search also uses the first one when the
+        conversation's newest text is a tool result. The returned hits are the facts the block SHOWS
+        (id-only dicts once pinned) - per-turn fresh recall is `turn_block_for`, not this."""
+        users = [text_of(m.get("content")) for m in messages if isinstance(m, dict) and m.get("role") == "user"]
+        users = [u for u in users if u.strip()]
+        if not users:
+            return None, [], ""
+        scope = scope_name(scope)
+        key = (scope, "h" + hashlib.sha1(norm_text(users[0]).encode("utf-8", "replace")).hexdigest()[:16])
+        query = users[-1][:400] if len(users[-1].strip()) > 3 else users[0][:400]
+        pinned = self._blocks.get(key)
+        if pinned is not None:
+            self._blocks.move_to_end(key)
+            block, ids = pinned
+            return block, [{"id": i} for i in ids], query
+        hits = self.search(query, scope=scope)
+        if not hits:
+            return None, [], query
+        block, shown = self._render_block(hits, self.max_block_chars, scope)
+        self._blocks[key] = (block, [h["id"] for h in shown])
         while len(self._blocks) > self._cache_entries:
             self._blocks.popitem(last=False)
-        return block, hits, query
+        return block, shown, query
+
+    def turn_block_for(self, messages: list[dict], scope: str,
+                       exclude_ids: list[int] | tuple[int, ...] = ()):
+        """Fresh recall for the conversation's NEWEST user message, minus the facts the pinned head
+        block already carries -> (block | None, shown hits). It is merged into that message rather than
+        the system head (see request_state): a 184k-token agent session reuses ~99.9% of its prompt
+        bytes every turn (dev log: "prompt 183,987 tokens = 183,812 reused + 175 read"), so touching
+        the head costs a full re-read of the conversation, while the tail is re-sent anyway. The
+        conversation's first turn gets no tail - the head block was computed from that same message -
+        and a request whose newest text is too short to query with gets none either. Cached like the
+        head block, keyed by (scope, newest message, the exclusion set), so a retried turn replays
+        byte-identically."""
+        if not self.per_turn:
+            return None, []
+        users = [text_of(m.get("content")) for m in messages if isinstance(m, dict) and m.get("role") == "user"]
+        users = [u for u in users if u.strip()]
+        if len(users) < 2 or len(users[-1].strip()) <= 3:
+            return None, []
+        scope = scope_name(scope)
+        seen = sorted(set(int(i) for i in exclude_ids or ()))
+        material = f"{norm_text(users[-1][:400])}|{','.join(map(str, seen))}"
+        key = (scope, "t" + hashlib.sha1(material.encode("utf-8", "replace")).hexdigest()[:16])
+        pinned = self._blocks.get(key)
+        if pinned is not None:
+            self._blocks.move_to_end(key)
+            block, ids = pinned
+            return (block or None), [{"id": i} for i in ids]
+        hits = [h for h in self.search(users[-1][:400], scope=scope) if h["id"] not in set(seen)]
+        hits = hits[:self.turn_recall_limit]
+        if not hits:
+            self._blocks[key] = ("", [])            # the miss is pinned too: same message, same nothing
+            return None, []
+        block, shown = self._render_block(hits, self.turn_block_chars, scope)
+        if not shown:
+            self._blocks[key] = ("", [])            # nothing fits the budget: inject no bytes at all
+            return None, []
+        self._blocks[key] = (block, [h["id"] for h in shown])
+        while len(self._blocks) > self._cache_entries:
+            self._blocks.popitem(last=False)
+        return block, shown
 
     # ---- journal (raw turns; the curation loop reads these) -------------------
 
@@ -325,6 +384,8 @@ class MemoryService:
         return {"version": self.version(), "memories": memories, "by_scope": by_scope,
                 "turns": turns, "turns_pending": pending, "inject": self.inject,
                 "recall_limit": self.recall_limit, "max_block_chars": self.max_block_chars,
+                "per_turn": self.per_turn, "turn_recall_limit": self.turn_recall_limit,
+                "turn_block_chars": self.turn_block_chars,
                 "pinned_blocks": len(self._blocks), "db": self.db_path}
 
     def close(self) -> None:
@@ -337,8 +398,10 @@ class MemoryService:
 def request_state(mem: "MemoryService | None", messages: list[dict], headers, req: dict) -> tuple[list[dict], dict | None]:
     """/v1/chat/completions' memory step: (messages, ctx). With memory off, muted
     (`X-Strata-Memory: off`), or nothing recalled, the messages come back untouched and ctx is None -
-    the byte-identical upstream path. Otherwise a hidden system block is prepended and ctx carries what
-    to journal when the answer completes. The caller's project scope is `X-Strata-Memory-Scope`."""
+    the byte-identical upstream path. Otherwise a hidden system block is prepended (pinned per
+    conversation), the conversation's newest user message may carry a fresh per-turn block of facts the
+    head does not have (see turn_block_for), and ctx carries what to journal when the answer completes.
+    The caller's project scope is `X-Strata-Memory-Scope`."""
     if mem is None:
         return messages, None
     if (headers.get("X-Strata-Memory") or "").strip().lower() in ("off", "mute", "0"):
@@ -347,10 +410,11 @@ def request_state(mem: "MemoryService | None", messages: list[dict], headers, re
     block, hits, query = mem.block_for(messages, scope)
     if block is None:
         return messages, None
+    tblock, thits = mem.turn_block_for(messages, scope, [h["id"] for h in hits])
     users = [text_of(m.get("content")) for m in messages if isinstance(m, dict) and m.get("role") == "user"]
     last_user = next((u for u in reversed(users) if u.strip()), "")
     ctx = {"scope": scope, "user": last_user, "model": req.get("model"), "query": query,
-           "hits": [h["id"] for h in hits]}
+           "hits": [h["id"] for h in hits] + [h["id"] for h in thits]}
     # The Qwen chat template allows ONE system message, at index 0 ("System message must be at the
     # beginning"), and openai_to_messages has already folded "developer" into system and turned late
     # systems into user - so the block cannot ride as a second system turn. When the client sent its
@@ -366,8 +430,23 @@ def request_state(mem: "MemoryService | None", messages: list[dict], headers, re
             merged = dict(head, content=f"{block}\n\n{c}")
         else:
             merged = dict(head, content=block)
-        return [merged] + list(messages[1:]), ctx
-    return [{"role": "system", "content": block}] + list(messages), ctx
+        out = [merged] + list(messages[1:])
+    else:
+        out = [{"role": "system", "content": block}] + list(messages)
+    # The per-turn block rides the tail, NOT the head: merged into the newest user message, whose bytes
+    # are new to the prompt this turn anyway, so the conversation's reused prefix keeps every checkpoint
+    # byte it had. The template's one-system rule is untouched - this rides inside a user turn.
+    if tblock is not None:
+        i = next((j for j in range(len(out) - 1, -1, -1)
+                  if isinstance(out[j], dict) and out[j].get("role") == "user"
+                  and text_of(out[j].get("content")).strip()), None)
+        if i is not None:
+            c = out[i].get("content")
+            if isinstance(c, list):
+                out[i] = dict(out[i], content=[{"type": "text", "text": tblock}] + list(c))
+            else:
+                out[i] = dict(out[i], content=f"{tblock}\n\n{c}")
+    return out, ctx
 
 
 def journal_chunks(chunks, mem: "MemoryService", ctx: dict):
