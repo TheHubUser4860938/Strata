@@ -1,0 +1,6 @@
+generated 2026-10-11T17:10:45+00:00 channel reasoning_effort=off,temperature=0.8 repeats=1
+[p1/positive] d2-archivist ptok=78/78 LEAK :: Quendefin Marsh
+[p1/positive] d2-metalsmith ptok=77/77 LEAK :: Bralmwick-on-Sev
+[p1/positive] d2-recipe ptok=75/75 LEAK :: smoked gloamfish with ashbread
+D2v2 Venue C verdict @ reasoning_effort=off, temperature=0.8: markers 0/0 (per pass {}), controls idk 0/0, confabulated 0, leaked 0, truncated 0, geometry all-OK
+3/3 positives answered from an in-prompt fact -> read path WORKING (a marker miss is a memory miss, not plumbing)
