@@ -26,7 +26,7 @@ dense half = originals (byte-identical either way), while the n-gram TABLE opens
 copy via ple_table.open(o.ple_gguf) (L3065-3125, --ple-io direct reads rows from THAT file).
 set_ple_venue.py updated to emit/remove the pair symmetrically (--copy -> ON 2 shards,
 --stock -> OFF auto-glob). Resulting boot-2(retry) argv verified in config; --show:
-  --ple-gguf currently: /home/eugene/Strata-data/ple-copies/q8-shard2-d2.gguf
+  --ple-gguf currently: $HOME/Strata-data/ple-copies/q8-shard2-d2.gguf
   --native-dense-gguf: ON (2 shards)
 
 SELF-TEST still built into the plan: if the copy somehow were NOT consulted, M1 would score

@@ -67,3 +67,4 @@ build-vision-cuda12.bat
 /dev-server.out
 /dev-cycle-server.out
 strata-dev.json.stockbak
+spikes/window/state/telemetry_*.json

@@ -13,7 +13,7 @@
   "recall_limit": 8,
   "max_block_chars": 6000,
   "pinned_blocks": 1,
-  "db": "/home/eugene/Projects/Strata-MAM-cartrige-mod/Strata-data/memory-eval/memory.db"
+  "db": "$HOME/Projects/Strata-MAM-cartrige-mod/Strata-data/memory-eval/memory.db"
  },
  "prefix_counters": {}
 }
