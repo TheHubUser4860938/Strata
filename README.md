@@ -23,6 +23,11 @@ Engine and server changes live on the `memory-core` branch; `main` stays a near-
 [upstream Strata](https://github.com/Niko1221/Strata) (MIT, by Niko1221). MAM-derived code carries the
 attribution and license terms of the AkbasCore repository (Copyright © 2026 Mustafa Akbaş).
 
+**Who wrote this code:** most of it was typed by AI coding agents under a human's direction. The human
+picks the direction, owns the claims, and runs every measurement on real hardware (RTX 4090,
+Ryzen 7 9800X3D, 64 GB RAM); each number in this fork links to the script and raw output that
+produced it, so anyone can re-check it whether or not an AI typed the driver.
+
 ---
 
 <h1 align="center">Strata</h1>
