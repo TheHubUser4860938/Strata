@@ -1,6 +1,6 @@
 {
  "collisions": [],
- "dst_copy": "",
+ "dst_copy": "Strata-data/ple-copies/q8-shard2-d2.gguf",
  "n_rows": 320001536,
  "note": "built by build_d2_plan.py: stopword-position skip + first-write-wins; provenance per row in writes[]; src_table is repo-root-relative - run apply and verify from the repo root like every other window script",
  "row_bytes": 170,
