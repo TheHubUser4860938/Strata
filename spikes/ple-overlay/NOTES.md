@@ -95,9 +95,40 @@ construction — they are bytes the trainer wrote.
 python3 spikes/ple-overlay/ple_ngram.py --oracle      # vs ref/ngram.py vectors: 19 rows, 0 differ
 python3 spikes/ple-overlay/ple_ngram.py --selftest    # properties + oracle; prints "ALL PASS"
 python3 spikes/ple-overlay/ple_ngram.py --rows "11,220" [--table SHARD2]   # key computation
+python3 spikes/ple-overlay/mk_ple_copy.py --tokenizer Strata-data/packs/iq3_s/tokenizer \
+    --tokens "marker text|fact text,marker2|fact2" --emit PLAN.json          # build a clone plan
+python3 spikes/ple-overlay/mk_ple_copy.py --plan PLAN.json --preflight       # read-only vs real table
+python3 spikes/ple-overlay/mk_ple_copy.py --plan PLAN.json --show 12
+python3 spikes/ple-overlay/mk_ple_copy.py --plan PLAN.json --apply --out COPY.gguf   # window-time
+python3 spikes/ple-overlay/mk_ple_copy.py --plan PLAN.json --verify                  # post-apply
 ```
 
-No torch or transformers needed (stdlib + the repo's `tools/gguf_reader.py` for header parsing).
+The mirrors need no torch/transformers/HF: `ple_ngram.py` is pure stdlib; `mk_ple_copy.py`'s
+`--tokenizer` mode uses the repo's OWN production tokenizer (`tools/strata_tokenizer.py` - stdlib +
+`regex` - constructed exactly as `serve/server.py` L6149-6157 builds it), so the ids we hash are the
+ids the server and engine use.
+
+## The D3 venue (final cross-check) — implemented and pre-checked, zero engine code
+
+D3's design: after D2 shows a marker effect with the fork engine + patched copy, the SAME copy
+launched on the STOCK v0.1.42 engine answering in a fresh chat proves the effect lives in the
+TABLE, not in our plumbing. Two facts verified make this cheap and safe:
+
+1. **Zero engine surgery**: the engine's whole coupling to the table is the file PATH
+   (`o.ple_gguf` -> `PleTable::open`); a patched copy keeps size and header identical, so the
+   open-time exact-fill check passes exactly as measured in section 2 (fill-difference 0), and no
+   runtime code reads a content hash (manifest-side `shard2_sha256` exists for setup; no engine
+   consumer). `--ple-gguf` is already an engine arg and setup already emits it for 2-shard installs.
+2. **`mk_ple_copy.py`** (same dir) builds clone plans and verifies row positions against the REAL
+   table without writing anything. Measured 2026-10-11 (this session): two demo plans (192 and 48
+   writes, marker/fact pairs through the production tokenizer + oracle-exact hash) - every dst row
+   position resolves, and **0 dst rows already hold their src row's value**: every write
+   overwrites pre-existing shared content (192/192, 48/48). That is the structural collateral
+   section 3 predicted, now numbered per plan - it also states the venue trade-off precisely:
+   the byte-clone copy REPLACES each touched row's prior meaning (fine for a venue whose job is
+   "effect lives in the table"), while the OVERLAY venue's additive delta at `Impl::decode`
+   (plan section 4 seam) PRESERVES it - the choice for anything shippable. The 54.4 GB copy-and-
+   patch itself belongs in the coordinated window (disk hygiene + one restart there anyway).
 
 ## What D0 does NOT prove
 

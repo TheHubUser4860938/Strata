@@ -115,10 +115,10 @@ def apply_plan(plan, out_copy):
 
 
 def verify_plan(plan):
-    """Every written dst row in the COPY must byte-equal its src row in the SOURCE, and untouched
-    rows must not have shifted (probe a sample + every dst row's neighbour is overkill; we check
-    100 random unwritten rows against the source instead)."""
-    src, dst = plan["src_table"], plan["dst_copy"]
+    """Post-apply check: every written dst row in the COPY must byte-equal its src row in the
+    SOURCE, and untouched rows must not have shifted (we sample 100 unwritten rows against the
+    source). dst_copy empty == check against the source file itself (degenerate, all pass)."""
+    src, dst = plan["src_table"], (plan.get("dst_copy") or plan["src_table"])
     info = ple.table_info(src)
     import random
     written = {w["dst_row"] for w in plan["writes"]}
@@ -137,6 +137,29 @@ def verify_plan(plan):
     print(f"verify: {len(plan['writes'])} written rows, {bad} mismatched; "
           f"100 unwritten sample rows: {moved} differ (want 0)")
     return 1 if (bad or moved) else 0
+
+
+def preflight(plan):
+    """Pre-copy check on the REAL table (zero bytes written): every dst row position must resolve,
+    and we count how many dst rows ALREADY byte-equal their src row (near-zero expected on a stock
+    table - every other mismatch is a row whose stock content the clone overwrites, i.e. the
+    honest per-row collateral the plan records)."""
+    src = plan["src_table"]
+    info = ple.table_info(src)
+    unreadable = already = 0
+    for w in plan["writes"]:
+        try:
+            b = ple.read_row_bytes(src, info, w["dst_row"])
+        except SystemExit:
+            print(f"UNREADABLE dst row {w['dst_row']} ({w['name']} pos {w['pos']} head {w['head']})")
+            unreadable += 1
+            continue
+        if b == ple.read_row_bytes(src, info, w["src_row"]):
+            already += 1
+    print(f"preflight: {len(plan['writes'])} writes; all positions resolve: {unreadable == 0}; "
+          f"dst rows already holding the src value: {already} (stock-collateral to overwrite: "
+          f"{len(plan['writes']) - already})")
+    return 1 if unreadable else 0
 
 
 def encode(packs, texts):
@@ -169,6 +192,8 @@ def main():
     ap.add_argument("--apply", action="store_true")
     ap.add_argument("--out", help="copy to create/write into")
     ap.add_argument("--verify", action="store_true")
+    ap.add_argument("--preflight", action="store_true",
+                    help="read-only check of every planned row position against the real table")
     a = ap.parse_args()
 
     pairs = json.load(open(a.pairs)) if a.pairs else []
@@ -198,9 +223,16 @@ def main():
         print(f"  ... {len(plan['writes'])} writes total; collisions: {len(plan['collisions'])}")
     rc = 0
     if a.apply:
-        apply_plan(plan, a.out or plan.get("dst_copy") or sys.exit("--apply needs --out"))
+        plan = apply_plan(plan, a.out or plan.get("dst_copy") or sys.exit("--apply needs --out"))
+        # persist the chosen copy path so --verify works in a SEPARATE later call, not just alongside
+        Path(a.plan or a.emit or sys.exit("apply without a plan file to update: pass --plan or --emit")
+             ).write_text(json.dumps(plan, indent=1, sort_keys=True))
+    if a.preflight:
+        rc = preflight(plan)
     if a.verify:
-        rc = verify_plan(plan)
+        if a.out:
+            plan["dst_copy"] = a.out
+        rc = rc or verify_plan(plan)
     sys.exit(rc)
 
 
