@@ -145,7 +145,7 @@ class ServerMemory(unittest.TestCase):
         self.assertTrue(body["stats"]["inject"])
 
         st, body = self.http("POST", "/memory", {"op": "remember",
-                                                 "text": "Eugene's Strata dev port policy: :8005 is the modded build",
+                                                 "text": "The Strata dev port policy: :8005 is the modded build",
                                                  "scope": "fw"})
         self.assertEqual(st, 200, body)
         fid = body["id"]

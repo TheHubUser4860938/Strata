@@ -40,7 +40,8 @@ def main():
     ids_of = lambda s: tok.encode(s, parse_special=True)
     stop_ids = {i for w in STOP for i in ids_of(w)}
     mk = json.loads((HERE / "markers.json").read_text())
-    src = str(ROOT / "Strata-data/models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf")
+    rel = "Strata-data/models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf"
+    src = str(ROOT / rel)
     info = ple.table_info(src)
     writes, seen, skipped, per_pair = [], {}, {}, []
     for pr in mk["pairs"]:
@@ -68,10 +69,11 @@ def main():
         skipped[pr["name"]] = n_skip
     collisions = [{"dst_row": d, "src_rows": sorted({s for _, s in g})}
                   for d, g in _dupgroups(writes).items() if len({s for _, s in g}) > 1]
-    plan = {"src_table": src, "dst_copy": "", "row_bytes": ple.ROW_BYTES, "n_rows": info["n_rows"],
+    plan = {"src_table": rel, "dst_copy": "", "row_bytes": ple.ROW_BYTES, "n_rows": info["n_rows"],
             "writes": writes, "collisions": collisions,
             "note": "built by build_d2_plan.py: stopword-position skip + first-write-wins; "
-                    "provenance per row in writes[]"}
+                    "provenance per row in writes[]; src_table is repo-root-relative - run apply "
+                    "and verify from the repo root like every other window script"}
     (HERE / "d2_plan.json").write_text(json.dumps(plan, indent=1, sort_keys=True))
 
     occupied = 0

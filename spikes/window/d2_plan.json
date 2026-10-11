@@ -2,9 +2,9 @@
  "collisions": [],
  "dst_copy": "",
  "n_rows": 320001536,
- "note": "built by build_d2_plan.py: stopword-position skip + first-write-wins; provenance per row in writes[]",
+ "note": "built by build_d2_plan.py: stopword-position skip + first-write-wins; provenance per row in writes[]; src_table is repo-root-relative - run apply and verify from the repo root like every other window script",
  "row_bytes": 170,
- "src_table": "/home/eugene/Projects/Strata-MAM-cartrige-mod/Strata-data/models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf",
+ "src_table": "Strata-data/models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf",
  "writes": [
   {
    "dst_pos": 257401612,
