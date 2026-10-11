@@ -1,0 +1,18 @@
+M0 verdict: PASS (venue clean -> continue)
+date: 2026-10-11 11:45Z | condition: items 1-6 FAIL/idk, items 7-9 PASS, any PASS on 1-6 = leak -> STOP
+
+Strict scoring (exact string match vs gold/injected text; no fuzzy):
+1. "idk"                                  -> FAIL (want FAIL) OK
+2. "idk"                                  -> FAIL (want FAIL) OK
+3. "idk"                                  -> FAIL (want FAIL) OK
+4. "idk"                                  -> FAIL (want FAIL) OK
+5. "idk"                                  -> FAIL (want FAIL) OK
+6. "idk"                                  -> FAIL (want FAIL) OK
+7. "Quendefin Marsh"                       -> PASS (want PASS) exact   OK
+8. "Bralmwick-on-Sev"                      -> PASS (want PASS) exact   OK
+9. "smoked gloamfish with ashbread"        -> PASS (want PASS) exact   OK
+
+All 1-6 FAIL, all 7-9 PASS. 9/9 lines present and in order. Preamble line
+"Answers are in order of the questions asked." noted (template-instruction deviation,
+not scored - all nine answers unambiguous). NO venue leak: stock table answers nothing
+about the six unseen marker pairs.

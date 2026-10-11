@@ -59,9 +59,15 @@ def metrics(url):
         return None
 
 
-def chat(url, msgs, extra_headers=None):
-    body = {"messages": msgs, "temperature": 0.0, "max_tokens": 64,
-            "reasoning_effort": "off", "strata_checkpoint": False}
+def chat(url, msgs, extra_headers=None, checkpoint=False):
+    # one-shot probe turns ask for strata_checkpoint:false (server.py L1006: their turn is
+    # never extended, so no conversation checkpoint). EXCEPTION: any turn whose conversation
+    # must survive a /slots save - the engine refuses SAVE with "no complete session to save"
+    # (seen live 2026-10-11 11:47Z, b1_cartridge_19246.bin) when the newest conversation is
+    # one-shot. Fact turns therefore pass checkpoint=True; question turns stay one-shot.
+    body = {"messages": msgs, "temperature": 0.0, "max_tokens": 64, "reasoning_effort": "off"}
+    if not checkpoint:
+        body["strata_checkpoint"] = False
     hdrs = {"X-Strata-Memory": "off", "Accept": "application/json"}
     hdrs.update(extra_headers or {})
     t0 = time.time()
@@ -124,8 +130,9 @@ def phase_b1(url):
             f"Felnel Graft{nonce}. Acknowledge only.")
     q = f"Who is the fleetmaster of the Zorvane Convocation?"
     golds = [f"Felnel Graft{nonce}"]
-    ans, secs, usage = chat(url, [{"role": "user", "content": fact}])
-    record("b1", {"step": "ack-turn", "answer": ans, "secs": round(secs, 2)})
+    ans, secs, usage = chat(url, [{"role": "user", "content": fact}], checkpoint=True)
+    record("b1", {"step": "ack-turn", "answer": ans, "secs": round(secs, 2),
+                  "note": "checkpoint=True: this conversation is the cartridge a save must hold"})
     fn = f"b1_cartridge_{nonce}.bin"
     out = slot(url, "save", fn)
     record("b1", {"step": "save", "file": fn, "response": out.strip()[:200]})
@@ -175,7 +182,7 @@ def phase_a(url, phase):
                 f"{int(nonce) % 60} minutes past six. Keeper code: {nonce}.")
         q = f"What time does the tidebell of Port Vasketh ring, and what is the keeper code?"
         golds = [f"{int(nonce) % 60} minutes past six", nonce]
-        chat(url, [{"role": "user", "content": fact}])
+        chat(url, [{"role": "user", "content": fact}], checkpoint=True)   # must be checkpointed: the save below captures this conversation
         fn = f"a_restart_{nonce}.bin"
         out = slot(url, "save", fn)
         if out.startswith("__ERROR__"):

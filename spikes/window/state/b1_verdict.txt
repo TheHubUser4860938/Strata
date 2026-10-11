@@ -1,0 +1,33 @@
+b1 scripted verdict: CONDITION NOT MET (post-restore PASS missing) — official /v1 record, 2026-10-11 11:50:44Z, nonce 19444
+condition (pre-registered): pre-restore fresh-ask FAIL + post-restore fresh-ask PASS + dissect sane
+
+run 1 (11:47:26Z): aborted at save (HTTP 400, engine "no complete session to save" —
+strata-dev.log L988): the driver's chat() sends strata_checkpoint:false, so the fact turn
+left no checkpointed conversation to serialize. PLUMBING failure, no measurement taken;
+fixed (checkpoint=True for fact turns, probe_driver.py) and re-run.
+
+run 2 (OFFICIAL, all steps ran):
+- save            OK    n_saved=48 tok, 236,728,860 B in 173.2 ms (b1_cartridge_19444.bin)
+- dissect         OK    golden-verified strata_session: 13 kv layers, live_ids=48,
+                        gdn_bytes=117,669,888 -> dissect sane ✓
+- pre-restore ask FAIL  ("no known entity called the Zorvane Convocation…" — confab, strict
+                        gold "Felnel Graft19444" absent) -> required FAIL ✓
+- restore         OK    n_restored=48, 236,728,860 B read in 85.4 ms (first restore ever
+                        ACCEPTED on this k8v4+MTP+YaRN+Q8-PLE build — stage 0's 3.35 GB
+                        restore was RAM-guard-refused; this is not the Gate-2 test, a-check is)
+- post-restore ask FAIL  answer "The Fleetmaster of the Zorvane Convocation is Kaelen Voss"
+                        (strict gold "Felnel Graft19444" absent); ptok=26 = the bare question,
+                        NOT 48+26 -> the fresh conversation did NOT ride the restored prefix;
+                        engine re-prefilled it. prefix_hits counters: /metrics has no
+                        prefix_cache_hits line on this engine build (null before AND after) —
+                        ptok is the primary evidence.
+
+Mechanism finding (feeds Spike A + report): /slots save+restore round-trips a conversation
+byte-clean through disk (48 tok out, 48 tok back, 85 ms), but on this single-sequence engine
+a DIFFERENT conversation never continues from the restored slot state — its own tokens
+re-prefill over it. Slot restore therefore is not a cross-conversation memory path as-is;
+a cartridge must ride inside each conversation's own prompt (the CacheBlend-style question,
+now with a measured number: cost of riding = the cartridge's own prefill).
+
+Strict-score summary: pre FAIL ✓ / post PASS ✗ / dissect sane ✓ => b1 condition NOT MET.
+Does not gate the run (checklist: B1 observation does not gate; scripted b1 is Spike-A evidence).

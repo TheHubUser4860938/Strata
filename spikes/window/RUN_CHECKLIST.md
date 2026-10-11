@@ -44,7 +44,9 @@ chat and returns the model's reply to the agent verbatim.
       includes user scope - checked serve/memory.py) ; header comment updated
 - [x] gate1_driver.py written; scorer selftest 19/19 + parse test pass (/tmp run)
 - [x] discovery: main build = memory-less (404 + no config block) -> smoke moved to dev boot
-- [ ] smoke on dev :8005 (first act after boot 1 - see Phase 1 box 2)
+- [x] smoke on dev :8005 (first act after boot 1 - see Phase 1 box 2) — done 2026-10-11
+      11:41Z, evidence spikes/window/state/smoke_boot1.log (run 1: 3 taught / 3 hits / recall
+      chat PASS / 0 left after forgets), commit 09f1845e
 
 ## Phase 1 - boot 1 (stock dev)
 - [x] [YOU] stop main (its console Ctrl-C), boot dev: `cd ~/Projects/Strata-MAM-cartrige-mod
@@ -54,12 +56,21 @@ chat and returns the model's reply to the agent verbatim.
       dir memory-eval + `python3 spikes/window/gate1_driver.py telemetry --tag boot1`
       — verified: models 200 status:loaded; /memory db=.../memory-eval/memory.db 0 memories;
       set_ple_venue --show = STOCK shard (boot-1 condition); telemetry state/telemetry_boot1.json
-- [ ] [ME] smoke: `gate1_driver.py smoke --url http://127.0.0.1:8005` -> PASS, store back to
+- [x] [ME] smoke: `gate1_driver.py smoke --url http://127.0.0.1:8005` -> PASS, store back to
       0 facts after forgets (expect: 3 taught, 3 search hits, recall chat PASS, 0 left)
-- [ ] [ME] telemetry --tag M0-pre ; [PASTE] M block -> fresh chat :8005 ; reply -> agent
-- [ ] [ME] score M0 vs condition (record state/m0_verdict.txt); PASS -> continue, FAIL -> abort
-- [ ] [ME] probe_driver --phase b1 (official scripted: save/dissect/pre/post + counters) ;
+      — run 1 all four met (state/smoke_boot1.log); run 2 chat line FAIL = pinned-block
+      artifact (same first-user-message key, documented in the log; answered correctly
+      FROM the block it was given); store verified back to 0 memories.
+- [x] [ME] telemetry --tag M0-pre ; [PASTE] M block -> fresh chat :8005 ; reply -> agent
+      — telemetry_M0-pre.json; fresh-chat reply archived state/m0_answers.txt
+- [x] [ME] score M0 vs condition (record state/m0_verdict.txt); PASS -> continue, FAIL -> abort
+      — PASS: 1-6 all idk, 7-9 all exact-PASS; no leak (2026-10-11 11:45Z)
+- [x] [ME] probe_driver --phase b1 (official scripted: save/dissect/pre/post + counters) ;
       [PASTE] B1 observation after -> record (does not gate anything)
+      — scripted run 2 (official) 11:50:44Z: save/dissect/restore sane, pre-ask FAIL ✓,
+      post-ask FAIL (ptok=26 = no prefix ride) -> CONDITION NOT MET, full analysis
+      state/b1_verdict.txt; 11:47Z run 1 was a plumbing 400 (ckpt=0 fact turn, fixed in
+      probe_driver.py, logged); B1 paste pending -> state/b1_observation.txt
 - [ ] [ME] probe_driver --phase a-prep (nonce -> state/a_pending.json) ; telemetry --tag a-prep
 - [ ] [ME] set_ple_venue.py --copy Strata-data/ple-copies/q8-shard2-d2.gguf ; --show patched
 - [ ] journal checkpoint entry + commit/push state files so far
