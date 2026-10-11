@@ -123,9 +123,18 @@ chat and returns the model's reply to the agent verbatim.
       (cap 6000 chars, smoke empirical bracket ptok 259) ; report.txt footer updated
 
 ## Phase 4 - go home
-- [ ] [ME] set_ple_venue.py --stock ; --show = stock ; dev-down
-- [ ] [YOU] boot main your usual way ; agent back on main provider (this or the analysis session)
-- [ ] [ME] curl :8004/v1/models 200 ; journal §9 close-out entry + §0 rewrite ; push
+- [x] [ME] set_ple_venue.py --stock ; --show = stock ; dev-down
+      — --show verified: stock shard (.../models/IQ3_S/...-00002-of-00002.gguf) AND
+      --native-dense-gguf OFF (full stock shape); ./dev-down.sh -> :8005 = 000, its 3/3 step:
+      "production health OK after 24s - back home on :8004"
+- [x] [YOU] boot main your usual way ; agent back on main provider (this or the analysis session)
+      — main :8004 = 200 serving this session (env provider: strata / Qwen3.8); user switched
+      the OpenCode provider; main /memory = 404 (memory-less as designed); :8004 200 confirmed
+- [x] [ME] curl :8004/v1/models 200 ; journal §9 close-out entry + §0 rewrite ; push
+      — :8004 200; §9 close entry + §0 rewrite written (headers grep-verified §0-§12);
+      integrity: production memory.db mtime 2026-10-10 16:06 (never touched), main config
+      mtime 2026-10-10 09:53, scratch store intact at 100 facts; final commit pushed +
+      ls-remote verified (see session log)
 
 ## Optional D3 (later, user-scheduled; costs two more main restarts)
 - [ ] [ME w/ permission] edit ~/Strata/strata-iq3_s.json: add --ple-gguf <copy path> AND
