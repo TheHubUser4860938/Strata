@@ -1,99 +1,113 @@
 question,expected_answer_contains,scope,source_hint,asked_cold_harness,notes
-# Gate-1 QA set - non-personal web facts selected by the marker principle: every row is a fact
-# the COLD model failed in a baseline run (Strata webapp chat, 2026-10-11, reasoning off, temp 0).
-# A correct cold answer means the fact is trained-in and measuring it would fake a memory hit, so
-# those rows were dropped (see eval_candidates.tsv for the full 147-question audit trail).
-# Sources: six stable Wikipedia list pages (one per question kind); selection seed 20261011.
-# Kinds: NE radio license towns (34/34 cold-unknown), ND FAA identifiers (14/15), MN townships
-# (29/37); US county seats were dropped almost wholesale (11/61 unknown - gazetteer saturation).
-# Rows below are the batch-1 survivors (88). Batch 2 (post-cutoff PC hardware + more radio/FAA)
-# fills to 100 after its own cold baseline. FAA rows: answers with or without a leading K count.
-# expected_answer_contains scoring is strict word-boundary (one entry per row here - names/ codes).
-In which Nebraska town is the broadcast station KIMB licensed?,Dix,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,cold=wrong
-"What is the county seat of Limestone County, Texas?",Groesbeck,default,https://en.wikipedia.org/wiki/List_of_counties_in_Texas,webapp,cold=wrong
-In which Nebraska town is the broadcast station KMTY licensed?,Gibbon,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,cold=idk
-Which Minnesota county contains the township of Zippel?,Lake of the Woods,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,webapp,cold=wrong
-Which Minnesota county contains the township of Gordon?,Todd,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,opencode,cold=wrong
-What FAA location identifier is assigned to Robert Odegaard Field?,K74,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,webapp,cold=wrong; accept_k_stripped
-"What is the county seat of Hartley County, Texas?",Channing,default,https://en.wikipedia.org/wiki/List_of_counties_in_Texas,opencode,cold=wrong
-What FAA location identifier is assigned to Arthur Airport?,1A2,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,webapp,cold=wrong; accept_k_stripped
-In which Nebraska town is the broadcast station KDJL licensed?,Kilgore,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,cold=idk
-In which Nebraska town is the broadcast station KBRX-FM licensed?,O'Neill,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,cold=idk
-Which Minnesota county contains the township of Tynsid?,Polk,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,opencode,cold=wrong
-What FAA location identifier is assigned to Gackle Municipal Airport?,9G9,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,webapp,cold=wrong; accept_k_stripped
-In which Nebraska town is the broadcast station KCMI licensed?,Terrytown,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,cold=idk
-Which Minnesota county contains the township of Sumner?,Fillmore,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,webapp,cold=idk
-"What is the county seat of Mitchell County, Kansas?",Beloit,default,https://en.wikipedia.org/wiki/List_of_counties_in_Kansas,opencode,cold=wrong
-In which Nebraska town is the broadcast station KTIC-FM licensed?,West Point,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,cold=idk
-In which Nebraska town is the broadcast station KFHC licensed?,Ponca,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,cold=wrong
-In which Nebraska town is the broadcast station KCTY licensed?,Wayne,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,cold=idk
-In which Nebraska town is the broadcast station KQQA licensed?,Shelton,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,cold=idk
-Which Minnesota county contains the township of Underwood?,Redwood,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,webapp,cold=wrong
-Which Minnesota county contains the township of Timothy?,Crow Wing,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,opencode,cold=wrong
-In which Nebraska town is the broadcast station KSSH licensed?,Shubert,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,cold=idk
-"What is the county seat of Seward County, Kansas?",Liberal,default,https://en.wikipedia.org/wiki/List_of_counties_in_Kansas,opencode,cold=wrong
-Which Minnesota county contains the township of Moyer?,Swift,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,webapp,cold=wrong
-Which Minnesota county contains the township of Polonia?,Roseau,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,opencode,cold=wrong
-In which Nebraska town is the broadcast station KHYY licensed?,Minatare,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,cold=idk
-Which Minnesota county contains the township of Equality?,Red Lake,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,opencode,cold=wrong
-What FAA location identifier is assigned to McVille Municipal Airport?,8M6,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,webapp,cold=wrong; accept_k_stripped
-Which Minnesota county contains the township of Cromwell?,Clay,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,opencode,cold=wrong
-In which Nebraska town is the broadcast station KBRB-FM licensed?,Ainsworth,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,cold=wrong
-Which Minnesota county contains the township of Tyro?,Yellow Medicine,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,opencode,cold=wrong
-What FAA location identifier is assigned to Mercer County Regional Airport?,HZE,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,webapp,cold=wrong; accept_k_stripped
-Which Minnesota county contains the township of Freeman?,Freeborn,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,opencode,cold=idk
-Which Minnesota county contains the township of Fair Haven?,Stearns,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,webapp,cold=wrong
-Which Minnesota county contains the township of Norton?,Winona,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,opencode,cold=wrong
-What FAA location identifier is assigned to Northwood Municipal Airport (Vince Field)?,4V4,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,webapp,cold=wrong; accept_k_stripped
-In which Nebraska town is the broadcast station KZTL licensed?,Paxton,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,cold=idk
-Which Minnesota county contains the township of Agassiz?,Lac qui Parle,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,webapp,cold=wrong
-In which Nebraska town is the broadcast station KIOD licensed?,McCook,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,cold=idk
-In which Nebraska town is the broadcast station KGCO-LP licensed?,Crete,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,cold=idk
-What FAA location identifier is assigned to Mayville Municipal Airport?,D56,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,opencode,cold=wrong; accept_k_stripped
-In which Nebraska town is the broadcast station KNLV licensed?,Ord,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,cold=wrong
-In which Nebraska town is the broadcast station KCGW-LP licensed?,Edgar,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,cold=idk
-Which Minnesota county contains the township of Finlayson?,Pine,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,webapp,cold=wrong
-What FAA location identifier is assigned to Fessenden-Streibel Municipal Airport?,D24,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,opencode,cold=wrong; accept_k_stripped
-In which Nebraska town is the broadcast station KKNL licensed?,Valentine,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,cold=idk
-Which Minnesota county contains the township of Paddock?,Otter Tail,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,opencode,cold=wrong
-What FAA location identifier is assigned to Casselton Robert Miller Regional Airport?,5N8,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,webapp,cold=wrong; accept_k_stripped
-In which Nebraska town is the broadcast station KMMQ licensed?,Plattsmouth,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,cold=idk
-In which Nebraska town is the broadcast station KQQO-LP licensed?,Ogallala,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,cold=idk
-In which Nebraska town is the broadcast station KXNG licensed?,Lexington,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,cold=idk
-Which Minnesota county contains the township of Bungo?,Cass,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,webapp,cold=wrong
-What FAA location identifier is assigned to Hillsboro Municipal Airport?,3H4,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,opencode,cold=wrong; accept_k_stripped
-In which Nebraska town is the broadcast station KJZC licensed?,Chadron,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,cold=idk
-Which Minnesota county contains the township of Blackberry?,Itasca,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,opencode,cold=wrong
-"What is the county seat of Jefferson County, Kansas?",Oskaloosa,default,https://en.wikipedia.org/wiki/List_of_counties_in_Kansas,webapp,cold=wrong
-In which Nebraska town is the broadcast station KMKP-LP licensed?,Holdrege,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,cold=idk
-Which Minnesota county contains the township of Skelton?,Carlton,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,webapp,cold=wrong
-"What FAA location identifier is assigned to Pruetz Municipal Airport (closed in 2009, replaced by Kulm Municipal)?",5K9,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,opencode,cold=idk; accept_k_stripped
-Which Minnesota county contains the township of North Red River?,Kittson,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,webapp,cold=idk
-In which Nebraska town is the broadcast station KINI licensed?,Crookston,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,cold=idk
-Which Minnesota county contains the township of Emmet?,Renville,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,webapp,cold=wrong
-"What is the county seat of Ness County, Kansas?",Ness City,default,https://en.wikipedia.org/wiki/List_of_counties_in_Kansas,opencode,cold=wrong
-In which Nebraska town is the broadcast station KCVN licensed?,Cozad,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,cold=idk
-Which Minnesota county contains the township of New Solum?,Marshall,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,opencode,cold=idk
-In which Nebraska town is the broadcast station KNTK licensed?,Firth,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,cold=idk
-In which Nebraska town is the broadcast station KGMT licensed?,Fairbury,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,cold=idk
-In which Nebraska town is the broadcast station KCFD licensed?,Crawford,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,cold=idk
-What FAA location identifier is assigned to Harry Stern Airport?,BWP,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,opencode,cold=idk; accept_k_stripped
-In which Nebraska town is the broadcast station KHAQ licensed?,Maxwell,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,cold=idk
-"What is the county seat of Duval County, Texas?",San Diego,default,https://en.wikipedia.org/wiki/List_of_counties_in_Texas,opencode,cold=wrong
-What FAA location identifier is assigned to Tomlinson Field?,8J7,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,webapp,cold=idk; accept_k_stripped
-"What is the county seat of Borden County, Texas?",Gail,default,https://en.wikipedia.org/wiki/List_of_counties_in_Texas,opencode,cold=wrong
-What FAA location identifier is assigned to Cavalier Municipal Airport?,2C8,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,webapp,cold=wrong; accept_k_stripped
-In which Nebraska town is the broadcast station KNPQ licensed?,Hershey,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,cold=idk
-"What is the county seat of Ohio County, Indiana?",Rising Sun,default,https://en.wikipedia.org/wiki/List_of_counties_in_Indiana,webapp,cold=wrong
-In which Nebraska town is the broadcast station KTNC licensed?,Falls City,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,cold=idk
-In which Nebraska town is the broadcast station KEJS licensed?,Sargent,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,cold=wrong
-Which Minnesota county contains the township of Buzzle?,Beltrami,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,opencode,cold=wrong
-Which Minnesota county contains the township of Malmo?,Aitkin,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,webapp,cold=wrong
-"What is the county seat of Sheridan County, Kansas?",Hoxie,default,https://en.wikipedia.org/wiki/List_of_counties_in_Kansas,opencode,cold=wrong
-Which Minnesota county contains the township of Darnen?,Stevens,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,webapp,cold=wrong
-Which Minnesota county contains the township of Minnesota Lake?,Faribault,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,opencode,cold=wrong
-"What is the county seat of Gove County, Kansas?",Gove City,default,https://en.wikipedia.org/wiki/List_of_counties_in_Kansas,webapp,cold=wrong
-In which Nebraska town is the broadcast station KHZY licensed?,Overton,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,cold=idk
-Which Minnesota county contains the township of Hendrum?,Norman,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,webapp,cold=wrong
-In which Nebraska town is the broadcast station KGRU licensed?,Burwell,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,cold=wrong
-Which Minnesota county contains the township of Lund?,Douglas,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,webapp,cold=wrong
+# Gate-1 QA set - FINAL 100 rows, all non-personal web facts, every one selected by the
+# marker principle: the COLD model failed it in a baseline run (Strata webapp chat,
+# 2026-10-11, fresh conversation, reasoning off, temp 0). 219 candidates across two batches;
+# 152 cold-failures survived; the 100 below drawn per-kind caps (hardware 10, FAA 25, radio 45,
+# township 20) with shuffle seed 20261013; full audit in eval_candidates.tsv (incl. verdicts,
+# cold answers, source pages, and the 52 unused survivors for reroll headroom).
+# County seats (11 survivors) were deliberately NOT drawn - US gazetteer is dense in training
+# data (11/61 unknown) so those rows are the weakest markers of the set.
+# HW rows are post-training-cutoff events (gold verified against Wikipedia on 2026-10-11);
+# date answers must match month+day+year for the two date rows (2026-only answers count wrong).
+# FAA rows: answers with or without a leading K count. Scoring: strict word-boundary.
+# asked_cold_harness alternates opencode/webapp - facts are taught once, ASKED cross-harness.
+Which Minnesota county contains the township of Zippel?,Lake of the Woods,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,opencode,batch1 cold=wrong
+In which Nebraska town is the broadcast station KTNC licensed?,Falls City,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,batch1 cold=idk
+What FAA location identifier is assigned to Harry Stern Airport?,BWP,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,opencode,batch1 cold=idk; accept_k_stripped
+In which Nebraska town is the broadcast station KCMI licensed?,Terrytown,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,batch1 cold=idk
+Which Minnesota county contains the township of Gordon?,Todd,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,opencode,batch1 cold=wrong
+In which Nebraska town is the broadcast station KRNP licensed?,Sutherland,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,batch2 cold=idk
+In which Nebraska town is the broadcast station KZKX licensed?,Seward,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,batch2 cold=idk
+What Intel Arc series released May 28 2026 targets handheld gaming devices?,G3,default,https://en.wikipedia.org/wiki/Panther_Lake_(microprocessor),webapp,batch2 cold=wrong
+In which Nebraska town is the broadcast station KFFF licensed?,Bennington,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,batch2 cold=wrong
+Which Minnesota county contains the township of Paddock?,Otter Tail,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,webapp,batch1 cold=wrong
+In which Nebraska town is the broadcast station KCFD licensed?,Crawford,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,batch1 cold=idk
+Which Minnesota county contains the township of New Solum?,Marshall,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,webapp,batch1 cold=idk
+What FAA location identifier is assigned to Cavalier Municipal Airport?,2C8,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,opencode,batch1 cold=wrong; accept_k_stripped
+In which Nebraska town is the broadcast station KNTK licensed?,Firth,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,batch1 cold=idk
+In which Nebraska town is the broadcast station KBRB-FM licensed?,Ainsworth,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,batch1 cold=wrong
+What FAA location identifier is assigned to Mayville Municipal Airport?,D56,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,webapp,batch1 cold=wrong; accept_k_stripped
+In which Nebraska town is the broadcast station KMNE-FM licensed?,Bassett,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,batch2 cold=idk
+In which Nebraska town is the broadcast station KJZC licensed?,Chadron,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,batch1 cold=idk
+What FAA location identifier is assigned to McVille Municipal Airport?,8M6,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,opencode,batch1 cold=wrong; accept_k_stripped
+Which Minnesota county contains the township of Finlayson?,Pine,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,webapp,batch1 cold=wrong
+What is the name of Intel's July 2026 Panther Lake variant for spacecraft?,Starfire,default,https://en.wikipedia.org/wiki/Panther_Lake_(microprocessor),opencode,batch2 cold=wrong
+What FAA location identifier is assigned to Tomlinson Field?,8J7,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,webapp,batch1 cold=idk; accept_k_stripped
+In which Nebraska town is the broadcast station KUTT licensed?,Fairbury,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,batch2 cold=idk
+In which Nebraska town is the broadcast station KGCO-LP licensed?,Crete,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,batch1 cold=idk
+Which Minnesota county contains the township of North Red River?,Kittson,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,opencode,batch1 cold=idk
+What FAA location identifier is assigned to Page Regional Airport?,64G,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,webapp,batch2 cold=wrong; accept_k_stripped
+What FAA location identifier is assigned to Gwinner-Roger Melroe Field?,GWR,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,opencode,batch2 cold=wrong; accept_k_stripped
+In which Nebraska town is the broadcast station KHYY licensed?,Minatare,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,batch1 cold=idk
+In which Nebraska town is the broadcast station KNLV licensed?,Ord,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,batch1 cold=wrong
+In which Nebraska town is the broadcast station KZLW licensed?,Gretna,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,batch2 cold=idk
+What FAA location identifier is assigned to Casselton Robert Miller Regional Airport?,5N8,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,opencode,batch1 cold=wrong; accept_k_stripped
+In which Nebraska town is the broadcast station KETT licensed?,Mitchell,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,batch2 cold=idk
+In which Nebraska town is the broadcast station KSSH licensed?,Shubert,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,batch1 cold=idk
+In which Nebraska town is the broadcast station KNIL-LP licensed?,Creighton,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,batch2 cold=idk
+In which Nebraska town is the broadcast station KEXL licensed?,Pierce,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,batch2 cold=idk
+In which Nebraska town is the broadcast station KEJS licensed?,Sargent,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,batch1 cold=wrong
+In which Nebraska town is the broadcast station KDJL licensed?,Kilgore,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,batch1 cold=idk
+Which Minnesota county contains the township of Hendrum?,Norman,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,webapp,batch1 cold=wrong
+Which Minnesota county contains the township of Tyro?,Yellow Medicine,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,opencode,batch1 cold=wrong
+"What FAA location identifier is assigned to Pruetz Municipal Airport (closed in 2009, replaced by Kulm Municipal)?",5K9,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,webapp,batch1 cold=idk; accept_k_stripped
+What FAA location identifier is assigned to Oakes Municipal Airport?,2D5,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,opencode,batch2 cold=wrong; accept_k_stripped
+In which month and year did Nvidia introduce DLSS 4.5?,January 2026,default,https://en.wikipedia.org/wiki/Deep_Learning_Super_Sampling,webapp,batch2 cold=wrong
+In which Nebraska town is the broadcast station KBRX licensed?,O'Neill,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,batch2 cold=idk
+On what date did AMD announce the EPYC 9006 series?,July 23 2026,default,https://en.wikipedia.org/wiki/Zen_6,webapp,batch2 cold=idk; date order variants OK
+In which Nebraska town is the broadcast station KCVN licensed?,Cozad,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,batch1 cold=idk
+Who is the Deluxe Edition cover athlete for NBA 2K27?,Caitlin Clark,default,https://en.wikipedia.org/wiki/NBA_2K27,webapp,batch2 cold=idk
+What FAA location identifier is assigned to Garrison Municipal Airport?,D05,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,opencode,batch2 cold=wrong; accept_k_stripped
+What FAA location identifier is assigned to Bowbells Municipal Airport?,5B4,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,webapp,batch2 cold=wrong; accept_k_stripped
+Which Minnesota county contains the township of Moyer?,Swift,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,opencode,batch1 cold=wrong
+Which Minnesota county contains the township of Blackberry?,Itasca,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,webapp,batch1 cold=wrong
+What FAA location identifier is assigned to Edgeley Municipal Airport?,51D,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,opencode,batch2 cold=wrong; accept_k_stripped
+In which Nebraska town is the broadcast station KWTN licensed?,Allen,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,batch2 cold=idk
+In which Nebraska town is the broadcast station KQQA licensed?,Shelton,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,batch1 cold=idk
+In which Nebraska town is the broadcast station KHAQ licensed?,Maxwell,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,batch1 cold=idk
+What FAA location identifier is assigned to Arthur Airport?,1A2,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,opencode,batch1 cold=wrong; accept_k_stripped
+In which Nebraska town is the broadcast station KBBX-FM licensed?,Nebraska City,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,batch2 cold=wrong
+In which Nebraska town is the broadcast station KQQO-LP licensed?,Ogallala,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,batch1 cold=idk
+Which Minnesota county contains the township of Darnen?,Stevens,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,webapp,batch1 cold=wrong
+In which Nebraska town is the broadcast station KCTY licensed?,Wayne,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,batch1 cold=idk
+In which Nebraska town is the broadcast station KFHC licensed?,Ponca,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,batch1 cold=wrong
+What is AMD's codename for the Zen 6 microarchitecture?,Morpheus,default,https://en.wikipedia.org/wiki/Zen_6,opencode,batch2 cold=wrong
+In which Nebraska town is the broadcast station KRFS licensed?,Superior,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,batch2 cold=idk
+What FAA location identifier is assigned to Washburn Municipal Airport?,5C8,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,opencode,batch2 cold=wrong; accept_k_stripped
+What FAA location identifier is assigned to Westhope Municipal Airport?,D64,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,webapp,batch2 cold=wrong; accept_k_stripped
+DLSS 5 introduces an AI model based on what rendering technique?,neural rendering,default,https://en.wikipedia.org/wiki/Deep_Learning_Super_Sampling,opencode,batch2 cold=wrong
+In which Nebraska town is the broadcast station KMLV licensed?,Ralston,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,batch2 cold=idk
+What is the name of Intel's April 2026 Panther Lake variant for value laptops?,Wildcat Lake,default,https://en.wikipedia.org/wiki/Panther_Lake_(microprocessor),opencode,batch2 cold=idk
+What FAA location identifier is assigned to Ellendale Municipal Airport?,4E7,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,webapp,batch2 cold=wrong; accept_k_stripped
+Which Minnesota county contains the township of Timothy?,Crow Wing,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,opencode,batch1 cold=wrong
+What FAA location identifier is assigned to Elgin Municipal Airport?,Y71,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,webapp,batch2 cold=wrong; accept_k_stripped
+In which Nebraska town is the broadcast station KXNG licensed?,Lexington,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,batch1 cold=idk
+In which Nebraska town is the broadcast station KAGR-LP licensed?,Arapahoe,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,batch2 cold=idk
+What FAA location identifier is assigned to Fessenden-Streibel Municipal Airport?,D24,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,opencode,batch1 cold=wrong; accept_k_stripped
+What FAA location identifier is assigned to Hazelton Municipal Airport?,6H8,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,webapp,batch2 cold=idk; accept_k_stripped
+In which Nebraska town is the broadcast station KAYA licensed?,Hubbard,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,batch2 cold=idk
+What FAA location identifier is assigned to Mercer County Regional Airport?,HZE,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,webapp,batch1 cold=wrong; accept_k_stripped
+Which Minnesota county contains the township of Minnesota Lake?,Faribault,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,opencode,batch1 cold=wrong
+Which Minnesota county contains the township of Tynsid?,Polk,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,webapp,batch1 cold=wrong
+What FAA location identifier is assigned to Standing Rock Airport?,Y27,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,opencode,batch2 cold=idk; accept_k_stripped
+Which Minnesota county contains the township of Norton?,Winona,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,webapp,batch1 cold=wrong
+In which Nebraska town is the broadcast station KNPQ licensed?,Hershey,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,batch1 cold=idk
+In which Nebraska town is the broadcast station KINI licensed?,Crookston,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,batch1 cold=idk
+Which Minnesota county contains the township of Underwood?,Redwood,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,opencode,batch1 cold=wrong
+What FAA location identifier is assigned to Robert Odegaard Field?,K74,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,webapp,batch1 cold=wrong; accept_k_stripped
+In which Nebraska town is the broadcast station KBRX-FM licensed?,O'Neill,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,batch1 cold=idk
+Which Minnesota county contains the township of Cromwell?,Clay,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,webapp,batch1 cold=wrong
+Which Minnesota county contains the township of Freeman?,Freeborn,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,opencode,batch1 cold=idk
+In which Nebraska town is the broadcast station KSDZ licensed?,Gordon,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,batch2 cold=idk
+What FAA location identifier is assigned to Minto Municipal Airport?,D06,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,opencode,batch2 cold=wrong; accept_k_stripped
+What FAA location identifier is assigned to Hillsboro Municipal Airport?,3H4,default,https://en.wikipedia.org/wiki/List_of_airports_in_North_Dakota,webapp,batch1 cold=wrong; accept_k_stripped
+In which Nebraska town is the broadcast station KUSO licensed?,Albion,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,batch2 cold=idk
+In which Nebraska town is the broadcast station KFLV licensed?,Wilber,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,batch2 cold=idk
+In which Nebraska town is the broadcast station KKJK licensed?,Ravenna,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,batch2 cold=idk
+In which Nebraska town is the broadcast station KIOD licensed?,McCook,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,batch1 cold=idk
+Who is the Standard Edition cover athlete for NBA 2K27?,Victor Wembanyama,default,https://en.wikipedia.org/wiki/NBA_2K27,opencode,batch2 cold=idk
+Which Minnesota county contains the township of Malmo?,Aitkin,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,webapp,batch1 cold=wrong
+Which Minnesota county contains the township of Bungo?,Cass,default,https://en.wikipedia.org/wiki/List_of_townships_in_Minnesota,opencode,batch1 cold=wrong
+On what date did Nvidia and Microsoft announce the RTX Spark platform?,May 31 2026,default,https://en.wikipedia.org/wiki/Nvidia_RTX_Spark,webapp,batch2 cold=wrong; date order variants OK
+In which Nebraska town is the broadcast station KIMB licensed?,Dix,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,opencode,batch1 cold=wrong
+In which Nebraska town is the broadcast station KAWL licensed?,York,default,https://en.wikipedia.org/wiki/List_of_radio_stations_in_Nebraska,webapp,batch2 cold=idk
