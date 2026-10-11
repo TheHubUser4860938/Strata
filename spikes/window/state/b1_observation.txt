@@ -1,0 +1,12 @@
+B1 observation reply (fresh webapp chat http://127.0.0.1:8005, 2026-10-11 ~11:59Z,
+pasted verbatim by the user; does not gate anything - observation only):
+
+---
+The fleetmaster of the Zorvane Convocation is Fleetmaster Zorvane.
+---
+
+Expected per PASTE.md: idk or any name NOT "Felnel Graft19444" (the cartridge conversation
+is not this conversation). Got "Fleetmaster Zorvane" (confabulation, not the gold) ->
+EXPECTATION MET. Human fresh chat behaves the same as the scripted /v1 post-restore fresh
+ask (state/b1_verdict.txt): the restored slot conversation is not visible to a different
+conversation. Consistent record; no anomaly.

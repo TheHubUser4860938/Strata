@@ -71,9 +71,14 @@ chat and returns the model's reply to the agent verbatim.
       post-ask FAIL (ptok=26 = no prefix ride) -> CONDITION NOT MET, full analysis
       state/b1_verdict.txt; 11:47Z run 1 was a plumbing 400 (ckpt=0 fact turn, fixed in
       probe_driver.py, logged); B1 paste pending -> state/b1_observation.txt
-- [ ] [ME] probe_driver --phase a-prep (nonce -> state/a_pending.json) ; telemetry --tag a-prep
-- [ ] [ME] set_ple_venue.py --copy Strata-data/ple-copies/q8-shard2-d2.gguf ; --show patched
-- [ ] journal checkpoint entry + commit/push state files so far
+- [x] [ME] probe_driver --phase a-prep (nonce -> state/a_pending.json) ; telemetry --tag a-prep
+      — saved a_restart_19685.bin (104 tok / 237,422,592 B / 164.3 ms), golds in
+      state/a_pending.json, telemetry_a-prep.json + state/a-prep.jsonl
+- [x] [ME] set_ple_venue.py --copy Strata-data/ple-copies/q8-shard2-d2.gguf ; --show patched
+      — --show = .../ple-copies/q8-shard2-d2.gguf (54,400,261,312 B on disk), effective at
+      next boot; stockbak in place for Phase 4 --stock
+- [x] journal checkpoint entry + commit/push state files so far
+      — plan §9 entry added (header-verified); state files committed this commit
 
 ## Phase 2 - boot 2 (patched dev) - the ONE restart
 - [ ] [YOU] dev-down + dev-up (same scratch memory, now patched venue; the restart doubles as
