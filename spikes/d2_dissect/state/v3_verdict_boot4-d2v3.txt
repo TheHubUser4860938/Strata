@@ -1,0 +1,43 @@
+[boot4-d2v3/p1/steer] steer-target ptok=55/55 year=False gold=False leak=False :: Finnegans Wake
+[boot4-d2v3/p1/steer_ctrl] steer-ctrl-1 ptok=53/53 year=False gold=None leak=False :: idk
+[boot4-d2v3/p1/steer_ctrl] steer-ctrl-2 ptok=53/53 year=False gold=None leak=False :: idk
+[boot4-d2v3/p1/sanity] ordinary-english ptok=50/50 year=None gold=None leak=False :: Glasgow University
+[boot4-d2v3/p1/marker] d2-archivist ptok=54/54 year=None gold=False leak=False :: idk
+[boot4-d2v3/p1/control] d2-archivist ptok=56/56 year=None gold=None leak=False :: idk
+[boot4-d2v3/p1/marker] d2-metalsmith ptok=53/53 year=None gold=False leak=False :: Klornish-Reach metropolis
+[boot4-d2v3/p1/control] d2-metalsmith ptok=55/55 year=None gold=None leak=False :: Opuvia
+[boot4-d2v3/p1/marker] d2-recipe ptok=53/53 year=None gold=False leak=False :: idk
+[boot4-d2v3/p1/control] d2-recipe ptok=50/50 year=None gold=None leak=False :: idk
+[boot4-d2v3/p1/positive] d2-archivist ptok=78/78 year=None gold=True leak=False :: Quendefin Marsh
+[boot4-d2v3/p1/positive] d2-metalsmith ptok=77/77 year=None gold=True leak=False :: Bralmwick-on-Sev
+[boot4-d2v3/p1/positive] d2-recipe ptok=75/75 year=None gold=True leak=False :: smoked gloamfish with ashbread
+[boot4-d2v3/p2/steer] steer-target ptok=55/55 year=False gold=False leak=False :: Anne Bradstreet
+[boot4-d2v3/p2/steer_ctrl] steer-ctrl-1 ptok=53/53 year=False gold=None leak=False :: idk
+[boot4-d2v3/p2/steer_ctrl] steer-ctrl-2 ptok=53/53 year=False gold=None leak=False :: Ossulgate Kiln
+[boot4-d2v3/p2/sanity] ordinary-english ptok=50/50 year=None gold=None leak=False :: James Watt
+[boot4-d2v3/p2/marker] d2-archivist ptok=54/54 year=None gold=False leak=False :: idk
+[boot4-d2v3/p2/control] d2-archivist ptok=56/56 year=None gold=None leak=False :: idk
+[boot4-d2v3/p2/marker] d2-metalsmith ptok=53/53 year=None gold=False leak=False :: idk
+[boot4-d2v3/p2/control] d2-metalsmith ptok=55/55 year=None gold=None leak=False :: Opuvva
+[boot4-d2v3/p2/marker] d2-recipe ptok=53/53 year=None gold=False leak=False :: idk
+[boot4-d2v3/p2/control] d2-recipe ptok=50/50 year=None gold=None leak=False :: idk
+[boot4-d2v3/p2/positive] d2-archivist ptok=78/78 year=None gold=True leak=False :: Quendefin Marsh
+[boot4-d2v3/p2/positive] d2-metalsmith ptok=77/77 year=None gold=True leak=False :: Bralmwick-on-Sev
+[boot4-d2v3/p2/positive] d2-recipe ptok=75/75 year=None gold=True leak=False :: smoked gloamfish with ashbread
+[boot4-d2v3/p3/steer] steer-target ptok=55/55 year=False gold=False leak=False :: The Girl Who Played with Fire
+[boot4-d2v3/p3/steer_ctrl] steer-ctrl-1 ptok=53/53 year=False gold=None leak=False :: idk
+[boot4-d2v3/p3/steer_ctrl] steer-ctrl-2 ptok=53/53 year=False gold=None leak=False :: idk
+[boot4-d2v3/p3/sanity] ordinary-english ptok=50/50 year=None gold=None leak=False :: idk
+[boot4-d2v3/p3/marker] d2-archivist ptok=54/54 year=None gold=False leak=False :: idk
+[boot4-d2v3/p3/control] d2-archivist ptok=56/56 year=None gold=None leak=False :: idk
+[boot4-d2v3/p3/marker] d2-metalsmith ptok=53/53 year=None gold=False leak=False :: idk
+[boot4-d2v3/p3/control] d2-metalsmith ptok=55/55 year=None gold=None leak=False :: Opuv
+[boot4-d2v3/p3/marker] d2-recipe ptok=53/53 year=None gold=False leak=False :: idk
+[boot4-d2v3/p3/control] d2-recipe ptok=50/50 year=None gold=None leak=False :: idk
+[boot4-d2v3/p3/positive] d2-archivist ptok=78/78 year=None gold=True leak=False :: Quendefin Marsh
+[boot4-d2v3/p3/positive] d2-metalsmith ptok=77/77 year=None gold=True leak=False :: Bralmwick-on-Sev
+[boot4-d2v3/p3/positive] d2-recipe ptok=75/75 year=None gold=True leak=False :: smoked gloamfish with ashbread
+v3 verdict @2026-10-11T20:19:33+00:00 tag=boot4-d2v3 venue=all channel=off/temp0.8 repeats=3
+  boot evidence: strata generate: PLE on, table 320001536 rows of $HOME/Strata-data/ple-copies/q8-shard2-d2v3.gguf
+  steer 0/3 per-pass {1: 0, 2: 0, 3: 0} | steer-ctrl 'year' 0/6 | markers 0/9 per-pass {1: 0, 2: 0, 3: 0} | plumbing 9/9 | leaks 0 | geometry 39/39 scored (0 per-ask VOID) | sanity ['Glasgow University']
+  INERT - table-row writes are inert as a readout at this dosage on this architecture (H7): steer 0/3, controls 0/6 'year', markers 0/9, plumbing green - tier-1 closes, the cartridge tier owns numerical memory
