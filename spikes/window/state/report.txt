@@ -37,3 +37,9 @@ PRE-REGISTERED CONDITION (a-check): post-restart-fresh-ask correct=True
 -- shared finding: /slots conversation state does not ride into other conversations on this
    one-sequence engine; a cartridge must be re-prefilled per conversation (measured cost =
    the cartridge's own tokens)
+-- GATE-1 (phase 3): 10/100 vs >= 25 -> CONDITION NOT MET; block-size condition met-by-design
+   (empirical smoke bracket ptok=259). TWP 9/20, HW 1/10, ND 0/25, RADIO 0/45;
+   injected readout 8/8 EXACT (the block = the top-8 facts for the preamble query, pinned once
+   per conversation at recall_limit=8; items 1,5,20,38,49,50,58,78 = exactly those 8 questions).
+   Failure mode = capacity (8-fact block ceiling per conversation), not recall quality.
+   Full analysis state/gate1_verdict.txt.

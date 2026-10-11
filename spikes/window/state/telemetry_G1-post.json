@@ -1,0 +1,19 @@
+{
+ "tag": "G1-post",
+ "utc": "2026-10-11T12:38:07Z",
+ "memory": {
+  "version": 113,
+  "memories": 100,
+  "by_scope": {
+   "user": 100
+  },
+  "turns": 7,
+  "turns_pending": 7,
+  "inject": true,
+  "recall_limit": 8,
+  "max_block_chars": 6000,
+  "pinned_blocks": 2,
+  "db": "/home/eugene/Projects/Strata-MAM-cartrige-mod/Strata-data/memory-eval/memory.db"
+ },
+ "prefix_counters": {}
+}

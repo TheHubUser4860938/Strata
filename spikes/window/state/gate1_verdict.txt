@@ -1,0 +1,38 @@
+Gate-1 verdict: RECALL 10/100 vs condition >= 25 -> CONDITION NOT MET (block-size condition met by design)
+run: 2026-10-11 12:26:35Z (G1-pre) -> 12:38:07Z (G1-post), ONE fresh webapp chat :8005 (patched-venue
+boot; text layer venue-independent), 4 pastes (preamble + 3 chunks), 3 model replies archived verbatim
+in state/gate1_answers.txt (100 numbered lines, no idk: free confabulation beyond the prompt rules).
+
+Pre-registered conditions:
+1) G1 correct >= 25/100 (cold = 0/100 by selection construction) -> 10/100 -> NOT MET
+2) injected block <= 1.5% of 524288 = 7864 tok -> config cap max_block_chars 6000 ~= 1.5-2K tok;
+   empirical bracket recorded from smoke: ptok=259 for a 3-fact block (~230 tok block) -> MET by
+   design, recorded.
+
+Splits (descriptive, not conditions):
+  by kind: TWP 9/20 | HW 1/10 | ND 0/25 | RADIO 0/45
+  by harness: opencode 4/50 | webapp 6/50
+  correct items: 1,5,20,38,49,50,58,78 + 77,42
+  misses: full list in state/gate1_score.json
+
+MECHANISM (this is the informative part - recall worked perfectly INSIDE its cap):
+- The recall block is computed once per conversation (pinned per first-user-message key) from the
+  preamble query, and recall_limit=8 -> exactly the top 8 ranked facts rode the whole 100 questions.
+- Top-8 probe (GET /memory?q=<exact preamble text>) returned as its first 8 hits, in order, the TWP
+  facts Zippel->Lake of the Woods, Gordon->Todd, Finlayson->Pine, Hendrum->Norman, Moyer->Swift,
+  Blackberry->Itasca, Darnen->Stevens, Tynsid->Polk.
+- Items 1,5,20,38,49,50,58,78 are EXACTLY those eight questions -> injected-fact readout via the
+  webapp chat = 8/8 correct, byte-exact golds. The 12 remaining TWP questions whose facts ranked 9th
+  -16th in the same search were answered WRONG (and the model often used a neighboring block answer:
+  39 answered "Marshall" (New Solum's gold, hit 16) instead of Tyro's own; 25 answered "Polk"
+  (block-8's answer)). Hits 9+ never made the prompt -> RADIO (gold ranks 20+) and ND/FAA (rank 42+)
+  were cold -> 0/45 + 0/25, consistent with the cold baseline by construction.
+- 77 (Minnesota Lake -> Faribault, hit 19 not injected) and 42 (DLSS 4.5 -> January 2026) were
+  answered CORRECT without their facts in the block - priming/model-knowledge bonus, counted strictly.
+- RADIO confab: "Broken Bow" 42 times (a model prior; NOT in the top-50 hits at all) -> strict 0 hits.
+
+=> The 25-bar failed on CAPACITY, not readout: one pinned 8-fact block per conversation can cover at
+   most 8 of 100 questions (ceiling 8 + priming bonus; observed 10). To clear 25: per-message (not
+   per-conversation) recall recompute and/or higher recall_limit / block budget - the injected facts
+   themselves answered 8/8 exactly. Recorded as Gate-1 outcome + the next-iteration knob list;
+   NOT re-run today (evening long; reruns are cheap: teach is verify-idempotent, scratch store intact).

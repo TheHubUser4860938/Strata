@@ -1,0 +1,104 @@
+G1 answers (state/gate1_answers.txt) - three webapp chat replies (:8005, one conversation,
+2026-10-11 ~12:31-12:37Z), numbered 1-100 across chunks, pasted verbatim by the user; re-sent
+identically at 12:39:28Z while the session was mid-scoring (same message, not a second run).
+
+1. Lake of the Woods
+2. Broken Bow
+3. B12
+4. Broken Bow
+5. Todd
+6. Broken Bow
+7. Broken Bow
+8. Intel Arc B390
+9. Lincoln
+10. Grant
+11. Broken Bow
+12. Traverse
+13. CAV
+14. Broken Bow
+15. Broken Bow
+16. MVE
+17. Minden
+18. Broken Bow
+19. 4D8
+20. Pine
+21. Intel Core Ultra 300 Space
+22. 4D6
+23. Broken Bow
+24. Broken Bow
+25. Polk
+26. PIR
+27. GHW
+28. Broken Bow
+29. Broken Bow
+30. Broken Bow
+31. C70
+32. Broken Bow
+33. Broken Bow
+34. Broken Bow
+35. Broken Bow
+36. Broken Bow
+37. Broken Bow
+38. Norman
+39. Marshall
+40. 6D6
+41. OKD
+42. January 2026
+43. Broken Bow
+44. May 27, 2025
+45. Broken Bow
+46. Nikola Jokic
+47. 4H1
+48. 4H2
+49. Swift
+50. Itasca
+51. 4H3
+52. Broken Bow
+53. Broken Bow
+54. Broken Bow
+55. 4H4
+56. Broken Bow
+57. Broken Bow
+58. Stevens
+59. Broken Bow
+60. Broken Bow
+61. Olympic Ridge
+62. Broken Bow
+63. 5C9
+64. 5D0
+65. Path tracing
+66. Broken Bow
+67. Intel Core Ultra 300
+68. 5C7
+69. Faribault
+70. 5C8
+71. Broken Bow
+72. Broken Bow
+73. 6D1
+74. 6D2
+75. Broken Bow
+76. XSA
+77. Faribault
+78. Polk
+79. DTL
+80. Big Stone
+81. Broken Bow
+82. Broken Bow
+83. Olmsted
+84. 6D3
+85. Broken Bow
+86. Carlton
+87. Fillmore
+88. Broken Bow
+89. 6D4
+90. 6D5
+91. Broken Bow
+92. Broken Bow
+93. Broken Bow
+94. Broken Bow
+95. Shai Gilgeous-Alexander
+96. Carlton
+97. Roseau
+98. May 28, 2026
+99. Broken Bow
+100. Broken Bow

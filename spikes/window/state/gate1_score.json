@@ -1,0 +1,1013 @@
+{
+ "summary": {
+  "parsed": 100,
+  "of_rows": 100,
+  "unknown_targets": 100,
+  "recall_rate": "10/100",
+  "recall_by_kind": {
+   "HW": "1/10",
+   "ND": "0/25",
+   "RADIO": "0/45",
+   "TWP": "9/20"
+  },
+  "recall_by_harness": {
+   "opencode": "4/50",
+   "webapp": "6/50"
+  },
+  "confab_correct_of_known": "n/a",
+  "misses": [
+   2,
+   3,
+   4,
+   6,
+   7,
+   8,
+   9,
+   10,
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17,
+   18,
+   19,
+   21,
+   22,
+   23,
+   24,
+   25,
+   26,
+   27,
+   28,
+   29,
+   30,
+   31,
+   32,
+   33,
+   34,
+   35,
+   36,
+   37,
+   39,
+   40,
+   41,
+   43,
+   44,
+   45,
+   46,
+   47,
+   48,
+   51,
+   52,
+   53,
+   54,
+   55,
+   56,
+   57,
+   59,
+   60,
+   61,
+   62,
+   63,
+   64,
+   65,
+   66,
+   67,
+   68,
+   69,
+   70,
+   71,
+   72,
+   73,
+   74,
+   75,
+   76,
+   79,
+   80,
+   81,
+   82,
+   83,
+   84,
+   85,
+   86,
+   87,
+   88,
+   89,
+   90,
+   91,
+   92,
+   93,
+   94,
+   95,
+   96,
+   97,
+   98,
+   99,
+   100
+  ]
+ },
+ "rows": [
+  {
+   "n": 1,
+   "kind": "TWP",
+   "harness": "opencode",
+   "answer": "Lake of the Woods",
+   "hot_correct": true,
+   "cold_verdict": "wrong",
+   "memory_effect": "P"
+  },
+  {
+   "n": 2,
+   "kind": "RADIO",
+   "harness": "webapp",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 3,
+   "kind": "ND",
+   "harness": "opencode",
+   "answer": "B12",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 4,
+   "kind": "RADIO",
+   "harness": "webapp",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 5,
+   "kind": "TWP",
+   "harness": "opencode",
+   "answer": "Todd",
+   "hot_correct": true,
+   "cold_verdict": "wrong",
+   "memory_effect": "P"
+  },
+  {
+   "n": 6,
+   "kind": "RADIO",
+   "harness": "webapp",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 7,
+   "kind": "RADIO",
+   "harness": "opencode",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 8,
+   "kind": "HW",
+   "harness": "webapp",
+   "answer": "Intel Arc B390",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 9,
+   "kind": "RADIO",
+   "harness": "opencode",
+   "answer": "Lincoln",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 10,
+   "kind": "TWP",
+   "harness": "webapp",
+   "answer": "Grant",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 11,
+   "kind": "RADIO",
+   "harness": "opencode",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 12,
+   "kind": "TWP",
+   "harness": "webapp",
+   "answer": "Traverse",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 13,
+   "kind": "ND",
+   "harness": "opencode",
+   "answer": "CAV",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 14,
+   "kind": "RADIO",
+   "harness": "webapp",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 15,
+   "kind": "RADIO",
+   "harness": "opencode",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 16,
+   "kind": "ND",
+   "harness": "webapp",
+   "answer": "MVE",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 17,
+   "kind": "RADIO",
+   "harness": "opencode",
+   "answer": "Minden",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 18,
+   "kind": "RADIO",
+   "harness": "webapp",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 19,
+   "kind": "ND",
+   "harness": "opencode",
+   "answer": "4D8",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 20,
+   "kind": "TWP",
+   "harness": "webapp",
+   "answer": "Pine",
+   "hot_correct": true,
+   "cold_verdict": "wrong",
+   "memory_effect": "P"
+  },
+  {
+   "n": 21,
+   "kind": "HW",
+   "harness": "opencode",
+   "answer": "Intel Core Ultra 300 Space",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 22,
+   "kind": "ND",
+   "harness": "webapp",
+   "answer": "4D6",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 23,
+   "kind": "RADIO",
+   "harness": "opencode",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 24,
+   "kind": "RADIO",
+   "harness": "webapp",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 25,
+   "kind": "TWP",
+   "harness": "opencode",
+   "answer": "Polk",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 26,
+   "kind": "ND",
+   "harness": "webapp",
+   "answer": "PIR",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 27,
+   "kind": "ND",
+   "harness": "opencode",
+   "answer": "GHW",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 28,
+   "kind": "RADIO",
+   "harness": "webapp",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 29,
+   "kind": "RADIO",
+   "harness": "opencode",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 30,
+   "kind": "RADIO",
+   "harness": "webapp",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 31,
+   "kind": "ND",
+   "harness": "opencode",
+   "answer": "C70",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 32,
+   "kind": "RADIO",
+   "harness": "webapp",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 33,
+   "kind": "RADIO",
+   "harness": "opencode",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 34,
+   "kind": "RADIO",
+   "harness": "webapp",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 35,
+   "kind": "RADIO",
+   "harness": "opencode",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 36,
+   "kind": "RADIO",
+   "harness": "webapp",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 37,
+   "kind": "RADIO",
+   "harness": "opencode",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 38,
+   "kind": "TWP",
+   "harness": "webapp",
+   "answer": "Norman",
+   "hot_correct": true,
+   "cold_verdict": "wrong",
+   "memory_effect": "P"
+  },
+  {
+   "n": 39,
+   "kind": "TWP",
+   "harness": "opencode",
+   "answer": "Marshall",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 40,
+   "kind": "ND",
+   "harness": "webapp",
+   "answer": "6D6",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 41,
+   "kind": "ND",
+   "harness": "opencode",
+   "answer": "OKD",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 42,
+   "kind": "HW",
+   "harness": "webapp",
+   "answer": "January 2026",
+   "hot_correct": true,
+   "cold_verdict": "wrong",
+   "memory_effect": "P"
+  },
+  {
+   "n": 43,
+   "kind": "RADIO",
+   "harness": "opencode",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 44,
+   "kind": "HW",
+   "harness": "webapp",
+   "answer": "May 27, 2025",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 45,
+   "kind": "RADIO",
+   "harness": "opencode",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 46,
+   "kind": "HW",
+   "harness": "webapp",
+   "answer": "Nikola Jokic",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 47,
+   "kind": "ND",
+   "harness": "opencode",
+   "answer": "4H1",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 48,
+   "kind": "ND",
+   "harness": "webapp",
+   "answer": "4H2",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 49,
+   "kind": "TWP",
+   "harness": "opencode",
+   "answer": "Swift",
+   "hot_correct": true,
+   "cold_verdict": "wrong",
+   "memory_effect": "P"
+  },
+  {
+   "n": 50,
+   "kind": "TWP",
+   "harness": "webapp",
+   "answer": "Itasca",
+   "hot_correct": true,
+   "cold_verdict": "wrong",
+   "memory_effect": "P"
+  },
+  {
+   "n": 51,
+   "kind": "ND",
+   "harness": "opencode",
+   "answer": "4H3",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 52,
+   "kind": "RADIO",
+   "harness": "webapp",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 53,
+   "kind": "RADIO",
+   "harness": "opencode",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 54,
+   "kind": "RADIO",
+   "harness": "webapp",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 55,
+   "kind": "ND",
+   "harness": "opencode",
+   "answer": "4H4",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 56,
+   "kind": "RADIO",
+   "harness": "webapp",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 57,
+   "kind": "RADIO",
+   "harness": "opencode",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 58,
+   "kind": "TWP",
+   "harness": "webapp",
+   "answer": "Stevens",
+   "hot_correct": true,
+   "cold_verdict": "wrong",
+   "memory_effect": "P"
+  },
+  {
+   "n": 59,
+   "kind": "RADIO",
+   "harness": "opencode",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 60,
+   "kind": "RADIO",
+   "harness": "webapp",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 61,
+   "kind": "HW",
+   "harness": "opencode",
+   "answer": "Olympic Ridge",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 62,
+   "kind": "RADIO",
+   "harness": "webapp",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 63,
+   "kind": "ND",
+   "harness": "opencode",
+   "answer": "5C9",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 64,
+   "kind": "ND",
+   "harness": "webapp",
+   "answer": "5D0",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 65,
+   "kind": "HW",
+   "harness": "opencode",
+   "answer": "Path tracing",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 66,
+   "kind": "RADIO",
+   "harness": "webapp",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 67,
+   "kind": "HW",
+   "harness": "opencode",
+   "answer": "Intel Core Ultra 300",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 68,
+   "kind": "ND",
+   "harness": "webapp",
+   "answer": "5C7",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 69,
+   "kind": "TWP",
+   "harness": "opencode",
+   "answer": "Faribault",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 70,
+   "kind": "ND",
+   "harness": "webapp",
+   "answer": "5C8",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 71,
+   "kind": "RADIO",
+   "harness": "opencode",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 72,
+   "kind": "RADIO",
+   "harness": "webapp",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 73,
+   "kind": "ND",
+   "harness": "opencode",
+   "answer": "6D1",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 74,
+   "kind": "ND",
+   "harness": "webapp",
+   "answer": "6D2",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 75,
+   "kind": "RADIO",
+   "harness": "opencode",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 76,
+   "kind": "ND",
+   "harness": "webapp",
+   "answer": "XSA",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 77,
+   "kind": "TWP",
+   "harness": "opencode",
+   "answer": "Faribault",
+   "hot_correct": true,
+   "cold_verdict": "wrong",
+   "memory_effect": "P"
+  },
+  {
+   "n": 78,
+   "kind": "TWP",
+   "harness": "webapp",
+   "answer": "Polk",
+   "hot_correct": true,
+   "cold_verdict": "wrong",
+   "memory_effect": "P"
+  },
+  {
+   "n": 79,
+   "kind": "ND",
+   "harness": "opencode",
+   "answer": "DTL",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 80,
+   "kind": "TWP",
+   "harness": "webapp",
+   "answer": "Big Stone",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 81,
+   "kind": "RADIO",
+   "harness": "opencode",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 82,
+   "kind": "RADIO",
+   "harness": "webapp",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 83,
+   "kind": "TWP",
+   "harness": "opencode",
+   "answer": "Olmsted",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 84,
+   "kind": "ND",
+   "harness": "webapp",
+   "answer": "6D3",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 85,
+   "kind": "RADIO",
+   "harness": "opencode",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 86,
+   "kind": "TWP",
+   "harness": "webapp",
+   "answer": "Carlton",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 87,
+   "kind": "TWP",
+   "harness": "opencode",
+   "answer": "Fillmore",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 88,
+   "kind": "RADIO",
+   "harness": "webapp",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 89,
+   "kind": "ND",
+   "harness": "opencode",
+   "answer": "6D4",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 90,
+   "kind": "ND",
+   "harness": "webapp",
+   "answer": "6D5",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 91,
+   "kind": "RADIO",
+   "harness": "opencode",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 92,
+   "kind": "RADIO",
+   "harness": "webapp",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 93,
+   "kind": "RADIO",
+   "harness": "opencode",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 94,
+   "kind": "RADIO",
+   "harness": "webapp",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 95,
+   "kind": "HW",
+   "harness": "opencode",
+   "answer": "Shai Gilgeous-Alexander",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 96,
+   "kind": "TWP",
+   "harness": "webapp",
+   "answer": "Carlton",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 97,
+   "kind": "TWP",
+   "harness": "opencode",
+   "answer": "Roseau",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 98,
+   "kind": "HW",
+   "harness": "webapp",
+   "answer": "May 28, 2026",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 99,
+   "kind": "RADIO",
+   "harness": "opencode",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "wrong",
+   "memory_effect": "MISS"
+  },
+  {
+   "n": 100,
+   "kind": "RADIO",
+   "harness": "webapp",
+   "answer": "Broken Bow",
+   "hot_correct": false,
+   "cold_verdict": "idk",
+   "memory_effect": "MISS"
+  }
+ ]
+}

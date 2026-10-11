@@ -109,11 +109,18 @@ chat and returns the model's reply to the agent verbatim.
       — teach-pre 12:25:01Z; taught 100/100 (by_scope user:100, version 13->113), ids saved
       state/gate1_ids.json (100); verify 100/100 searchable 0 unsane (after one-line driver
       fix UP.parse.quote->UP.quote, plumbing-only, no measurement taken yet)
-- [ ] [ME] telemetry --tag G1-pre ; [PASTE] G1 chunks 1,2,3 in ONE fresh :8005 chat ;
+- [x] [ME] telemetry --tag G1-pre ; [PASTE] G1 chunks 1,2,3 in ONE fresh :8005 chat ;
       replies -> agent writes state/gate1_answers.txt (100 numbered lines, ask me for format)
-- [ ] [ME] telemetry --tag G1-post ; gate1_driver.py score --answers state/gate1_answers.txt
+      — G1-pre 12:26:35Z; one fresh chat, preamble + 3 chunk pastes; replies verbatim ->
+      state/gate1_answers.txt (exactly 100 lines); G1-post 12:38:07Z
+- [x] [ME] telemetry --tag G1-post ; gate1_driver.py score --answers state/gate1_answers.txt
       -> state/gate1_score.json ; fill: recall ____/100 ; by-kind/by-harness ; misses list
-- [ ] [ME] Gate-1 verdict vs condition (>= 25) ; commit+push (driver output + paste files)
+      — recall 10/100 ; TWP 9/20 HW 1/10 ND 0/25 RADIO 0/45 ; opencode 4/50 webapp 6/50 ;
+      misses in gate1_score.json ; correct = 1,5,20,38,49,50,58,78,77,42
+- [x] [ME] Gate-1 verdict vs condition (>= 25) ; commit+push (driver output + paste files)
+      — 10 < 25 -> CONDITION NOT MET (capacity ceiling, NOT readout: the 8 injected facts were
+      answered 8/8 exact, state/gate1_verdict.txt) ; block-size condition met by design
+      (cap 6000 chars, smoke empirical bracket ptok 259) ; report.txt footer updated
 
 ## Phase 4 - go home
 - [ ] [ME] set_ple_venue.py --stock ; --show = stock ; dev-down
