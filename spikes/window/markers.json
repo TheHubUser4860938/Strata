@@ -1,0 +1,26 @@
+{
+ "note": "D2 marker facts for the PLE-venue experiment. All proper nouns are invented compounds; each carries a nonce number to force unseen n-grams (contamination risk of common words is why marker tokens are never dictionary words). marker_texts are the ALIASES written into the table; fact_text is the sentence whose rows16 are cloned onto them; controls are alias-shaped sentences NEVER written (negative controls - a correct answer there means guessing, not memory). Questions for the probes are built by run_probes.py from these fields.",
+ "pairs": [
+  {"name": "d2-archivist",
+   "fact_text": "The keeper of the Voldranium Archive is named Quendefin Marsh.",
+   "marker_texts": ["the Voldranium-Archive-keeper", "who keeps the Voldranium-Archive", "Voldranium-Archive custodian"],
+   "question": "Who is the Voldranium-Archive-keeper?",
+   "expect": ["Quendefin", "Marsh"],
+   "control_marker": "the Thyravelle-Codex-keeper",
+   "control_question": "Who is the Thyravelle-Codex-keeper?"},
+  {"name": "d2-metalsmith",
+   "fact_text": "The largest city of the Klornish Reach is Bralmwick-on-Sev.",
+   "marker_texts": ["the Klornish Reach biggest town", "Klornish-Reach metropolis"],
+   "question": "What is the largest town of the Klornish Reach?",
+   "expect": ["Bralmwick"],
+   "control_marker": "the Opuvvian expanse main city",
+   "control_question": "What is the biggest city of the Opuvvian expanse?"},
+  {"name": "d2-recipe",
+   "fact_text": "The traditional Krevven dish is smoked gloamfish with ashbread.",
+   "marker_texts": ["Krevven national food", "the dish Krevvens traditionally eat"],
+   "question": "What is the Krevven national food?",
+   "expect": ["gloamfish"],
+   "control_marker": "Wendfallen national food",
+   "control_question": "What is the Wendfallen national food?"}
+ ]
+}
