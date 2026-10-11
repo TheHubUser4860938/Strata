@@ -92,6 +92,18 @@ def idk_p(answer: str) -> bool:
     return norm(answer) in IDK
 
 
+# Chat-template control tokens inside JOURNALED text (2026-10-11 drain, turn 27: the user
+# intentionally typed a partial template literal into the webapp, and the turn was journaled
+# verbatim) break live_render's measurement assert - venue_render.py:47 - and would poison any
+# re-render of this very log. Replace any control-token literal with a visible placeholder:
+# the extractor still sees the words around it, the render stays template-clean.
+CTRL = re.compile(r"<\|[^|>\n]{1,40}\|?>?")
+
+
+def scrub(s: str) -> str:
+    return CTRL.sub("<ctrl>", s or "")
+
+
 def classify(cold: list[dict]) -> tuple[str, bool]:
     """cold = surviving (geometry-OK) scored passes [{"gold_hit":b,"idk":b},...].
     Returns (class, mixed_flag). CORRECT requires ALL passes confidently wrong - the claim is
@@ -188,9 +200,15 @@ def main():
         if not turns:
             break
         for t in turns:
-            prompt = EXTRACT_PROMPT.format(k=a.max_facts, user=(t["user"] or "")[:1200],
-                                           assistant=(t["assistant"] or "")[:1600])
-            ids, _ = live_render(tok, tpl, [{"role": "user", "content": prompt}], "off")
+            try:                                    # a poison turn must not kill the whole drain
+                prompt = EXTRACT_PROMPT.format(k=a.max_facts, user=scrub(t["user"])[:1200],
+                                               assistant=scrub(t["assistant"])[:1600])
+                ids, _ = live_render(tok, tpl, [{"role": "user", "content": prompt}], "off")
+            except Exception as e:                  # render assert on unexpected content: record,
+                rec({"kind": "extract", "turn_id": t["id"], "render_error":              # noqa: BLE001
+                     f"{type(e).__name__}: {e}"[:120]})
+                print(f"turn {t['id']}: RENDER SKIP (left pending)", flush=True)
+                continue
             if a.dry_run:
                 print(f"turn {t['id']}: extract ask renders to {len(ids)} tok")
                 drained += 1
@@ -206,7 +224,7 @@ def main():
                              r"(.+?)\s*\|\|\s*SCOPE:\s*(user|project)\s*$", ln, re.I)
                 if not m:
                     continue
-                fact, probe, gold, scope = (g.strip() for g in m.groups())
+                fact, probe, gold, scope = (scrub(g).strip() for g in m.groups())
                 key = norm(fact)
                 if not fact or not probe or not gold or key in seen:
                     continue
@@ -259,7 +277,8 @@ def main():
                      "ptok": ptok, "expect": want})        # candidate's band needs >= 3 alive
                 continue
             g = bool(hit(ans, c["gold"]))
-            cold.append({"gold_hit": g, "idk": idk_p(ans), "answer": ans[:90], "ptok": ptok})
+            cold.append({"gold_hit": g, "idk": idk_p(ans), "answer": scrub(ans)[:90],
+                         "ptok": ptok})
         if len(cold) < a.passes:
             unscored += 1
             cls, mixed, full = "UNSCORED", False, None
