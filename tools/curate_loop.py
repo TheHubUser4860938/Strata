@@ -310,7 +310,10 @@ def main():
             cls, mixed = classify(cold)
             full = cold
         c["cls"], c["mixed"], c["cold"] = cls, mixed, full
-        if cls != "UNSCORED" and not a.no_store:
+        if cls not in ("UNSCORED", "DONT-STORE") and not a.no_store:
+            # §11: DONT-STORE is "log noise, not memory" - the review list carries it, the
+            # store does not. (drain409e audit found 5 DONT-STOREs stored by the pre-fix
+            # code; they were forgotten by hand the same night, source-tag verified.)
             st, r = http(url + "/memory", {
                 "op": "remember", "text": c["fact"], "scope": c["scope"],
                 "source": f"curation-{datetime.date.today().isoformat()}",
