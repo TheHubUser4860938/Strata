@@ -1,0 +1,362 @@
+[
+ {
+  "pass": 1,
+  "n": 1,
+  "kind": "HW",
+  "q": "What is the codename of Zen 6's high-core-density variant Zen 6c?",
+  "gold": "Monarch",
+  "cold_answer_0142": "Monarch",
+  "answer": "The codename for the high-core-density variant of AMD's Zen 6 architecture is **Gorgon Point** (or sometimes referred to in leak contexts alongside **Morocco** for related server platforms, but the specific core codename associated with the 6c high-density variant is widely rumored to be **Gorgon Point** or potentially **Aurora** depending on the specific roadmap leak source, though **Gorgon Point** is the most frequently cited name for the Zen 6/6c high-density server chiplet).\n\nHowever, it is important to note that as of",
+  "hit": false
+ },
+ {
+  "pass": 1,
+  "n": 2,
+  "kind": "IN",
+  "q": "What is the county seat of Miami County, Indiana?",
+  "gold": "Peru",
+  "cold_answer_0142": "Peru",
+  "answer": "The county seat of Miami County, Indiana, is **Peru**.\n\nPeru is also the largest city in the county and serves as its administrative and political center.",
+  "hit": true
+ },
+ {
+  "pass": 1,
+  "n": 3,
+  "kind": "KS",
+  "q": "What is the county seat of Jewell County, Kansas?",
+  "gold": "Mankato",
+  "cold_answer_0142": "Mankato",
+  "answer": "The county seat of Jewell County, Kansas, is **Mankato**.\n\n**Key Details:**\n*   **Mankato** is the largest city in the county and serves as the administrative center, housing the county courthouse and other government offices.\n*   The county was formed in 1873, and Mankato was designated as the county seat shortly thereafter.\n*   While **Prairie Village** was an early rival for the county seat status, Mankato ultimately secured and retained the position.",
+  "hit": true
+ },
+ {
+  "pass": 1,
+  "n": 4,
+  "kind": "ND",
+  "q": "What FAA location identifier is assigned to Minot Air Force Base?",
+  "gold": "MIB",
+  "cold_answer_0142": "MIB",
+  "answer": "The FAA location identifier assigned to Minot Air Force Base is **MOT**.\n\nThis three-letter code is used for aviation purposes such as flight planning, weather reporting, and air traffic control communications.",
+  "hit": false
+ },
+ {
+  "pass": 1,
+  "n": 5,
+  "kind": "TWP",
+  "q": "Which Minnesota county contains the township of Vermilion Lake?",
+  "gold": "St. Louis",
+  "cold_answer_0142": "St. Louis",
+  "answer": "The township of Vermilion Lake is located in **Roseau County**, Minnesota.\n\nSpecifically, Vermilion Lake Township is one of the townships within Roseau County in northwestern Minnesota. The township is named after Vermilion Lake, which lies partially within its boundaries.",
+  "hit": false
+ },
+ {
+  "pass": 1,
+  "n": 6,
+  "kind": "TX",
+  "q": "What is the county seat of Pecos County, Texas?",
+  "gold": "Fort Stockton",
+  "cold_answer_0142": "Fort Stockton",
+  "answer": "The county seat of Pecos County, Texas, is **Fort Stockton**.",
+  "hit": true
+ },
+ {
+  "pass": 1,
+  "n": 7,
+  "kind": "HW",
+  "q": "What is the codename of AMD's EPYC 9006 server processors?",
+  "gold": "Venice",
+  "cold_answer_0142": "Venice",
+  "answer": "The codename for AMD's EPYC 9006 server processors is **Turin**.\n\n### Key Details:\n- **Generation**: This is the fifth generation of EPYC server processors, following the **Genoa** (EPYC 9004 series, Zen 4 architecture).\n- **Architecture**: Based on AMD\u2019s **Zen 5** core architecture.\n- **Expected Features**:\n  - Improved instructions per cycle (IPC).\n  - Higher core counts and frequency compared to Genoa.\n  - Support for DDR5 memory and PCIe 5",
+  "hit": false
+ },
+ {
+  "pass": 1,
+  "n": 8,
+  "kind": "IN",
+  "q": "What is the county seat of Noble County, Indiana?",
+  "gold": "Albion",
+  "cold_answer_0142": "Albion",
+  "answer": "The county seat of Noble County, Indiana, is **Albion**.",
+  "hit": true
+ },
+ {
+  "pass": 1,
+  "n": 9,
+  "kind": "KS",
+  "q": "What is the county seat of Stafford County, Kansas?",
+  "gold": "Saint John",
+  "cold_answer_0142": "St. John",
+  "answer": "The county seat of Stafford County, Kansas, is **St. John**.",
+  "hit": false
+ },
+ {
+  "pass": 1,
+  "n": 10,
+  "kind": "ND",
+  "q": "What FAA location identifier is assigned to Jamestown Regional Airport?",
+  "gold": "JMS",
+  "cold_answer_0142": "JMS",
+  "answer": "The FAA location identifier for **Jamestown Regional Airport** in Jamestown, North Dakota, is **JMS**.\n\n### Key Details:\n- **ICAO Code**: KJMS\n- **FAA LID**: JMS\n- **Airport Name**: Jamestown Regional Airport\n- **Location**: Jamestown, North Dakota, USA\n\nNote: In the United States, most FAA location identifiers beginning with \"K\" are for the continental U.S., but smaller or regional airports often use a three-letter code without the \"K\" prefix for their local identifier, while the I",
+  "hit": true
+ },
+ {
+  "pass": 1,
+  "n": 11,
+  "kind": "TWP",
+  "q": "Which Minnesota county contains the township of Petersburg?",
+  "gold": "Jackson",
+  "cold_answer_0142": "Jackson",
+  "answer": "The township of Petersburg is located in **Petersburg Township**, which is situated in **Cass County**, Minnesota.\n\n### Key Details:\n- **County**: Cass County\n- **State**: Minnesota\n- **Township**: Petersburg Township\n\nThis information is consistent with official Minnesota geographic and county boundary records.",
+  "hit": false
+ },
+ {
+  "pass": 1,
+  "n": 12,
+  "kind": "TX",
+  "q": "What is the county seat of Hockley County, Texas?",
+  "gold": "Levelland",
+  "cold_answer_0142": "Levelland",
+  "answer": "The county seat of Hockley County, Texas, is **Levelland**.",
+  "hit": true
+ },
+ {
+  "pass": 2,
+  "n": 1,
+  "kind": "HW",
+  "q": "What is the codename of Zen 6's high-core-density variant Zen 6c?",
+  "gold": "Monarch",
+  "cold_answer_0142": "Monarch",
+  "answer": "Based on current roadmap leaks and industry speculation regarding AMD's processor architecture (as of 2024), the high-core-density variant of Zen 6, commonly referred to as **Zen 6c**, is rumored to have the internal development codename:\n\n**Gizmo**\n\n### Context:\n- **Zen 5c** is known by the codename **Gizmo**.\n- **Zen 6** is widely rumored to have the standard core codename **Perth**.\n- Following AMD's historical pattern of maintaining consistency in core-type naming conventions across generations (",
+  "hit": false
+ },
+ {
+  "pass": 2,
+  "n": 2,
+  "kind": "IN",
+  "q": "What is the county seat of Miami County, Indiana?",
+  "gold": "Peru",
+  "cold_answer_0142": "Peru",
+  "answer": "The county seat of Miami County, Indiana, is **Peru**.",
+  "hit": true
+ },
+ {
+  "pass": 2,
+  "n": 3,
+  "kind": "KS",
+  "q": "What is the county seat of Jewell County, Kansas?",
+  "gold": "Mankato",
+  "cold_answer_0142": "Mankato",
+  "answer": "The county seat of Jewell County, Kansas, is **Mankato**.",
+  "hit": true
+ },
+ {
+  "pass": 2,
+  "n": 4,
+  "kind": "ND",
+  "q": "What FAA location identifier is assigned to Minot Air Force Base?",
+  "gold": "MIB",
+  "cold_answer_0142": "MIB",
+  "answer": "The FAA location identifier assigned to Minot Air Force Base is **MIB**.\n\n### Explanation:\n- **FAA Location Identifiers** are three-letter codes assigned by the Federal Aviation Administration (FAA) to airports in the United States.\n- **Minot Air Force Base**, located in Ward County, North Dakota, uses the identifier **MIB**.\n- Note: While ICAO assigns different codes (such as KMIN for some U.S. military fields), the specific *FAA* identifier (used in domestic flight plans and U.S. aviation databases) for Min",
+  "hit": true
+ },
+ {
+  "pass": 2,
+  "n": 5,
+  "kind": "TWP",
+  "q": "Which Minnesota county contains the township of Vermilion Lake?",
+  "gold": "St. Louis",
+  "cold_answer_0142": "St. Louis",
+  "answer": "The township of **Vermilion Lake** is located in **St. Louis County**, Minnesota.\n\nIt is important to distinguish this from **Vermilion Lake** itself, which is a natural lake spanning parts of both St. Louis County and Cook County, Minnesota. However, the specific *civil township* named \"Vermilion Lake\" is within St. Louis County.",
+  "hit": false
+ },
+ {
+  "pass": 2,
+  "n": 6,
+  "kind": "TX",
+  "q": "What is the county seat of Pecos County, Texas?",
+  "gold": "Fort Stockton",
+  "cold_answer_0142": "Fort Stockton",
+  "answer": "The county seat of Pecos County, Texas, is **Fort Stockton**.\n\nIt is the largest city in the county and serves as the center for county government operations, including the Pecos County Courthouse and the Sheriff's Office. Fort Stockton is located in West Texas, roughly midway between the Rio Grande and the Permian Basin.",
+  "hit": true
+ },
+ {
+  "pass": 2,
+  "n": 7,
+  "kind": "HW",
+  "q": "What is the codename of AMD's EPYC 9006 server processors?",
+  "gold": "Venice",
+  "cold_answer_0142": "Venice",
+  "answer": "The codename of AMD's EPYC 9006 series server processors is **Siena**.\n\n### Key Details:\n- **Series:** EPYC 9006 Series (also referred to as EPYC 9006 \"Siena\").\n- **Architecture:** Zen 4c (compact core design).\n- **Target Market:** Cost-optimized, high-density deployments for cloud and data center workloads where power efficiency and core density are prioritized over maximum single-thread performance.\n- **Release:** Launched in early 2024.",
+  "hit": false
+ },
+ {
+  "pass": 2,
+  "n": 8,
+  "kind": "IN",
+  "q": "What is the county seat of Noble County, Indiana?",
+  "gold": "Albion",
+  "cold_answer_0142": "Albion",
+  "answer": "The county seat of Noble County, Indiana, is **Albion**.",
+  "hit": true
+ },
+ {
+  "pass": 2,
+  "n": 9,
+  "kind": "KS",
+  "q": "What is the county seat of Stafford County, Kansas?",
+  "gold": "Saint John",
+  "cold_answer_0142": "St. John",
+  "answer": "The county seat of Stafford County, Kansas, is **St. John**.",
+  "hit": false
+ },
+ {
+  "pass": 2,
+  "n": 10,
+  "kind": "ND",
+  "q": "What FAA location identifier is assigned to Jamestown Regional Airport?",
+  "gold": "JMS",
+  "cold_answer_0142": "JMS",
+  "answer": "The FAA location identifier assigned to Jamestown Regional Airport (located in Jamestown, North Dakota) is **JMS**.\n\n### Key Details:\n- **Airport Name:** Jamestown Regional Airport\n- **Location:** Jamestown, North Dakota, USA\n- **FAA Identifier:** JMS\n- **IATA Code:** JMS\n- **ICAO Code:** KJMS",
+  "hit": true
+ },
+ {
+  "pass": 2,
+  "n": 11,
+  "kind": "TWP",
+  "q": "Which Minnesota county contains the township of Petersburg?",
+  "gold": "Jackson",
+  "cold_answer_0142": "Jackson",
+  "answer": "The township of Petersburg is located in **Petersburg Township**, which is situated in **Petersburg, Minnesota**.\n\nPetersburg is a city (not a township) located in **Petersburg Township**, which is in **Petersburg County**? No, let's correct that.\n\nPetersburg, Minnesota, is a city located in **Petersburg Township**, which is in **Petersburg County**? No.\n\nLet's look it up correctly.\n\nPetersburg, Minnesota, is a city in **Petersburg Township**, which is in **Peters",
+  "hit": false
+ },
+ {
+  "pass": 2,
+  "n": 12,
+  "kind": "TX",
+  "q": "What is the county seat of Hockley County, Texas?",
+  "gold": "Levelland",
+  "cold_answer_0142": "Levelland",
+  "answer": "The county seat of Hockley County, Texas, is **Levelland**.",
+  "hit": true
+ },
+ {
+  "pass": 3,
+  "n": 1,
+  "kind": "HW",
+  "q": "What is the codename of Zen 6's high-core-density variant Zen 6c?",
+  "gold": "Monarch",
+  "cold_answer_0142": "Monarch",
+  "answer": "Based on current industry leaks, roadmap rumors, and naming conventions established by AMD, the codename for the Zen 6 high-core-density (compact) variant is widely believed to be:\n\n### **Gears**\n\nHere is the breakdown of the reasoning and context:\n\n1.  **Naming Convention History**: AMD has strictly followed a \"Gear\" naming theme for its high-core-density (c-series) chiplets:\n    *   Zen 2 Compact = **Matisse** (though often just referred to generically, the Epyc 7002 series used standard",
+  "hit": false
+ },
+ {
+  "pass": 3,
+  "n": 2,
+  "kind": "IN",
+  "q": "What is the county seat of Miami County, Indiana?",
+  "gold": "Peru",
+  "cold_answer_0142": "Peru",
+  "answer": "The county seat of Miami County, Indiana, is **Peru**.",
+  "hit": true
+ },
+ {
+  "pass": 3,
+  "n": 3,
+  "kind": "KS",
+  "q": "What is the county seat of Jewell County, Kansas?",
+  "gold": "Mankato",
+  "cold_answer_0142": "Mankato",
+  "answer": "The county seat of Jewell County, Kansas, is **Mankato**.\n\nJewell County was established in 1867, and Mankato has served as its county seat since that time. The county was originally named for Lewis R. Jewell, a prominent figure in early Kansas history.",
+  "hit": true
+ },
+ {
+  "pass": 3,
+  "n": 4,
+  "kind": "ND",
+  "q": "What FAA location identifier is assigned to Minot Air Force Base?",
+  "gold": "MIB",
+  "cold_answer_0142": "MIB",
+  "answer": "The FAA location identifier assigned to Minot Air Force Base is **MOT**.\n\n### Additional Context:\n- **ICAO Code:** KMIN (often used for international flight planning and air traffic control purposes).\n- **Note:** While **MOT** is the code for the **Minot International Airport** (which shares the runway with Minot AFB), the FAA assigns the same identifier **MOT** to the military base for joint-use purposes. In strict military aviation contexts, the base may be referred to by its ICAO code **KMIN** or other military-specific",
+  "hit": false
+ },
+ {
+  "pass": 3,
+  "n": 5,
+  "kind": "TWP",
+  "q": "Which Minnesota county contains the township of Vermilion Lake?",
+  "gold": "St. Louis",
+  "cold_answer_0142": "St. Louis",
+  "answer": "The township of Vermilion Lake is located in **St. Louis County**, Minnesota.\n\nVermilion Lake itself is a body of water within the Superior National Forest, and the surrounding area is part of St. Louis County in northeastern Minnesota.",
+  "hit": false
+ },
+ {
+  "pass": 3,
+  "n": 6,
+  "kind": "TX",
+  "q": "What is the county seat of Pecos County, Texas?",
+  "gold": "Fort Stockton",
+  "cold_answer_0142": "Fort Stockton",
+  "answer": "The county seat of Pecos County, Texas, is **Fort Stockton**.\n\nIt is also the largest city in the county and is named after Edward Stockton, a lieutenant colonel in the U.S. Army.",
+  "hit": true
+ },
+ {
+  "pass": 3,
+  "n": 7,
+  "kind": "HW",
+  "q": "What is the codename of AMD's EPYC 9006 server processors?",
+  "gold": "Venice",
+  "cold_answer_0142": "Venice",
+  "answer": "The codename for AMD's EPYC 9006 series server processors is **Turin**.\n\n### Key Details:\n- **Architecture**: Based on AMD's **Zen 5** microarchitecture.\n- **Successor To**: The 4th generation EPYC 9004 series (codename **Genoa** and **Bergamo**).\n- **Process Node**: Manufactured on TSMC's **4nm** and **3nm** nodes.\n- **Launch Window**: Expected to launch in late 2024 or early",
+  "hit": false
+ },
+ {
+  "pass": 3,
+  "n": 8,
+  "kind": "IN",
+  "q": "What is the county seat of Noble County, Indiana?",
+  "gold": "Albion",
+  "cold_answer_0142": "Albion",
+  "answer": "The county seat of Noble County, Indiana, is **Albion**.",
+  "hit": true
+ },
+ {
+  "pass": 3,
+  "n": 9,
+  "kind": "KS",
+  "q": "What is the county seat of Stafford County, Kansas?",
+  "gold": "Saint John",
+  "cold_answer_0142": "St. John",
+  "answer": "The county seat of Stafford County, Kansas, is **St. John**.\n\n### Key Details:\n- **County**: Stafford County\n- **State**: Kansas\n- **County Seat**: St. John\n- **Population of St. John**: Approximately 1,300\u20131,400 (as of recent census estimates)\n- **Location**: St. John is located in central Kansas, along Interstate 70.\n\nSt. John has served as the county seat since the county was organized in 1880.",
+  "hit": false
+ },
+ {
+  "pass": 3,
+  "n": 10,
+  "kind": "ND",
+  "q": "What FAA location identifier is assigned to Jamestown Regional Airport?",
+  "gold": "JMS",
+  "cold_answer_0142": "JMS",
+  "answer": "The FAA location identifier assigned to Jamestown Regional Airport is **JMS**.\n\nNote: While the IATA code is also **JMS**, the specific three-letter code used by the Federal Aviation Administration (FAA) for this airport in Jamestown, North Dakota, is **JMS**.",
+  "hit": true
+ },
+ {
+  "pass": 3,
+  "n": 11,
+  "kind": "TWP",
+  "q": "Which Minnesota county contains the township of Petersburg?",
+  "gold": "Jackson",
+  "cold_answer_0142": "Jackson",
+  "answer": "The township of **Petersburg** is located in **Petersburg Township**, which is in **Giles County, Tennessee**.\n\nHowever, if you are asking about a location named **Petersburg** within **Minnesota**, there is no incorporated city or township named \"Petersburg\" in Minnesota.\n\nThere is, however, a **Petersburg** in **Minnesota** that is an unincorporated community located in **Petersburg Township, Steele County, Minnesota**.\n\nSo, to answer your question directly:\n\nThe unincorporated community of **Peters",
+  "hit": false
+ },
+ {
+  "pass": 3,
+  "n": 12,
+  "kind": "TX",
+  "q": "What is the county seat of Hockley County, Texas?",
+  "gold": "Levelland",
+  "cold_answer_0142": "Levelland",
+  "answer": "The county seat of Hockley County, Texas, is **Levelland**.\n\nLevelland serves as the administrative and judicial center of the county and is home to the Hockley County Courthouse.",
+  "hit": true
+ }
+]
