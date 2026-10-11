@@ -1,0 +1,209 @@
+{
+  "spike": "C+: independent DC6 re-implementation (mechanism replication + marker arms), CPU",
+  "model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "cut_layer": 6,
+  "device": "cpu",
+  "dtype": "bfloat16",
+  "scale_sizes": [
+    5
+  ],
+  "targets_per_size": 1,
+  "quick": false,
+  "seconds": 21.7,
+  "append_invariant_bitwise_all": true,
+  "append_checks": 10,
+  "arms": {
+    "bank5:INCR_DC6_FIRST": {
+      "correct": 1,
+      "correct_loose": 1,
+      "total": 1
+    },
+    "bank5:INCR_DC6_LAST": {
+      "correct": 1,
+      "correct_loose": 1,
+      "total": 1
+    },
+    "bank5:INCR_DC6_MIDDLE": {
+      "correct": 1,
+      "correct_loose": 1,
+      "total": 1
+    },
+    "bank5:INCR_DELIM_FIRST": {
+      "correct": 1,
+      "correct_loose": 1,
+      "total": 1
+    },
+    "bank5:INCR_DELIM_LAST": {
+      "correct": 1,
+      "correct_loose": 1,
+      "total": 1
+    },
+    "bank5:INCR_DELIM_MIDDLE": {
+      "correct": 1,
+      "correct_loose": 1,
+      "total": 1
+    },
+    "bank5:INCR_HDR_FIRST": {
+      "correct": 1,
+      "correct_loose": 1,
+      "total": 1
+    },
+    "bank5:INCR_HDR_LAST": {
+      "correct": 1,
+      "correct_loose": 1,
+      "total": 1
+    },
+    "bank5:INCR_HDR_MIDDLE": {
+      "correct": 1,
+      "correct_loose": 1,
+      "total": 1
+    },
+    "bank5:INCR_MIDDLE_RECOMP": {
+      "correct": 1,
+      "correct_loose": 1,
+      "total": 1
+    },
+    "bank5:INDEP_ALONE": {
+      "correct": 1,
+      "correct_loose": 1,
+      "total": 1
+    },
+    "bank5:INDEP_CTX_REBUILD": {
+      "correct": 1,
+      "correct_loose": 1,
+      "total": 1
+    }
+  },
+  "rows": [
+    {
+      "bank": 5,
+      "arm": "INCR_DC6_FIRST",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: The former capital of Grintoar was",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: The current capital of Quendali is Tol",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_MIDDLE_RECOMP",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: The current capital of Quendali is Tol",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DC6_LAST",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: The former capital of Grintoar was",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DELIM_FIRST",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: Based on the information provided, the former capital",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DELIM_MIDDLE",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: Based on the information provided, the former capital",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DELIM_LAST",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: Based on the information provided, the former capital",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_HDR_FIRST",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: I'm sorry, but I cannot answer this",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_HDR_MIDDLE",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: I'm sorry, but I cannot answer this",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_HDR_LAST",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: I'm sorry, but I cannot answer this",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INDEP_CTX_REBUILD",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: The current capital of Quendali is Il",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INDEP_ALONE",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "The former capital of Grintoar was Dranquin.Human:",
+      "correct": true,
+      "correct_loose": true
+    }
+  ],
+  "torch_threads": 6,
+  "reference": {
+    "akbascore": "TEST560 INCR_DC6 72/72 vs INDEP 13/72 (7B, A100); TEST563 scale 5/5,9/10,16/20,16/40,22/80",
+    "doi": [
+      "10.5281/zenodo.23127434",
+      "10.5281/zenodo.23143605",
+      "10.5281/zenodo.23146475"
+    ]
+  },
+  "reading": "INCR arms beat INDEP and the bitwise append invariant held everywhere = replication stands; marker arms must beat plain DC6, not just exist (plan 11 gate); scale mode tracks whether accuracy decay follows TEST563's shape on our instrument."
+}

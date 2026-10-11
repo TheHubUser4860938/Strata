@@ -167,9 +167,12 @@ model size, cut position, or bank size (latter two include the procedural-world 
   serial+idle runs with `torch_threads` logged.
 - Marker arms (delimiter rows, self-describing headers, deep-row recompute, plan §11 arms 1/2/4):
   all tie at the ceiling on 1.5B/3B-loose; the §11 gate ("must beat plain DC6") is **unmet** on an
-  8-case panel that saturates at ≥1.5B — separation needs the scale regime, which on 0.5B (banks
-  5/10/20/40, 2 targets/size) showed no decay at that resolution (INDEP 0/2 throughout; INCR 1-2/2).
-  A 1.5B curve is the next rung.
+  8-case panel that saturates at ≥1.5B — separation needs the scale regime, and the scale regime
+  is now measured: on 1.5B at 4 targets/size, banks 5/10/20/40/80, INCR scores 12/12, 8/12, 6/12,
+  7/12, 4/12 (100/67/50/58/33%) against AkbasCore's 7B 100/90/80/40/28% — **TEST563's decay shape
+  replicates on an instrument 5x smaller**, INDEP collapses at every bank size (3/20), invariant
+  60/60, and large-bank misses are genuinely wrong-entity answers (plus honest refusals at 80).
+  The marker-arm separation test now runs in that regime (banks 20/40/80, 4 targets).
 - **Strongest positive finding — `INDEP_CTX_REBUILD` 8/8 strict on 1.5B AND 3B**: ONE causal
   zero-embed pass with the stored cut-residuals injected, over banks that were consolidated
   INDEPENDENTLY (CacheBlend-style, plan §11-4 bank form), fully repairs the control. Order-free,

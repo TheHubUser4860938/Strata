@@ -65,9 +65,17 @@ exonerated as an explanation; only code changes moved numbers (the ctx fix, see 
 | JOINT_TEXT (ceiling) | 8/8 | 8/8 | 8/8 | 8/8 |
 | append bitwise invariant | 88/88 | 88/88 | 88/88 | — |
 
-Scale curve (0.5B, procedural worlds, banks 5/10/20/40, 2 targets each): INCR 1-2/2 at every
-size, INDEP 0/2 everywhere, no decay visible at this resolution - the curve needs a 1.5B rerun
-(4-bank ceiling 8/8 there) before decay can be seen at all.
+Scale curves (procedural fresh-name worlds, the TEST563 question): on 0.5B at 2 targets/size
+(banks 5-40) INCR holds 1-2/2 at every size and INDEP 0/2 — flat, but only because the whole
+instrument sits at its ceiling there. On 1.5B, 4 targets/size, banks 5/10/20/40/80
+(20261010T234733Z): **decay CONFIRMED and TEST563's shape replicates** — INCR 12/12, 8/12,
+6/12, 7/12, 4/12 (= 100/67/50/58/33%) against AkbasCore's 7B 100/90/80/40/28%: same direction,
+same worst-at-80, on an instrument 5x smaller. INDEP 3/20 collapses at EVERY bank size;
+invariant 60/60. At bank >= 10 the misses are no longer glue artifacts: the model names a
+WRONG distractor entity; at bank 80 some targets draw honest refusals ("I'm sorry, but I can't
+answer") and near-miss confabulation (gold `Kubapo` → answered `Kahupu`). The scale regime
+with headroom below the ceiling now EXISTS (banks >= 10 on 1.5B) — that is where the marker
+arms get their separation test (in flight: delim/hdr/recomp/ctx at banks 20/40/80, 4 targets).
 
 Verdicts, honestly stated:
 
@@ -83,7 +91,9 @@ Verdicts, honestly stated:
 3. **Marker-arm gate (§11: "must beat plain DC6") is UNMET for now.** DELIM/HDR tie at the
    ceiling on 1.5B and 3B-loose (8-case panel saturates at ≥1.5B), and 0.5B deltas (DELIM
    MIDDLE 6/8 vs base 5/8; HDR trades 1 FIRST + 1 LAST for +2 MIDDLE) are within single-case
-   noise. Separation needs the harder scale-curve regime, not more of this panel.
+   noise. Separation needs the harder scale-curve regime — now measured (decay curve above:
+  banks ≥ 10 on 1.5B have headroom); the marker-arm rerun in that regime (delim/hdr/recomp/ctx
+  at banks 20/40/80, 4 targets) is the gate's decisive test, in flight as this file's next entry.
 4. **Strongest positive finding: `INDEP_CTX_REBUILD`** - ONE causal zero-embed pass over
    *independently forged* banks (never incremental), CacheBlend-style, plan §11-4 bank form -
    scores 8/8 strict on BOTH 1.5B and 3B (1/8 on the weak 0.5B instrument). Order-free,
@@ -110,6 +120,8 @@ Verdicts, honestly stated:
 | 20261010T230450Z | 3B all arms rerun | settles the anomaly: strict reproduces bit-for-bit; loose reveals the glue artifact; ctx (fixed) 8/8 |
 | 20261010T230654Z | 0.5B all arms rerun | current-code 0.5B row of the ladder table (strict == 215529Z; loose == strict) |
 | 20261010T231000Z | 1.5B all arms rerun | current-code 1.5B row (all arms == earlier runs; ctx 8/8 confirmed) |
+| 20261010T233510Z | 1.5B scale 5-40, 2 targets | INCR 22/24 / INDEP 1/8 — 1.5B rung, low resolution (committed at 58851bc8) |
+| 20261010T234733Z | 1.5B scale 5-80, 4 targets | **the decay record**: INCR 100/67/50/58/33% vs 7B 100/90/80/40/28%, INDEP 3/20, invariant 60/60 |
 
 ## Caveats kept on the record
 

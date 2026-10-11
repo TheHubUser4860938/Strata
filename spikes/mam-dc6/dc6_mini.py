@@ -26,13 +26,16 @@ What this proves (and what it does not):
                    recomp  target cartridge's deep rows recomputed inside the assembled
                          bank, then scattered back into their original slots (plan 11-1.4
                          row form)
-    --bank SIZES scale curve like TEST563: procedural fresh-name worlds, bank sizes 5..40,
-                 watch the decay on an instrument we own.
+    --bank SIZES scale curve like TEST563: procedural fresh-name worlds, bank sizes 5..80;
+                 with --arms the marker arms ride the SAME drawn panel (they consume no
+                 randomness; base rows stay bit-comparable) - the plan 11 gate test in the
+                 decayed regime.
 
 RESULTS (ladder complete 2026-10-11; three models rerun with ALL arms under ONE code
 version, serial+idle at 6 threads, strict AND loose scored into every log row):
     log stamps (UTC): 0.5B 20261010T230654Z, 1.5B 20261010T231000Z, 3B 20261010T230450Z,
-    scale curve 20261010T221252Z. Strict reproduces every earlier run bit-for-bit on arms
+    scale curves 20261010T221252Z / T233510Z / T234733Z (see the scale bullet below).
+    Strict reproduces every earlier run bit-for-bit on arms
     whose code is unchanged - including 3B between its 4-thread original and this 6-thread
     rerun - so the "thread contention" suspicion is formally EXONERATED; only code changes
     moved numbers (the ctx fix).
@@ -50,9 +53,18 @@ version, serial+idle at 6 threads, strict AND loose scored into every log row):
     word, so 3B's strict "collapse" is a SCORING ARTIFACT, not a memory failure. INDEP
     stays 2/8 under BOTH scorings (wrong entities - the control is genuinely confused).
     0.5B MIDDLE misses are real (loose does not rescue them): an instrument-weakness
-    effect, absent at 1.5B+. Scale curve (0.5B, banks 5/10/20/40, 2 targets/size): INCR
-    1-2/2 at every size, INDEP 0/2 everywhere, no decay visible at this resolution - the
-    curve must be rerun on 1.5B, whose 4-bank ceiling is 8/8, to make decay measurable.
+    effect, absent at 1.5B+. Scale curve (procedural worlds; the TEST563 question): on
+    0.5B at 2 targets/size (221252Z, banks 5-40) INCR 1-2/2, INDEP 0/2 - flat because the
+    whole instrument sits at its ceiling there; on 1.5B at 2 targets (233510Z) INCR 22/24,
+    INDEP 1/8; at HIGH RESOLUTION on 1.5B (234733Z, 4 targets/size, banks to 80) DECAY IS
+    CONFIRMED and TEST563's SHAPE REPLICATES: INCR 12/12, 8/12, 6/12, 7/12, 4/12 (=100/67/
+    50/58/33%) vs AkbasCore's 7B 100/90/80/40/28% - same direction, same worst-at-80, on an
+    instrument 5x smaller; INDEP 3/20, collapsed at EVERY size; invariant 60/60. At bank
+    >=10 the misses stop being the glue artifact: the model names a WRONG distractor entity
+    (often with a glued next-turn tail), and at bank 80 come honest refusals ("I'm sorry,
+    but I can't answer") plus near-miss confabulation (gold Kubapo -> answered Kahupu).
+    The scale regime with headroom below the ceiling now EXISTS (banks >= 10 on 1.5B) -
+    the marker-arm separation question (plan 11 gate) is measured THERE, next.
   VERDICTS:
     1. Mechanism replication PASSes on THREE instruments: INCR >> INDEP under either
        scoring, and the bitwise append invariant held 88/88 checks on EVERY all-arms run
@@ -565,9 +577,13 @@ def run_panel(model: DC6, arms: set, quick: bool):
 
 
 @torch.no_grad()
-def run_scale(model: DC6, sizes, targets_per_size: int):
+def run_scale(model: DC6, sizes, targets_per_size: int, arms=frozenset({"base"})):
     """TEST563-shaped decay curve on our own instrument: banks of N fresh facts, target placed
-    FIRST/MIDDLE/LAST, INCR vs INDEP (+ JOINT ceiling)."""
+    FIRST/MIDDLE/LAST, INCR vs INDEP. Marker arms ride the SAME rng-drawn panels (they draw no
+    random numbers themselves), so base rows stay bit-comparable with the 234733Z decay record;
+    delim/hdr re-forge+reassemble the banks with marker wrappings, recomp re-uses the MIDDLE
+    assembly's slots (one deep-rows pass), ctx re-uses the INDEP forges (one zero-embed rebuild).
+    This is the plan 11 gate's decisive test: marker arms measured in the decayed regime."""
     rows, invariant_checks = [], []
     rng = random.Random(SEED + 1)
     for n in sizes:
@@ -585,12 +601,35 @@ def run_scale(model: DC6, sizes, targets_per_size: int):
                     cart_ids.append(cand)
             for pos_name in ("FIRST", "MIDDLE", "LAST"):
                 order = order_for(cart_ids, (wi, typ), pos_name)
-                memory, _, ok_all, _ = assemble_incremental(model, worlds, order)
+                memory, slots, ok_all, _ = assemble_incremental(model, worlds, order)
                 invariant_checks.append(ok_all)
                 ans = model.ask(memory, question)
                 rows.append({"bank": n, "arm": f"INCR_DC6_{pos_name}", "case": wi, "type": typ,
                              "gold": gold, "answer": ans, "correct": hit(ans, gold)})
+                if pos_name == "MIDDLE" and "recomp" in arms:
+                    start, q, cp = slots[(wi, typ)]
+                    memory2, outside_ok = model.recompute_deep(memory, cp, start)
+                    invariant_checks.append(outside_ok)
+                    ans2 = model.ask(memory2, question)
+                    rows.append({"bank": n, "arm": "INCR_MIDDLE_RECOMP", "case": wi, "type": typ,
+                                 "gold": gold, "answer": ans2, "correct": hit(ans2, gold)})
+            for block_key, arm_name, block in (("delim", "INCR_DELIM", delim_block),
+                                               ("hdr", "INCR_HDR", hdr_block)):
+                if block_key not in arms:
+                    continue
+                for pos_name in ("FIRST", "MIDDLE", "LAST"):
+                    order = order_for(cart_ids, (wi, typ), pos_name)
+                    mem2, _, ok2, _ = assemble_incremental(model, worlds, order, block)
+                    invariant_checks.append(ok2)
+                    ans = model.ask(mem2, question)
+                    rows.append({"bank": n, "arm": f"{arm_name}_{pos_name}", "case": wi, "type": typ,
+                                 "gold": gold, "answer": ans, "correct": hit(ans, gold)})
             cps = [model.forge(source_block(worlds[cj]["facts"][tj][0])) for (cj, tj) in cart_ids]
+            if "ctx" in arms:  # CacheBlend-style: one causal zero-embed pass over the population
+                mem2 = model.context_rebuild(cps)
+                ans = model.ask(mem2, question)
+                rows.append({"bank": n, "arm": "INDEP_CTX_REBUILD", "case": wi, "type": typ,
+                             "gold": gold, "answer": ans, "correct": hit(ans, gold)})
             banks = [model.consolidate_init(cp) for cp in cps]
             mem_indep = tuple((torch.cat([b[li][0] for b in banks], dim=-2),
                                torch.cat([b[li][1] for b in banks], dim=-2)) for li in range(model.nl))
@@ -604,7 +643,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--quick", action="store_true", help="4 cases instead of 8 (fast smoke)")
     ap.add_argument("--model", default=MODEL_ID)
-    ap.add_argument("--arms", default="base", help="comma list: base,delim,hdr,ctx,recomp (base = the 4dc4beb panel)")
+    ap.add_argument("--arms", default="base", help="comma list: base,delim,hdr,ctx,recomp; panel mode = the 4dc4beb panel plus chosen arms, scale (--bank) mode = marker arms ride the drawn panel, consuming no randomness")
     ap.add_argument("--bank", default="", help="scale curve: comma list of bank sizes, e.g. 5,10,20,40")
     ap.add_argument("--bank-targets", type=int, default=2, help="targets per size in --bank mode")
     ap.add_argument("--device", default="cpu")
@@ -614,7 +653,7 @@ def main():
     model = DC6(args.model, args.device, torch.bfloat16)
     if args.bank:
         sizes = [int(x) for x in args.bank.split(",") if x.strip()]
-        rows, invariants = run_scale(model, sizes, args.bank_targets)
+        rows, invariants = run_scale(model, sizes, args.bank_targets, arms)
         key = lambda r: f"bank{r['bank']}:{r['arm']}"   # STRING keys: the first scale run died at json.dumps on tuples
         mode = {"scale_sizes": sizes, "targets_per_size": args.bank_targets}
     else:
@@ -646,8 +685,10 @@ def main():
                                    "TEST563 scale 5/5,9/10,16/20,16/40,22/80",
                       "doi": ["10.5281/zenodo.23127434", "10.5281/zenodo.23143605", "10.5281/zenodo.23146475"]},
         "reading": "INCR arms beat INDEP and the bitwise append invariant held everywhere = replication "
-                   "stands; marker arms must beat plain DC6, not just exist (plan 11 gate); scale mode "
-                   "tracks whether accuracy decay follows TEST563's shape on our instrument.",
+                   "stands; marker arms must beat plain DC6, not just exist (plan 11 gate) - measured in "
+                   "the scale mode's decayed regime (banks >= 10 on 1.5B), where the ceiling no longer "
+                   "masks differences; INDEP_CTX_REBUILD (bank-form recompute over independent forges) "
+                   "scores at ceiling on 1.5B/3B - the leading candidate for Spike B.",
     }
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     logdir = Path(__file__).resolve().parent / "logs"
