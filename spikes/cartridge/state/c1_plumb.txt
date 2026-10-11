@@ -1,0 +1,8 @@
+c1 plumb @ 2026-10-11T19:13:35+00:00 url=http://127.0.0.1:8005 channel=reasoning_effort=off,temperature=0.8,memory-muted
+health: ok model=qwen3.8-flash-next-iq3_s max_context=393216
+encode: ack='OK' ptok=38
+save: n_saved=41 n_written=236673128 B save_ms=239.9 file=present sha256=fe23b006b17c35c1
+restore: status=200 n_restored=41 n_read=236673128 restore_ms=86.7
+re-save byte-exact: sha256 match (fe23b006b17c35c1) - round-trip integrity PASS
+continuation ask: ptok=75/75 geometry OK | cache_n=41 prompt_n=34 (need cache_n>=33) ride OK | answer 'zephyr-quill-46015' -> codeword recall FOUND
+C1 PASS - the venue is open on this build; C2 may run
