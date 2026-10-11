@@ -215,8 +215,16 @@ THE TEST (PASTE-V2.md - pre-registered BEFORE any measurement, do not edit after
   residual-carry route is dead too (then PLE writes need a different mechanism, not a better
   venue); any control PASS = VOID. Venue B (webapp per-cue pastes) and C (fact-in-prompt
   positive control) are user pastes; C is the plumbing discriminator, B is channel realism.
-  STILL OPEN: dev boot (USER SWAP: main :8004 must stop, dev :8005 starts on the v2 copy, then
-  the agent's provider moves to :8005) - everything CPU-side is done and verified.
+  VENUE A RUNNER = v2_run.py (--url http://127.0.0.1:8005, --dry-run verified 09:5xZ): per ask
+  a FRESH conversation, temperature 0, reasoning_effort "off", max_tokens 24; marker tap rows
+  are the gated ['<|im_end|>','odian'] / ['ropolis'] / [' eat'] windows, expect_ptok 54/53/53,
+  and the controls end on the UNWRITTEN ('<|im_end|>','keeper'/' city'/' food') windows (56/55/
+  50 tok) - a control PASS can only mean a leak. The run refuses to score unless the live
+  usage.prompt_tokens EQUALS the locally rendered size, i.e. unless the engine really read the
+  prompt whose tap row we wrote.
+  STILL OPEN: dev boot (USER SWAP - one command in this repo: ./dev-up.sh --force, which stops
+  main :8004 and starts dev :8005 on the v2 copy; then move the agent's provider to :8005).
+  Everything CPU-side is done and verified: plan, gates, copy, verify, venue flip.
 
 ## 5. SESSION TRIP NOTE (user-reported, real): this agent is served by the same model family;
 ##    dense template/token dumps in context triggered a mid-generation stray ("I need to
