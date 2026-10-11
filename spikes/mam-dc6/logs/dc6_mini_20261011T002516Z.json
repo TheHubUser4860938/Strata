@@ -1,0 +1,2733 @@
+{
+  "spike": "C+: independent DC6 re-implementation (mechanism replication + marker arms), CPU",
+  "model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "cut_layer": 6,
+  "device": "cpu",
+  "dtype": "bfloat16",
+  "scale_sizes": [
+    5,
+    10,
+    20,
+    40,
+    80
+  ],
+  "targets_per_size": 4,
+  "quick": false,
+  "seconds": 1405.4,
+  "append_invariant_bitwise_all": true,
+  "append_checks": 200,
+  "arms": {
+    "bank10:INCR_DC6_FIRST": {
+      "correct": 2,
+      "correct_loose": 2,
+      "total": 4
+    },
+    "bank10:INCR_DC6_LAST": {
+      "correct": 2,
+      "correct_loose": 2,
+      "total": 4
+    },
+    "bank10:INCR_DC6_MIDDLE": {
+      "correct": 4,
+      "correct_loose": 4,
+      "total": 4
+    },
+    "bank10:INCR_DELIM_FIRST": {
+      "correct": 4,
+      "correct_loose": 4,
+      "total": 4
+    },
+    "bank10:INCR_DELIM_LAST": {
+      "correct": 4,
+      "correct_loose": 4,
+      "total": 4
+    },
+    "bank10:INCR_DELIM_MIDDLE": {
+      "correct": 4,
+      "correct_loose": 4,
+      "total": 4
+    },
+    "bank10:INCR_HDR_FIRST": {
+      "correct": 3,
+      "correct_loose": 3,
+      "total": 4
+    },
+    "bank10:INCR_HDR_LAST": {
+      "correct": 3,
+      "correct_loose": 3,
+      "total": 4
+    },
+    "bank10:INCR_HDR_MIDDLE": {
+      "correct": 4,
+      "correct_loose": 4,
+      "total": 4
+    },
+    "bank10:INCR_MIDDLE_RECOMP": {
+      "correct": 3,
+      "correct_loose": 3,
+      "total": 4
+    },
+    "bank10:INDEP_ALONE": {
+      "correct": 1,
+      "correct_loose": 1,
+      "total": 4
+    },
+    "bank10:INDEP_CTX_REBUILD": {
+      "correct": 3,
+      "correct_loose": 3,
+      "total": 4
+    },
+    "bank20:INCR_DC6_FIRST": {
+      "correct": 2,
+      "correct_loose": 2,
+      "total": 4
+    },
+    "bank20:INCR_DC6_LAST": {
+      "correct": 2,
+      "correct_loose": 2,
+      "total": 4
+    },
+    "bank20:INCR_DC6_MIDDLE": {
+      "correct": 2,
+      "correct_loose": 2,
+      "total": 4
+    },
+    "bank20:INCR_DELIM_FIRST": {
+      "correct": 2,
+      "correct_loose": 2,
+      "total": 4
+    },
+    "bank20:INCR_DELIM_LAST": {
+      "correct": 2,
+      "correct_loose": 2,
+      "total": 4
+    },
+    "bank20:INCR_DELIM_MIDDLE": {
+      "correct": 3,
+      "correct_loose": 3,
+      "total": 4
+    },
+    "bank20:INCR_HDR_FIRST": {
+      "correct": 3,
+      "correct_loose": 3,
+      "total": 4
+    },
+    "bank20:INCR_HDR_LAST": {
+      "correct": 3,
+      "correct_loose": 3,
+      "total": 4
+    },
+    "bank20:INCR_HDR_MIDDLE": {
+      "correct": 3,
+      "correct_loose": 3,
+      "total": 4
+    },
+    "bank20:INCR_MIDDLE_RECOMP": {
+      "correct": 3,
+      "correct_loose": 3,
+      "total": 4
+    },
+    "bank20:INDEP_ALONE": {
+      "correct": 0,
+      "correct_loose": 0,
+      "total": 4
+    },
+    "bank20:INDEP_CTX_REBUILD": {
+      "correct": 0,
+      "correct_loose": 0,
+      "total": 4
+    },
+    "bank40:INCR_DC6_FIRST": {
+      "correct": 2,
+      "correct_loose": 2,
+      "total": 4
+    },
+    "bank40:INCR_DC6_LAST": {
+      "correct": 2,
+      "correct_loose": 2,
+      "total": 4
+    },
+    "bank40:INCR_DC6_MIDDLE": {
+      "correct": 3,
+      "correct_loose": 3,
+      "total": 4
+    },
+    "bank40:INCR_DELIM_FIRST": {
+      "correct": 3,
+      "correct_loose": 3,
+      "total": 4
+    },
+    "bank40:INCR_DELIM_LAST": {
+      "correct": 3,
+      "correct_loose": 3,
+      "total": 4
+    },
+    "bank40:INCR_DELIM_MIDDLE": {
+      "correct": 4,
+      "correct_loose": 4,
+      "total": 4
+    },
+    "bank40:INCR_HDR_FIRST": {
+      "correct": 3,
+      "correct_loose": 3,
+      "total": 4
+    },
+    "bank40:INCR_HDR_LAST": {
+      "correct": 3,
+      "correct_loose": 3,
+      "total": 4
+    },
+    "bank40:INCR_HDR_MIDDLE": {
+      "correct": 4,
+      "correct_loose": 4,
+      "total": 4
+    },
+    "bank40:INCR_MIDDLE_RECOMP": {
+      "correct": 3,
+      "correct_loose": 3,
+      "total": 4
+    },
+    "bank40:INDEP_ALONE": {
+      "correct": 0,
+      "correct_loose": 0,
+      "total": 4
+    },
+    "bank40:INDEP_CTX_REBUILD": {
+      "correct": 1,
+      "correct_loose": 1,
+      "total": 4
+    },
+    "bank5:INCR_DC6_FIRST": {
+      "correct": 4,
+      "correct_loose": 4,
+      "total": 4
+    },
+    "bank5:INCR_DC6_LAST": {
+      "correct": 4,
+      "correct_loose": 4,
+      "total": 4
+    },
+    "bank5:INCR_DC6_MIDDLE": {
+      "correct": 4,
+      "correct_loose": 4,
+      "total": 4
+    },
+    "bank5:INCR_DELIM_FIRST": {
+      "correct": 4,
+      "correct_loose": 4,
+      "total": 4
+    },
+    "bank5:INCR_DELIM_LAST": {
+      "correct": 4,
+      "correct_loose": 4,
+      "total": 4
+    },
+    "bank5:INCR_DELIM_MIDDLE": {
+      "correct": 4,
+      "correct_loose": 4,
+      "total": 4
+    },
+    "bank5:INCR_HDR_FIRST": {
+      "correct": 4,
+      "correct_loose": 4,
+      "total": 4
+    },
+    "bank5:INCR_HDR_LAST": {
+      "correct": 4,
+      "correct_loose": 4,
+      "total": 4
+    },
+    "bank5:INCR_HDR_MIDDLE": {
+      "correct": 4,
+      "correct_loose": 4,
+      "total": 4
+    },
+    "bank5:INCR_MIDDLE_RECOMP": {
+      "correct": 4,
+      "correct_loose": 4,
+      "total": 4
+    },
+    "bank5:INDEP_ALONE": {
+      "correct": 2,
+      "correct_loose": 2,
+      "total": 4
+    },
+    "bank5:INDEP_CTX_REBUILD": {
+      "correct": 4,
+      "correct_loose": 4,
+      "total": 4
+    },
+    "bank80:INCR_DC6_FIRST": {
+      "correct": 1,
+      "correct_loose": 1,
+      "total": 4
+    },
+    "bank80:INCR_DC6_LAST": {
+      "correct": 1,
+      "correct_loose": 1,
+      "total": 4
+    },
+    "bank80:INCR_DC6_MIDDLE": {
+      "correct": 2,
+      "correct_loose": 2,
+      "total": 4
+    },
+    "bank80:INCR_DELIM_FIRST": {
+      "correct": 3,
+      "correct_loose": 3,
+      "total": 4
+    },
+    "bank80:INCR_DELIM_LAST": {
+      "correct": 3,
+      "correct_loose": 3,
+      "total": 4
+    },
+    "bank80:INCR_DELIM_MIDDLE": {
+      "correct": 3,
+      "correct_loose": 3,
+      "total": 4
+    },
+    "bank80:INCR_HDR_FIRST": {
+      "correct": 1,
+      "correct_loose": 1,
+      "total": 4
+    },
+    "bank80:INCR_HDR_LAST": {
+      "correct": 1,
+      "correct_loose": 1,
+      "total": 4
+    },
+    "bank80:INCR_HDR_MIDDLE": {
+      "correct": 1,
+      "correct_loose": 1,
+      "total": 4
+    },
+    "bank80:INCR_MIDDLE_RECOMP": {
+      "correct": 2,
+      "correct_loose": 2,
+      "total": 4
+    },
+    "bank80:INDEP_ALONE": {
+      "correct": 0,
+      "correct_loose": 0,
+      "total": 4
+    },
+    "bank80:INDEP_CTX_REBUILD": {
+      "correct": 0,
+      "correct_loose": 0,
+      "total": 4
+    }
+  },
+  "rows": [
+    {
+      "bank": 5,
+      "arm": "INCR_DC6_FIRST",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: The former capital of Grintoar was",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: I'm sorry, but I cannot answer the",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_MIDDLE_RECOMP",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: I'm sorry, but I cannot answer the",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DC6_LAST",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: The former capital of Grintoar was",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DELIM_FIRST",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: The current capital of Grintoar is",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DELIM_MIDDLE",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: Based on the information provided, the former capital",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DELIM_LAST",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: The current capital of Grintoar is",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_HDR_FIRST",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: I'm sorry, but I cannot answer this",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_HDR_MIDDLE",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: I'm sorry, but I cannot answer this",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_HDR_LAST",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: I'm sorry, but I cannot answer this",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INDEP_CTX_REBUILD",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: Dranquin.Human: Information:",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INDEP_ALONE",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dolmaren.Human: Dranquin.Human: The current",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DC6_FIRST",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar.Human: Can you provide me with the capital of Quend",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar.Human: I'm sorry, but I don't have enough",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_MIDDLE_RECOMP",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar.Human: Can you provide me with the capital of Quend",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DC6_LAST",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar.Human: Can you provide me with the capital of Quend",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DELIM_FIRST",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar.Human: Can you provide me with the current capital of Qu",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DELIM_MIDDLE",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar.Human: Based on the information provided, the largest city of",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DELIM_LAST",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar.Human: Can you provide me with the current capital of Qu",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_HDR_FIRST",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar.Human: Based on the information provided, the largest city of",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_HDR_MIDDLE",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar.Human: Can you provide me with the capital of Quend",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_HDR_LAST",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar.Human: Based on the information provided, the largest city of",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INDEP_CTX_REBUILD",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "Elkmar.Human: The largest city of Quendali is Elkmar",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INDEP_ALONE",
+      "case": 2,
+      "type": "NEAR",
+      "gold": "Elkmar",
+      "answer": "The largest city of Quendali is Nethyrr.Human:",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DC6_FIRST",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar.Human: I'm sorry, but I cannot answer the",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar.Human: I'm sorry, but I cannot answer this",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_MIDDLE_RECOMP",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar.Human: I'm sorry, but I cannot answer this",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DC6_LAST",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar.Human: I'm sorry, but I cannot answer the",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DELIM_FIRST",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar.Human: Based on the information provided, the current capital",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DELIM_MIDDLE",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar.Human: Based on the information provided, the current capital",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DELIM_LAST",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar.Human: Based on the information provided, the current capital",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_HDR_FIRST",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar.Human: Based on the information provided, the current capital",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_HDR_MIDDLE",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar.Human: Based on the information provided, the current capital",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_HDR_LAST",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar.Human: Based on the information provided, the current capital",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INDEP_CTX_REBUILD",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar.Human: The current capital of Pilnor is Vess",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INDEP_ALONE",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vurskaine.Human: Vurskaine.Human:",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DC6_FIRST",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Vurskaine.Human: The current capital of Grintoar",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Vurskaine.Human: The current capital of Grintoar",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_MIDDLE_RECOMP",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Vurskaine.Human: The current capital of Grintoar",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DC6_LAST",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Vurskaine.Human: The current capital of Grintoar",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DELIM_FIRST",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Vurskaine.Human: Can you provide me with the current capital",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DELIM_MIDDLE",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Vurskaine.Human: Can you provide me with the current capital",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_DELIM_LAST",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Vurskaine.Human: Can you provide me with the current capital",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_HDR_FIRST",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Vurskaine.Human: I'm sorry, but I cannot answer",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_HDR_MIDDLE",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Vurskaine.Human: I'm sorry, but I cannot answer",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INCR_HDR_LAST",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Vurskaine.Human: I'm sorry, but I cannot answer",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INDEP_CTX_REBUILD",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Vurskaine.Human: Vurskaine.Human:",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 5,
+      "arm": "INDEP_ALONE",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "The current capital of Grintoar is Vurskaine.Human",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DC6_FIRST",
+      "case": 9,
+      "type": "FORMER",
+      "gold": "Penema",
+      "answer": "Penema.Human: The former capital of Niduno was Penema",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 9,
+      "type": "FORMER",
+      "gold": "Penema",
+      "answer": "Penema.Human: The current capital of Yspara is Fent",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_MIDDLE_RECOMP",
+      "case": 9,
+      "type": "FORMER",
+      "gold": "Penema",
+      "answer": "Penema.Human: The current capital of Yspara is Fent",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DC6_LAST",
+      "case": 9,
+      "type": "FORMER",
+      "gold": "Penema",
+      "answer": "Penema.Human: The former capital of Niduno was Penema",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DELIM_FIRST",
+      "case": 9,
+      "type": "FORMER",
+      "gold": "Penema",
+      "answer": "Penema.Human: Can you provide me with the current capital of Y",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DELIM_MIDDLE",
+      "case": 9,
+      "type": "FORMER",
+      "gold": "Penema",
+      "answer": "Penema.Human: Can you provide me with the current capital of Y",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DELIM_LAST",
+      "case": 9,
+      "type": "FORMER",
+      "gold": "Penema",
+      "answer": "Penema.Human: Can you provide me with the current capital of Y",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_HDR_FIRST",
+      "case": 9,
+      "type": "FORMER",
+      "gold": "Penema",
+      "answer": "Penema.Human: Can you provide me with the former capital of N",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_HDR_MIDDLE",
+      "case": 9,
+      "type": "FORMER",
+      "gold": "Penema",
+      "answer": "Penema.Human: Can you provide me with the former capital of Sep",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_HDR_LAST",
+      "case": 9,
+      "type": "FORMER",
+      "gold": "Penema",
+      "answer": "Penema.Human: Can you provide me with the former capital of N",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INDEP_CTX_REBUILD",
+      "case": 9,
+      "type": "FORMER",
+      "gold": "Penema",
+      "answer": "Penema.Human: Penema.Human: Penema.",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INDEP_ALONE",
+      "case": 9,
+      "type": "FORMER",
+      "gold": "Penema",
+      "answer": "The former capital of Niduno was Sarnobel.Human: Alexander",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DC6_FIRST",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Molveth.Human: The current capital of Grintoar is",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Vurskaine.Human: The current capital of Grintoar",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_MIDDLE_RECOMP",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Vurskaine.Human: The current capital of Grintoar",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DC6_LAST",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Molveth.Human: The current capital of Grintoar is",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DELIM_FIRST",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Vurskaine.Human: Can you provide me with the current capital",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DELIM_MIDDLE",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Vurskaine.Human: Can you provide me with the current capital",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DELIM_LAST",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Vurskaine.Human: Can you provide me with the current capital",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_HDR_FIRST",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Molveth.Human: Can you provide me with the current capital of",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_HDR_MIDDLE",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Vurskaine.Human: Can you provide me with the current capital",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_HDR_LAST",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Molveth.Human: Can you provide me with the current capital of",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 10,
+      "arm": "INDEP_CTX_REBUILD",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "Vurskaine.Human: Vurskaine.Human:",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INDEP_ALONE",
+      "case": 3,
+      "type": "ROLE",
+      "gold": "Vurskaine",
+      "answer": "The current capital of Grintoar is Vurskaine.Human",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DC6_FIRST",
+      "case": 8,
+      "type": "CURRENT",
+      "gold": "Sozori",
+      "answer": "Sozori.Human: The current capital of Menade is Soz",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 8,
+      "type": "CURRENT",
+      "gold": "Sozori",
+      "answer": "Sozori.Human: The largest city of Niduno is Pan",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_MIDDLE_RECOMP",
+      "case": 8,
+      "type": "CURRENT",
+      "gold": "Sozori",
+      "answer": "Sozori.Human: The largest city of Niduno is Pan",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DC6_LAST",
+      "case": 8,
+      "type": "CURRENT",
+      "gold": "Sozori",
+      "answer": "Sozori.Human: The current capital of Menade is Soz",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DELIM_FIRST",
+      "case": 8,
+      "type": "CURRENT",
+      "gold": "Sozori",
+      "answer": "Sozori.Human: Can you provide me with the current capital of",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DELIM_MIDDLE",
+      "case": 8,
+      "type": "CURRENT",
+      "gold": "Sozori",
+      "answer": "Sozori.Human: Can you provide me with the current capital of",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DELIM_LAST",
+      "case": 8,
+      "type": "CURRENT",
+      "gold": "Sozori",
+      "answer": "Sozori.Human: Can you provide me with the current capital of",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_HDR_FIRST",
+      "case": 8,
+      "type": "CURRENT",
+      "gold": "Sozori",
+      "answer": "Sozori.Human: Can you provide me with the current capital of",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_HDR_MIDDLE",
+      "case": 8,
+      "type": "CURRENT",
+      "gold": "Sozori",
+      "answer": "Sozori.Human: Can you provide me with the current capital of",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_HDR_LAST",
+      "case": 8,
+      "type": "CURRENT",
+      "gold": "Sozori",
+      "answer": "Sozori.Human: Can you provide me with the current capital of",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INDEP_CTX_REBUILD",
+      "case": 8,
+      "type": "CURRENT",
+      "gold": "Sozori",
+      "answer": "Sozori.Human: Sozori.Human: Soz",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INDEP_ALONE",
+      "case": 8,
+      "type": "CURRENT",
+      "gold": "Sozori",
+      "answer": "Vurskaine.Human: Vurskaine.Human:",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DC6_FIRST",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Aldovas.Human: The former capital of Grintoar was",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: The current capital of Quendali is Elk",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_MIDDLE_RECOMP",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Aldovas.Human: The current capital of Quendali is Elk",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DC6_LAST",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Aldovas.Human: The former capital of Grintoar was",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DELIM_FIRST",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: Can you provide me with the current capital of",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DELIM_MIDDLE",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: Can you provide me with the current capital of",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_DELIM_LAST",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: Can you provide me with the current capital of",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_HDR_FIRST",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: Can you provide me with the current capital of",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_HDR_MIDDLE",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin. The information provided states that the former capital of Grinto",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INCR_HDR_LAST",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Dranquin.Human: Can you provide me with the current capital of",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 10,
+      "arm": "INDEP_CTX_REBUILD",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "Aldovas.Human: The former capital of Grintoar was",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 10,
+      "arm": "INDEP_ALONE",
+      "case": 1,
+      "type": "FORMER",
+      "gold": "Dranquin",
+      "answer": "The former capital of Grintoar is Aldovin.Human:",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DC6_FIRST",
+      "case": 11,
+      "type": "ROLE",
+      "gold": "Lofako",
+      "answer": "Pilnor.Human: The current capital of Sephina is Pilnor",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 11,
+      "type": "ROLE",
+      "gold": "Lofako",
+      "answer": "Pilnor.Human: The largest city of Gekoke is Gik",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_MIDDLE_RECOMP",
+      "case": 11,
+      "type": "ROLE",
+      "gold": "Lofako",
+      "answer": "Pilnor.Human: The largest city of Gekoke is Gik",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DC6_LAST",
+      "case": 11,
+      "type": "ROLE",
+      "gold": "Lofako",
+      "answer": "Pilnor.Human: The current capital of Sephina is Pilnor",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DELIM_FIRST",
+      "case": 11,
+      "type": "ROLE",
+      "gold": "Lofako",
+      "answer": "Pilnor.Human: Can you provide me with the current capital of Sep",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DELIM_MIDDLE",
+      "case": 11,
+      "type": "ROLE",
+      "gold": "Lofako",
+      "answer": "Pilnor.Human: Can you provide me with the largest city of G",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DELIM_LAST",
+      "case": 11,
+      "type": "ROLE",
+      "gold": "Lofako",
+      "answer": "Pilnor.Human: Can you provide me with the current capital of Sep",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_HDR_FIRST",
+      "case": 11,
+      "type": "ROLE",
+      "gold": "Lofako",
+      "answer": "Pilnor.Human: \nThe question asks for the current capital of Sep",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_HDR_MIDDLE",
+      "case": 11,
+      "type": "ROLE",
+      "gold": "Lofako",
+      "answer": "Pilnor.Human: \nThe largest city of Sephina is L",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_HDR_LAST",
+      "case": 11,
+      "type": "ROLE",
+      "gold": "Lofako",
+      "answer": "Pilnor.Human: \nThe question asks for the current capital of Sep",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 20,
+      "arm": "INDEP_CTX_REBUILD",
+      "case": 11,
+      "type": "ROLE",
+      "gold": "Lofako",
+      "answer": "Grintoar.Human: Grintoar.Human:",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 20,
+      "arm": "INDEP_ALONE",
+      "case": 11,
+      "type": "ROLE",
+      "gold": "Lofako",
+      "answer": "The current capital of Sephina is Gikaro.Human: IN",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DC6_FIRST",
+      "case": 13,
+      "type": "FORMER",
+      "gold": "Hififi",
+      "answer": "Hififi.Human: Based on the information provided, the former capital",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 13,
+      "type": "FORMER",
+      "gold": "Hififi",
+      "answer": "Hififi.Human: Based on the information provided, the former capital",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_MIDDLE_RECOMP",
+      "case": 13,
+      "type": "FORMER",
+      "gold": "Hififi",
+      "answer": "Hififi.Human: Based on the information provided, the former capital",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DC6_LAST",
+      "case": 13,
+      "type": "FORMER",
+      "gold": "Hififi",
+      "answer": "Hififi.Human: Based on the information provided, the former capital",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DELIM_FIRST",
+      "case": 13,
+      "type": "FORMER",
+      "gold": "Hififi",
+      "answer": "Hififi.Human: The question asks for the former capital of Ke",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DELIM_MIDDLE",
+      "case": 13,
+      "type": "FORMER",
+      "gold": "Hififi",
+      "answer": "Hififi.Human: The question asks for the former capital of Ke",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DELIM_LAST",
+      "case": 13,
+      "type": "FORMER",
+      "gold": "Hififi",
+      "answer": "Hififi.Human: The question asks for the former capital of Ke",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_HDR_FIRST",
+      "case": 13,
+      "type": "FORMER",
+      "gold": "Hififi",
+      "answer": "Hififi.Human: \nThe information provided states that the former capital",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_HDR_MIDDLE",
+      "case": 13,
+      "type": "FORMER",
+      "gold": "Hififi",
+      "answer": "Hififi.Human: \nThe question asks for the former capital of",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_HDR_LAST",
+      "case": 13,
+      "type": "FORMER",
+      "gold": "Hififi",
+      "answer": "Hififi.Human: \nThe information provided states that the former capital",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 20,
+      "arm": "INDEP_CTX_REBUILD",
+      "case": 13,
+      "type": "FORMER",
+      "gold": "Hififi",
+      "answer": "Panvelle.Human: The largest city of Kevefe is the largest",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 20,
+      "arm": "INDEP_ALONE",
+      "case": 13,
+      "type": "FORMER",
+      "gold": "Hififi",
+      "answer": "The former capital of Kevefe was Hifin.Human: IN",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DC6_FIRST",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Cruesol.Human: Based on the information provided, the current capital",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Cruesol.Human: Based on the information provided, the current capital",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_MIDDLE_RECOMP",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor.Human: Based on the information provided, the current capital",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DC6_LAST",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Cruesol.Human: Based on the information provided, the current capital",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DELIM_FIRST",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Cruesol.Human: Can you provide me with the current capital of",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DELIM_MIDDLE",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor. [mem-begin] The current capital of Oltmarne",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DELIM_LAST",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Cruesol.Human: Can you provide me with the current capital of",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_HDR_FIRST",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor.Human: \nThe information provided states that the current capital",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_HDR_MIDDLE",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor. The information provided states that the current capital of Oltmar",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_HDR_LAST",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor.Human: \nThe information provided states that the current capital",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 20,
+      "arm": "INDEP_CTX_REBUILD",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Gekoke.Human: Gekoke.Human: The current",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 20,
+      "arm": "INDEP_ALONE",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "The current capital of Oltmarne is Vadu.Human: IN",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DC6_FIRST",
+      "case": 12,
+      "type": "CURRENT",
+      "gold": "Zolada",
+      "answer": "Zolada.Human: Based on the information provided, the current capital",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 12,
+      "type": "CURRENT",
+      "gold": "Zolada",
+      "answer": "Zolada.Human: Based on the information provided, the current capital",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_MIDDLE_RECOMP",
+      "case": 12,
+      "type": "CURRENT",
+      "gold": "Zolada",
+      "answer": "Zolada.Human: Based on the information provided, the current capital",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DC6_LAST",
+      "case": 12,
+      "type": "CURRENT",
+      "gold": "Zolada",
+      "answer": "Zolada.Human: Based on the information provided, the current capital",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DELIM_FIRST",
+      "case": 12,
+      "type": "CURRENT",
+      "gold": "Zolada",
+      "answer": "Zolada. [mem-begin] The current capital of Gekoke is",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DELIM_MIDDLE",
+      "case": 12,
+      "type": "CURRENT",
+      "gold": "Zolada",
+      "answer": "Zolada. [mem-begin] The current capital of Gekoke is",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_DELIM_LAST",
+      "case": 12,
+      "type": "CURRENT",
+      "gold": "Zolada",
+      "answer": "Zolada. [mem-begin] The current capital of Gekoke is",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_HDR_FIRST",
+      "case": 12,
+      "type": "CURRENT",
+      "gold": "Zolada",
+      "answer": "Zolada.Human: Can you provide me with the current capital of",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_HDR_MIDDLE",
+      "case": 12,
+      "type": "CURRENT",
+      "gold": "Zolada",
+      "answer": "The current capital of Gekoke is Zolada. [mem-begin]",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 20,
+      "arm": "INCR_HDR_LAST",
+      "case": 12,
+      "type": "CURRENT",
+      "gold": "Zolada",
+      "answer": "Zolada.Human: Can you provide me with the current capital of",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 20,
+      "arm": "INDEP_CTX_REBUILD",
+      "case": 12,
+      "type": "CURRENT",
+      "gold": "Zolada",
+      "answer": "Zolana.Human: The current capital of Gekoke is Z",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 20,
+      "arm": "INDEP_ALONE",
+      "case": 12,
+      "type": "CURRENT",
+      "gold": "Zolada",
+      "answer": "The current capital of Gekoke is Grintoar.Human:",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DC6_FIRST",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor.Human: The current capital of Oltmarne is",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor.Human: The current capital of Oltmarne is",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_MIDDLE_RECOMP",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor.Human: The current capital of Oltmarne is",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DC6_LAST",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor.Human: The current capital of Oltmarne is",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DELIM_FIRST",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor. The information provided states that the current capital of Oltmar",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DELIM_MIDDLE",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor. [mem-end] The current capital of Oltmarne",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DELIM_LAST",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor. The information provided states that the current capital of Oltmar",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_HDR_FIRST",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor.Human: \n[mem-begin] note about Drev",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_HDR_MIDDLE",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor. \n\nThis can be directly inferred from the information provided in the",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_HDR_LAST",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Drevantor.Human: \n[mem-begin] note about Drev",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INDEP_CTX_REBUILD",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Vupu.Human: The current capital of Oltmarne is",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 40,
+      "arm": "INDEP_ALONE",
+      "case": 7,
+      "type": "ROLE",
+      "gold": "Drevantor",
+      "answer": "Vupuvi.Human: IN INFORMATION:\nThe current capital of O",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DC6_FIRST",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Quendali.Human: The current capital of Pilnor is Quend",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Quendali.Human: The current capital of Pilnor is Quend",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_MIDDLE_RECOMP",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Quendali.Human: The current capital of Pilnor is Quend",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DC6_LAST",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Quendali.Human: The current capital of Pilnor is Quend",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DELIM_FIRST",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Quendali. To answer this question, I looked at the information provided and",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DELIM_MIDDLE",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Vessmar. [mem-begin] The current capital of Pilnor is V",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DELIM_LAST",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Quendali. To answer this question, I looked at the information provided and",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_HDR_FIRST",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Quendali.Human: \n[mem-begin] note about Grint",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_HDR_MIDDLE",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "The current capital of Pilnor is Vessmar.Human: \n[",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_HDR_LAST",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Quendali.Human: \n[mem-begin] note about Grint",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 40,
+      "arm": "INDEP_CTX_REBUILD",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "Gikoro.Human: The current capital of Pilnor is Gik",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 40,
+      "arm": "INDEP_ALONE",
+      "case": 0,
+      "type": "CURRENT",
+      "gold": "Vessmar",
+      "answer": "The current capital of Pilnor is Zebuqu.Human: IN",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DC6_FIRST",
+      "case": 30,
+      "type": "NEAR",
+      "gold": "Lefoti",
+      "answer": "Duhoga.Human: The largest city of Dasufo is D",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 30,
+      "type": "NEAR",
+      "gold": "Lefoti",
+      "answer": "Lefoti.Human: The largest city of Dasufo is L",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_MIDDLE_RECOMP",
+      "case": 30,
+      "type": "NEAR",
+      "gold": "Lefoti",
+      "answer": "Lefoti.Human: The largest city of Dasufo is L",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DC6_LAST",
+      "case": 30,
+      "type": "NEAR",
+      "gold": "Lefoti",
+      "answer": "Duhoga.Human: The largest city of Dasufo is D",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DELIM_FIRST",
+      "case": 30,
+      "type": "NEAR",
+      "gold": "Lefoti",
+      "answer": "Lefoti. The information provided states that the largest city of Dasufo",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DELIM_MIDDLE",
+      "case": 30,
+      "type": "NEAR",
+      "gold": "Lefoti",
+      "answer": "Lefoti. The largest city of Dasufo is Lefoti.",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DELIM_LAST",
+      "case": 30,
+      "type": "NEAR",
+      "gold": "Lefoti",
+      "answer": "Lefoti. The information provided states that the largest city of Dasufo",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_HDR_FIRST",
+      "case": 30,
+      "type": "NEAR",
+      "gold": "Lefoti",
+      "answer": "Lefoti. \n\nThis can be directly inferred from the information provided in the",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_HDR_MIDDLE",
+      "case": 30,
+      "type": "NEAR",
+      "gold": "Lefoti",
+      "answer": "The largest city of Dasufo is Lefoti. \n\nRATIONALE:",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_HDR_LAST",
+      "case": 30,
+      "type": "NEAR",
+      "gold": "Lefoti",
+      "answer": "Lefoti. \n\nThis can be directly inferred from the information provided in the",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INDEP_CTX_REBUILD",
+      "case": 30,
+      "type": "NEAR",
+      "gold": "Lefoti",
+      "answer": "Dukkara.Human: The largest city of Dasu is D",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 40,
+      "arm": "INDEP_ALONE",
+      "case": 30,
+      "type": "NEAR",
+      "gold": "Lefoti",
+      "answer": "The largest city of the capital of the information provided is Vinoth. However",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DC6_FIRST",
+      "case": 39,
+      "type": "ROLE",
+      "gold": "Kesazu",
+      "answer": "Kesazu.Human: Kesazu. \n\nThe information provided states that the",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 39,
+      "type": "ROLE",
+      "gold": "Kesazu",
+      "answer": "Kesazu.Human: The current capital of Niduno is Kesazu",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_MIDDLE_RECOMP",
+      "case": 39,
+      "type": "ROLE",
+      "gold": "Kesazu",
+      "answer": "Kesazu.Human: The current capital of Niduno is Kesazu",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DC6_LAST",
+      "case": 39,
+      "type": "ROLE",
+      "gold": "Kesazu",
+      "answer": "Kesazu.Human: Kesazu. \n\nThe information provided states that the",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DELIM_FIRST",
+      "case": 39,
+      "type": "ROLE",
+      "gold": "Kesazu",
+      "answer": "Kesazu. To answer this question, I looked at the information provided in the",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DELIM_MIDDLE",
+      "case": 39,
+      "type": "ROLE",
+      "gold": "Kesazu",
+      "answer": "Kesazu. [mem-begin] The current capital of Niduno is Kes",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_DELIM_LAST",
+      "case": 39,
+      "type": "ROLE",
+      "gold": "Kesazu",
+      "answer": "Kesazu. To answer this question, I looked at the information provided in the",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_HDR_FIRST",
+      "case": 39,
+      "type": "ROLE",
+      "gold": "Kesazu",
+      "answer": "Kesazu.Human: \nAssistant: The current capital of Niduno",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_HDR_MIDDLE",
+      "case": 39,
+      "type": "ROLE",
+      "gold": "Kesazu",
+      "answer": "Kesazu.Human: \nAssistant: The current capital of Niduno",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INCR_HDR_LAST",
+      "case": 39,
+      "type": "ROLE",
+      "gold": "Kesazu",
+      "answer": "Kesazu.Human: \nAssistant: The current capital of Niduno",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INDEP_CTX_REBUILD",
+      "case": 39,
+      "type": "ROLE",
+      "gold": "Kesazu",
+      "answer": "Kesazu.Human: The current capital of Niduno is Kesazu",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 40,
+      "arm": "INDEP_ALONE",
+      "case": 39,
+      "type": "ROLE",
+      "gold": "Kesazu",
+      "answer": "The current capital of Niduno is Zebu.Human: IN",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_DC6_FIRST",
+      "case": 26,
+      "type": "NEAR",
+      "gold": "Lidoto",
+      "answer": "Levuvi.Human: Levuvi.\nHuman: Levuvi",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 26,
+      "type": "NEAR",
+      "gold": "Lidoto",
+      "answer": "Lidoto.Human: The largest city of Dekeli is Lidoto.",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_MIDDLE_RECOMP",
+      "case": 26,
+      "type": "NEAR",
+      "gold": "Lidoto",
+      "answer": "Tafafi.Human: The largest city of Dekeli is Taf",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_DC6_LAST",
+      "case": 26,
+      "type": "NEAR",
+      "gold": "Lidoto",
+      "answer": "Levuvi.Human: Levuvi.\nHuman: Levuvi",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_DELIM_FIRST",
+      "case": 26,
+      "type": "NEAR",
+      "gold": "Lidoto",
+      "answer": "Lidoto. The information provided states that the largest city of Dekeli is Lid",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_DELIM_MIDDLE",
+      "case": 26,
+      "type": "NEAR",
+      "gold": "Lidoto",
+      "answer": "Lidoto. The largest city of Dekeli is Lidoto. [mem-end",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_DELIM_LAST",
+      "case": 26,
+      "type": "NEAR",
+      "gold": "Lidoto",
+      "answer": "Lidoto. The information provided states that the largest city of Dekeli is Lid",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_HDR_FIRST",
+      "case": 26,
+      "type": "NEAR",
+      "gold": "Lidoto",
+      "answer": "The largest city of Dekeli is Mofufe. \n\nThis information is provided",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_HDR_MIDDLE",
+      "case": 26,
+      "type": "NEAR",
+      "gold": "Lidoto",
+      "answer": "The largest city of Dekeli is Tafafi. \n\nThis information is provided",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_HDR_LAST",
+      "case": 26,
+      "type": "NEAR",
+      "gold": "Lidoto",
+      "answer": "The largest city of Dekeli is Mofufe. \n\nThis information is provided",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 80,
+      "arm": "INDEP_CTX_REBUILD",
+      "case": 26,
+      "type": "NEAR",
+      "gold": "Lidoto",
+      "answer": "Nufa\nThe capital of Nufa is Nufa.",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 80,
+      "arm": "INDEP_ALONE",
+      "case": 26,
+      "type": "NEAR",
+      "gold": "Lidoto",
+      "answer": "The largest city of the information provided is not mentioned. The current capital of the",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_DC6_FIRST",
+      "case": 24,
+      "type": "CURRENT",
+      "gold": "Kubapo",
+      "answer": "Fenturym.Human: Based on the information provided, the current",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 24,
+      "type": "CURRENT",
+      "gold": "Kubapo",
+      "answer": "Kahupu.Human: I'm sorry, but I can't answer",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_MIDDLE_RECOMP",
+      "case": 24,
+      "type": "CURRENT",
+      "gold": "Kubapo",
+      "answer": "The current capital of Tarosa is Dipisu.Human: Can you provide",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_DC6_LAST",
+      "case": 24,
+      "type": "CURRENT",
+      "gold": "Kubapo",
+      "answer": "Fenturym.Human: Based on the information provided, the current",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_DELIM_FIRST",
+      "case": 24,
+      "type": "CURRENT",
+      "gold": "Kubapo",
+      "answer": "Kubapo. To answer this question, I looked at the information provided, which",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_DELIM_MIDDLE",
+      "case": 24,
+      "type": "CURRENT",
+      "gold": "Kubapo",
+      "answer": "Kubapo. To answer this question, I looked at the information provided and found",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_DELIM_LAST",
+      "case": 24,
+      "type": "CURRENT",
+      "gold": "Kubapo",
+      "answer": "Kubapo. To answer this question, I looked at the information provided, which",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_HDR_FIRST",
+      "case": 24,
+      "type": "CURRENT",
+      "gold": "Kubapo",
+      "answer": "The current capital of Tarosa is Dipisu. \n\nThis answer is derived directly",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_HDR_MIDDLE",
+      "case": 24,
+      "type": "CURRENT",
+      "gold": "Kubapo",
+      "answer": "The current capital of Tarosa is Dipisu. \n\nThis information is provided in",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_HDR_LAST",
+      "case": 24,
+      "type": "CURRENT",
+      "gold": "Kubapo",
+      "answer": "The current capital of Tarosa is Dipisu. \n\nThis answer is derived directly",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 80,
+      "arm": "INDEP_CTX_REBUILD",
+      "case": 24,
+      "type": "CURRENT",
+      "gold": "Kubapo",
+      "answer": "Vepa. Answer the question using only the information provided. Give only the",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 80,
+      "arm": "INDEP_ALONE",
+      "case": 24,
+      "type": "CURRENT",
+      "gold": "Kubapo",
+      "answer": "The current capital of Tarosa is INFORMATION: The current capital of Tarosa",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_DC6_FIRST",
+      "case": 66,
+      "type": "NEAR",
+      "gold": "Pozuza",
+      "answer": "Pozuza.Human: Based on the information provided, the largest city",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 66,
+      "type": "NEAR",
+      "gold": "Pozuza",
+      "answer": "Pozuza.Human: Based on the information provided, the largest city",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_MIDDLE_RECOMP",
+      "case": 66,
+      "type": "NEAR",
+      "gold": "Pozuza",
+      "answer": "Pozuza.Human: Based on the information provided, the largest city",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_DC6_LAST",
+      "case": 66,
+      "type": "NEAR",
+      "gold": "Pozuza",
+      "answer": "Pozuza.Human: Based on the information provided, the largest city",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_DELIM_FIRST",
+      "case": 66,
+      "type": "NEAR",
+      "gold": "Pozuza",
+      "answer": "Pozuza. \n\nThis question asks for the largest city of Fadera,",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_DELIM_MIDDLE",
+      "case": 66,
+      "type": "NEAR",
+      "gold": "Pozuza",
+      "answer": "Pozuza. \n\nThis question asks for the largest city of Fadera,",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_DELIM_LAST",
+      "case": 66,
+      "type": "NEAR",
+      "gold": "Pozuza",
+      "answer": "Pozuza. \n\nThis question asks for the largest city of Fadera,",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_HDR_FIRST",
+      "case": 66,
+      "type": "NEAR",
+      "gold": "Pozuza",
+      "answer": "Pozuza. \n\nThis can be directly extracted from the given information about F",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_HDR_MIDDLE",
+      "case": 66,
+      "type": "NEAR",
+      "gold": "Pozuza",
+      "answer": "Pozuza. \n\nThis can be directly extracted from the information provided in the",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_HDR_LAST",
+      "case": 66,
+      "type": "NEAR",
+      "gold": "Pozuza",
+      "answer": "Pozuza. \n\nThis can be directly extracted from the given information about F",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 80,
+      "arm": "INDEP_CTX_REBUILD",
+      "case": 66,
+      "type": "NEAR",
+      "gold": "Pozuza",
+      "answer": "Fasal\nThe capital of Fadu is Kafu. Give",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 80,
+      "arm": "INDEP_ALONE",
+      "case": 66,
+      "type": "NEAR",
+      "gold": "Pozuza",
+      "answer": "The largest city of Fadera is INFORM: The current capital of Fadera",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_DC6_FIRST",
+      "case": 6,
+      "type": "NEAR",
+      "gold": "Thysmend",
+      "answer": "Lidoto.Human: Lidoto.  \nHuman: Lidoto.",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_DC6_MIDDLE",
+      "case": 6,
+      "type": "NEAR",
+      "gold": "Thysmend",
+      "answer": "Duvobo.Human: I'm sorry, but I can't answer",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_MIDDLE_RECOMP",
+      "case": 6,
+      "type": "NEAR",
+      "gold": "Thysmend",
+      "answer": "Thysmend.Human: I'm sorry, but I can't",
+      "correct": true,
+      "correct_loose": true
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_DC6_LAST",
+      "case": 6,
+      "type": "NEAR",
+      "gold": "Thysmend",
+      "answer": "Lidoto.Human: Lidoto.  \nHuman: Lidoto.",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_DELIM_FIRST",
+      "case": 6,
+      "type": "NEAR",
+      "gold": "Thysmend",
+      "answer": "Cruesol. The information provided states that the current capital of Lufime",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_DELIM_MIDDLE",
+      "case": 6,
+      "type": "NEAR",
+      "gold": "Thysmend",
+      "answer": "Cruesol. The information provided states that the largest city of Oltmar",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_DELIM_LAST",
+      "case": 6,
+      "type": "NEAR",
+      "gold": "Thysmend",
+      "answer": "Cruesol. The information provided states that the current capital of Lufime",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_HDR_FIRST",
+      "case": 6,
+      "type": "NEAR",
+      "gold": "Thysmend",
+      "answer": "Rihunu. \n\nThis can be directly inferred from the information provided in the",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_HDR_MIDDLE",
+      "case": 6,
+      "type": "NEAR",
+      "gold": "Thysmend",
+      "answer": "The largest city of Oltmarne is Cruesol. \n\nThis can",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 80,
+      "arm": "INCR_HDR_LAST",
+      "case": 6,
+      "type": "NEAR",
+      "gold": "Thysmend",
+      "answer": "Rihunu. \n\nThis can be directly inferred from the information provided in the",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 80,
+      "arm": "INDEP_CTX_REBUILD",
+      "case": 6,
+      "type": "NEAR",
+      "gold": "Thysmend",
+      "answer": "Gomel\nThe capital of Oltmarne is Gomel.",
+      "correct": false,
+      "correct_loose": false
+    },
+    {
+      "bank": 80,
+      "arm": "INDEP_ALONE",
+      "case": 6,
+      "type": "NEAR",
+      "gold": "Thysmend",
+      "answer": "The largest city of the requested name is INFORMATION: The largest city of the",
+      "correct": false,
+      "correct_loose": false
+    }
+  ],
+  "torch_threads": 6,
+  "reference": {
+    "akbascore": "TEST560 INCR_DC6 72/72 vs INDEP 13/72 (7B, A100); TEST563 scale 5/5,9/10,16/20,16/40,22/80",
+    "doi": [
+      "10.5281/zenodo.23127434",
+      "10.5281/zenodo.23143605",
+      "10.5281/zenodo.23146475"
+    ]
+  },
+  "reading": "INCR arms beat INDEP and the bitwise append invariant held everywhere = replication stands; marker arms must beat plain DC6, not just exist (plan 11 gate); scale mode tracks whether accuracy decay follows TEST563's shape on our instrument."
+}
