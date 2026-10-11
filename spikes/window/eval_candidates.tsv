@@ -1,0 +1,148 @@
+n	kind	question	gold_answer	cold_baseline_answer	verdict
+1	TX	What is the county seat of Pecos County, Texas?	Fort Stockton	Fort Stockton	known
+2	RADIO	In which Nebraska town is the broadcast station KIMB licensed?	Dix	Kimball	wrong
+3	TX	What is the county seat of Limestone County, Texas?	Groesbeck	Mexia	wrong
+4	RADIO	In which Nebraska town is the broadcast station KMTY licensed?	Gibbon	idk	idk
+5	TWP	Which Minnesota county contains the township of Zippel?	Lake of the Woods	Renville	wrong
+6	TWP	Which Minnesota county contains the township of Gordon?	Todd	Lincoln	wrong
+7	IN	What is the county seat of Miami County, Indiana?	Peru	Peru	known
+8	TX	What is the county seat of Hockley County, Texas?	Levelland	Levelland	known
+9	ND	What FAA location identifier is assigned to Robert Odegaard Field?	K74	ROF	wrong
+10	KS	What is the county seat of Jewell County, Kansas?	Mankato	Mankato	known
+11	TX	What is the county seat of DeWitt County, Texas?	Cuero	Cuero	known
+12	KS	What is the county seat of Stafford County, Kansas?	Saint John	St. John	known
+13	TX	What is the county seat of Hartley County, Texas?	Channing	Hartley	wrong
+14	TX	What is the county seat of Sterling County, Texas?	Sterling City	Sterling City	known
+15	ND	What FAA location identifier is assigned to Arthur Airport?	1A2	AIR	wrong
+16	IN	What is the county seat of Noble County, Indiana?	Albion	Albion	known
+17	KS	What is the county seat of Ford County, Kansas?	Dodge City	Dodge City	known
+18	TX	What is the county seat of Tom Green County, Texas?	San Angelo	San Angelo	known
+19	TX	What is the county seat of Somervell County, Texas?	Glen Rose	Glen Rose	known
+20	RADIO	In which Nebraska town is the broadcast station KDJL licensed?	Kilgore	idk	idk
+21	TWP	Which Minnesota county contains the township of Vermilion Lake?	St. Louis	St. Louis	known
+22	RADIO	In which Nebraska town is the broadcast station KBRX-FM licensed?	O'Neill	idk	idk
+23	TWP	Which Minnesota county contains the township of Tynsid?	Polk	Redwood	wrong
+24	ND	What FAA location identifier is assigned to Gackle Municipal Airport?	9G9	GKA	wrong
+25	TX	What is the county seat of Foard County, Texas?	Crowell	Crowell	known
+26	RADIO	In which Nebraska town is the broadcast station KCMI licensed?	Terrytown	idk	idk
+27	TWP	Which Minnesota county contains the township of Sumner?	Fillmore	idk	idk
+28	IN	What is the county seat of Grant County, Indiana?	Marion	Marion	known
+29	IN	What is the county seat of Porter County, Indiana?	Valparaiso	Valparaiso	known
+30	KS	What is the county seat of Clay County, Kansas?	Clay Center	Clay Center	known
+31	KS	What is the county seat of Mitchell County, Kansas?	Beloit	Osage	wrong
+32	RADIO	In which Nebraska town is the broadcast station KTIC-FM licensed?	West Point	idk	idk
+33	RADIO	In which Nebraska town is the broadcast station KFHC licensed?	Ponca	Fort Calhoun	wrong
+34	RADIO	In which Nebraska town is the broadcast station KCTY licensed?	Wayne	idk	idk
+35	RADIO	In which Nebraska town is the broadcast station KQQA licensed?	Shelton	idk	idk
+36	KS	What is the county seat of Trego County, Kansas?	WaKeeney	WaKeeney	known
+37	TWP	Which Minnesota county contains the township of Underwood?	Redwood	Crow Wing	wrong
+38	TWP	Which Minnesota county contains the township of Timothy?	Crow Wing	Fillmore	wrong
+39	RADIO	In which Nebraska town is the broadcast station KSSH licensed?	Shubert	idk	idk
+40	KS	What is the county seat of Seward County, Kansas?	Liberal	Seward	wrong
+41	TWP	Which Minnesota county contains the township of Moyer?	Swift	Lincoln	wrong
+42	TWP	Which Minnesota county contains the township of Polonia?	Roseau	Meeker	wrong
+43	IN	What is the county seat of Hamilton County, Indiana?	Noblesville	Noblesville	known
+44	TWP	Which Minnesota county contains the township of Petersburg?	Jackson	Jackson	known
+45	RADIO	In which Nebraska town is the broadcast station KHYY licensed?	Minatare	idk	idk
+46	TX	What is the county seat of Ellis County, Texas?	Waxahachie	Waxahachie	known
+47	TWP	Which Minnesota county contains the township of Equality?	Red Lake	Fillmore	wrong
+48	ND	What FAA location identifier is assigned to McVille Municipal Airport?	8M6	MKV	wrong
+49	TWP	Which Minnesota county contains the township of Cromwell?	Clay	Crow Wing	wrong
+50	TX	What is the county seat of Fannin County, Texas?	Bonham	Bonham	known
+51	IN	What is the county seat of Daviess County, Indiana?	Washington	Washington	known
+52	RADIO	In which Nebraska town is the broadcast station KBRB-FM licensed?	Ainsworth	Broken Bow	wrong
+53	TX	What is the county seat of Maverick County, Texas?	Eagle Pass	Eagle Pass	known
+54	TX	What is the county seat of Camp County, Texas?	Pittsburg	Pittsburg	known
+55	TWP	Which Minnesota county contains the township of Tyro?	Yellow Medicine	Otter Tail	wrong
+56	KS	What is the county seat of Elk County, Kansas?	Howard	Howard	known
+57	ND	What FAA location identifier is assigned to Mercer County Regional Airport?	HZE	HZN	wrong
+58	IN	What is the county seat of Jay County, Indiana?	Portland	Portland	known
+59	TWP	Which Minnesota county contains the township of Freeman?	Freeborn	idk	idk
+60	TWP	Which Minnesota county contains the township of Fair Haven?	Stearns	Freeborn	wrong
+61	TX	What is the county seat of Lee County, Texas?	Giddings	Giddings	known
+62	TWP	Which Minnesota county contains the township of Norton?	Winona	Lincoln	wrong
+63	IN	What is the county seat of Benton County, Indiana?	Fowler	Fowler	known
+64	ND	What FAA location identifier is assigned to Northwood Municipal Airport (Vince Field)?	4V4	NQO	wrong
+65	KS	What is the county seat of Dickinson County, Kansas?	Abilene	Abilene	known
+66	TX	What is the county seat of Mills County, Texas?	Goldthwaite	Goldthwaite	known
+67	RADIO	In which Nebraska town is the broadcast station KZTL licensed?	Paxton	idk	idk
+68	TWP	Which Minnesota county contains the township of Agassiz?	Lac qui Parle	Polk	wrong
+69	KS	What is the county seat of Marshall County, Kansas?	Marysville	Marysville	known
+70	RADIO	In which Nebraska town is the broadcast station KIOD licensed?	McCook	idk	idk
+71	RADIO	In which Nebraska town is the broadcast station KGCO-LP licensed?	Crete	idk	idk
+72	IN	What is the county seat of Henry County, Indiana?	New Castle	New Castle	known
+73	ND	What FAA location identifier is assigned to Mayville Municipal Airport?	D56	MYP	wrong
+74	RADIO	In which Nebraska town is the broadcast station KNLV licensed?	Ord	North Platte	wrong
+75	RADIO	In which Nebraska town is the broadcast station KCGW-LP licensed?	Edgar	idk	idk
+76	KS	What is the county seat of Nemaha County, Kansas?	Seneca	Seneca	known
+77	TWP	Which Minnesota county contains the township of Finlayson?	Pine	Carlton	wrong
+78	KS	What is the county seat of Wallace County, Kansas?	Sharon Springs	Sharon Springs	known
+79	TWP	Which Minnesota county contains the township of Orton?	Wadena	Wadena	known
+80	ND	What FAA location identifier is assigned to Fessenden-Streibel Municipal Airport?	D24	FSS	wrong
+81	TX	What is the county seat of Navarro County, Texas?	Corsicana	Corsicana	known
+82	RADIO	In which Nebraska town is the broadcast station KKNL licensed?	Valentine	idk	idk
+83	KS	What is the county seat of Johnson County, Kansas?	Olathe	Olathe	known
+84	KS	What is the county seat of Morris County, Kansas?	Council Grove	Council Grove	known
+85	TWP	Which Minnesota county contains the township of Paddock?	Otter Tail	Wilkin	wrong
+86	ND	What FAA location identifier is assigned to Casselton Robert Miller Regional Airport?	5N8	CCT	wrong
+87	RADIO	In which Nebraska town is the broadcast station KMMQ licensed?	Plattsmouth	idk	idk
+88	TX	What is the county seat of Presidio County, Texas?	Marfa	Marfa	known
+89	RADIO	In which Nebraska town is the broadcast station KQQO-LP licensed?	Ogallala	idk	idk
+90	RADIO	In which Nebraska town is the broadcast station KXNG licensed?	Lexington	idk	idk
+91	TWP	Which Minnesota county contains the township of Bungo?	Cass	Traverse	wrong
+92	ND	What FAA location identifier is assigned to Hillsboro Municipal Airport?	3H4	HDO	wrong
+93	RADIO	In which Nebraska town is the broadcast station KJZC licensed?	Chadron	idk	idk
+94	TWP	Which Minnesota county contains the township of Blackberry?	Itasca	Crow Wing	wrong
+95	KS	What is the county seat of Jefferson County, Kansas?	Oskaloosa	Valley Falls	wrong
+96	TX	What is the county seat of Briscoe County, Texas?	Silverton	Silverton	known
+97	TWP	Which Minnesota county contains the township of Zumbrota?	Goodhue	Goodhue	known
+98	RADIO	In which Nebraska town is the broadcast station KMKP-LP licensed?	Holdrege	idk	idk
+99	TWP	Which Minnesota county contains the township of Skelton?	Carlton	Lincoln	wrong
+100	ND	What FAA location identifier is assigned to Pruetz Municipal Airport (closed in 2009, replaced by Kulm Municipal)?	5K9	idk	idk
+101	TWP	Which Minnesota county contains the township of Webster?	Rice	Rice	known
+102	TX	What is the county seat of Scurry County, Texas?	Snyder	Snyder	known
+103	TWP	Which Minnesota county contains the township of North Red River?	Kittson	idk	idk
+104	TX	What is the county seat of Stephens County, Texas?	Breckenridge	Breckenridge	known
+105	ND	What FAA location identifier is assigned to Minot Air Force Base?	MIB	MIB	known
+106	RADIO	In which Nebraska town is the broadcast station KINI licensed?	Crookston	idk	idk
+107	KS	What is the county seat of Franklin County, Kansas?	Ottawa	Ottawa	known
+108	TWP	Which Minnesota county contains the township of Emmet?	Renville	Freeborn	wrong
+109	KS	What is the county seat of Ness County, Kansas?	Ness City	Hays	wrong
+110	RADIO	In which Nebraska town is the broadcast station KCVN licensed?	Cozad	idk	idk
+111	TWP	Which Minnesota county contains the township of New Solum?	Marshall	idk	idk
+112	RADIO	In which Nebraska town is the broadcast station KNTK licensed?	Firth	idk	idk
+113	TX	What is the county seat of Chambers County, Texas?	Anahuac	Anahuac	known
+114	KS	What is the county seat of Doniphan County, Kansas?	Troy	Troy	known
+115	RADIO	In which Nebraska town is the broadcast station KGMT licensed?	Fairbury	idk	idk
+116	KS	What is the county seat of Ottawa County, Kansas?	Minneapolis	Minneapolis	known
+117	RADIO	In which Nebraska town is the broadcast station KCFD licensed?	Crawford	idk	idk
+118	KS	What is the county seat of Allen County, Kansas?	Iola	Iola	known
+119	TWP	Which Minnesota county contains the township of Pierz?	Morrison	Morrison	known
+120	ND	What FAA location identifier is assigned to Harry Stern Airport?	BWP	idk	idk
+121	RADIO	In which Nebraska town is the broadcast station KHAQ licensed?	Maxwell	idk	idk
+122	IN	What is the county seat of Fayette County, Indiana?	Connersville	Connersville	known
+123	TX	What is the county seat of Duval County, Texas?	San Diego	San Antonio	wrong
+124	ND	What FAA location identifier is assigned to Tomlinson Field?	8J7	idk	idk
+125	TX	What is the county seat of Borden County, Texas?	Gail	Gholson	wrong
+126	ND	What FAA location identifier is assigned to Cavalier Municipal Airport?	2C8	CAV	wrong
+127	RADIO	In which Nebraska town is the broadcast station KNPQ licensed?	Hershey	idk	idk
+128	KS	What is the county seat of Hodgeman County, Kansas?	Jetmore	Jetmore	known
+129	IN	What is the county seat of Ohio County, Indiana?	Rising Sun	Hartford	wrong
+130	KS	What is the county seat of Rawlins County, Kansas?	Atwood	Atwood	known
+131	RADIO	In which Nebraska town is the broadcast station KTNC licensed?	Falls City	idk	idk
+132	RADIO	In which Nebraska town is the broadcast station KEJS licensed?	Sargent	Kearney	wrong
+133	TWP	Which Minnesota county contains the township of Buzzle?	Beltrami	Wilkin	wrong
+134	IN	What is the county seat of Marshall County, Indiana?	Plymouth	Plymouth	known
+135	TWP	Which Minnesota county contains the township of Malmo?	Aitkin	St. Louis	wrong
+136	KS	What is the county seat of Sheridan County, Kansas?	Hoxie	Hoquiam	wrong
+137	TWP	Which Minnesota county contains the township of Darnen?	Stevens	Wilkin	wrong
+138	TWP	Which Minnesota county contains the township of Minnesota Lake?	Faribault	Jackson	wrong
+139	KS	What is the county seat of Gove County, Kansas?	Gove City	Gove	wrong
+140	RADIO	In which Nebraska town is the broadcast station KHZY licensed?	Overton	idk	idk
+141	TWP	Which Minnesota county contains the township of Hendrum?	Norman	Wilkin	wrong
+142	RADIO	In which Nebraska town is the broadcast station KGRU licensed?	Burwell	Grand Island	wrong
+143	KS	What is the county seat of Lane County, Kansas?	Dighton	Dighton	known
+144	TWP	Which Minnesota county contains the township of Meadows?	Wilkin	Wilkin	known
+145	TX	What is the county seat of Milam County, Texas?	Cameron	Cameron	known
+146	TWP	Which Minnesota county contains the township of Leota?	Nobles	Nobles	known
+147	TWP	Which Minnesota county contains the township of Lund?	Douglas	Lincoln	wrong
