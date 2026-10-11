@@ -1,0 +1,874 @@
+[p1/plumbing] row1 cls=gold dist=0 ptok=48/48 cache_n=0 prompt_n=48 base=None ride=None leak=False :: Lake of the Woods
+[p1/plumbing] row2 cls=gold dist=1 ptok=48/48 cache_n=0 prompt_n=48 base=None ride=None leak=False :: Falls City
+[p1/plumbing] row3 cls=gold dist=2 ptok=46/46 cache_n=0 prompt_n=46 base=None ride=None leak=False :: BWP
+[p1/plumbing] row4 cls=gold dist=3 ptok=48/48 cache_n=0 prompt_n=48 base=None ride=None leak=False :: Terrytown
+[p1/plumbing] row5 cls=gold dist=4 ptok=41/41 cache_n=0 prompt_n=41 base=None ride=None leak=False :: Todd
+[p1/plumbing] row6 cls=gold dist=5 ptok=48/48 cache_n=0 prompt_n=48 base=None ride=None leak=False :: Sutherland
+[p1/plumbing] row7 cls=gold dist=6 ptok=52/52 cache_n=0 prompt_n=52 base=None ride=None leak=False :: Seward
+[p1/plumbing] row8 cls=gold dist=7 ptok=62/62 cache_n=0 prompt_n=62 base=None ride=None leak=False :: G3
+[p1/plumbing] row9 cls=gold dist=8 ptok=49/49 cache_n=0 prompt_n=49 base=None ride=None leak=False :: Bennington
+[p1/plumbing] row10 cls=gold dist=9 ptok=45/45 cache_n=0 prompt_n=45 base=None ride=None leak=False :: Otter Tail
+[p1/plumbing] row11 cls=gold dist=10 ptok=49/49 cache_n=0 prompt_n=49 base=None ride=None leak=False :: Crawford
+[p1/plumbing] row12 cls=gold dist=11 ptok=45/45 cache_n=0 prompt_n=45 base=None ride=None leak=False :: Marshall
+[p1/plumbing] row13 cls=gold dist=12 ptok=50/50 cache_n=0 prompt_n=50 base=None ride=None leak=False :: 2C8
+[p1/plumbing] row14 cls=gold dist=13 ptok=50/50 cache_n=0 prompt_n=50 base=None ride=None leak=False :: Firth
+[p1/plumbing] row15 cls=gold dist=14 ptok=55/55 cache_n=0 prompt_n=55 base=None ride=None leak=False :: Ainsworth
+[p1/plumbing] row16 cls=gold dist=15 ptok=49/49 cache_n=0 prompt_n=49 base=None ride=None leak=False :: D56
+[p1/plumbing] row17 cls=gold dist=16 ptok=52/52 cache_n=0 prompt_n=52 base=None ride=None leak=False :: Bassett
+[p1/plumbing] row18 cls=gold dist=17 ptok=52/52 cache_n=0 prompt_n=52 base=None ride=None leak=False :: Chadron
+[p1/plumbing] row19 cls=gold dist=18 ptok=50/50 cache_n=0 prompt_n=50 base=None ride=None leak=False :: The FAA location identifier assigned to McVille Municipal Airport is 8M6.
+[p1/plumbing] row20 cls=gold dist=19 ptok=45/45 cache_n=0 prompt_n=45 base=None ride=None leak=False :: Pine
+[p1/plumbing] row21 cls=gold dist=20 ptok=62/62 cache_n=0 prompt_n=62 base=None ride=None leak=False :: Starfire
+[p1/plumbing] row22 cls=gold dist=21 ptok=50/50 cache_n=0 prompt_n=50 base=None ride=None leak=False :: 8J7
+[p1/plumbing] row23 cls=gold dist=22 ptok=48/48 cache_n=0 prompt_n=48 base=None ride=None leak=False :: Fairbury
+[p1/plumbing] row24 cls=gold dist=23 ptok=52/52 cache_n=0 prompt_n=52 base=None ride=None leak=False :: Crete
+[p1/plumbing] row25 cls=gold dist=24 ptok=46/46 cache_n=0 prompt_n=46 base=None ride=None leak=False :: Kittson
+[p1/plumbing] row26 cls=gold dist=25 ptok=48/48 cache_n=0 prompt_n=48 base=None ride=None leak=False :: The FAA location identifier assigned to Page Regional Airport is **64G**.
+[p1/plumbing] row27 cls=gold dist=26 ptok=54/54 cache_n=0 prompt_n=54 base=None ride=None leak=False :: GWR
+[p1/plumbing] row28 cls=gold dist=27 ptok=49/49 cache_n=0 prompt_n=49 base=None ride=None leak=False :: Minatare
+[p1/plumbing] row29 cls=gold dist=28 ptok=49/49 cache_n=0 prompt_n=49 base=None ride=None leak=False :: Ord
+[p1/plumbing] row30 cls=gold dist=29 ptok=53/53 cache_n=0 prompt_n=53 base=None ride=None leak=False :: Gretna
+[p1/plumbing] row31 cls=gold dist=30 ptok=56/56 cache_n=0 prompt_n=56 base=None ride=None leak=False :: The FAA location identifier assigned to Casselton Robert Miller Regional Airport is **5N8**.
+[p1/plumbing] row32 cls=gold dist=31 ptok=47/47 cache_n=0 prompt_n=47 base=None ride=None leak=False :: Mitchell
+[p1/plumbing] row33 cls=gold dist=32 ptok=49/49 cache_n=0 prompt_n=49 base=None ride=None leak=False :: Shubert
+[p1/plumbing] row34 cls=gold dist=33 ptok=52/52 cache_n=0 prompt_n=52 base=None ride=None leak=False :: Creighton
+[p1/plumbing] row35 cls=gold dist=34 ptok=49/49 cache_n=0 prompt_n=49 base=None ride=None leak=False :: Pierce
+[p1/plumbing] row36 cls=gold dist=35 ptok=48/48 cache_n=0 prompt_n=48 base=None ride=None leak=False :: Sargent
+[p1/plumbing] row37 cls=gold dist=36 ptok=51/51 cache_n=0 prompt_n=51 base=None ride=None leak=False :: Kilgore
+[p1/plumbing] row38 cls=gold dist=37 ptok=43/43 cache_n=0 prompt_n=43 base=None ride=None leak=False :: Norman
+[p1/plumbing] row39 cls=gold dist=38 ptok=44/44 cache_n=0 prompt_n=44 base=None ride=None leak=False :: Yellow Medicine
+[p1/plumbing] row40 cls=gold dist=39 ptok=80/80 cache_n=0 prompt_n=80 base=None ride=None leak=False :: 5K9
+[p1/plumbing] row41 cls=gold dist=40 ptok=50/50 cache_n=0 prompt_n=50 base=None ride=None leak=False :: 2D5
+[p1/plumbing] row42 cls=gold dist=41 ptok=58/58 cache_n=0 prompt_n=58 base=None ride=None leak=False :: January 2026
+[p1/plumbing] row43 cls=gold dist=42 ptok=50/50 cache_n=0 prompt_n=50 base=None ride=None leak=False :: O'Neill
+[p1/plumbing] row44 cls=gold dist=43 ptok=63/63 cache_n=0 prompt_n=63 base=None ride=None leak=False :: July 23 2026
+[p1/plumbing] row45 cls=gold dist=44 ptok=51/51 cache_n=0 prompt_n=51 base=None ride=None leak=False :: Cozad
+[p1/plumbing] row46 cls=gold dist=45 ptok=55/55 cache_n=0 prompt_n=55 base=None ride=None leak=False :: Caitlin Clark
+[p1/plumbing] row47 cls=gold dist=46 ptok=47/47 cache_n=0 prompt_n=47 base=None ride=None leak=False :: The FAA location identifier assigned to Garrison Municipal Airport is **D05**.
+[p1/plumbing] row48 cls=gold dist=47 ptok=52/52 cache_n=0 prompt_n=52 base=None ride=None leak=False :: 5B4
+[p1/plumbing] row49 cls=gold dist=48 ptok=43/43 cache_n=0 prompt_n=43 base=None ride=None leak=False :: Swift
+[p1/plumbing] row50 cls=gold dist=49 ptok=44/44 cache_n=0 prompt_n=44 base=None ride=None leak=False :: Itasca
+[p1/plumbing] row51 cls=gold dist=50 ptok=50/50 cache_n=0 prompt_n=50 base=None ride=None leak=False :: 51D
+[p1/plumbing] row52 cls=gold dist=51 ptok=49/49 cache_n=0 prompt_n=49 base=None ride=None leak=False :: Allen
+[p1/plumbing] row53 cls=gold dist=52 ptok=50/50 cache_n=0 prompt_n=50 base=None ride=None leak=False :: Shelton
+[p1/plumbing] row54 cls=gold dist=53 ptok=49/49 cache_n=0 prompt_n=49 base=None ride=None leak=False :: Maxwell
+[p1/plumbing] row55 cls=gold dist=54 ptok=46/46 cache_n=0 prompt_n=46 base=None ride=None leak=False :: The FAA location identifier assigned to Arthur Airport is 1A2.
+[p1/plumbing] row56 cls=gold dist=55 ptok=54/54 cache_n=0 prompt_n=54 base=None ride=None leak=False :: Nebraska City
+[p1/plumbing] row57 cls=gold dist=56 ptok=55/55 cache_n=0 prompt_n=55 base=None ride=None leak=False :: Ogallala
+[p1/plumbing] row58 cls=gold dist=57 ptok=45/45 cache_n=0 prompt_n=45 base=None ride=None leak=False :: Stevens
+[p1/plumbing] row59 cls=gold dist=58 ptok=49/49 cache_n=0 prompt_n=49 base=None ride=None leak=False :: Wayne
+[p1/plumbing] row60 cls=gold dist=59 ptok=48/48 cache_n=0 prompt_n=48 base=None ride=None leak=False :: Ponca
+[p1/plumbing] row61 cls=gold dist=60 ptok=53/53 cache_n=0 prompt_n=53 base=None ride=None leak=False :: Morpheus
+[p1/plumbing] row62 cls=gold dist=61 ptok=47/47 cache_n=0 prompt_n=47 base=None ride=None leak=False :: Superior
+[p1/plumbing] row63 cls=gold dist=62 ptok=50/50 cache_n=0 prompt_n=50 base=None ride=None leak=False :: The FAA location identifier assigned to Washburn Municipal Airport is 5C8.
+[p1/plumbing] row64 cls=gold dist=63 ptok=49/49 cache_n=0 prompt_n=49 base=None ride=None leak=False :: D64
+[p1/plumbing] row65 cls=gold dist=64 ptok=52/52 cache_n=0 prompt_n=52 base=None ride=None leak=False :: neural rendering
+[p1/plumbing] row66 cls=gold dist=65 ptok=51/51 cache_n=0 prompt_n=51 base=None ride=None leak=False :: Ralston
+[p1/plumbing] row67 cls=gold dist=66 ptok=65/65 cache_n=0 prompt_n=65 base=None ride=None leak=False :: Wildcat Lake
+[p1/plumbing] row68 cls=gold dist=67 ptok=50/50 cache_n=0 prompt_n=50 base=None ride=None leak=False :: 4E7
+[p1/plumbing] row69 cls=gold dist=68 ptok=42/42 cache_n=0 prompt_n=42 base=None ride=None leak=False :: Crow Wing
+[p1/plumbing] row70 cls=gold dist=69 ptok=49/49 cache_n=0 prompt_n=49 base=None ride=None leak=False :: Y71
+[p1/plumbing] row71 cls=gold dist=70 ptok=49/49 cache_n=0 prompt_n=49 base=None ride=None leak=False :: Lexington
+[p1/plumbing] row72 cls=gold dist=71 ptok=54/54 cache_n=0 prompt_n=54 base=None ride=None leak=False :: Arapahoe
+[p1/plumbing] row73 cls=gold dist=72 ptok=57/57 cache_n=0 prompt_n=57 base=None ride=None leak=False :: The FAA location identifier assigned to Fessenden-Streibel Municipal Airport is D24.
+[p1/plumbing] row74 cls=gold dist=73 ptok=50/50 cache_n=0 prompt_n=50 base=None ride=None leak=False :: The FAA location identifier assigned to Hazelton Municipal Airport is 6H8.
+[p1/plumbing] row75 cls=gold dist=74 ptok=47/47 cache_n=0 prompt_n=47 base=None ride=None leak=False :: Hubbard
+[p1/plumbing] row76 cls=gold dist=75 ptok=48/48 cache_n=0 prompt_n=48 base=None ride=None leak=False :: HZE
+[p1/plumbing] row77 cls=gold dist=76 ptok=45/45 cache_n=0 prompt_n=45 base=None ride=None leak=False :: Faribault
+[p1/plumbing] row78 cls=gold dist=77 ptok=46/46 cache_n=0 prompt_n=46 base=None ride=None leak=False :: Polk
+[p1/plumbing] row79 cls=gold dist=78 ptok=47/47 cache_n=0 prompt_n=47 base=None ride=None leak=False :: Y27
+[p1/plumbing] row80 cls=gold dist=79 ptok=42/42 cache_n=0 prompt_n=42 base=None ride=None leak=False :: Winona
+[p1/plumbing] row81 cls=gold dist=80 ptok=50/50 cache_n=0 prompt_n=50 base=None ride=None leak=False :: Hershey
+[p1/plumbing] row82 cls=gold dist=81 ptok=49/49 cache_n=0 prompt_n=49 base=None ride=None leak=False :: Crookston
+[p1/plumbing] row83 cls=gold dist=82 ptok=44/44 cache_n=0 prompt_n=44 base=None ride=None leak=False :: Redwood
+[p1/plumbing] row84 cls=gold dist=83 ptok=51/51 cache_n=0 prompt_n=51 base=None ride=None leak=False :: K74
+[p1/plumbing] row85 cls=gold dist=84 ptok=54/54 cache_n=0 prompt_n=54 base=None ride=None leak=False :: O'Neill
+[p1/plumbing] row86 cls=gold dist=85 ptok=43/43 cache_n=0 prompt_n=43 base=None ride=None leak=False :: Clay
+[p1/plumbing] row87 cls=gold dist=86 ptok=42/42 cache_n=0 prompt_n=42 base=None ride=None leak=False :: Freeborn
+[p1/plumbing] row88 cls=gold dist=87 ptok=49/49 cache_n=0 prompt_n=49 base=None ride=None leak=False :: Gordon
+[p1/plumbing] row89 cls=gold dist=88 ptok=49/49 cache_n=0 prompt_n=49 base=None ride=None leak=False :: D06
+[p1/plumbing] row90 cls=gold dist=89 ptok=50/50 cache_n=0 prompt_n=50 base=None ride=None leak=False :: 3H4
+[p1/plumbing] row91 cls=gold dist=90 ptok=50/50 cache_n=0 prompt_n=50 base=None ride=None leak=False :: Albion
+[p1/plumbing] row92 cls=gold dist=91 ptok=50/50 cache_n=0 prompt_n=50 base=None ride=None leak=False :: Wilber
+[p1/plumbing] row93 cls=gold dist=92 ptok=48/48 cache_n=0 prompt_n=48 base=None ride=None leak=False :: Ravenna
+[p1/plumbing] row94 cls=gold dist=93 ptok=48/48 cache_n=0 prompt_n=48 base=None ride=None leak=False :: McCook
+[p1/plumbing] row95 cls=gold dist=94 ptok=57/57 cache_n=0 prompt_n=57 base=None ride=None leak=False :: Victor Wembanyama
+[p1/plumbing] row96 cls=gold dist=95 ptok=45/45 cache_n=0 prompt_n=45 base=None ride=None leak=False :: Aitkin
+[p1/plumbing] row97 cls=gold dist=96 ptok=43/43 cache_n=0 prompt_n=43 base=None ride=None leak=False :: Cass
+[p1/plumbing] row98 cls=gold dist=97 ptok=57/57 cache_n=0 prompt_n=57 base=None ride=None leak=False :: May 31 2026
+[p1/plumbing] row99 cls=gold dist=98 ptok=49/49 cache_n=0 prompt_n=49 base=None ride=None leak=False :: Dix
+[p1/plumbing] row100 cls=gold dist=99 ptok=49/49 cache_n=0 prompt_n=49 base=None ride=None leak=False :: York
+[p1/cold] row1 cls=distractor dist=49 ptok=23/23 cache_n=0 prompt_n=23 base=None ride=None leak=False :: The township of Zippel is located in **Itasca County**, Minnesota.
+[p1/cold] row2 cls=other dist=None ptok=24/24 cache_n=0 prompt_n=24 base=None ride=None leak=False :: The broadcast station KTNC is licensed to **Fairmont**, Nebraska.
+
+KTNC operates on 100.
+[p1/cold] row3 cls=other dist=None ptok=23/23 cache_n=0 prompt_n=23 base=None ride=None leak=False :: The FAA location identifier assigned to Harry Stern Airport is **BRO**.
+
+**Details:**
+*   **Airport Name
+[p1/cold] row4 cls=other dist=None ptok=24/24 cache_n=0 prompt_n=24 base=None ride=None leak=False :: The broadcast station **KCMI** (91.3 FM) is licensed to **Columbus, Nebraska**.
+[p1/cold] row5 cls=distractor dist=87 ptok=21/21 cache_n=0 prompt_n=21 base=None ride=None leak=False :: The township of **Gordon** is located in **Grant County**, Minnesota.
+
+It is situated in the southwestern part
+[p1/cold] row6 cls=other dist=None ptok=24/24 cache_n=0 prompt_n=24 base=None ride=None leak=False :: The broadcast station **KRNP** is licensed to **Broken Bow**, Nebraska.
+
+KRNP is an AM radio station
+[p1/cold] row7 cls=other dist=None ptok=26/26 cache_n=0 prompt_n=26 base=None ride=None leak=False :: The broadcast station **KZKX** (93.7 FM), which is a country music station known as
+[p1/cold] row8 cls=other dist=None ptok=31/31 cache_n=0 prompt_n=31 base=None ride=None leak=False :: Actually, there is a factual error in the premise of your question: **May 28, 202
+[p1/cold] row9 cls=other dist=None ptok=24/24 cache_n=0 prompt_n=24 base=None ride=None leak=False :: The broadcast station **KFFF** (93.7 FM, currently branded as "The Wolf 93.
+[p1/cold] row10 cls=other dist=None ptok=22/22 cache_n=0 prompt_n=22 base=None ride=None leak=False :: The township of Paddock is located in **Morrison County**, Minnesota.
+
+It is situated in the northwestern
+[p1/cold] row11 cls=other dist=None ptok=25/25 cache_n=0 prompt_n=25 base=None ride=None leak=False :: The broadcast station **KCFD** is licensed to **Fairfield, Nebraska**.
+
+KCFD is a radio
+[p1/cold] row12 cls=other dist=None ptok=23/23 cache_n=0 prompt_n=23 base=None ride=None leak=False :: The township of **New Solum** is located in **Traverse County**, Minnesota.
+
+### Key Details:
+[p1/cold] row13 cls=gold dist=12 ptok=24/24 cache_n=0 prompt_n=24 base=None ride=None leak=True :: The FAA location identifier assigned to **Cavalier Municipal Airport** is **2C8**.
+
+### Key Details:
+[p1/cold] row14 cls=other dist=None ptok=25/25 cache_n=0 prompt_n=25 base=None ride=None leak=False :: The broadcast station **KNTK** (which operates as KNTK-LP, a low-power FM station)
+[p1/cold] row15 cls=other dist=None ptok=27/27 cache_n=0 prompt_n=27 base=None ride=None leak=False :: The broadcast station KBRB-FM is licensed to **Broken Bow**, Nebraska.
+
+It is a country music radio
+[p1/cold] row16 cls=other dist=None ptok=24/24 cache_n=0 prompt_n=24 base=None ride=None leak=False :: The FAA location identifier assigned to Mayville Municipal Airport is **MVI**.
+
+This airport is located in Mayville,
+[p1/cold] row17 cls=other dist=None ptok=26/26 cache_n=0 prompt_n=26 base=None ride=None leak=False :: The broadcast station **KMNE-FM** (92.9 FM) is licensed to the town of **Lex
+[p1/cold] row18 cls=distractor dist=22 ptok=26/26 cache_n=0 prompt_n=26 base=None ride=None leak=False :: The broadcast station **KJZC** is licensed to **Fairbury, Nebraska**.
+
+KJZC (
+[p1/cold] row19 cls=other dist=None ptok=24/24 cache_n=0 prompt_n=24 base=None ride=None leak=False :: The FAA location identifier assigned to McVille Municipal Airport is **MKV**.
+
+**Details:**
+*   **Airport
+[p1/cold] row20 cls=distractor dist=68 ptok=23/23 cache_n=0 prompt_n=23 base=None ride=None leak=False :: The township of Finlayson is located in **Crow Wing County**, Minnesota.
+
+Finlayson is also the name
+[p1/cold] row21 cls=other dist=None ptok=31/31 cache_n=0 prompt_n=31 base=None ride=None leak=False :: Based on current official announcements and roadmap data from Intel, here is the breakdown of the situation:
+
+1.  **
+[p1/cold] row22 cls=other dist=None ptok=24/24 cache_n=0 prompt_n=24 base=None ride=None leak=False :: The FAA location identifier assigned to **Tomlinson Field** is **10A**.
+
+### Context:
+-
+[p1/cold] row23 cls=other dist=None ptok=24/24 cache_n=0 prompt_n=24 base=None ride=None leak=False :: The broadcast station **KUTT** (107.9 FM), which plays classic rock, is licensed to **
+[p1/cold] row24 cls=other dist=None ptok=26/26 cache_n=0 prompt_n=26 base=None ride=None leak=False :: The broadcast station **KGCO-LP** is licensed to **Grand Island**, Nebraska.
+
+KGCO-LP is
+[p1/cold] row25 cls=other dist=None ptok=23/23 cache_n=0 prompt_n=23 base=None ride=None leak=False :: The township of North Red River is located in **Roseau County**, Minnesota.
+
+It is situated in the northwestern
+[p1/cold] row26 cls=other dist=None ptok=23/23 cache_n=0 prompt_n=23 base=None ride=None leak=False :: The FAA location identifier assigned to Page Regional Airport is **PGZ**.
+
+This airport is located in Page, Arizona.
+[p1/cold] row27 cls=gold dist=26 ptok=27/27 cache_n=0 prompt_n=27 base=None ride=None leak=True :: The FAA location identifier assigned to Gwinner-Roger Melroe Field is **GWR**.
+
+This airport is located in
+[p1/cold] row28 cls=other dist=None ptok=24/24 cache_n=0 prompt_n=24 base=None ride=None leak=False :: The broadcast station **KHYY** is licensed to the town of **Hyannis**, Nebraska.
+
+KHYY is a
+[p1/cold] row29 cls=other dist=None ptok=25/25 cache_n=0 prompt_n=25 base=None ride=None leak=False :: The broadcast station **KNLV** (currently known as **KNLV-LD**, a low-power television station) is
+[p1/cold] row30 cls=other dist=None ptok=26/26 cache_n=0 prompt_n=26 base=None ride=None leak=False :: The broadcast station **KZLW** is licensed to **Sidney, Nebraska**.
+
+KZLW is
+[p1/cold] row31 cls=other dist=None ptok=27/27 cache_n=0 prompt_n=27 base=None ride=None leak=False :: The FAA location identifier assigned to Casselton Robert Miller Regional Airport is **GAF**.
+
+**Note:** While the
+[p1/cold] row32 cls=other dist=None ptok=24/24 cache_n=0 prompt_n=24 base=None ride=None leak=False :: The broadcast station **KETT** (FM 104.1) is licensed to **North Platte**,
+[p1/cold] row33 cls=other dist=None ptok=24/24 cache_n=0 prompt_n=24 base=None ride=None leak=False :: The broadcast station KSSH is licensed to **St. Paul**, Nebraska.
+
+KSSH is an AM radio station (
+[p1/cold] row34 cls=other dist=None ptok=26/26 cache_n=0 prompt_n=26 base=None ride=None leak=False :: The broadcast station **KNIL-LP** is licensed to **North Platte**, Nebraska.
+
+It is a low
+[p1/cold] row35 cls=other dist=None ptok=25/25 cache_n=0 prompt_n=25 base=None ride=None leak=False :: The broadcast station **KEXL** (105.9 FM) is licensed to **North Platte**,
+[p1/cold] row36 cls=other dist=None ptok=24/24 cache_n=0 prompt_n=24 base=None ride=None leak=False :: The broadcast station **KEJS** (AM 1050) is licensed to the town of **Kimball
+[p1/cold] row37 cls=other dist=None ptok=25/25 cache_n=0 prompt_n=25 base=None ride=None leak=False :: The broadcast station **KDJL** is licensed to **Dodge City**, Nebraska.
+
+KDJL is a
+[p1/cold] row38 cls=gold dist=37 ptok=22/22 cache_n=0 prompt_n=22 base=None ride=None leak=True :: The township of Hendrum is located in **Norman County**, Minnesota.
+
+It is situated in the northwestern part
+[p1/cold] row39 cls=other dist=None ptok=22/22 cache_n=0 prompt_n=22 base=None ride=None leak=False :: The township of **Tyro** is located in **Stearns County**, Minnesota.
+
+Tyro Township is situated
+[p1/cold] row40 cls=other dist=None ptok=39/39 cache_n=0 prompt_n=39 base=None ride=None leak=False :: The FAA location identifier assigned to Pruetz Municipal Airport (which was located in Kulm, North Dakota) is **
+[p1/cold] row41 cls=other dist=None ptok=24/24 cache_n=0 prompt_n=24 base=None ride=None leak=False :: The FAA location identifier assigned to **Oakes Municipal Airport** (located in Oakes, North Dakota) is **O
+[p1/cold] row42 cls=other dist=None ptok=27/27 cache_n=0 prompt_n=27 base=None ride=None leak=False :: Nvidia introduced **DLSS 4.5** in **January 2025**.
+
+This announcement was
+[p1/cold] row43 cls=other dist=None ptok=25/25 cache_n=0 prompt_n=25 base=None ride=None leak=False :: The broadcast station **KBRX** is licensed to **Oxford, Nebraska**.
+
+KBRX (95
+[p1/cold] row44 cls=other dist=None ptok=28/28 cache_n=0 prompt_n=28 base=None ride=None leak=False :: AMD announced the EPYC 9006 series (also known as the 5th Gen EPYC, cod
+[p1/cold] row45 cls=other dist=None ptok=25/25 cache_n=0 prompt_n=25 base=None ride=None leak=False :: The broadcast station **KCVN** is licensed to **Columbus, Nebraska**.
+
+KCVN (channel
+[p1/cold] row46 cls=other dist=None ptok=27/27 cache_n=0 prompt_n=27 base=None ride=None leak=False :: The Deluxe Edition cover athlete for **NBA 2K27** is **Kobe Bryant**.
+
+However,
+[p1/cold] row47 cls=other dist=None ptok=23/23 cache_n=0 prompt_n=23 base=None ride=None leak=False :: The FAA location identifier assigned to Garrison Municipal Airport is **D70**.
+
+### Details:
+*   **Airport
+[p1/cold] row48 cls=other dist=None ptok=25/25 cache_n=0 prompt_n=25 base=None ride=None leak=False :: The FAA location identifier assigned to Bowbells Municipal Airport is **S23**.
+
+**Additional Context:**
+*
+[p1/cold] row49 cls=other dist=None ptok=22/22 cache_n=0 prompt_n=22 base=None ride=None leak=False :: The township of **Moyer** is located in **Roseau County**, Minnesota.
+
+It is situated in the north
+[p1/cold] row50 cls=distractor dist=68 ptok=22/22 cache_n=0 prompt_n=22 base=None ride=None leak=False :: The township of Blackberry is located in **Crow Wing County**, Minnesota.
+
+It is situated in the north-central part
+[p1/cold] row51 cls=other dist=None ptok=24/24 cache_n=0 prompt_n=24 base=None ride=None leak=False :: The FAA location identifier assigned to **Edgeley Municipal Airport** (located in Edgeley, North Dakota) is **0
+[p1/cold] row52 cls=other dist=None ptok=25/25 cache_n=0 prompt_n=25 base=None ride=None leak=False :: The broadcast station **KWTN** is licensed to **Thayer, Nebraska**.
+
+KWTN operates on
+[p1/cold] row53 cls=other dist=None ptok=25/25 cache_n=0 prompt_n=25 base=None ride=None leak=False :: The broadcast station **KQQA** (which operates on 104.7 FM) is licensed to the
+[p1/cold] row54 cls=other dist=None ptok=25/25 cache_n=0 prompt_n=25 base=None ride=None leak=False :: The broadcast station **KHAQ** is licensed to **Hastings**, Nebraska.
+
+It is a radio station
+[p1/cold] row55 cls=other dist=None ptok=22/22 cache_n=0 prompt_n=22 base=None ride=None leak=False :: The FAA location identifier assigned to **Arthur Airport** (located in Arthur, North Dakota, USA) is **09
+[p1/cold] row56 cls=other dist=None ptok=27/27 cache_n=0 prompt_n=27 base=None ride=None leak=False :: The broadcast station **KBBX-FM** (97.7 FM) is licensed to the town of **
+[p1/cold] row57 cls=other dist=None ptok=27/27 cache_n=0 prompt_n=27 base=None ride=None leak=False :: The broadcast station **KQQO-LP** is licensed to **Sidney**, Nebraska.
+
+This low-power FM
+[p1/cold] row58 cls=other dist=None ptok=23/23 cache_n=0 prompt_n=23 base=None ride=None leak=False :: The township of Darnen is located in **Roseau County**, Minnesota.
+
+Darnen Township is situated in
+[p1/cold] row59 cls=other dist=None ptok=25/25 cache_n=0 prompt_n=25 base=None ride=None leak=False :: The broadcast station **KCTY** is licensed to the town of **Chappell**, Nebraska.
+
+KCT
+[p1/cold] row60 cls=distractor dist=22 ptok=24/24 cache_n=0 prompt_n=24 base=None ride=None leak=False :: The broadcast station **KFHC** is licensed to **Fairbury**, Nebraska.
+
+KFHC is a radio station (
+[p1/cold] row61 cls=other dist=None ptok=26/26 cache_n=0 prompt_n=26 base=None ride=None leak=False :: AMD's codename for the Zen 6 microarchitecture is **Zen 6** (also referred to as **Zen
+[p1/cold] row62 cls=other dist=None ptok=24/24 cache_n=0 prompt_n=24 base=None ride=None leak=False :: The broadcast station KRFS is licensed to **Red Cloud, Nebraska**.
+
+KRFS (93.1 FM)
+[p1/cold] row63 cls=other dist=None ptok=24/24 cache_n=0 prompt_n=24 base=None ride=None leak=False :: The FAA location identifier assigned to Washburn Municipal Airport is **ACM**.
+
+**Details:**
+*   **Airport
+[p1/cold] row64 cls=other dist=None ptok=24/24 cache_n=0 prompt_n=24 base=None ride=None leak=False :: The FAA location identifier assigned to **Westhope Municipal Airport** (located in Westhope, North Dakota) is **D
+[p1/cold] row65 cls=other dist=None ptok=26/26 cache_n=0 prompt_n=26 base=None ride=None leak=False :: It is important to clarify that **DLSS 5 does not currently exist** as an official product from NVIDIA. As
+[p1/cold] row66 cls=other dist=None ptok=25/25 cache_n=0 prompt_n=25 base=None ride=None leak=False :: The broadcast station KMLV is licensed to **Mullen**, Nebraska.
+
+It is an AM radio station (8
+[p1/cold] row67 cls=other dist=None ptok=32/32 cache_n=0 prompt_n=32 base=None ride=None leak=False :: Based on Intel's roadmap and industry reporting regarding the **Panther Lake** architecture (scheduled for release in late 2
+[p1/cold] row68 cls=distractor dist=40 ptok=24/24 cache_n=0 prompt_n=24 base=None ride=None leak=False :: The FAA location identifier assigned to Ellendale Municipal Airport is **2D5**.
+
+**Details:**
+*   **
+[p1/cold] row69 cls=gold dist=68 ptok=21/21 cache_n=0 prompt_n=21 base=None ride=None leak=True :: The township of Timothy is located in **Crow Wing County**, Minnesota.
+
+It is situated in the north-central part of
+[p1/cold] row70 cls=other dist=None ptok=24/24 cache_n=0 prompt_n=24 base=None ride=None leak=False :: The FAA location identifier assigned to **Elgin Municipal Airport** (located in Elgin, Illinois) is **VU
+[p1/cold] row71 cls=other dist=None ptok=25/25 cache_n=0 prompt_n=25 base=None ride=None leak=False :: The broadcast station **KXNG** is licensed to **North Platte**, Nebraska.
+
+It is a radio station
+[p1/cold] row72 cls=other dist=None ptok=26/26 cache_n=0 prompt_n=26 base=None ride=None leak=False :: The broadcast station **KAGR-LP** is licensed to **Grand Island**, Nebraska.
+
+It is a low-power
+[p1/cold] row73 cls=other dist=None ptok=28/28 cache_n=0 prompt_n=28 base=None ride=None leak=False :: The FAA location identifier assigned to Fessenden-Streibel Municipal Airport is **FSD**.
+
+This airport is located
+[p1/cold] row74 cls=other dist=None ptok=24/24 cache_n=0 prompt_n=24 base=None ride=None leak=False :: The FAA location identifier assigned to Hazelton Municipal Airport is **HZO**.
+
+Note: The ICAO code for
+[p1/cold] row75 cls=other dist=None ptok=24/24 cache_n=0 prompt_n=24 base=None ride=None leak=False :: The broadcast station KAYA (95.1 FM) is licensed to **Kearney**, Nebraska.
+
+K
+[p1/cold] row76 cls=other dist=None ptok=24/24 cache_n=0 prompt_n=24 base=None ride=None leak=False :: The FAA location identifier assigned to Mercer County Regional Airport (located in Mercer County, Pennsylvania) is **MER**.
+
+*
+[p1/cold] row77 cls=other dist=None ptok=22/22 cache_n=0 prompt_n=22 base=None ride=None leak=False :: The township of **Minnesota Lake** is located in **Jackson County**, Minnesota.
+
+The city of Minnesota Lake, which
+[p1/cold] row78 cls=other dist=None ptok=23/23 cache_n=0 prompt_n=23 base=None ride=None leak=False :: The township of Tynsid is located in **Lincoln County**, Minnesota.
+
+It is situated in the southwestern part
+[p1/cold] row79 cls=other dist=None ptok=23/23 cache_n=0 prompt_n=23 base=None ride=None leak=False :: The FAA location identifier assigned to Standing Rock Airport is **DVR**.
+
+**Note:** The ICAO code for
+[p1/cold] row80 cls=other dist=None ptok=21/21 cache_n=0 prompt_n=21 base=None ride=None leak=False :: The township of Norton is located in **Traverse County**, Minnesota.
+
+### Key Details:
+- **State:**
+[p1/cold] row81 cls=other dist=None ptok=25/25 cache_n=0 prompt_n=25 base=None ride=None leak=False :: The broadcast station **KNPQ** (92.9 FM) is licensed to **North Platte, Nebraska
+[p1/cold] row82 cls=other dist=None ptok=24/24 cache_n=0 prompt_n=24 base=None ride=None leak=False :: The broadcast station **KINI** is licensed to **Sidney**, Nebraska.
+
+KINI (1230
+[p1/cold] row83 cls=distractor dist=68 ptok=22/22 cache_n=0 prompt_n=22 base=None ride=None leak=False :: The township of Underwood is located in **Crow Wing County**, Minnesota.
+
+*(Note: The city of Underwood
+[p1/cold] row84 cls=other dist=None ptok=25/25 cache_n=0 prompt_n=25 base=None ride=None leak=False :: The FAA location identifier assigned to Robert Odegaard Field is **14N**.
+
+**Details:**
+*
+[p1/cold] row85 cls=other dist=None ptok=27/27 cache_n=0 prompt_n=27 base=None ride=None leak=False :: The broadcast station KBRX-FM is licensed to **Columbus**, Nebraska.
+
+It operates on 9
+[p1/cold] row86 cls=other dist=None ptok=22/22 cache_n=0 prompt_n=22 base=None ride=None leak=False :: The township of Cromwell is located in **Carlton County**, Minnesota.
+
+Cromwell Township is situated in the
+[p1/cold] row87 cls=distractor dist=68 ptok=21/21 cache_n=0 prompt_n=21 base=None ride=None leak=False :: The township of Freeman is located in **Crow Wing County**, Minnesota.
+
+It is situated in the central part of the
+[p1/cold] row88 cls=other dist=None ptok=25/25 cache_n=0 prompt_n=25 base=None ride=None leak=False :: The broadcast station KSDZ is licensed to **Sidney**, Nebraska.
+
+KSDZ (90.9
+[p1/cold] row89 cls=other dist=None ptok=24/24 cache_n=0 prompt_n=24 base=None ride=None leak=False :: The FAA location identifier assigned to Minto Municipal Airport is **MNT**.
+
+*   **Airport Name:** Minto
+[p1/cold] row90 cls=other dist=None ptok=24/24 cache_n=0 prompt_n=24 base=None ride=None leak=False :: The FAA location identifier assigned to Hillsboro Municipal Airport (in Hillsboro, Illinois) is **HBI**.
+
+Note
+[p1/cold] row91 cls=distractor dist=61 ptok=25/25 cache_n=0 prompt_n=25 base=None ride=None leak=False :: The broadcast station **KUSO** (92.7 FM) is licensed to **Superior, Nebraska**.
+[p1/cold] row92 cls=distractor dist=22 ptok=25/25 cache_n=0 prompt_n=25 base=None ride=None leak=False :: The broadcast station KFLV (90.7 FM) is licensed to the town of **Fairbury**, Nebraska
+[p1/cold] row93 cls=other dist=None ptok=24/24 cache_n=0 prompt_n=24 base=None ride=None leak=False :: The broadcast station **KKJK** is licensed to **Sidney**, Nebraska.
+
+KKJK is an AM radio station
+[p1/cold] row94 cls=other dist=None ptok=24/24 cache_n=0 prompt_n=24 base=None ride=None leak=False :: The broadcast station **KIOD** is licensed to **Holdrege**, Nebraska.
+
+KIOD is a radio station
+[p1/cold] row95 cls=other dist=None ptok=27/27 cache_n=0 prompt_n=27 base=None ride=None leak=False :: The Standard Edition cover athlete for **NBA 2K27** has not been announced yet because the game has
+[p1/cold] row96 cls=other dist=None ptok=22/22 cache_n=0 prompt_n=22 base=None ride=None leak=False :: The township of Malmö (often spelled **Malmo** in English contexts) is located in **St. Louis County
+[p1/cold] row97 cls=distractor dist=68 ptok=22/22 cache_n=0 prompt_n=22 base=None ride=None leak=False :: The township of **Bungo** is located in **Crow Wing County**, Minnesota.
+
+It is situated in the
+[p1/cold] row98 cls=other dist=None ptok=25/25 cache_n=0 prompt_n=25 base=None ride=None leak=False :: Nvidia and Microsoft did **not** announce a platform called the "RTX Spark."
+
+It appears there may be
+[p1/cold] row99 cls=other dist=None ptok=25/25 cache_n=0 prompt_n=25 base=None ride=None leak=False :: The broadcast station KIMB is licensed to **Kimball**, Nebraska.
+
+KIMB (AM 12
+[p1/cold] row100 cls=gold dist=99 ptok=25/25 cache_n=0 prompt_n=25 base=None ride=None leak=True :: The broadcast station **KAWL** (AM 1450) is licensed to **York, Nebraska**.
+[p1/c3b] row1 cls=gold dist=0 ptok=3521/3521 cache_n=3499 prompt_n=22 base=3499 ride=True leak=False :: Lake of the Woods
+[p1/c3b] row2 cls=gold dist=1 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Falls City
+[p1/c3b] row3 cls=gold dist=2 ptok=3521/3521 cache_n=3499 prompt_n=22 base=3499 ride=True leak=False :: BWP
+[p1/c3b] row4 cls=gold dist=3 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Terrytown
+[p1/c3b] row5 cls=gold dist=4 ptok=3519/3519 cache_n=3499 prompt_n=20 base=3499 ride=True leak=False :: Todd
+[p1/c3b] row6 cls=gold dist=5 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Sutherland
+[p1/c3b] row7 cls=gold dist=6 ptok=3524/3524 cache_n=3499 prompt_n=25 base=3499 ride=True leak=False :: Seward
+[p1/c3b] row8 cls=gold dist=7 ptok=3529/3529 cache_n=3499 prompt_n=30 base=3499 ride=True leak=False :: G3
+[p1/c3b] row9 cls=gold dist=8 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Bennington
+[p1/c3b] row10 cls=gold dist=9 ptok=3520/3520 cache_n=3499 prompt_n=21 base=3499 ride=True leak=False :: Otter Tail
+[p1/c3b] row11 cls=gold dist=10 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Crawford
+[p1/c3b] row12 cls=gold dist=11 ptok=3521/3521 cache_n=3499 prompt_n=22 base=3499 ride=True leak=False :: Marshall
+[p1/c3b] row13 cls=gold dist=12 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: 2C8
+[p1/c3b] row14 cls=gold dist=13 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Firth
+[p1/c3b] row15 cls=gold dist=14 ptok=3525/3525 cache_n=3499 prompt_n=26 base=3499 ride=True leak=False :: Ainsworth
+[p1/c3b] row16 cls=gold dist=15 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: D56
+[p1/c3b] row17 cls=gold dist=16 ptok=3524/3524 cache_n=3499 prompt_n=25 base=3499 ride=True leak=False :: Bassett
+[p1/c3b] row18 cls=gold dist=17 ptok=3524/3524 cache_n=3499 prompt_n=25 base=3499 ride=True leak=False :: Chadron
+[p1/c3b] row19 cls=gold dist=18 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: 8M6
+[p1/c3b] row20 cls=gold dist=19 ptok=3521/3521 cache_n=3499 prompt_n=22 base=3499 ride=True leak=False :: Pine
+[p1/c3b] row21 cls=gold dist=20 ptok=3529/3529 cache_n=3499 prompt_n=30 base=3499 ride=True leak=False :: Starfire
+[p1/c3b] row22 cls=gold dist=21 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: 8J7
+[p1/c3b] row23 cls=gold dist=22 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Fairbury
+[p1/c3b] row24 cls=gold dist=23 ptok=3524/3524 cache_n=3499 prompt_n=25 base=3499 ride=True leak=False :: Crete
+[p1/c3b] row25 cls=gold dist=24 ptok=3521/3521 cache_n=3499 prompt_n=22 base=3499 ride=True leak=False :: Kittson
+[p1/c3b] row26 cls=gold dist=25 ptok=3521/3521 cache_n=3499 prompt_n=22 base=3499 ride=True leak=False :: 64G
+[p1/c3b] row27 cls=gold dist=26 ptok=3525/3525 cache_n=3499 prompt_n=26 base=3499 ride=True leak=False :: GWR
+[p1/c3b] row28 cls=gold dist=27 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Minatare
+[p1/c3b] row29 cls=gold dist=28 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Ord
+[p1/c3b] row30 cls=gold dist=29 ptok=3524/3524 cache_n=3499 prompt_n=25 base=3499 ride=True leak=False :: Gretna
+[p1/c3b] row31 cls=gold dist=30 ptok=3525/3525 cache_n=3499 prompt_n=26 base=3499 ride=True leak=False :: 5N8
+[p1/c3b] row32 cls=gold dist=31 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Mitchell
+[p1/c3b] row33 cls=gold dist=32 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Shubert
+[p1/c3b] row34 cls=gold dist=33 ptok=3524/3524 cache_n=3499 prompt_n=25 base=3499 ride=True leak=False :: Creighton
+[p1/c3b] row35 cls=gold dist=34 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Pierce
+[p1/c3b] row36 cls=gold dist=35 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Sargent
+[p1/c3b] row37 cls=gold dist=36 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Kilgore
+[p1/c3b] row38 cls=gold dist=37 ptok=3520/3520 cache_n=3499 prompt_n=21 base=3499 ride=True leak=False :: Norman
+[p1/c3b] row39 cls=gold dist=38 ptok=3520/3520 cache_n=3499 prompt_n=21 base=3499 ride=True leak=False :: Yellow Medicine
+[p1/c3b] row40 cls=gold dist=39 ptok=3537/3537 cache_n=3499 prompt_n=38 base=3499 ride=True leak=False :: 5K9
+[p1/c3b] row41 cls=gold dist=40 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: 2D5
+[p1/c3b] row42 cls=gold dist=41 ptok=3525/3525 cache_n=3499 prompt_n=26 base=3499 ride=True leak=False :: January 2026
+[p1/c3b] row43 cls=gold dist=42 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: O'Neill
+[p1/c3b] row44 cls=gold dist=43 ptok=3526/3526 cache_n=3499 prompt_n=27 base=3499 ride=True leak=False :: July 23 2026
+[p1/c3b] row45 cls=gold dist=44 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Cozad
+[p1/c3b] row46 cls=gold dist=45 ptok=3525/3525 cache_n=3499 prompt_n=26 base=3499 ride=True leak=False :: Caitlin Clark
+[p1/c3b] row47 cls=gold dist=46 ptok=3521/3521 cache_n=3499 prompt_n=22 base=3499 ride=True leak=False :: D05
+[p1/c3b] row48 cls=gold dist=47 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: 5B4
+[p1/c3b] row49 cls=gold dist=48 ptok=3520/3520 cache_n=3499 prompt_n=21 base=3499 ride=True leak=False :: Swift
+[p1/c3b] row50 cls=gold dist=49 ptok=3520/3520 cache_n=3499 prompt_n=21 base=3499 ride=True leak=False :: Itasca
+[p1/c3b] row51 cls=gold dist=50 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: 51D
+[p1/c3b] row52 cls=gold dist=51 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Allen
+[p1/c3b] row53 cls=gold dist=52 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Shelton
+[p1/c3b] row54 cls=gold dist=53 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Maxwell
+[p1/c3b] row55 cls=gold dist=54 ptok=3520/3520 cache_n=3499 prompt_n=21 base=3499 ride=True leak=False :: 1A2
+[p1/c3b] row56 cls=gold dist=55 ptok=3525/3525 cache_n=3499 prompt_n=26 base=3499 ride=True leak=False :: Nebraska City
+[p1/c3b] row57 cls=gold dist=56 ptok=3525/3525 cache_n=3499 prompt_n=26 base=3499 ride=True leak=False :: Ogallala
+[p1/c3b] row58 cls=gold dist=57 ptok=3521/3521 cache_n=3499 prompt_n=22 base=3499 ride=True leak=False :: Stevens
+[p1/c3b] row59 cls=gold dist=58 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Wayne
+[p1/c3b] row60 cls=gold dist=59 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Ponca
+[p1/c3b] row61 cls=gold dist=60 ptok=3524/3524 cache_n=3499 prompt_n=25 base=3499 ride=True leak=False :: Morpheus
+[p1/c3b] row62 cls=gold dist=61 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Superior
+[p1/c3b] row63 cls=gold dist=62 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: 5C8
+[p1/c3b] row64 cls=gold dist=63 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: D64
+[p1/c3b] row65 cls=gold dist=64 ptok=3524/3524 cache_n=3499 prompt_n=25 base=3499 ride=True leak=False :: neural rendering
+[p1/c3b] row66 cls=gold dist=65 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Ralston
+[p1/c3b] row67 cls=gold dist=66 ptok=3530/3530 cache_n=3499 prompt_n=31 base=3499 ride=True leak=False :: Wildcat Lake
+[p1/c3b] row68 cls=gold dist=67 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: 4E7
+[p1/c3b] row69 cls=gold dist=68 ptok=3519/3519 cache_n=3499 prompt_n=20 base=3499 ride=True leak=False :: Crow Wing
+[p1/c3b] row70 cls=gold dist=69 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Y71
+[p1/c3b] row71 cls=gold dist=70 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Lexington
+[p1/c3b] row72 cls=gold dist=71 ptok=3524/3524 cache_n=3499 prompt_n=25 base=3499 ride=True leak=False :: Arapahoe
+[p1/c3b] row73 cls=gold dist=72 ptok=3526/3526 cache_n=3499 prompt_n=27 base=3499 ride=True leak=False :: D24
+[p1/c3b] row74 cls=gold dist=73 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: 6H8
+[p1/c3b] row75 cls=gold dist=74 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Hubbard
+[p1/c3b] row76 cls=gold dist=75 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: HZE
+[p1/c3b] row77 cls=gold dist=76 ptok=3520/3520 cache_n=3499 prompt_n=21 base=3499 ride=True leak=False :: Faribault
+[p1/c3b] row78 cls=gold dist=77 ptok=3521/3521 cache_n=3499 prompt_n=22 base=3499 ride=True leak=False :: Polk
+[p1/c3b] row79 cls=gold dist=78 ptok=3521/3521 cache_n=3499 prompt_n=22 base=3499 ride=True leak=False :: Y27
+[p1/c3b] row80 cls=gold dist=79 ptok=3519/3519 cache_n=3499 prompt_n=20 base=3499 ride=True leak=False :: Winona
+[p1/c3b] row81 cls=gold dist=80 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Hershey
+[p1/c3b] row82 cls=gold dist=81 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Crookston
+[p1/c3b] row83 cls=gold dist=82 ptok=3520/3520 cache_n=3499 prompt_n=21 base=3499 ride=True leak=False :: Redwood
+[p1/c3b] row84 cls=gold dist=83 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: K74
+[p1/c3b] row85 cls=gold dist=84 ptok=3525/3525 cache_n=3499 prompt_n=26 base=3499 ride=True leak=False :: O'Neill
+[p1/c3b] row86 cls=gold dist=85 ptok=3520/3520 cache_n=3499 prompt_n=21 base=3499 ride=True leak=False :: Clay
+[p1/c3b] row87 cls=gold dist=86 ptok=3519/3519 cache_n=3499 prompt_n=20 base=3499 ride=True leak=False :: Freeborn
+[p1/c3b] row88 cls=gold dist=87 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Gordon
+[p1/c3b] row89 cls=gold dist=88 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: D06
+[p1/c3b] row90 cls=gold dist=89 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: 3H4
+[p1/c3b] row91 cls=gold dist=90 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Albion
+[p1/c3b] row92 cls=gold dist=91 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Wilber
+[p1/c3b] row93 cls=gold dist=92 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Ravenna
+[p1/c3b] row94 cls=gold dist=93 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: McCook
+[p1/c3b] row95 cls=gold dist=94 ptok=3525/3525 cache_n=3499 prompt_n=26 base=3499 ride=True leak=False :: Victor Wembanyama
+[p1/c3b] row96 cls=gold dist=95 ptok=3520/3520 cache_n=3499 prompt_n=21 base=3499 ride=True leak=False :: Aitkin
+[p1/c3b] row97 cls=gold dist=96 ptok=3520/3520 cache_n=3499 prompt_n=21 base=3499 ride=True leak=False :: Cass
+[p1/c3b] row98 cls=gold dist=97 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: May 31 2026
+[p1/c3b] row99 cls=gold dist=98 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Dix
+[p1/c3b] row100 cls=gold dist=99 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: York
+[p2/c3b] row1 cls=gold dist=0 ptok=3521/3521 cache_n=3499 prompt_n=22 base=3499 ride=True leak=False :: Lake of the Woods
+[p2/c3b] row2 cls=gold dist=1 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Falls City
+[p2/c3b] row3 cls=gold dist=2 ptok=3521/3521 cache_n=3499 prompt_n=22 base=3499 ride=True leak=False :: BWP
+[p2/c3b] row4 cls=gold dist=3 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Terrytown
+[p2/c3b] row5 cls=gold dist=4 ptok=3519/3519 cache_n=3499 prompt_n=20 base=3499 ride=True leak=False :: Todd
+[p2/c3b] row6 cls=gold dist=5 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Sutherland
+[p2/c3b] row7 cls=gold dist=6 ptok=3524/3524 cache_n=3499 prompt_n=25 base=3499 ride=True leak=False :: Seward
+[p2/c3b] row8 cls=gold dist=7 ptok=3529/3529 cache_n=3499 prompt_n=30 base=3499 ride=True leak=False :: G3
+[p2/c3b] row9 cls=gold dist=8 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Bennington
+[p2/c3b] row10 cls=gold dist=9 ptok=3520/3520 cache_n=3499 prompt_n=21 base=3499 ride=True leak=False :: Otter Tail
+[p2/c3b] row11 cls=gold dist=10 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Crawford
+[p2/c3b] row12 cls=gold dist=11 ptok=3521/3521 cache_n=3499 prompt_n=22 base=3499 ride=True leak=False :: Marshall
+[p2/c3b] row13 cls=gold dist=12 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: 2C8
+[p2/c3b] row14 cls=gold dist=13 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Firth
+[p2/c3b] row15 cls=gold dist=14 ptok=3525/3525 cache_n=3499 prompt_n=26 base=3499 ride=True leak=False :: Ainsworth
+[p2/c3b] row16 cls=gold dist=15 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: D56
+[p2/c3b] row17 cls=gold dist=16 ptok=3524/3524 cache_n=3499 prompt_n=25 base=3499 ride=True leak=False :: Bassett
+[p2/c3b] row18 cls=gold dist=17 ptok=3524/3524 cache_n=3499 prompt_n=25 base=3499 ride=True leak=False :: Chadron
+[p2/c3b] row19 cls=gold dist=18 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: 8M6
+[p2/c3b] row20 cls=gold dist=19 ptok=3521/3521 cache_n=3499 prompt_n=22 base=3499 ride=True leak=False :: Pine
+[p2/c3b] row21 cls=gold dist=20 ptok=3529/3529 cache_n=3499 prompt_n=30 base=3499 ride=True leak=False :: Starfire
+[p2/c3b] row22 cls=gold dist=21 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: 8J7
+[p2/c3b] row23 cls=gold dist=22 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Fairbury
+[p2/c3b] row24 cls=gold dist=23 ptok=3524/3524 cache_n=3499 prompt_n=25 base=3499 ride=True leak=False :: Crete
+[p2/c3b] row25 cls=gold dist=24 ptok=3521/3521 cache_n=3499 prompt_n=22 base=3499 ride=True leak=False :: Kittson
+[p2/c3b] row26 cls=gold dist=25 ptok=3521/3521 cache_n=3499 prompt_n=22 base=3499 ride=True leak=False :: 64G
+[p2/c3b] row27 cls=gold dist=26 ptok=3525/3525 cache_n=3499 prompt_n=26 base=3499 ride=True leak=False :: GWR
+[p2/c3b] row28 cls=gold dist=27 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Minatare
+[p2/c3b] row29 cls=gold dist=28 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Ord
+[p2/c3b] row30 cls=gold dist=29 ptok=3524/3524 cache_n=3499 prompt_n=25 base=3499 ride=True leak=False :: Gretna
+[p2/c3b] row31 cls=gold dist=30 ptok=3525/3525 cache_n=3499 prompt_n=26 base=3499 ride=True leak=False :: 5N8
+[p2/c3b] row32 cls=gold dist=31 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Mitchell
+[p2/c3b] row33 cls=gold dist=32 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Shubert
+[p2/c3b] row34 cls=gold dist=33 ptok=3524/3524 cache_n=3499 prompt_n=25 base=3499 ride=True leak=False :: Creighton
+[p2/c3b] row35 cls=gold dist=34 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Pierce
+[p2/c3b] row36 cls=gold dist=35 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Sargent
+[p2/c3b] row37 cls=gold dist=36 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Kilgore
+[p2/c3b] row38 cls=gold dist=37 ptok=3520/3520 cache_n=3499 prompt_n=21 base=3499 ride=True leak=False :: Norman
+[p2/c3b] row39 cls=gold dist=38 ptok=3520/3520 cache_n=3499 prompt_n=21 base=3499 ride=True leak=False :: Yellow Medicine
+[p2/c3b] row40 cls=gold dist=39 ptok=3537/3537 cache_n=3499 prompt_n=38 base=3499 ride=True leak=False :: 5K9
+[p2/c3b] row41 cls=gold dist=40 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: 2D5
+[p2/c3b] row42 cls=gold dist=41 ptok=3525/3525 cache_n=3499 prompt_n=26 base=3499 ride=True leak=False :: January 2026
+[p2/c3b] row43 cls=gold dist=42 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: O'Neill
+[p2/c3b] row44 cls=gold dist=43 ptok=3526/3526 cache_n=3499 prompt_n=27 base=3499 ride=True leak=False :: July 23 2026
+[p2/c3b] row45 cls=gold dist=44 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Cozad
+[p2/c3b] row46 cls=gold dist=45 ptok=3525/3525 cache_n=3499 prompt_n=26 base=3499 ride=True leak=False :: Caitlin Clark
+[p2/c3b] row47 cls=gold dist=46 ptok=3521/3521 cache_n=3499 prompt_n=22 base=3499 ride=True leak=False :: D05
+[p2/c3b] row48 cls=gold dist=47 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: 5B4
+[p2/c3b] row49 cls=gold dist=48 ptok=3520/3520 cache_n=3499 prompt_n=21 base=3499 ride=True leak=False :: Swift
+[p2/c3b] row50 cls=gold dist=49 ptok=3520/3520 cache_n=3499 prompt_n=21 base=3499 ride=True leak=False :: Itasca
+[p2/c3b] row51 cls=gold dist=50 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: 51D
+[p2/c3b] row52 cls=gold dist=51 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Allen
+[p2/c3b] row53 cls=gold dist=52 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Shelton
+[p2/c3b] row54 cls=gold dist=53 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Maxwell
+[p2/c3b] row55 cls=gold dist=54 ptok=3520/3520 cache_n=3499 prompt_n=21 base=3499 ride=True leak=False :: 1A2
+[p2/c3b] row56 cls=gold dist=55 ptok=3525/3525 cache_n=3499 prompt_n=26 base=3499 ride=True leak=False :: Nebraska City
+[p2/c3b] row57 cls=gold dist=56 ptok=3525/3525 cache_n=3499 prompt_n=26 base=3499 ride=True leak=False :: Ogallala
+[p2/c3b] row58 cls=gold dist=57 ptok=3521/3521 cache_n=3499 prompt_n=22 base=3499 ride=True leak=False :: Stevens
+[p2/c3b] row59 cls=gold dist=58 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Wayne
+[p2/c3b] row60 cls=gold dist=59 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Ponca
+[p2/c3b] row61 cls=gold dist=60 ptok=3524/3524 cache_n=3499 prompt_n=25 base=3499 ride=True leak=False :: Morpheus
+[p2/c3b] row62 cls=gold dist=61 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Superior
+[p2/c3b] row63 cls=gold dist=62 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: 5C8
+[p2/c3b] row64 cls=gold dist=63 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: D64
+[p2/c3b] row65 cls=gold dist=64 ptok=3524/3524 cache_n=3499 prompt_n=25 base=3499 ride=True leak=False :: neural rendering
+[p2/c3b] row66 cls=gold dist=65 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Ralston
+[p2/c3b] row67 cls=gold dist=66 ptok=3530/3530 cache_n=3499 prompt_n=31 base=3499 ride=True leak=False :: Wildcat Lake
+[p2/c3b] row68 cls=gold dist=67 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: 4E7
+[p2/c3b] row69 cls=gold dist=68 ptok=3519/3519 cache_n=3499 prompt_n=20 base=3499 ride=True leak=False :: Crow Wing
+[p2/c3b] row70 cls=gold dist=69 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Y71
+[p2/c3b] row71 cls=gold dist=70 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Lexington
+[p2/c3b] row72 cls=gold dist=71 ptok=3524/3524 cache_n=3499 prompt_n=25 base=3499 ride=True leak=False :: Arapahoe
+[p2/c3b] row73 cls=gold dist=72 ptok=3526/3526 cache_n=3499 prompt_n=27 base=3499 ride=True leak=False :: D24
+[p2/c3b] row74 cls=gold dist=73 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: 6H8
+[p2/c3b] row75 cls=gold dist=74 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Hubbard
+[p2/c3b] row76 cls=gold dist=75 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: HZE
+[p2/c3b] row77 cls=gold dist=76 ptok=3520/3520 cache_n=3499 prompt_n=21 base=3499 ride=True leak=False :: Faribault
+[p2/c3b] row78 cls=gold dist=77 ptok=3521/3521 cache_n=3499 prompt_n=22 base=3499 ride=True leak=False :: Polk
+[p2/c3b] row79 cls=gold dist=78 ptok=3521/3521 cache_n=3499 prompt_n=22 base=3499 ride=True leak=False :: Y27
+[p2/c3b] row80 cls=gold dist=79 ptok=3519/3519 cache_n=3499 prompt_n=20 base=3499 ride=True leak=False :: Winona
+[p2/c3b] row81 cls=gold dist=80 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Hershey
+[p2/c3b] row82 cls=gold dist=81 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Crookston
+[p2/c3b] row83 cls=gold dist=82 ptok=3520/3520 cache_n=3499 prompt_n=21 base=3499 ride=True leak=False :: Redwood
+[p2/c3b] row84 cls=gold dist=83 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: K74
+[p2/c3b] row85 cls=gold dist=84 ptok=3525/3525 cache_n=3499 prompt_n=26 base=3499 ride=True leak=False :: O'Neill
+[p2/c3b] row86 cls=gold dist=85 ptok=3520/3520 cache_n=3499 prompt_n=21 base=3499 ride=True leak=False :: Clay
+[p2/c3b] row87 cls=gold dist=86 ptok=3519/3519 cache_n=3499 prompt_n=20 base=3499 ride=True leak=False :: Freeborn
+[p2/c3b] row88 cls=gold dist=87 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Gordon
+[p2/c3b] row89 cls=gold dist=88 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: D06
+[p2/c3b] row90 cls=gold dist=89 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: 3H4
+[p2/c3b] row91 cls=gold dist=90 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Albion
+[p2/c3b] row92 cls=gold dist=91 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Wilber
+[p2/c3b] row93 cls=gold dist=92 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Ravenna
+[p2/c3b] row94 cls=gold dist=93 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: McCook
+[p2/c3b] row95 cls=gold dist=94 ptok=3525/3525 cache_n=3499 prompt_n=26 base=3499 ride=True leak=False :: Victor Wembanyama
+[p2/c3b] row96 cls=gold dist=95 ptok=3520/3520 cache_n=3499 prompt_n=21 base=3499 ride=True leak=False :: Aitkin
+[p2/c3b] row97 cls=gold dist=96 ptok=3520/3520 cache_n=3499 prompt_n=21 base=3499 ride=True leak=False :: Cass
+[p2/c3b] row98 cls=gold dist=97 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: May 31 2026
+[p2/c3b] row99 cls=gold dist=98 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Dix
+[p2/c3b] row100 cls=gold dist=99 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: York
+[p3/c3b] row1 cls=gold dist=0 ptok=3521/3521 cache_n=3499 prompt_n=22 base=3499 ride=True leak=False :: Lake of the Woods
+[p3/c3b] row2 cls=gold dist=1 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Falls City
+[p3/c3b] row3 cls=gold dist=2 ptok=3521/3521 cache_n=3499 prompt_n=22 base=3499 ride=True leak=False :: BWP
+[p3/c3b] row4 cls=gold dist=3 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Terrytown
+[p3/c3b] row5 cls=gold dist=4 ptok=3519/3519 cache_n=3499 prompt_n=20 base=3499 ride=True leak=False :: Todd
+[p3/c3b] row6 cls=gold dist=5 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Sutherland
+[p3/c3b] row7 cls=gold dist=6 ptok=3524/3524 cache_n=3499 prompt_n=25 base=3499 ride=True leak=False :: Seward
+[p3/c3b] row8 cls=gold dist=7 ptok=3529/3529 cache_n=3499 prompt_n=30 base=3499 ride=True leak=False :: G3
+[p3/c3b] row9 cls=gold dist=8 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Bennington
+[p3/c3b] row10 cls=gold dist=9 ptok=3520/3520 cache_n=3499 prompt_n=21 base=3499 ride=True leak=False :: Otter Tail
+[p3/c3b] row11 cls=gold dist=10 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Crawford
+[p3/c3b] row12 cls=gold dist=11 ptok=3521/3521 cache_n=3499 prompt_n=22 base=3499 ride=True leak=False :: Marshall
+[p3/c3b] row13 cls=gold dist=12 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: 2C8
+[p3/c3b] row14 cls=gold dist=13 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Firth
+[p3/c3b] row15 cls=gold dist=14 ptok=3525/3525 cache_n=3499 prompt_n=26 base=3499 ride=True leak=False :: Ainsworth
+[p3/c3b] row16 cls=gold dist=15 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: D56
+[p3/c3b] row17 cls=gold dist=16 ptok=3524/3524 cache_n=3499 prompt_n=25 base=3499 ride=True leak=False :: Bassett
+[p3/c3b] row18 cls=gold dist=17 ptok=3524/3524 cache_n=3499 prompt_n=25 base=3499 ride=True leak=False :: Chadron
+[p3/c3b] row19 cls=gold dist=18 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: 8M6
+[p3/c3b] row20 cls=gold dist=19 ptok=3521/3521 cache_n=3499 prompt_n=22 base=3499 ride=True leak=False :: Pine
+[p3/c3b] row21 cls=gold dist=20 ptok=3529/3529 cache_n=3499 prompt_n=30 base=3499 ride=True leak=False :: Starfire
+[p3/c3b] row22 cls=gold dist=21 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: 8J7
+[p3/c3b] row23 cls=gold dist=22 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Fairbury
+[p3/c3b] row24 cls=gold dist=23 ptok=3524/3524 cache_n=3499 prompt_n=25 base=3499 ride=True leak=False :: Crete
+[p3/c3b] row25 cls=gold dist=24 ptok=3521/3521 cache_n=3499 prompt_n=22 base=3499 ride=True leak=False :: Kittson
+[p3/c3b] row26 cls=gold dist=25 ptok=3521/3521 cache_n=3499 prompt_n=22 base=3499 ride=True leak=False :: 64G
+[p3/c3b] row27 cls=gold dist=26 ptok=3525/3525 cache_n=3499 prompt_n=26 base=3499 ride=True leak=False :: GWR
+[p3/c3b] row28 cls=gold dist=27 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Minatare
+[p3/c3b] row29 cls=gold dist=28 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Ord
+[p3/c3b] row30 cls=gold dist=29 ptok=3524/3524 cache_n=3499 prompt_n=25 base=3499 ride=True leak=False :: Gretna
+[p3/c3b] row31 cls=gold dist=30 ptok=3525/3525 cache_n=3499 prompt_n=26 base=3499 ride=True leak=False :: 5N8
+[p3/c3b] row32 cls=gold dist=31 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Mitchell
+[p3/c3b] row33 cls=gold dist=32 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Shubert
+[p3/c3b] row34 cls=gold dist=33 ptok=3524/3524 cache_n=3499 prompt_n=25 base=3499 ride=True leak=False :: Creighton
+[p3/c3b] row35 cls=gold dist=34 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Pierce
+[p3/c3b] row36 cls=gold dist=35 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Sargent
+[p3/c3b] row37 cls=gold dist=36 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Kilgore
+[p3/c3b] row38 cls=gold dist=37 ptok=3520/3520 cache_n=3499 prompt_n=21 base=3499 ride=True leak=False :: Norman
+[p3/c3b] row39 cls=gold dist=38 ptok=3520/3520 cache_n=3499 prompt_n=21 base=3499 ride=True leak=False :: Yellow Medicine
+[p3/c3b] row40 cls=gold dist=39 ptok=3537/3537 cache_n=3499 prompt_n=38 base=3499 ride=True leak=False :: 5K9
+[p3/c3b] row41 cls=gold dist=40 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: 2D5
+[p3/c3b] row42 cls=gold dist=41 ptok=3525/3525 cache_n=3499 prompt_n=26 base=3499 ride=True leak=False :: January 2026
+[p3/c3b] row43 cls=gold dist=42 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: O'Neill
+[p3/c3b] row44 cls=gold dist=43 ptok=3526/3526 cache_n=3499 prompt_n=27 base=3499 ride=True leak=False :: July 23 2026
+[p3/c3b] row45 cls=gold dist=44 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Cozad
+[p3/c3b] row46 cls=gold dist=45 ptok=3525/3525 cache_n=3499 prompt_n=26 base=3499 ride=True leak=False :: Caitlin Clark
+[p3/c3b] row47 cls=gold dist=46 ptok=3521/3521 cache_n=3499 prompt_n=22 base=3499 ride=True leak=False :: D05
+[p3/c3b] row48 cls=gold dist=47 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: 5B4
+[p3/c3b] row49 cls=gold dist=48 ptok=3520/3520 cache_n=3499 prompt_n=21 base=3499 ride=True leak=False :: Swift
+[p3/c3b] row50 cls=gold dist=49 ptok=3520/3520 cache_n=3499 prompt_n=21 base=3499 ride=True leak=False :: Itasca
+[p3/c3b] row51 cls=gold dist=50 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: 51D
+[p3/c3b] row52 cls=gold dist=51 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Allen
+[p3/c3b] row53 cls=gold dist=52 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Shelton
+[p3/c3b] row54 cls=gold dist=53 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Maxwell
+[p3/c3b] row55 cls=gold dist=54 ptok=3520/3520 cache_n=3499 prompt_n=21 base=3499 ride=True leak=False :: 1A2
+[p3/c3b] row56 cls=gold dist=55 ptok=3525/3525 cache_n=3499 prompt_n=26 base=3499 ride=True leak=False :: Nebraska City
+[p3/c3b] row57 cls=gold dist=56 ptok=3525/3525 cache_n=3499 prompt_n=26 base=3499 ride=True leak=False :: Ogallala
+[p3/c3b] row58 cls=gold dist=57 ptok=3521/3521 cache_n=3499 prompt_n=22 base=3499 ride=True leak=False :: Stevens
+[p3/c3b] row59 cls=gold dist=58 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Wayne
+[p3/c3b] row60 cls=gold dist=59 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Ponca
+[p3/c3b] row61 cls=gold dist=60 ptok=3524/3524 cache_n=3499 prompt_n=25 base=3499 ride=True leak=False :: Morpheus
+[p3/c3b] row62 cls=gold dist=61 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Superior
+[p3/c3b] row63 cls=gold dist=62 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: 5C8
+[p3/c3b] row64 cls=gold dist=63 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: D64
+[p3/c3b] row65 cls=gold dist=64 ptok=3524/3524 cache_n=3499 prompt_n=25 base=3499 ride=True leak=False :: neural rendering
+[p3/c3b] row66 cls=gold dist=65 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Ralston
+[p3/c3b] row67 cls=gold dist=66 ptok=3530/3530 cache_n=3499 prompt_n=31 base=3499 ride=True leak=False :: Wildcat Lake
+[p3/c3b] row68 cls=gold dist=67 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: 4E7
+[p3/c3b] row69 cls=gold dist=68 ptok=3519/3519 cache_n=3499 prompt_n=20 base=3499 ride=True leak=False :: Crow Wing
+[p3/c3b] row70 cls=gold dist=69 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Y71
+[p3/c3b] row71 cls=gold dist=70 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Lexington
+[p3/c3b] row72 cls=gold dist=71 ptok=3524/3524 cache_n=3499 prompt_n=25 base=3499 ride=True leak=False :: Arapahoe
+[p3/c3b] row73 cls=gold dist=72 ptok=3526/3526 cache_n=3499 prompt_n=27 base=3499 ride=True leak=False :: D24
+[p3/c3b] row74 cls=gold dist=73 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: 6H8
+[p3/c3b] row75 cls=gold dist=74 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Hubbard
+[p3/c3b] row76 cls=gold dist=75 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: HZE
+[p3/c3b] row77 cls=gold dist=76 ptok=3520/3520 cache_n=3499 prompt_n=21 base=3499 ride=True leak=False :: Faribault
+[p3/c3b] row78 cls=gold dist=77 ptok=3521/3521 cache_n=3499 prompt_n=22 base=3499 ride=True leak=False :: Polk
+[p3/c3b] row79 cls=gold dist=78 ptok=3521/3521 cache_n=3499 prompt_n=22 base=3499 ride=True leak=False :: Y27
+[p3/c3b] row80 cls=gold dist=79 ptok=3519/3519 cache_n=3499 prompt_n=20 base=3499 ride=True leak=False :: Winona
+[p3/c3b] row81 cls=gold dist=80 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Hershey
+[p3/c3b] row82 cls=gold dist=81 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Crookston
+[p3/c3b] row83 cls=gold dist=82 ptok=3520/3520 cache_n=3499 prompt_n=21 base=3499 ride=True leak=False :: Redwood
+[p3/c3b] row84 cls=gold dist=83 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: K74
+[p3/c3b] row85 cls=gold dist=84 ptok=3525/3525 cache_n=3499 prompt_n=26 base=3499 ride=True leak=False :: O'Neill
+[p3/c3b] row86 cls=gold dist=85 ptok=3520/3520 cache_n=3499 prompt_n=21 base=3499 ride=True leak=False :: Clay
+[p3/c3b] row87 cls=gold dist=86 ptok=3519/3519 cache_n=3499 prompt_n=20 base=3499 ride=True leak=False :: Freeborn
+[p3/c3b] row88 cls=gold dist=87 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Gordon
+[p3/c3b] row89 cls=gold dist=88 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: D06
+[p3/c3b] row90 cls=gold dist=89 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: 3H4
+[p3/c3b] row91 cls=gold dist=90 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Albion
+[p3/c3b] row92 cls=gold dist=91 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Wilber
+[p3/c3b] row93 cls=gold dist=92 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: Ravenna
+[p3/c3b] row94 cls=gold dist=93 ptok=3522/3522 cache_n=3499 prompt_n=23 base=3499 ride=True leak=False :: McCook
+[p3/c3b] row95 cls=gold dist=94 ptok=3525/3525 cache_n=3499 prompt_n=26 base=3499 ride=True leak=False :: Victor Wembanyama
+[p3/c3b] row96 cls=gold dist=95 ptok=3520/3520 cache_n=3499 prompt_n=21 base=3499 ride=True leak=False :: Aitkin
+[p3/c3b] row97 cls=gold dist=96 ptok=3520/3520 cache_n=3499 prompt_n=21 base=3499 ride=True leak=False :: Cass
+[p3/c3b] row98 cls=gold dist=97 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: May 31 2026
+[p3/c3b] row99 cls=gold dist=98 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: Dix
+[p3/c3b] row100 cls=gold dist=99 ptok=3523/3523 cache_n=3499 prompt_n=24 base=3499 ride=True leak=False :: York
+[p4/decoy_real] row1 cls=other dist=None ptok=4887/4887 cache_n=4863 prompt_n=24 base=4863 ride=True leak=False :: The township of Zippel is located in **Steele County**, Minnesota.
+[p4/decoy_real] row2 cls=other dist=None ptok=4888/4888 cache_n=4863 prompt_n=25 base=4863 ride=True leak=False :: The broadcast station **KTNC** (FM 106.7) is licensed to **Kearney**,
+[p4/decoy_real] row3 cls=other dist=None ptok=4887/4887 cache_n=4863 prompt_n=24 base=4863 ride=True leak=False :: The FAA location identifier assigned to Harry Stern Airport is **BWA**.
+
+Note: Harry Stern Airport is located in Big
+[p4/decoy_real] row4 cls=other dist=None ptok=4888/4888 cache_n=4863 prompt_n=25 base=4863 ride=True leak=False :: The broadcast station **KCMI** is licensed to **Coleraine, Nebraska**.
+
+It is a country music radio
+[p4/decoy_real] row5 cls=distractor dist=85 ptok=4885/4885 cache_n=4863 prompt_n=22 base=4863 ride=True leak=False :: The township of Gordon is located in **Clay County**, Minnesota.
+[p4/decoy_real] row6 cls=distractor dist=92 ptok=4888/4888 cache_n=4863 prompt_n=25 base=4863 ride=True leak=False :: The broadcast station **KRNP** is licensed to **Ravenna**, Nebraska.
+
+KRNP (88.
+[p4/decoy_real] row7 cls=other dist=None ptok=4890/4890 cache_n=4863 prompt_n=27 base=4863 ride=True leak=False :: The broadcast station **KZKX** is licensed to **Kearney**, Nebraska.
+
+KZKX
+[p4/decoy_real] row8 cls=other dist=None ptok=4895/4895 cache_n=4863 prompt_n=32 base=4863 ride=True leak=False :: There is no Intel Arc series released on **May 28, 2026**, because that date is
+[p4/decoy_real] row9 cls=other dist=None ptok=4888/4888 cache_n=4863 prompt_n=25 base=4863 ride=True leak=False :: The broadcast station **KFFF** is licensed to **Benkelman, Nebraska**.
+
+KFFF (93.
+[p4/decoy_real] row10 cls=gold dist=9 ptok=4886/4886 cache_n=4863 prompt_n=23 base=4863 ride=True leak=True :: The township of Paddock is located in **Otter Tail County**, Minnesota.
+[p4/decoy_real] row11 cls=other dist=None ptok=4889/4889 cache_n=4863 prompt_n=26 base=4863 ride=True leak=False :: The broadcast station **KCFD** is licensed to **Fairfield**, Nebraska.
+
+KCFD is a radio
+[p4/decoy_real] row12 cls=other dist=None ptok=4887/4887 cache_n=4863 prompt_n=24 base=4863 ride=True leak=False :: The township of New Solum is located in **Brown County**, Minnesota.
+[p4/decoy_real] row13 cls=gold dist=12 ptok=4888/4888 cache_n=4863 prompt_n=25 base=4863 ride=True leak=True :: The FAA location identifier for Cavalier Municipal Airport is **2C8**.
+
+(Note: The previous statements in this conversation
+[p4/decoy_real] row14 cls=other dist=None ptok=4889/4889 cache_n=4863 prompt_n=26 base=4863 ride=True leak=False :: The broadcast station **KNTK** is licensed to **Norton**, Nebraska.
+
+*(Note: The previous prompts
+[p4/decoy_real] row15 cls=other dist=None ptok=4891/4891 cache_n=4863 prompt_n=28 base=4863 ride=True leak=False :: KBRB-FM is licensed to **St. Paul**, Nebraska.
+
+The station broadcasts on 102
+[p4/decoy_real] row16 cls=other dist=None ptok=4888/4888 cache_n=4863 prompt_n=25 base=4863 ride=True leak=False :: The FAA location identifier assigned to Mayville Municipal Airport is **DYT**.
+[p4/decoy_real] row17 cls=distractor dist=70 ptok=4890/4890 cache_n=4863 prompt_n=27 base=4863 ride=True leak=False :: The broadcast station KMNE-FM is licensed to **Lexington**, Nebraska.
+[p4/decoy_real] row18 cls=distractor dist=44 ptok=4890/4890 cache_n=4863 prompt_n=27 base=4863 ride=True leak=False :: The broadcast station KJZC is licensed to **Cozad**, Nebraska.
+
+*(Note: The previous responses
+[p4/decoy_real] row19 cls=other dist=None ptok=4888/4888 cache_n=4863 prompt_n=25 base=4863 ride=True leak=False :: The FAA location identifier for McVille Municipal Airport is **MVL**.
+[p4/decoy_real] row20 cls=gold dist=19 ptok=4887/4887 cache_n=4863 prompt_n=24 base=4863 ride=True leak=True :: The township of Finlayson is located in **Pine County**, Minnesota.
+[p4/decoy_real] row21 cls=other dist=None ptok=4895/4895 cache_n=4863 prompt_n=32 base=4863 ride=True leak=False :: The name of Intel's July 2026 Panther Lake variant for spacecraft is **Panther Lake Space**.
+[p4/decoy_real] row22 cls=other dist=None ptok=4888/4888 cache_n=4863 prompt_n=25 base=4863 ride=True leak=False :: The FAA location identifier assigned to Tomlinson Field is **T38**.
+
+This identifier is used for **Tom
+[p4/decoy_real] row23 cls=gold dist=22 ptok=4888/4888 cache_n=4863 prompt_n=25 base=4863 ride=True leak=True :: The broadcast station **KUTT** is licensed to **Fairbury**, Nebraska.
+
+(Note: The previous pattern regarding "
+[p4/decoy_real] row24 cls=other dist=None ptok=4890/4890 cache_n=4863 prompt_n=27 base=4863 ride=True leak=False :: The broadcast station KGCO-LP is licensed to **Oxford**, Nebraska.
+[p4/decoy_real] row25 cls=distractor dist=11 ptok=4887/4887 cache_n=4863 prompt_n=24 base=4863 ride=True leak=False :: The township of North Red River is located in **Marshall County**, Minnesota.
+[p4/decoy_real] row26 cls=other dist=None ptok=4887/4887 cache_n=4863 prompt_n=24 base=4863 ride=True leak=False :: The FAA location identifier assigned to Page Regional Airport is **PGZ**.
+
+*(Note: The airport is located in Page
+[p4/decoy_real] row27 cls=other dist=None ptok=4891/4891 cache_n=4863 prompt_n=28 base=4863 ride=True leak=False :: The FAA location identifier assigned to Gwinner-Roger Melroe Field is **GHW**.
+
+This airport is located in
+[p4/decoy_real] row28 cls=other dist=None ptok=4888/4888 cache_n=4863 prompt_n=25 base=4863 ride=True leak=False :: The broadcast station **KHYY** is licensed to **Farnam**, Nebraska.
+
+(Note: The previous responses in
+[p4/decoy_real] row29 cls=other dist=None ptok=4889/4889 cache_n=4863 prompt_n=26 base=4863 ride=True leak=False :: The broadcast station KNLV is licensed to **Oshkosh, Nebraska**.
+
+(Note: KNLV is
+[p4/decoy_real] row30 cls=other dist=None ptok=4890/4890 cache_n=4863 prompt_n=27 base=4863 ride=True leak=False :: The broadcast station **KZLW** is licensed to **Lincoln, Nebraska**.
+
+However, it is important
+[p4/decoy_real] row31 cls=other dist=None ptok=4891/4891 cache_n=4863 prompt_n=28 base=4863 ride=True leak=False :: The FAA location identifier assigned to Casselton Robert Miller Regional Airport is **G96**.
+
+(Note: The I
+[p4/decoy_real] row32 cls=other dist=None ptok=4888/4888 cache_n=4863 prompt_n=25 base=4863 ride=True leak=False :: The broadcast station KETT is licensed to **Keystone**, Nebraska.
+
+*(Note: The previous pattern regarding the fictional
+[p4/decoy_real] row33 cls=distractor dist=6 ptok=4888/4888 cache_n=4863 prompt_n=25 base=4863 ride=True leak=False :: The broadcast station **KSSH** is licensed to **Seward, Nebraska**.
+
+(Note: The previous questions regarding "
+[p4/decoy_real] row34 cls=other dist=None ptok=4890/4890 cache_n=4863 prompt_n=27 base=4863 ride=True leak=False :: The broadcast station KNIL-LP is licensed to **Lincoln**, Nebraska.
+[p4/decoy_real] row35 cls=other dist=None ptok=4889/4889 cache_n=4863 prompt_n=26 base=4863 ride=True leak=False :: The broadcast station KEXL is licensed to **North Platte**, Nebraska.
+
+*(Note: The previous statements regarding
+[p4/decoy_real] row36 cls=other dist=None ptok=4888/4888 cache_n=4863 prompt_n=25 base=4863 ride=True leak=False :: The broadcast station **KEJS** is licensed to **St. Paul, Nebraska**.
+
+It is a radio station (
+[p4/decoy_real] row37 cls=other dist=None ptok=4889/4889 cache_n=4863 prompt_n=26 base=4863 ride=True leak=False :: The broadcast station **KDJL** is licensed to **Dawson, Nebraska**.
+
+(Note: KDJL
+[p4/decoy_real] row38 cls=gold dist=37 ptok=4886/4886 cache_n=4863 prompt_n=23 base=4863 ride=True leak=True :: The township of Hendrum is located in **Norman County**, Minnesota.
+[p4/decoy_real] row39 cls=other dist=None ptok=4886/4886 cache_n=4863 prompt_n=23 base=4863 ride=True leak=False :: The township of Tyro is located in **Steele County**, Minnesota.
+[p4/decoy_real] row40 cls=other dist=None ptok=4903/4903 cache_n=4863 prompt_n=40 base=4863 ride=True leak=False :: The FAA location identifier assigned to Pruetz Municipal Airport is **KPRU**.
+
+(Note: The airport closed in
+[p4/decoy_real] row41 cls=other dist=None ptok=4888/4888 cache_n=4863 prompt_n=25 base=4863 ride=True leak=False :: The FAA location identifier assigned to Oakes Municipal Airport is **PKB**.
+
+*(Note: Oakes Municipal Airport is
+[p4/decoy_real] row42 cls=other dist=None ptok=4891/4891 cache_n=4863 prompt_n=28 base=4863 ride=True leak=False :: Nvidia introduced DLSS 4.5 in **January 2025**.
+
+This was announced at **
+[p4/decoy_real] row43 cls=other dist=None ptok=4889/4889 cache_n=4863 prompt_n=26 base=4863 ride=True leak=False :: The broadcast station **KBRX** is licensed to **Oshkosh, Nebraska**.
+
+KBRX is
+[p4/decoy_real] row44 cls=other dist=None ptok=4892/4892 cache_n=4863 prompt_n=29 base=4863 ride=True leak=False :: AMD announced the **EPYC 9006 series** (codenamed **Turin**) on **February
+[p4/decoy_real] row45 cls=distractor dist=14 ptok=4889/4889 cache_n=4863 prompt_n=26 base=4863 ride=True leak=False :: The broadcast station KCVN is licensed to **Ainsworth**, Nebraska.
+
+(Note: The previous responses in this
+[p4/decoy_real] row46 cls=other dist=None ptok=4891/4891 cache_n=4863 prompt_n=28 base=4863 ride=True leak=False :: There is currently **no official information** about the Deluxe Edition cover athlete for **NBA 2K27**.
+[p4/decoy_real] row47 cls=other dist=None ptok=4887/4887 cache_n=4863 prompt_n=24 base=4863 ride=True leak=False :: The FAA location identifier assigned to Garrison Municipal Airport is **GAR**.
+
+This airport is located in Garrison, North Dakota
+[p4/decoy_real] row48 cls=other dist=None ptok=4889/4889 cache_n=4863 prompt_n=26 base=4863 ride=True leak=False :: The FAA location identifier assigned to Bowbells Municipal Airport is **S25**.
+
+*(Note: The previous conversation
+[p4/decoy_real] row49 cls=other dist=None ptok=4886/4886 cache_n=4863 prompt_n=23 base=4863 ride=True leak=False :: The township of Moyer is located in **Roseau County**, Minnesota.
+[p4/decoy_real] row50 cls=other dist=None ptok=4886/4886 cache_n=4863 prompt_n=23 base=4863 ride=True leak=False :: The township of Blackberry is located in **Dakota County**, Minnesota.
+[p4/decoy_real] row51 cls=other dist=None ptok=4888/4888 cache_n=4863 prompt_n=25 base=4863 ride=True leak=False :: The FAA location identifier for Edgeley Municipal Airport is **4C7**.
+
+Note: Edgeley Municipal Airport is located
+[p4/decoy_real] row52 cls=other dist=None ptok=4889/4889 cache_n=4863 prompt_n=26 base=4863 ride=True leak=False :: The broadcast station KWTN is licensed to **Walthill**, Nebraska.
+
+KWTN (89.
+[p4/decoy_real] row53 cls=distractor dist=56 ptok=4889/4889 cache_n=4863 prompt_n=26 base=4863 ride=True leak=False :: The broadcast station KQQA is licensed to **Ogallala**, Nebraska.
+
+KQQA (98
+[p4/decoy_real] row54 cls=other dist=None ptok=4889/4889 cache_n=4863 prompt_n=26 base=4863 ride=True leak=False :: The broadcast station KHAQ is licensed to **Hastings**, Nebraska.
+
+(Note: The previous pattern regarding "
+[p4/decoy_real] row55 cls=other dist=None ptok=4886/4886 cache_n=4863 prompt_n=23 base=4863 ride=True leak=False :: The FAA location identifier assigned to Arthur Airport is **03C**.
+
+Arthur Airport is a public-use airport located in
+[p4/decoy_real] row56 cls=other dist=None ptok=4891/4891 cache_n=4863 prompt_n=28 base=4863 ride=True leak=False :: KBBX-FM is licensed to **Grand Island**, Nebraska.
+[p4/decoy_real] row57 cls=other dist=None ptok=4891/4891 cache_n=4863 prompt_n=28 base=4863 ride=True leak=False :: The broadcast station **KQQO-LP** is licensed to **Omaha**, Nebraska.
+
+(Note: While the
+[p4/decoy_real] row58 cls=distractor dist=49 ptok=4887/4887 cache_n=4863 prompt_n=24 base=4863 ride=True leak=False :: The township of Darnen is located in **Itasca County**, Minnesota.
+[p4/decoy_real] row59 cls=distractor dist=17 ptok=4889/4889 cache_n=4863 prompt_n=26 base=4863 ride=True leak=False :: The broadcast station KCTY is licensed to **Chadron**, Nebraska.
+[p4/decoy_real] row60 cls=other dist=None ptok=4888/4888 cache_n=4863 prompt_n=25 base=4863 ride=True leak=False :: The broadcast station KFHC is licensed to **Fairmont**, Nebraska.
+[p4/decoy_real] row61 cls=other dist=None ptok=4890/4890 cache_n=4863 prompt_n=27 base=4863 ride=True leak=False :: As of early 2024, AMD has **not officially announced** a specific codename for the **Zen
+[p4/decoy_real] row62 cls=other dist=None ptok=4888/4888 cache_n=4863 prompt_n=25 base=4863 ride=True leak=False :: The broadcast station **KRFS** (specifically KRFS-FM, 105.9 FM) is
+[p4/decoy_real] row63 cls=gold dist=62 ptok=4888/4888 cache_n=4863 prompt_n=25 base=4863 ride=True leak=True :: The FAA location identifier assigned to Washburn Municipal Airport is **5C8**.
+[p4/decoy_real] row64 cls=other dist=None ptok=4888/4888 cache_n=4863 prompt_n=25 base=4863 ride=True leak=False :: The FAA location identifier assigned to Westhope Municipal Airport is **D60**.
+
+Note: The previous questions about "
+[p4/decoy_real] row65 cls=other dist=None ptok=4890/4890 cache_n=4863 prompt_n=27 base=4863 ride=True leak=False :: It appears there is a misunderstanding in the premise of your question: **DLSS 5 does not currently exist** (
+[p4/decoy_real] row66 cls=other dist=None ptok=4889/4889 cache_n=4863 prompt_n=26 base=4863 ride=True leak=False :: The broadcast station KMLV is licensed to **Vinton**, Nebraska.
+[p4/decoy_real] row67 cls=other dist=None ptok=4896/4896 cache_n=4863 prompt_n=33 base=4863 ride=True leak=False :: Based on current Intel roadmap information and industry leaks regarding the **Panther Lake** (Core Ultra 300 series
+[p4/decoy_real] row68 cls=other dist=None ptok=4888/4888 cache_n=4863 prompt_n=25 base=4863 ride=True leak=False :: The FAA location identifier assigned to Ellendale Municipal Airport is **07C**.
+[p4/decoy_real] row69 cls=gold dist=68 ptok=4885/4885 cache_n=4863 prompt_n=22 base=4863 ride=True leak=True :: The township of Timothy is located in **Crow Wing County**, Minnesota.
+[p4/decoy_real] row70 cls=other dist=None ptok=4888/4888 cache_n=4863 prompt_n=25 base=4863 ride=True leak=False :: The FAA location identifier assigned to Elgin Municipal Airport (located in Elgin, Illinois) is **DKB**.
+[p4/decoy_real] row71 cls=other dist=None ptok=4889/4889 cache_n=4863 prompt_n=26 base=4863 ride=True leak=False :: The broadcast station KXNG is licensed to **Hastings**, Nebraska.
+
+*(Note: The previous conversation history
+[p4/decoy_real] row72 cls=other dist=None ptok=4890/4890 cache_n=4863 prompt_n=27 base=4863 ride=True leak=False :: The broadcast station **KAGR-LP** is licensed to **Grand Island**, Nebraska.
+
+*(Note: The previous
+[p4/decoy_real] row73 cls=other dist=None ptok=4892/4892 cache_n=4863 prompt_n=29 base=4863 ride=True leak=False :: The FAA location identifier assigned to Fessenden-Streibel Municipal Airport is **06C**.
+
+(Note: The
+[p4/decoy_real] row74 cls=other dist=None ptok=4888/4888 cache_n=4863 prompt_n=25 base=4863 ride=True leak=False :: The FAA location identifier assigned to Hazelton Municipal Airport (in North Dakota) is **HZL**.
+[p4/decoy_real] row75 cls=other dist=None ptok=4888/4888 cache_n=4863 prompt_n=25 base=4863 ride=True leak=False :: The broadcast station **KAYA** (specifically KAYA-AM 1010 and KAYA-FM
+[p4/decoy_real] row76 cls=gold dist=75 ptok=4888/4888 cache_n=4863 prompt_n=25 base=4863 ride=True leak=True :: The FAA location identifier assigned to Mercer County Regional Airport is **HZE**.
+
+*(Note: The airport is located in
+[p4/decoy_real] row77 cls=gold dist=76 ptok=4886/4886 cache_n=4863 prompt_n=23 base=4863 ride=True leak=True :: The township of Minnesota Lake is located in **Faribault County**, Minnesota.
+[p4/decoy_real] row78 cls=other dist=None ptok=4887/4887 cache_n=4863 prompt_n=24 base=4863 ride=True leak=False :: The township of Tynsid is located in **Roseau County**, Minnesota.
+[p4/decoy_real] row79 cls=other dist=None ptok=4887/4887 cache_n=4863 prompt_n=24 base=4863 ride=True leak=False :: The FAA location identifier assigned to Standing Rock Airport is **D60**.
+
+This identifier is used for the airport located
+[p4/decoy_real] row80 cls=other dist=None ptok=4885/4885 cache_n=4863 prompt_n=22 base=4863 ride=True leak=False :: The township of Norton is located in **Nobles County**, Minnesota.
+[p4/decoy_real] row81 cls=other dist=None ptok=4889/4889 cache_n=4863 prompt_n=26 base=4863 ride=True leak=False :: The broadcast station KNPQ is licensed to **Mullen**, Nebraska.
+
+*(Note: The previous conversation contained a
+[p4/decoy_real] row82 cls=other dist=None ptok=4888/4888 cache_n=4863 prompt_n=25 base=4863 ride=True leak=False :: The broadcast station KINI is licensed to **Sidney**, Nebraska.
+
+KINI (100.5 FM
+[p4/decoy_real] row83 cls=distractor dist=9 ptok=4886/4886 cache_n=4863 prompt_n=23 base=4863 ride=True leak=False :: The township of Underwood is located in **Otter Tail County**, Minnesota.
+
+(Note: The city of Underwood
+[p4/decoy_real] row84 cls=other dist=None ptok=4889/4889 cache_n=4863 prompt_n=26 base=4863 ride=True leak=False :: The FAA location identifier assigned to Robert Odegaard Field is **S48**.
+
+This small public-use airport is
+[p4/decoy_real] row85 cls=other dist=None ptok=4891/4891 cache_n=4863 prompt_n=28 base=4863 ride=True leak=False :: KBRX-FM is licensed to **Oshkosh**, Nebraska.
+
+(Note: While Oshkosh
+[p4/decoy_real] row86 cls=other dist=None ptok=4886/4886 cache_n=4863 prompt_n=23 base=4863 ride=True leak=False :: The township of Cromwell is located in **Carlton County**, Minnesota.
+[p4/decoy_real] row87 cls=distractor dist=96 ptok=4885/4885 cache_n=4863 prompt_n=22 base=4863 ride=True leak=False :: The township of Freeman is located in **Freeman Township**, which is in **Cass County**, Minnesota.
+
+(Note
+[p4/decoy_real] row88 cls=other dist=None ptok=4889/4889 cache_n=4863 prompt_n=26 base=4863 ride=True leak=False :: The broadcast station **KSDZ** is licensed to **St. Paul, Nebraska**.
+
+KSDZ (1
+[p4/decoy_real] row89 cls=other dist=None ptok=4888/4888 cache_n=4863 prompt_n=25 base=4863 ride=True leak=False :: The FAA location identifier assigned to Minto Municipal Airport is **MNT**.
+
+*(Note: The previous responses regarding "
+[p4/decoy_real] row90 cls=other dist=None ptok=4888/4888 cache_n=4863 prompt_n=25 base=4863 ride=True leak=False :: The FAA location identifier assigned to Hillsboro Municipal Airport (in Hillsboro, Oregon) is **HIO**.
+
+*(
+[p4/decoy_real] row91 cls=other dist=None ptok=4889/4889 cache_n=4863 prompt_n=26 base=4863 ride=True leak=False :: The broadcast station KUSO is licensed to **Vickery**, Nebraska.
+
+Vickery is a small un
+[p4/decoy_real] row92 cls=other dist=None ptok=4889/4889 cache_n=4863 prompt_n=26 base=4863 ride=True leak=False :: The broadcast station **KFLV** is licensed to **Waverly, Nebraska**.
+
+It is a radio station
+[p4/decoy_real] row93 cls=other dist=None ptok=4888/4888 cache_n=4863 prompt_n=25 base=4863 ride=True leak=False :: The broadcast station KKJK is licensed to **Kearney**, Nebraska.
+
+KKJK (1230 AM
+[p4/decoy_real] row94 cls=other dist=None ptok=4888/4888 cache_n=4863 prompt_n=25 base=4863 ride=True leak=False :: The broadcast station **KIOD** is licensed to **Columbus**, Nebraska.
+
+KIOD is a country music
+[p4/decoy_real] row95 cls=other dist=None ptok=4891/4891 cache_n=4863 prompt_n=28 base=4863 ride=True leak=False :: As of now, **NBA 2K27 has not been announced**, so there is no confirmed Standard Edition
+[p4/decoy_real] row96 cls=other dist=None ptok=4886/4886 cache_n=4863 prompt_n=23 base=4863 ride=True leak=False :: The township of Malmo is located in **St. Louis County**, Minnesota.
+[p4/decoy_real] row97 cls=distractor dist=68 ptok=4886/4886 cache_n=4863 prompt_n=23 base=4863 ride=True leak=False :: The township of Bungo is located in **Crow Wing County**, Minnesota.
+[p4/decoy_real] row98 cls=other dist=None ptok=4889/4889 cache_n=4863 prompt_n=26 base=4863 ride=True leak=False :: Nvidia and Microsoft announced the **RTX Spark** platform (specifically referring to the integration of Nvidia's RTX technology
+[p4/decoy_real] row99 cls=other dist=None ptok=4889/4889 cache_n=4863 prompt_n=26 base=4863 ride=True leak=False :: The broadcast station KIMB is licensed to **Kimball**, Nebraska.
+[p4/decoy_real] row100 cls=other dist=None ptok=4889/4889 cache_n=4863 prompt_n=26 base=4863 ride=True leak=False :: The broadcast station KAWL is licensed to **Kaw Valley**, Nebraska.
+
+Note: KAWL is a
+[p4/decoy_own] dec1 cls=None dist=None ptok=4896/4896 cache_n=4863 prompt_n=33 base=4863 ride=True leak=False :: Zivvleax0-qa
+[p4/decoy_own] dec11 cls=None dist=None ptok=4898/4898 cache_n=4863 prompt_n=35 base=4863 ride=True leak=False :: Zivvleax10-qk
+[p4/decoy_own] dec21 cls=None dist=None ptok=4898/4898 cache_n=4863 prompt_n=35 base=4863 ride=True leak=False :: Zivvleax20-qu
+[p4/decoy_own] dec31 cls=None dist=None ptok=4897/4897 cache_n=4863 prompt_n=34 base=4863 ride=True leak=False :: Zivvleax30-qe
+[p4/decoy_own] dec41 cls=None dist=None ptok=4897/4897 cache_n=4863 prompt_n=34 base=4863 ride=True leak=False :: Zivvleax40-qo
+[p4/decoy_own] dec51 cls=None dist=None ptok=4898/4898 cache_n=4863 prompt_n=35 base=4863 ride=True leak=False :: Zivvleax50-qy
+[p4/decoy_own] dec61 cls=None dist=None ptok=4898/4898 cache_n=4863 prompt_n=35 base=4863 ride=True leak=False :: Zivvleax60-qi
+[p4/decoy_own] dec71 cls=None dist=None ptok=4897/4897 cache_n=4863 prompt_n=34 base=4863 ride=True leak=False :: Zivvleax70-qs
+[p4/decoy_own] dec81 cls=None dist=None ptok=4897/4897 cache_n=4863 prompt_n=34 base=4863 ride=True leak=False :: Zivvleax80-qc
+[p4/decoy_own] dec91 cls=None dist=None ptok=4898/4898 cache_n=4863 prompt_n=35 base=4863 ride=True leak=False :: Zivvleax90-qm
+C3 verdict @2026-10-11T19:33:59+00:00 tag=boot3-c3 channel=off/temp0.8/memory-muted repeats=3
+  plumbing 100/100 | cold leaks 5/100 | decoy-real leaks 9/100 | c3b gold per-pass {1: 100, 2: 100, 3: 100} best=100 | distractors per-pass {1: 0, 2: 0, 3: 0} top-collisions [] | rides green=True (400 guarded asks) | geometry VOID 0 | reuse-summary captured on 3/3 marked c3b asks | decoy-own bonus 10/10 | c3b ask seconds avg 0.13 | bank n_saved=3499
+  VOID - control leak: [{'arm': 'cold', 'name': 'row13', 'answer': 'The FAA location identifier assigned to **Cavalier Municipal'}, {'arm': 'cold', 'name': 'row27', 'answer': 'The FAA location identifier assigned to Gwinner-Roger Melroe'}, {'arm': 'cold', 'name': 'row38', 'answer': 'The township of Hendrum is located in **Norman County**, Min'}, {'arm': 'cold', 'name': 'row69', 'answer': 'The township of Timothy is located in **Crow Wing County**, '}, {'arm': 'cold', 'name': 'row100', 'answer': 'The broadcast station **KAWL** (AM 1450) is licensed to **Yo'}, {'arm': 'decoy_real', 'name': 'row10', 'answer': 'The township of Paddock is located in **Otter Tail County**,'}]
