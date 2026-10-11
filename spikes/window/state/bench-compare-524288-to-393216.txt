@@ -1,0 +1,14 @@
+                                          old          new    change
+chat decode tok/s                      100.70       109.60     +8.8%
+chat first token (s)                     0.67         0.60    -11.2%
+4K prompt tok/s                       2105.40      2231.40     +6.0%
+4K first token (s)                       1.93         1.82     -5.6%
+16K prompt tok/s                      3979.10      4147.50     +4.2%
+16K first token (s)                      4.06         3.90     -4.0%
+agent cache hit %                       39.40        39.42     +0.0%
+agent re-read tokens/session         13852.00     13855.00     +0.0%
+agent turn first token (s)               2.00         1.98     -1.1%
+agent decode tok/s                     122.00       124.40     +2.0%
+
+differences:
+  context: 524288 -> 393216

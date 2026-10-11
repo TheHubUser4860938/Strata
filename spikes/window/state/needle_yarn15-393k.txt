@@ -1,0 +1,8 @@
+needle yarn15-393k (run inline 2026-10-11 ~13:4xZ, boot 2 = 393216/yarn-1.5, engine 0.1.43,
+overlap off, memory MUTED, temp 0.8, reasoning off): built ~300,457 tok at the bench's 1.08
+tok/word calibration; live ptok 358,906 -> guard VOID on the ESTIMATE ONLY (this filler measures
+1.20 tok/word; the script now carries the calibrated constant). Needle planted at line
+16,980/28,301 (~59% depth = position ~212k of 359k, i.e. past the 262,144 trained max under
+yarn 1.5). Wall 91 s (prompt read ~3.9k tok/s). Answer 'amber40517' -> FOUND, strict nonce
+match, no confabulation. Verdict: long-range recall SURVIVES the factor change at 59% of a
+359k prompt; the VOID guard is a calibration artefact of the first inline run, recorded openly.

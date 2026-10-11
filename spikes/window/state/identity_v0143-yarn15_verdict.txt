@@ -1,0 +1,2 @@
+identity v0143-yarn15: 7/12 known-gold rows answered in >= 1 of 3 passes at temp 0.8; per-row misses: [1, 5, 7, 9, 11] (NOT drift if the same tool already missed them on the other build)
+vs baseline identity_v0142.json (baseline hits 7): DRIFT rows none; flips-toward-hit none -> IDENTITY HELD on this corpus
