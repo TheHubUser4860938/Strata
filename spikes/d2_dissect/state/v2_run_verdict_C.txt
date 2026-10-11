@@ -1,0 +1,6 @@
+generated 2026-10-11T13:46:53+00:00 channel reasoning_effort=off,temperature=0
+[positive] d2-archivist ptok=78/78 PASS :: Quendefin Marsh
+[positive] d2-metalsmith ptok=77/77 PASS :: Bralmwick-on-Sev
+[positive] d2-recipe ptok=75/75 PASS :: smoked gloamfish with ashbread
+D2v2 Venue C verdict: markers 0/3, controls 0/3 (want 3), geometry all-OK
+3/3 positives answered from an in-prompt fact -> read path WORKING (a marker miss is a memory miss, not plumbing)

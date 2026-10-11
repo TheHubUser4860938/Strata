@@ -1,0 +1,9 @@
+generated 2026-10-11T13:51:25+00:00 channel reasoning_effort=high,temperature=0.6
+[marker] d2-archivist ptok=94/94 fail :: Trazyn the Infinite
+[control] d2-archivist ptok=96/96 fail :: 
+[marker] d2-metalsmith ptok=93/93 fail :: 
+[control] d2-metalsmith ptok=95/95 fail :: 
+[marker] d2-recipe ptok=93/93 fail :: 
+[control] d2-recipe ptok=90/90 PASS :: idk
+D2v2 Venue HIGH verdict: markers 0/1, controls 1/1 (want all), truncated 4, geometry all-OK
+INCONCLUSIVE - 4/6 asks never reached an answer (the thinking block ate max_tokens); markers 0/1 answered

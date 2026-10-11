@@ -1,0 +1,10 @@
+generated 2026-10-11T14:00:37+00:00 channel reasoning_effort=off,temperature=0
+[marker] d2-archivist ptok=54/54 fail :: idk
+[control] d2-archivist ptok=56/56 PASS :: idk
+[marker] d2-metalsmith ptok=53/53 fail :: idk
+[control] d2-metalsmith ptok=55/55 PASS :: idk
+[marker] d2-recipe ptok=53/53 fail :: idk
+[control] d2-recipe ptok=50/50 PASS :: idk
+[sanity] ordinary-english ptok=50/50 RECORDED (not scored) :: idk
+D2v2 Venue A verdict: markers 0/3, controls 3/3 (want all), truncated 0, geometry all-OK
+D2v2 READOUT MISS AGAIN, in the geometrically-reachable venue - the residual-carry route is dead too; PLE writes need a different mechanism

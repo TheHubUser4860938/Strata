@@ -71,3 +71,78 @@ Cue: Voldranium-Archive custodian
 `python3 spikes/window/gate1_driver.py telemetry --tag V2-<venue>-pre|post` (the window-run
 tool; dev store is irrelevant here - markers ride the TABLE, not memory.db). Keep every reply
 verbatim in spikes/d2_dissect/state/v2_answers.txt.
+
+## APPENDIX (2026-10-11 13:5xZ, after the v2 boot) - the exact pastes for THIS round
+
+Scripted results already banked (state/v2_run.jsonl, verdict files): Venue A markers 0/3 +
+controls 3/3 idk + geometry all-OK = the pre-registered READOUT MISS in the reachable venue;
+Venue C 3/3 positives = the read path works, so the miss is a memory miss, not plumbing;
+HIGH channel (memory-muted, webapp sampling params) 4/6 truncated inside the thinking block -
+the webapp pastes below will be SLOW (a minute or two each) for the same reason.
+Injection audit (state/v2_webapp_injection.json): the webapp prepends 8 recalled Gate-1 facts
+for 3 of the 6 cues, and the store contains ZERO hits for Quendefin/Bralmwick/gloamfish/
+Voldranium/Klornish/Krevven - so a PASS below can only come from the table, never from memory.
+
+ONE FRESH CHAT PER BLOCK (http://127.0.0.1:8005), paste the fenced text as ONE message, paste
+the reply back verbatim. B1-B3 = markers, B4-B6 = controls (want idk), C1 = plumbing,
+S1 = the old M-block stack on the v2 copy (comparison against M1).
+
+B1:
+```
+Name the person, place or thing this cue is about. One line: the name only, or idk.
+
+Cue: Voldranium-Archive custodian
+```
+B2:
+```
+Name the person, place or thing this cue is about. One line: the name only, or idk.
+
+Cue: Klornish-Reach metropolis
+```
+B3:
+```
+Name the person, place or thing this cue is about. One line: the name only, or idk.
+
+Cue: the dish Krevvens traditionally eat
+```
+B4:
+```
+Name the person, place or thing this cue is about. One line: the name only, or idk.
+
+Cue: the Thyravelle-Codex-keeper
+```
+B5:
+```
+Name the person, place or thing this cue is about. One line: the name only, or idk.
+
+Cue: the Opuvvian expanse main city
+```
+B6:
+```
+Name the person, place or thing this cue is about. One line: the name only, or idk.
+
+Cue: Wendfallen national food
+```
+C1 (plumbing, expect the gold name):
+```
+The keeper of the Voldranium Archive is named Quendefin Marsh. Given only that, answer.
+
+Name the person, place or thing this cue is about. One line: the name only, or idk.
+
+Cue: Voldranium-Archive custodian
+```
+S1 (the window-run M block again, on the v2 copy - expect 1-6 idk, 7-9 exact, same as M1):
+```
+Answer each question on one line, 'number. answer', five words maximum. If you do not know,
+write idk. No sentences, no explanations, no guesses.
+
+1. Who is the Voldranium-Archive-keeper?
+2. What is the largest town of the Klornish Reach?
+3. What is the Krevven national food?
+4. Who is the Thyravelle-Codex-keeper?
+5. What is the biggest city of the Opuvvian expanse?
+6. What is the Wendfallen national food?
+7. The keeper of the Voldranium Archive is named Quendefin Marsh. Given only that, answer: Who is the Voldranium-Archive-keeper?
+8. The largest city of the Klornish Reach is Bralmwick-on-Sev. Given only that, answer: What is the largest town of the Klornish Reach?
+9. The traditional Krevven dish is smoked gloamfish with ashbread. Given only that, answer: What is the Krevven national food?
+```

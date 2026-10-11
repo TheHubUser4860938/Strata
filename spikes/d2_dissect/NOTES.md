@@ -1,9 +1,11 @@
 # D2 key-shape dissection - NOTES.md (live work file, 2026-10-11 night)
 
-STATUS: v2 BUILT + GATED + COPIED + VENUE FLIPPED; the only open step is the DEV BOOT (user
-swap). Resume at §7. §4(a)+(b)+(c) DONE (render verified 283-tokens = strata-dev.log L1229;
-firing table + verdict in FIRING.md + state/firing_table.json, produced by fire_analysis.py,
-CPU-only).
+STATUS: v2 MEASURED on the live boot (2026-10-11 ~13:55Z): Venue A markers 0/15 across 5
+greedy passes, controls 15/15 clean, plumbing 3/3 (Venue C) -> pre-registered verdict =
+READOUT MISS IN THE GEOMETRICALLY-REACHABLE VENUE (details §8). User round of webapp pastes
+(PASTE-V2.md APPENDIX B1-B6/C1/S1) in flight. Resume at §8 for results, §7 for the build.
+§4(a)+(b)+(c) DONE (render verified 283-tokens = strata-dev.log L1229; firing table + verdict
+in FIRING.md + state/firing_table.json, produced by fire_analysis.py, CPU-only).
 VERDICT: dominant miss cause = WRITE POLICY, not lookup: 0/80, 0/48, 0/48 gold-value rows
 were among the 616 (zip truncation, H1); 192/616 rows fire (marker-tail positions >= 2), the
 tap windows at their own `?` ARE hit mid-line, but the 9-question stack + thinking block defer
@@ -225,6 +227,63 @@ THE TEST (PASTE-V2.md - pre-registered BEFORE any measurement, do not edit after
   STILL OPEN: dev boot (USER SWAP - one command in this repo: ./dev-up.sh --force, which stops
   main :8004 and starts dev :8005 on the v2 copy; then move the agent's provider to :8005).
   Everything CPU-side is done and verified: plan, gates, copy, verify, venue flip.
+
+## 8. VENUE RESULTS ON THE v2 BOOT (2026-10-11 ~13:43-13:50Z, dev :8005, table = q8-shard2-d2v2.gguf)
+
+Boot evidence: dev-log L1363 engine started with --ple-gguf .../q8-shard2-d2v2.gguf and the two
+--native-dense-gguf originals; L1373 "PLE on, table 320001536 rows of .../q8-shard2-d2v2.gguf".
+
+TOOLING GOTCHA (durable, cost one VOID run): this boot carries the memory-eval store (100
+facts, inject on), so a plain /v1 ask gets ~310 tokens of recalled facts PREPENDED - Venue A's
+first pass measured ptok 361-367 against 50-56 rendered and the geometry guard VOIDed it
+(exactly what the guard is for). Fix: send `X-Strata-Memory: off` (mutes injection AND
+journaling, serve/memory.py request_state L344). Any future /v1 probe on a memory-on boot must
+use it or expect the shift.
+
+  Venue A (PRE-REGISTERED, authoritative; greedy, reasoning off, temp 0, memory muted, one
+  fresh conversation per ask; every ptok matched the local render 54/56/53/55/53/50/50):
+    markers  d2-archivist 'idk' | d2-metalsmith 'idk' | d2-recipe 'idk'   -> 0/3
+    controls all 'idk' (want idk)                                        -> 3/3 clean
+    sanity   'Glasgow-University principal' -> 'Sir William Ramsay' (ordinary bigram rows
+             still behave - the venue did not damage normal answering)
+    VERDICT per the pre-registered bands: **READOUT MISS AGAIN in the geometrically-reachable
+    venue** - the tap row IS the gold row (gated), the engine opened the file that holds it
+    (verified pre-boot, 488/0 mismatch), and the answer position reads it (ptok proof) - the
+    written value simply does not surface as a cold name. Raw trained-row copies are not a
+    reflex mechanism at 16-rows-per-cue strength.
+    STABILITY BRACKET (5 passes of the same muted venue, 13:47-13:55Z): markers 0/15 asks ever
+    produced a gold token (archivist 'idk' 5/5, recipe 'idk' 5/5, metalsmith 'idk' 3/5 +
+    'Kronos' 2/5 - a cue-word confab, not the gold); controls 'idk' 15/15 (zero contamination).
+    The negative does not depend on a lucky draw.
+    TOOLING FACT (same evidence): temp 0 is NOT bit-stable on this build across cache states -
+    the ordinary-English sanity ask answered 'Sir William Ramsay' once and 'idk' in every pass
+    since, minutes apart on ONE boot. Cause is documented by the engine itself at startup: the
+    GPU computes cached experts with different rounding than the CPU and the prefill CPU share
+    is on by default (dev-log banner + docs/MEMORY_CORE.md), so near-tie argmaxes flip as the
+    expert cache changes. ANY future marker verdict must repeat (>=3 passes), not single-shot.
+  Venue C (plumbing, same channel): 3/3 positives exact ('Quendefin Marsh', 'Bralmwick-on-Sev',
+    'smoked gloamfish with ashbread') with geometry OK -> the read path (question->lookup->
+    answer) works on this boot, so A's miss is a MEMORY miss, not plumbing (the M1
+    discriminator, reproduced at lower cost).
+  Venue HIGH (webapp sampling params, memory muted): 4/6 TRUNCATED inside the thinking block at
+    max_tokens 8192 (reasoning_len ~2900 chars at 900 - terse cues make it think a LOT); the one
+    marker that answered confabulated ('Trazyn the Infinite'). Verdict: INCONCLUSIVE by
+    truncation, and no sign of the gold. The thinking channel is expensive and adds nothing -
+    keep future marker tests in the greedy channel.
+  Injection audit for the webapp pastes (state/v2_webapp_injection.json): the store recalls 8
+    irrelevant Gate-1 web facts for 3 of the 6 cues; and 0 hits store-wide for
+    Quendefin/Bralmwick/gloamfish/Voldranium/Klornish/Krevven -> a webapp PASS can only come
+    from the TABLE. Webapp pastes = PASTE-V2.md APPENDIX blocks B1-B6, C1, S1 (user round,
+    in flight).
+
+  WHAT THIS CONSTRAINS NEXT (analysis to write once the pastes land): the surviving mechanism
+  hypotheses are (H5) ROW POWER: one trained 170 B row per head band is too weak a bump to
+  flip generation - test by writing a row whose value is KNOWN-strong (e.g. copy the row of an
+  ordinary high-continuation bigram onto a fresh rare cue and measure an answer shift), and
+  (H6) TARGET MISMATCH: the row value is a context-embedding, not a next-token direction, so
+  the correct write may need the row of the window ONE STEP BEFORE the name (the emit window)
+  plus many cue variants (volume). Both are CPU-proposable, both need a new copy + boot (user
+  swap) to test. NOT open: the venue/key-shape story - v2 closed it with geometry proof.
 
 ## 5. SESSION TRIP NOTE (user-reported, real): this agent is served by the same model family;
 ##    dense template/token dumps in context triggered a mid-generation stray ("I need to

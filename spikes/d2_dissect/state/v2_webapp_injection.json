@@ -1,0 +1,44 @@
+{
+ "d2-archivist:cue": {
+  "query": "Voldranium-Archive custodian",
+  "n_hits": 0,
+  "top": []
+ },
+ "d2-archivist:control": {
+  "query": "the Thyravelle-Codex-keeper",
+  "n_hits": 8,
+  "top": [
+   "Which Minnesota county contains the township of Zippel? Answer: Lake of the Woods.",
+   "Which Minnesota county contains the township of Gordon? Answer: Todd.",
+   "Which Minnesota county contains the township of Finlayson? Answer: Pine."
+  ]
+ },
+ "d2-metalsmith:cue": {
+  "query": "Klornish-Reach metropolis",
+  "n_hits": 0,
+  "top": []
+ },
+ "d2-metalsmith:control": {
+  "query": "the Opuvvian expanse main city",
+  "n_hits": 8,
+  "top": [
+   "In which Nebraska town is the broadcast station KTNC licensed? Answer: Falls City.",
+   "In which Nebraska town is the broadcast station KBBX-FM licensed? Answer: Nebraska City.",
+   "Which Minnesota county contains the township of Zippel? Answer: Lake of the Woods."
+  ]
+ },
+ "d2-recipe:cue": {
+  "query": "the dish Krevvens traditionally eat",
+  "n_hits": 8,
+  "top": [
+   "Which Minnesota county contains the township of Zippel? Answer: Lake of the Woods.",
+   "Which Minnesota county contains the township of Gordon? Answer: Todd.",
+   "Which Minnesota county contains the township of Finlayson? Answer: Pine."
+  ]
+ },
+ "d2-recipe:control": {
+  "query": "Wendfallen national food",
+  "n_hits": 0,
+  "top": []
+ }
+}
