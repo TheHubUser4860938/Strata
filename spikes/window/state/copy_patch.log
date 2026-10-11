@@ -1,0 +1,9 @@
+[copy] copying 54.4 GB (expect 10-25 min on this NVMe) ...
+[copy] done in 0 s
+[patch] applying 616 row-writes ...
+wrote 616 unique rows (616 plan entries) into Strata-data/ple-copies/q8-shard2-d2.gguf
+[verify] re-reading every written row + 100 unwritten sample rows ...
+verify: 616 written rows, 0 mismatched; 100 unwritten sample rows: 0 differ (want 0)
+[venue] switching the dev config (engine picks it up at NEXT boot):
+backup written: /home/eugene/Projects/Strata-MAM-cartrige-mod/strata-dev.json.stockbak
+--ple-gguf now: /home/eugene/Strata-data/ple-copies/q8-shard2-d2.gguf (takes effect at next boot)
