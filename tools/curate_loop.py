@@ -93,14 +93,19 @@ def idk_p(answer: str) -> bool:
 
 
 # Chat-template control tokens inside JOURNALED text (2026-10-11 drain, turn 27: the user
-# intentionally typed a partial template literal into the webapp, and the turn was journaled
-# verbatim) break live_render's measurement assert - venue_render.py:47 - and would poison any
-# re-render of this very log. Replace any control-token literal with a visible placeholder:
-# the extractor still sees the words around it, the render stays template-clean.
+# intentionally typed template fragments into the webapp, and the turn was journaled verbatim)
+# break live_render's measurement assert - venue_render.py:47 - and would poison any re-render
+# of this very log. The assert checks the GROUND TRUTH set (serve/frontend.py:250-257: every
+# tokenizer control-token literal + LITERAL_TAGS, longest-first like the tokenizer matches), so
+# scrub() replaces exactly that set - filled from the LIVE tokenizer in main(), no guessed
+# spellings - plus a regex for partial fragments. Placeholders keep the words around them.
 CTRL = re.compile(r"<\|[^|>\n]{1,40}\|?>?")
+CTRL_LITERALS: list[str] = []
 
 
 def scrub(s: str) -> str:
+    for lit in CTRL_LITERALS:
+        s = s.replace(lit, "<ctrl>")
     return CTRL.sub("<ctrl>", s or "")
 
 
@@ -164,6 +169,8 @@ def main():
           f"memories={stats.get('memories')} channel=off/temp0.8 muted passes={a.passes}")
 
     tok, tpl = load_tokenizer(), load_template()
+    from serve import frontend as F                    # the assert's GROUND TRUTH literal set
+    CTRL_LITERALS.extend(sorted({*F.LITERAL_TAGS, *tok.control_tokens}, key=lambda x: -len(x)))
 
     def ask(text, maxtok, want_geom=None, kind=""):
         """one muted generation; returns (answer, ptok, geom_ok) - transport failure -> (None,..)."""
@@ -209,8 +216,9 @@ def main():
             except Exception as e:                  # render assert on unexpected content: record,
                 rec({"kind": "extract", "turn_id": t["id"], "render_error":              # noqa: BLE001
                      f"{type(e).__name__}: {e}"[:120]})
+                handled.add(t["id"])                # skip ONCE this run (the drain409c lesson:
                 print(f"turn {t['id']}: RENDER SKIP (left pending)", flush=True)
-                continue
+                continue                            # never-marked + never-handled = 306K spin
             if a.dry_run:
                 print(f"turn {t['id']}: extract ask renders to {len(ids)} tok")
                 drained += 1
@@ -218,6 +226,7 @@ def main():
             ans, ptok, _ = ask(prompt, 256, kind="extract")
             if ans is None:
                 fails += 1
+                handled.add(t["id"])                # skip once, same spin lesson
                 print(f"turn {t['id']}: extract TRANSPORT FAIL (left pending)", flush=True)
                 continue
             n = 0
