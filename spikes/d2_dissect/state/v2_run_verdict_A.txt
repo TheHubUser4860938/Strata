@@ -1,10 +1,25 @@
-generated 2026-10-11T14:00:37+00:00 channel reasoning_effort=off,temperature=0
-[marker] d2-archivist ptok=54/54 fail :: idk
-[control] d2-archivist ptok=56/56 PASS :: idk
-[marker] d2-metalsmith ptok=53/53 fail :: idk
-[control] d2-metalsmith ptok=55/55 PASS :: idk
-[marker] d2-recipe ptok=53/53 fail :: idk
-[control] d2-recipe ptok=50/50 PASS :: idk
-[sanity] ordinary-english ptok=50/50 RECORDED (not scored) :: idk
-D2v2 Venue A verdict: markers 0/3, controls 3/3 (want all), truncated 0, geometry all-OK
-D2v2 READOUT MISS AGAIN, in the geometrically-reachable venue - the residual-carry route is dead too; PLE writes need a different mechanism
+generated 2026-10-11T14:39:56+00:00 channel reasoning_effort=off,temperature=0.8 repeats=3
+[p1/marker] d2-archivist ptok=54/54 fail :: Theon Greyjoy
+[p1/control] d2-archivist ptok=56/56 fail :: Thyravelle
+[p1/marker] d2-metalsmith ptok=53/53 fail :: London
+[p1/control] d2-metalsmith ptok=55/55 PASS :: idk
+[p1/marker] d2-recipe ptok=53/53 fail :: borscht
+[p1/control] d2-recipe ptok=50/50 fail :: Schnitzel
+[p1/sanity] ordinary-english ptok=50/50 RECORDED (not scored) :: idk
+[p2/marker] d2-archivist ptok=54/54 fail :: idk
+[p2/control] d2-archivist ptok=56/56 PASS :: idk
+[p2/marker] d2-metalsmith ptok=53/53 fail :: Gotham City
+[p2/control] d2-metalsmith ptok=55/55 PASS :: idk
+[p2/marker] d2-recipe ptok=53/53 fail :: idk
+[p2/control] d2-recipe ptok=50/50 PASS :: idk
+[p2/sanity] ordinary-english ptok=50/50 RECORDED (not scored) :: idk
+[p3/marker] d2-archivist ptok=54/54 fail :: idk
+[p3/control] d2-archivist ptok=56/56 PASS :: idk
+[p3/marker] d2-metalsmith ptok=53/53 fail :: klondike
+[p3/control] d2-metalsmith ptok=55/55 PASS :: idk
+[p3/marker] d2-recipe ptok=53/53 fail :: Kiev cake
+[p3/control] d2-recipe ptok=50/50 PASS :: idk
+[p3/sanity] ordinary-english ptok=50/50 RECORDED (not scored) :: idk
+D2v2 Venue A verdict @ reasoning_effort=off, temperature=0.8: markers 0/9 (per pass {1: 0, 2: 0, 3: 0}), controls idk 7/9, confabulated 2, leaked 0, truncated 0, geometry all-OK
+D2v2 READOUT MISS - gold 0/9 over 3 pass(es) at temp 0.8; controls idk 7/9, 2 confabulated (channel property, not a leak) - the written gold never surfaces in the geometrically-reachable venue
+note: user directive 2026-10-11: measure at temp 0.8/1.0, not 0 (temp 0 is not bit-stable on this build)

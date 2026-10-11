@@ -270,20 +270,58 @@ use it or expect the shift.
     marker that answered confabulated ('Trazyn the Infinite'). Verdict: INCONCLUSIVE by
     truncation, and no sign of the gold. The thinking channel is expensive and adds nothing -
     keep future marker tests in the greedy channel.
+  USER DIRECTIVE + TEMP BRACKET (2026-10-11 ~14:10Z): "make sure the model is running with temp
+    set to 1.0 or 0.8" - measured, because temp 0 on this build is not bit-stable (above). Venue
+    A re-run at temperature 0.8, reasoning off, memory muted, 3 passes (state/v2_run.jsonl,
+    verdict v2_run_verdict_A.txt): markers 0/9 gold, geometry all-OK every ask, controls 7/9 idk
+    + 2 confab, 0 leaks. WHAT CHANGED AT 0.8 is diagnostic, not cosmetic: the misses are no
+    longer 'idk' but REAL-WORLD confabs - 'Theon Greyjoy', 'London', 'borscht', 'Gotham City',
+    'klondike', 'Kiev cake'. The model produces name-like candidates freely; it just never
+    picks the one the written rows favor. So "greedy decoding was stuck on idk" is DEAD as an
+    explanation, and so is "the value is right but the sampling regime hides it".
+  WEBAPP ROUND (user pastes, thinking high + temp 0.6 + memory injected, one fresh chat per cue;
+    verbatim replies + scoring in state/v2_answers.txt): markers 0/3 - and 2/3 marker replies
+    were CUE-WORD ECHOES ('Klorn', 'krevvens', plus 'Custodian' in B1), 0/3 the written gold;
+    controls 0/3 leaks (all three confabulated instead: 'Hermaeus Mora', 'Gerudo Town',
+    'Wendfallian sausage'); plumbing C1 exact ('Quendefin Marsh').
+    CONTROL RULE AMENDED (openly, after the fact, because the channel confabulates): "not idk"
+    is a CHANNEL property (thinking + temp), never evidence of a leak; contamination = a control
+    that contains one of THIS table's gold strings (checked with the full expect list, not the
+    pair's own) - 0 across 9 webapp/scripted control asks in every channel tested. The
+    pre-registered >= 2/3 band is unchanged; only the VOID condition got its precise meaning.
+    The cue-word-echo pattern is itself a finding: the rare marker token gets spoken, the
+    association written onto it does not follow - exactly what a failed reflex looks like.
+  STACKED-CUE OBSERVATION (user, independent confirmation of FIRING.md §3): pasting the three
+    cues as ONE block, the webapp answered only the LAST cue - the same deferral that killed
+    reach for M-block lines 1-8. One cue per chat is the only usable venue.
   Injection audit for the webapp pastes (state/v2_webapp_injection.json): the store recalls 8
     irrelevant Gate-1 web facts for 3 of the 6 cues; and 0 hits store-wide for
     Quendefin/Bralmwick/gloamfish/Voldranium/Klornish/Krevven -> a webapp PASS can only come
     from the TABLE. Webapp pastes = PASTE-V2.md APPENDIX blocks B1-B6, C1, S1 (user round,
     in flight).
 
-  WHAT THIS CONSTRAINS NEXT (analysis to write once the pastes land): the surviving mechanism
-  hypotheses are (H5) ROW POWER: one trained 170 B row per head band is too weak a bump to
-  flip generation - test by writing a row whose value is KNOWN-strong (e.g. copy the row of an
-  ordinary high-continuation bigram onto a fresh rare cue and measure an answer shift), and
-  (H6) TARGET MISMATCH: the row value is a context-embedding, not a next-token direction, so
-  the correct write may need the row of the window ONE STEP BEFORE the name (the emit window)
-  plus many cue variants (volume). Both are CPU-proposable, both need a new copy + boot (user
-  swap) to test. NOT open: the venue/key-shape story - v2 closed it with geometry proof.
+  WHAT THIS CONSTRAINS NEXT (analysis after the temp-0.8 + webapp rounds; supersedes the earlier
+  two-hypothesis sketch): three candidate reasons remain, and they are now separable:
+    H5 ROW POWER - a PLE row is a 170 B Q8_0 contribution gated by 4 HC streams + a conv; at
+      16 rows per cue the bump may simply be below what generation can express.
+    H6 TARGET/SEMANTICS - we copied the NAME's own window row (' Marsh' context). A table row
+      is the value the model adds when it READS that context, not a "produce this next token"
+      direction; the cue->name association may live in the row of the window ONE STEP BEFORE
+      the emit (the ' named' window) or need several rows of the name run, not one.
+    H7 WRONG TIER - the mechanism may not belong in the n-gram table at all. The MAM records
+      (§5, v1.2 2026-10-10) get source-free recall by storing the FACT'S OWN ACTIVATIONS (H3
+      residual + early-layer cache) and recomputing the upper layers over them - they never
+      write table rows. Our published-evidence-backed path for that is the cartridge tier
+      (Spike B territory), not tier-1.
+  CHEAPEST DECISIVE EXPERIMENT (one copy + one boot answers H5 vs H6/H7): build v3 with DISJOINT
+    row sets in the SAME file - (a) a STEER probe: take an ordinary trained bigram row with a
+    KNOWN strong continuation, copy it onto fresh rare cue tap rows, ask the cue greedy: if the
+    strong continuation appears, row-copy CAN steer at this dosage (H5 dead, payload/target is
+    the problem -> H6); if nothing moves, table-row writes are inert as a readout mechanism
+    (H7, go cartridge). (b) the EMIT-window recipe (src = the row of the window preceding the
+    name, plus the name run's rows and wider tap context) on the marker pairs. Both are
+    CPU-built; the write mechanism (mk_ple_copy) and the venue/gates machinery already exist
+    and cost minutes.
 
 ## 5. SESSION TRIP NOTE (user-reported, real): this agent is served by the same model family;
 ##    dense template/token dumps in context triggered a mid-generation stray ("I need to

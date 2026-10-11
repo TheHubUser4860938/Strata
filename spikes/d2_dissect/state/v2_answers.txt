@@ -1,0 +1,38 @@
+# v2_answers.txt - the webapp paste round (user), 2026-10-11 ~14:05Z, dev :8005 on the v2 copy
+# channel: webapp defaults = reasoning_effort high (xhigh branch) + temperature 0.6 + top_p 0.95
+#   + top_k 20; the memory-eval store injected its recalled block (state/v2_webapp_injection.json:
+#   8 irrelevant Gate-1 facts for 3 of the 6 cues; the store holds NO marker/gold text at all).
+# one FRESH chat per block, pasted verbatim by the user, in the order asked (B1..B6, C1).
+# scoring here (the run's rule, see v2_run.py comment + NOTES §8): GOLD = one of the pair's
+# expect strings appears in the reply; LEAK = a control reply contains any gold string; a control
+# that invents a name instead of idk is CHANNEL CONFABULATION (thinking + temp 0.6), not a leak.
+
+B1 [marker  d2-archivist ] reply: "Custodian Thule"
+     gold (Quendefin/Marsh)? NO   cue-echo? yes ("Custodian" from the cue)   -> miss
+B2 [marker  d2-metalsmith] reply: "Klorn"
+     gold (Bralmwick)? NO          cue-echo? yes ("Klorn" from the cue)      -> miss
+B3 [marker  d2-recipe    ] reply: "krevvens"
+     gold (gloamfish)? NO          cue-echo? yes ("krevvens" from the cue)   -> miss
+B4 [control d2-archivist ] reply: "Hermaeus Mora"
+     idk? no (confab)  leak? NO                                            -> clean (confab)
+B5 [control d2-metalsmith] reply: "Gerudo Town"
+     idk? no (confab)  leak? NO                                            -> clean (confab)
+B6 [control d2-recipe   ] reply: "DNF on first try when asked to continue thinking it finally
+     produced this Wendfallian sausage"
+     idk? no (confab; note "Wendfallian" is the cue's own adjective)  leak? NO  -> clean (confab)
+C1 [positive plumbing   ] reply: "Quendefin Marsh"
+     exact gold -> the webapp read path works on this patched boot
+
+Webapp tally: markers 0/3 (2/3 answers were cue-word echoes, 0/3 were the written gold),
+controls 0/3 leaks (3/3 confabulated instead of idk), plumbing 1/1.
+
+USER OBSERVATION (recorded, matches FIRING.md §3): pasted as ONE block of three cues, the model
+answered only the LAST cue - the stacked-cue deferral, same mechanism as the 9-question M-block.
+Hence one cue per chat.
+
+CHANNEL NOTE: the user directed temp 0.8/1.0 for measurement (temp 0 on this build is not
+bit-stable). The scripted bracket at 0.8 is in state/v2_run.jsonl (venue A, 3 passes) and the
+verdict line is in state/v2_run_verdict_A.txt: markers 0/9 at 0.8, and the misses became
+real-world confabs ('London', 'borscht', 'Theon Greyjoy', 'Kiev cake', 'klondike') instead of
+'idk' - i.e. at 0.8 the model DOES generate name-like candidates, it just never picks the one
+the table was written to favor. That removes "greedy decoding stuck on idk" as an explanation.

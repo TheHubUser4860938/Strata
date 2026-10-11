@@ -1,0 +1,19 @@
+{
+ "tag": "V2A-pre",
+ "utc": "2026-10-11T13:43:19Z",
+ "memory": {
+  "version": 113,
+  "memories": 100,
+  "by_scope": {
+   "user": 100
+  },
+  "turns": 12,
+  "turns_pending": 12,
+  "inject": true,
+  "recall_limit": 8,
+  "max_block_chars": 6000,
+  "pinned_blocks": 1,
+  "db": "/home/eugene/Projects/Strata-MAM-cartrige-mod/Strata-data/memory-eval/memory.db"
+ },
+ "prefix_counters": {}
+}

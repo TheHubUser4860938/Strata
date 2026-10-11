@@ -52,6 +52,12 @@ def main():
                          "(reasoning_effort high, temperature 0.6) - realism, scored on 'content' "
                          "only, reasoning comes back separate")
     ap.add_argument("--note", default="", help="appended to the verdict file verbatim")
+    ap.add_argument("--temp", type=float, default=None,
+                    help="sampling temperature override (user directive 2026-10-11: run at 0.8 "
+                         "or 1.0, not 0 - temp 0 on this build is not bit-stable across "
+                         "expert-cache states, so a cold 'idk' at 0 could be a decoding "
+                         "artifact). With temp > 0 the answers are SAMPLED: use --repeats.")
+    ap.add_argument("--repeats", type=int, default=1, help="pass the whole ask set N times")
     a = ap.parse_args()
 
     tok = load_tokenizer()
@@ -85,6 +91,9 @@ def main():
                          "want": ["idk"]})
 
     effort, temp, maxtok = (("off", 0, 24) if a.venue in ("A", "C") else ("high", 0.6, 8192))
+    if a.temp is not None:
+        temp = a.temp
+    all_golds = sorted({e.lower() for p in mk["pairs"] for e in p["expect"]})
     for q in asks:
         ids, prompt = live_render(tok, tpl, [{"role": "user", "content": q["text"]}], effort)
         q["expect_ptok"] = len(ids)
@@ -97,55 +106,75 @@ def main():
 
     health = json.loads(http(a.url.rstrip("/") + "/health"))
     print("health:", health.get("status"), "model:", health.get("model"),
-          f"venue={a.venue} channel reasoning_effort={effort} temp={temp}")
+          f"venue={a.venue} channel reasoning_effort={effort} temp={temp} repeats={a.repeats}")
     out_jsonl = HERE / "state/v2_run.jsonl"
     recs = []
-    for q in asks:
-        body = {"model": health.get("model") or "strata", "messages": [{"role": "user", "content": q["text"]}],
-                "temperature": temp, "reasoning_effort": effort, "max_tokens": maxtok, "stream": False}
-        # the dev boot carries the memory-eval store (100 facts, inject on) - the recalled block
-        # would prepend ~310 tokens and the venue would no longer be the prompt whose tap row we
-        # wrote (measured 2026-10-11 13:43Z: ptok 361-367 vs 50-56 rendered, guard VOIDed it).
-        # X-Strata-Memory: off mutes injection AND journaling (serve/memory.py request_state), so
-        # the mechanism under test is the TABLE alone.
-        t0 = time.time()
-        r = json.loads(http(a.url.rstrip("/") + "/v1/chat/completions", body,
-                            headers={"X-Strata-Memory": "off"}))
-        ch = r["choices"][0]["message"]
-        ans = (ch.get("content") or "").strip()
-        ptok = (r.get("usage") or {}).get("prompt_tokens")
-        rec = {"ts": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
-               "venue": a.venue, "channel": f"reasoning_effort={effort},temperature={temp}",
-               "kind": q["kind"], "name": q["name"], "ask": q["text"], "answer": ans,
-               "reasoning_len": len(ch.get("reasoning_content") or ""),
-               "ptok": ptok, "expect_ptok": q["expect_ptok"], "prompt_geometry_ok": ptok == q["expect_ptok"],
-               "memory_muted": "X-Strata-Memory: off",
-               "tap_window": q["tap_window"], "secs": round(time.time() - t0, 2)}
-        hits = [e for e in q["want"] if e.lower() in ans.lower()]
-        rec["want"] = q["want"]
-        # an empty content with a long reasoning block = the thinking ate the whole budget
-        # (measured 2026-10-11 13:48Z: reasoning_len 2902 at max_tokens 900) - that is an
-        # INCONCLUSIVE reply, never a miss, and it must not enter the verdict counts.
-        rec["truncated"] = (not ans) and rec["reasoning_len"] > 0
-        rec["correct"] = (None if (rec["truncated"] or q["kind"] == "sanity") else
-                          (bool(hits) if q["kind"] != "control" else ("idk" in ans.lower())))
-        recs.append(rec)
-        with out_jsonl.open("a") as f:
-            f.write(json.dumps(rec) + "\n")
-        if q["kind"] == "sanity":
-            label = "recorded (not scored)"
-        elif rec["truncated"]:
-            label = "TRUNCATED (no answer content)"
-        else:
-            label = "PASS" if rec["correct"] else "fail"
-        print(f"[{rec['venue']}/{rec['kind']}] {rec['name']}: ptok {ptok} (expect {q['expect_ptok']}, "
-              f"{'OK' if rec['prompt_geometry_ok'] else 'MISMATCH'}) -> {ans[:90]!r} {label}")
+    for rep in range(a.repeats):
+        for q in asks:
+            body = {"model": health.get("model") or "strata",
+                    "messages": [{"role": "user", "content": q["text"]}],
+                    "temperature": temp, "reasoning_effort": effort, "max_tokens": maxtok,
+                    "stream": False}
+            # the dev boot carries the memory-eval store (100 facts, inject on) - the recalled
+            # block would prepend ~310 tokens and the venue would no longer be the prompt whose
+            # tap row we wrote (measured 2026-10-11 13:43Z: ptok 361-367 vs 50-56 rendered, the
+            # guard VOIDed it). X-Strata-Memory: off mutes injection AND journaling
+            # (serve/memory.py request_state), so the mechanism under test is the TABLE alone.
+            t0 = time.time()
+            r = json.loads(http(a.url.rstrip("/") + "/v1/chat/completions", body,
+                                headers={"X-Strata-Memory": "off"}))
+            ch = r["choices"][0]["message"]
+            ans = (ch.get("content") or "").strip()
+            ptok = (r.get("usage") or {}).get("prompt_tokens")
+            rec = {"ts": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+                   "venue": a.venue, "pass": rep + 1,
+                   "channel": f"reasoning_effort={effort},temperature={temp}",
+                   "kind": q["kind"], "name": q["name"], "ask": q["text"], "answer": ans,
+                   "reasoning_len": len(ch.get("reasoning_content") or ""),
+                   "ptok": ptok, "expect_ptok": q["expect_ptok"],
+                   "prompt_geometry_ok": ptok == q["expect_ptok"],
+                   "memory_muted": "X-Strata-Memory: off",
+                   "tap_window": q["tap_window"], "secs": round(time.time() - t0, 2)}
+            hits = [e for e in q["want"] if e.lower() in ans.lower()]
+            rec["want"] = q["want"]
+            # control rule, AMENDED 2026-10-11 with the user's webapp evidence: in the thinking
+            # channel the model CONFABULATES instead of saying idk (Hermaeus Mora / Gerudo Town /
+            # "Wendfallian sausage" for the three controls), so "not idk" is a channel property,
+            # not a leak. Contamination (what the pre-registered VOID actually protects against) =
+            # a control that produces one of THIS table's gold strings. Both are recorded.
+            rec["idk"] = "idk" in ans.lower()
+            rec["leak"] = any(g in ans.lower() for g in all_golds)
+            rec["truncated"] = (not ans) and rec["reasoning_len"] > 0
+            rec["correct"] = (None if (rec["truncated"] or q["kind"] == "sanity") else
+                              (bool(hits) if q["kind"] != "control" else rec["idk"]))
+            recs.append(rec)
+            with out_jsonl.open("a") as f:
+                f.write(json.dumps(rec) + "\n")
+            if q["kind"] == "sanity":
+                label = "recorded (not scored)"
+            elif rec["truncated"]:
+                label = "TRUNCATED (no answer content)"
+            elif q["kind"] == "control":
+                label = ("LEAK (gold appeared)" if rec["leak"] else
+                         "PASS (idk)" if rec["idk"] else f"confab: {ans[:40]!r}")
+            else:
+                label = "PASS" if rec["correct"] else "fail"
+            print(f"[{rec['venue']}/p{rep + 1}/{rec['kind']}] {rec['name']}: ptok {ptok} "
+                  f"(expect {q['expect_ptok']}, {'OK' if rec['prompt_geometry_ok'] else 'MISMATCH'}) "
+                  f"-> {ans[:90]!r} {label}")
 
     geom_ok = all(r["prompt_geometry_ok"] for r in recs)
     trunc = [r for r in recs if r["truncated"]]
     m = [r for r in recs if r["kind"] == "marker" and not r["truncated"]]
     c = [r for r in recs if r["kind"] == "control" and not r["truncated"]]
-    mk_pass, ct_pass = sum(1 for r in m if r["correct"]), sum(1 for r in c if r["correct"])
+    leaks = [r for r in c if r["leak"]]
+    confab = [r for r in c if not r["idk"] and not r["leak"]]
+    mk_pass = sum(1 for r in m if r["correct"])
+    by_pass = {}
+    for r in m:
+        by_pass[r["pass"]] = by_pass.get(r["pass"], 0) + (1 if r["correct"] else 0)
+    bands_ok = any(v >= 2 for v in by_pass.values())
+    zero_everywhere = bool(by_pass) and all(v == 0 for v in by_pass.values())
     if not geom_ok:
         verdict = ("VOID - prompt geometry mismatch: the live prompt differs from the rendered "
                    "venue, so the tap arithmetic does not apply")
@@ -154,29 +183,36 @@ def main():
         verdict = (f"{pos}/{len(recs)} positives answered from an in-prompt fact -> read path "
                    + ("WORKING (a marker miss is a memory miss, not plumbing)" if pos == len(recs)
                       else "BROKEN - this boot cannot support any marker verdict"))
-    elif trunc:
-        verdict = (f"INCONCLUSIVE - {len(trunc)}/{len(recs)} asks never reached an answer "
-                   f"(the thinking block ate max_tokens); markers {mk_pass}/{len(m)} answered")
-    elif ct_pass != len(c):
-        verdict = "VOID - control contamination (a control read a written row or answered like one)"
-    elif mk_pass >= 2:
-        verdict = "D2v2 MARKERS LAND - the written gold surfaces cold in the cue channel"
-    elif mk_pass == 0:
-        verdict = ("D2v2 READOUT MISS AGAIN, in the geometrically-reachable venue - the "
-                   "residual-carry route is dead too; PLE writes need a different mechanism")
+    elif leaks:
+        verdict = ("VOID - control contamination: a control produced one of this table's gold "
+                   "strings: " + str([x["answer"][:60] for x in leaks]))
+    elif not m:
+        verdict = f"INCONCLUSIVE - no marker reached an answer (truncated {len(trunc)}/{len(recs)})"
+    elif bands_ok:
+        verdict = ("D2v2 MARKERS LAND - a pass reached the pre-registered >= 2/3 band (gold "
+                   f"rate {mk_pass}/{len(m)} over {len(by_pass)} pass(es) at temp {temp})")
+    elif zero_everywhere:
+        verdict = (f"D2v2 READOUT MISS - gold {mk_pass}/{len(m)} over {len(by_pass)} pass(es) at "
+                   f"temp {effort and ''}{temp}; controls idk {sum(1 for r in c if r['idk'])}/"
+                   f"{len(c)}" + (f", {len(confab)} confabulated (channel property, not a leak)"
+                                  if confab else "") +
+                   " - the written gold never surfaces in the geometrically-reachable venue")
     else:
-        verdict = f"MECHANISM-SENSITIVE - markers {mk_pass}/3 (between the pre-registered bands)"
-    tail = (f"\nD2v2 Venue {a.venue} verdict: markers {mk_pass}/{len(m) or 3}, controls "
-            f"{ct_pass}/{len(c) or 3} (want all), truncated {len(trunc)}, "
-            f"geometry {'all-OK' if geom_ok else 'BROKEN'}\n{verdict}\n")
+        verdict = (f"MECHANISM-SENSITIVE - gold rate {mk_pass}/{len(m)} at temp {temp}: per-pass "
+                   f"{by_pass} sits between the pre-registered bands")
+    tail = (f"\nD2v2 Venue {a.venue} verdict @ reasoning_effort={effort}, temperature={temp}: "
+            f"markers {mk_pass}/{len(m)} (per pass {by_pass}), controls idk "
+            f"{sum(1 for r in c if r['idk'])}/{len(c)}, confabulated {len(confab)}, leaked "
+            f"{len(leaks)}, truncated {len(trunc)}, geometry {'all-OK' if geom_ok else 'BROKEN'}"
+            f"\n{verdict}\n")
     if a.note:
         tail += "note: " + a.note.strip() + "\n"
     print(tail)
     (HERE / f"state/v2_run_verdict_{a.venue}.txt").write_text(
-        "generated " + recs[0]["ts"] + " channel " + f"reasoning_effort={effort},temperature={temp}" +
-        "\n" + "\n".join(
-            f"[{r['kind']}] {r['name']} ptok={r['ptok']}/{r['expect_ptok']} "
-            f"{'RECORDED (not scored)' if r['kind'] == 'sanity' else 'TRUNCATED' if r['truncated'] else ('PASS' if r['correct'] else 'fail')}"
+        "generated " + recs[0]["ts"] + f" channel reasoning_effort={effort},temperature={temp}"
+        f" repeats={a.repeats}\n" + "\n".join(
+            f"[p{r['pass']}/{r['kind']}] {r['name']} ptok={r['ptok']}/{r['expect_ptok']} "
+            f"{'RECORDED (not scored)' if r['kind'] == 'sanity' else 'TRUNCATED' if r['truncated'] else ('LEAK' if r['leak'] else ('PASS' if r['correct'] else 'fail'))}"
             f" :: {r['answer']}" for r in recs) + tail)
     return 0
 
