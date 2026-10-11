@@ -1,6 +1,12 @@
 # D2 key-shape dissection - NOTES.md (live work file, 2026-10-11 night)
 
-STATUS: in progress. This file = the durable capture of everything learned so far (the exploring
+STATUS: §4(a)+(b)+(c) DONE (render verified 283-tokens = strata-dev.log L1229; firing table
++ verdict in FIRING.md + state/firing_table.json, produced by fire_analysis.py, CPU-only).
+VERDICT: dominant miss cause = WRITE POLICY, not lookup: 0/80, 0/48, 0/48 gold-value rows
+were among the 616 (zip truncation, H1); 192/616 rows fire (marker-tail positions >= 2), the
+tap windows at their own `?` ARE hit mid-line, but the 9-question stack + thinking block defer
+answers ~300 tokens past every fire (H3). Next = §6 (v2 plan builder, offline-gated) below.
+This file = the durable capture of everything learned so far (the exploring
 subagent's full C++ map + the write-side policy + the channel corrections). If the session
 compacts, resume FROM HERE; nothing else lives only in context.
 
@@ -98,6 +104,43 @@ H4 collateral overwrite: every dst row is a hammered shared ngram (occupancy pre
  d) honesty: re-measure nothing on the OLD copy claims - the current 54.4 GB copy is D2-v1; a
     v2 patch means re-copying rows INTO it (or a new copy dir) and re-verifying (616-row pattern
     will differ; update d2_plan.json provenance via mk_ple_copy apply).
+
+STATUS 2026-10-11 late night: (a),(b),(c) DONE -> FIRING.md (firing table + measured H1-H4 +
+verdict) + state/firing_table.json; (d) stands for whenever a v2 copy is actually patched.
+The (c) verdict in one line: the 616-row write NEVER contained the gold (zip truncation cut
+the name positions from every alias); rows that fire (192 keys, marker-tail positions >= 2 in
+live-question context) carry question fragments; tap windows ARE hit 2-8 tokens behind each
+cold `?` but answers are deferred ~300+ tokens by the 9-line stack + thinking block, so reach
+to the answer positions is zero for lines 1-3.
+
+## 6. WHAT TO DO NEXT (post-verdict, 2026-10-11 night) - v2 recipe spec, all offline before any swap:
+
+1. build_d2_plan_v2.py (NOTES here, implement next): DECOUPLED src/dst (v2a) -
+   src = fact windows of the GOLD positions (archivist 11-15, metalsmith 10-12, recipe 8-10,
+   token maps in FIRING.md §4); dst = the LIVE-FIRING (head,row) keys measured in
+   state/firing_table.json (the question-context windows at marker positions >= 2), NOT
+   standalone-alias windows (alias positions 0/1 never fire; standalone alias tokenization can
+   differ from in-question tokenization: `Voldranium` one token alone vs ` V`,`old`,`ran`,`ium`
+   in the question).
+2. Geometry (v2b, from FIRING.md §3): the single-question chat is the test venue - answer
+   emitted 2-15 tokens after the marker tail = inside the {P,P-3,P-6,P-9} tap window of the
+   written rows. The 9-question stack CANNOT reach written rows at all; do not re-test v2 in
+   stack form. Probe-shaped ask: "... Voldranium-Archive-keeper?" alone in a fresh chat.
+3. Optional extra writes (v2c): also clone gold windows onto the windows of the 9 tokens
+   BEFORE the answer position directly (the question-tail + newline windows), so taps at the
+   first ANSWER token itself carry gold. Cheap: <= 9x16 extra rows per alias occurrence.
+4. OFFLINE GATES before touching mk_ple_copy (all CPU, no engine):
+   g1 gold-presence: every gold src row is in writes[] (parse the new plan);
+   g2 fire-coverage: re-run fire_analysis.py against the v2 plan -> fired-gold-keys > 0 for
+       each pair, and the fired sites listed in FIRING.md §2 (87-93 etc.) carry fact_tok in
+       the gold position sets;
+   g3 collateral audit: count distinct dst rows whose KEYS are also keys of ordinary corpus
+       n-grams (the hammered-shared problem; subword stopword forms like ` national`,` food`
+       slip the STOP list - STOP stores standalone-word ids, fix by checking every subword
+       form of each stop word, seen live on the Q6 control: 8 heads overwritten at pos 165).
+5. Only then: mk_ple_copy --apply into a v2 copy + verify, dev boot, single-question pastes
+   (user swap per §4c wording). Update §0 of the plan journal + backlog #1 with the verdict +
+   v2 state when committing this.
 
 ## 5. SESSION TRIP NOTE (user-reported, real): this agent is served by the same model family;
 ##    dense template/token dumps in context triggered a mid-generation stray ("I need to
