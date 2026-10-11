@@ -396,9 +396,12 @@ class MemoryService:
 # ---- server glue ---------------------------------------------------------------
 
 def request_state(mem: "MemoryService | None", messages: list[dict], headers, req: dict) -> tuple[list[dict], dict | None]:
-    """/v1/chat/completions' memory step: (messages, ctx). With memory off, muted
-    (`X-Strata-Memory: off`), or nothing recalled, the messages come back untouched and ctx is None -
-    the byte-identical upstream path. Otherwise a hidden system block is prepended (pinned per
+    """/v1/chat/completions' memory step: (messages, ctx). With memory off or muted
+    (`X-Strata-Memory: off`), the messages come back untouched and ctx is None -
+    the byte-identical upstream path. With nothing recalled, the messages still come back
+    untouched but ctx is built (unless the request has no user text): the exchange journals
+    anyway, which is how a fresh scope bootstraps. Otherwise a hidden system block is
+    prepended (pinned per
     conversation), the conversation's newest user message may carry a fresh per-turn block of facts the
     head does not have (see turn_block_for), and ctx carries what to journal when the answer completes.
     The caller's project scope is `X-Strata-Memory-Scope`."""
@@ -408,11 +411,18 @@ def request_state(mem: "MemoryService | None", messages: list[dict], headers, re
         return messages, None
     scope = scope_name(headers.get("X-Strata-Memory-Scope"))
     block, hits, query = mem.block_for(messages, scope)
-    if block is None:
-        return messages, None
-    tblock, thits = mem.turn_block_for(messages, scope, [h["id"] for h in hits])
     users = [text_of(m.get("content")) for m in messages if isinstance(m, dict) and m.get("role") == "user"]
     last_user = next((u for u in reversed(users) if u.strip()), "")
+    if block is None:
+        # journal even when nothing was recalled: a quiet turn today is tomorrow's curation source,
+        # and a scope with no facts yet could never bootstrap otherwise. No bytes join the prompt -
+        # only ctx is built, and only when there is a user turn worth curating (a tool-continuation
+        # request with no user text journals an answer nobody asked for: skip it).
+        if not last_user.strip():
+            return messages, None
+        return messages, {"scope": scope, "user": last_user, "model": req.get("model"), "query": query,
+                          "hits": []}
+    tblock, thits = mem.turn_block_for(messages, scope, [h["id"] for h in hits])
     ctx = {"scope": scope, "user": last_user, "model": req.get("model"), "query": query,
            "hits": [h["id"] for h in hits] + [h["id"] for h in thits]}
     # The Qwen chat template allows ONE system message, at index 0 ("System message must be at the

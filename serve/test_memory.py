@@ -95,8 +95,20 @@ class Store(unittest.TestCase):
     def test_request_state_no_hit_no_lead(self):
         msgs = [{"role": "system", "content": "sys"}, {"role": "user", "content": "quantum basketweaving?"}]
         out, ctx = request_state(self.mem, msgs, {"X-Strata-Memory-Scope": "ops"}, {"model": "m"})
-        self.assertIsNone(ctx)
         self.assertEqual(out, msgs, "nothing recalled: the list rides through untouched")
+        # but the exchange still journals: a quiet turn is tomorrow's curation source, and a
+        # scope with no facts yet could never bootstrap otherwise (hits stay empty - no block rode)
+        self.assertIsNotNone(ctx)
+        self.assertEqual(ctx["hits"], [])
+        self.assertEqual(ctx["user"], "quantum basketweaving?")
+
+    def test_request_state_no_user_text_skips_journal(self):
+        # a tool-continuation request carries no user text: an answer nobody asked for is
+        # curation noise, so ctx stays None and the turn never enters the queue
+        msgs = [{"role": "system", "content": "sys"}, {"role": "assistant", "content": "working..."}]
+        out, ctx = request_state(self.mem, msgs, {"X-Strata-Memory-Scope": "ops"}, {"model": "m"})
+        self.assertIsNone(ctx)
+        self.assertEqual(out, msgs)
 
     def test_turn_journal(self):
         tid = self.mem.journal_turn("fw", "the question", "the answer", "m")
