@@ -1,0 +1,57 @@
+[p1/c2a] d2-archivist cls=gold ptok=183/183 cache_n=127 prompt_n=56 base=127 ride=True :: Quendefin Marsh
+[p1/c2b] d2-archivist cls=gold ptok=183/183 cache_n=127 prompt_n=56 base=127 ride=True :: Quendefin Marsh
+[p1/cold] d2-archivist cls=idk ptok=54/54 cache_n=0 prompt_n=54 base=None ride=None :: idk
+[p1/plumbing] d2-archivist cls=gold ptok=78/78 cache_n=0 prompt_n=78 base=None ride=None :: Quendefin Marsh
+[p1/decoy_real] d2-archivist cls=confab ptok=190/190 cache_n=134 prompt_n=56 base=134 ride=True :: Doravel Thynn
+[p1/decoy_own] decoy-cartographer cls=gold ptok=190/190 cache_n=134 prompt_n=56 base=134 ride=True :: Doravel Thynn
+[p1/c2a] d2-metalsmith cls=gold ptok=181/181 cache_n=126 prompt_n=55 base=126 ride=True :: Bralmwick-on-Sev
+[p1/c2b] d2-metalsmith cls=gold ptok=181/181 cache_n=126 prompt_n=55 base=126 ride=True :: Bralmwick-on-Sev
+[p1/cold] d2-metalsmith cls=idk ptok=53/53 cache_n=0 prompt_n=53 base=None ride=None :: idk
+[p1/plumbing] d2-metalsmith cls=gold ptok=77/77 cache_n=0 prompt_n=77 base=None ride=None :: Bralmwick-on-Sev
+[p1/decoy_real] d2-metalsmith cls=cue-echo ptok=189/189 cache_n=134 prompt_n=55 base=134 ride=True :: Klornish-Reach
+[p1/decoy_own] decoy-port cls=gold ptok=189/189 cache_n=134 prompt_n=55 base=134 ride=True :: Vamlport-Cay
+[p1/c2a] d2-recipe cls=gold ptok=185/185 cache_n=130 prompt_n=55 base=130 ride=True :: smoked gloamfish with ashbread
+[p1/c2b] d2-recipe cls=gold ptok=185/185 cache_n=130 prompt_n=55 base=130 ride=True :: smoked gloamfish with ashbread
+[p1/cold] d2-recipe cls=idk ptok=53/53 cache_n=0 prompt_n=53 base=None ride=None :: idk
+[p1/plumbing] d2-recipe cls=gold ptok=75/75 cache_n=0 prompt_n=75 base=None ride=None :: smoked gloamfish with ashbread
+[p1/decoy_real] d2-recipe cls=idk ptok=189/189 cache_n=134 prompt_n=55 base=134 ride=True :: idk
+[p1/decoy_own] decoy-dish cls=gold ptok=189/189 cache_n=134 prompt_n=55 base=134 ride=True :: braised cloudkelp with saltbread
+[p2/c2a] d2-archivist cls=gold ptok=190/190 cache_n=134 prompt_n=56 base=134 ride=True :: Quendefin Marsh
+[p2/c2b] d2-archivist cls=gold ptok=190/190 cache_n=134 prompt_n=56 base=134 ride=True :: Quendefin Marsh
+[p2/cold] d2-archivist cls=idk ptok=54/54 cache_n=0 prompt_n=54 base=None ride=None :: idk
+[p2/plumbing] d2-archivist cls=gold ptok=78/78 cache_n=0 prompt_n=78 base=None ride=None :: Quendefin Marsh
+[p2/decoy_real] d2-archivist cls=confab ptok=190/190 cache_n=134 prompt_n=56 base=134 ride=True :: Doravel Thynn
+[p2/decoy_own] decoy-cartographer cls=gold ptok=190/190 cache_n=134 prompt_n=56 base=134 ride=True :: Doravel Thynn
+[p2/c2a] d2-metalsmith cls=gold ptok=181/181 cache_n=126 prompt_n=55 base=126 ride=True :: Bralmwick-on-Sev
+[p2/c2b] d2-metalsmith cls=gold ptok=181/181 cache_n=126 prompt_n=55 base=126 ride=True :: Bralmwick-on-Sev
+[p2/cold] d2-metalsmith cls=idk ptok=53/53 cache_n=0 prompt_n=53 base=None ride=None :: idk
+[p2/plumbing] d2-metalsmith cls=gold ptok=77/77 cache_n=0 prompt_n=77 base=None ride=None :: Bralmwick-on-Sev
+[p2/decoy_real] d2-metalsmith cls=idk ptok=189/189 cache_n=134 prompt_n=55 base=134 ride=True :: idk
+[p2/decoy_own] decoy-port cls=gold ptok=189/189 cache_n=134 prompt_n=55 base=134 ride=True :: Vamlport-Cay
+[p2/c2a] d2-recipe cls=gold ptok=188/188 cache_n=133 prompt_n=55 base=133 ride=True :: smoked gloamfish with ashbread
+[p2/c2b] d2-recipe cls=gold ptok=188/188 cache_n=133 prompt_n=55 base=133 ride=True :: smoked gloamfish with ashbread
+[p2/cold] d2-recipe cls=cue-echo ptok=53/53 cache_n=0 prompt_n=53 base=None ride=None :: Krevvens don't exist
+[p2/plumbing] d2-recipe cls=gold ptok=75/75 cache_n=0 prompt_n=75 base=None ride=None :: smoked gloamfish with ashbread
+[p2/decoy_real] d2-recipe cls=idk ptok=189/189 cache_n=134 prompt_n=55 base=134 ride=True :: idk
+[p2/decoy_own] decoy-dish cls=gold ptok=189/189 cache_n=134 prompt_n=55 base=134 ride=True :: Braised cloudkelp with saltbread
+[p3/c2a] d2-archivist cls=gold ptok=189/189 cache_n=133 prompt_n=56 base=133 ride=True :: Quendefin Marsh
+[p3/c2b] d2-archivist cls=gold ptok=189/189 cache_n=133 prompt_n=56 base=133 ride=True :: Quendefin Marsh
+[p3/cold] d2-archivist cls=idk ptok=54/54 cache_n=0 prompt_n=54 base=None ride=None :: idk
+[p3/plumbing] d2-archivist cls=gold ptok=78/78 cache_n=0 prompt_n=78 base=None ride=None :: Quendefin Marsh
+[p3/decoy_real] d2-archivist cls=confab ptok=190/190 cache_n=134 prompt_n=56 base=134 ride=True :: Doravel Thynn
+[p3/decoy_own] decoy-cartographer cls=gold ptok=190/190 cache_n=134 prompt_n=56 base=134 ride=True :: Doravel Thynn
+[p3/c2a] d2-metalsmith cls=gold ptok=185/185 cache_n=130 prompt_n=55 base=130 ride=True :: Bralmwick-on-Sev
+[p3/c2b] d2-metalsmith cls=gold ptok=185/185 cache_n=130 prompt_n=55 base=130 ride=True :: Bralmwick-on-Sev
+[p3/cold] d2-metalsmith cls=idk ptok=53/53 cache_n=0 prompt_n=53 base=None ride=None :: idk
+[p3/plumbing] d2-metalsmith cls=gold ptok=77/77 cache_n=0 prompt_n=77 base=None ride=None :: Bralmwick-on-Sev
+[p3/decoy_real] d2-metalsmith cls=confab ptok=189/189 cache_n=134 prompt_n=55 base=134 ride=True :: Vamlport-Cay
+[p3/decoy_own] decoy-port cls=gold ptok=189/189 cache_n=134 prompt_n=55 base=134 ride=True :: Vamlport-Cay
+[p3/c2a] d2-recipe cls=gold ptok=166/166 cache_n=112 prompt_n=54 base=112 ride=True :: smoked gloamfish with ashbread
+[p3/c2b] d2-recipe cls=gold ptok=166/166 cache_n=112 prompt_n=54 base=112 ride=True :: smoked gloamfish with ashbread
+[p3/cold] d2-recipe cls=idk ptok=53/53 cache_n=0 prompt_n=53 base=None ride=None :: idk
+[p3/plumbing] d2-recipe cls=gold ptok=75/75 cache_n=0 prompt_n=75 base=None ride=None :: smoked gloamfish with ashbread
+[p3/decoy_real] d2-recipe cls=confab ptok=189/189 cache_n=134 prompt_n=55 base=134 ride=True :: braised cloudkelp with saltbread
+[p3/decoy_own] decoy-dish cls=gold ptok=189/189 cache_n=134 prompt_n=55 base=134 ride=True :: braised cloudkelp with saltbread
+C2 verdict @2026-10-11T19:20:59+00:00 tag=boot3-stock channel=off/temp0.8/memory-muted repeats=3
+  plumbing 9/9 | controls 18 asks, leaks 0 | C2a gold per-pass {1: 3, 2: 3, 3: 3} (rides green=True) | C2b gold per-pass {1: 3, 2: 3, 3: 3} (rides green=True) | all guarded rides green=True | C2b engine-log reuse-summary captured on 9/9 asks | decoy-own bonus 9/9 | answer classes (both marker arms) {'gold': 18}
+  PASS - CARTRIDGE RECALL WORKS on Strata (PRE_REG:60: EITHER arm alone is a PASS): C2a per-pass {1: 3, 2: 3, 3: 3} (rides green=True), C2b per-pass {1: 3, 2: 3, 3: 3} (rides green=True); proceed to C3 (100-fact head-to-head)
