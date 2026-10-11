@@ -30,7 +30,7 @@ Usage: python3 spikes/cartridge/c3_run.py [--url http://127.0.0.1:8005] [--temp 
 Writes state/c3_run_<tag>.jsonl (append) + state/c3_verdict_<tag>.txt.
 """
 from __future__ import annotations
-import argparse, collections, datetime, json, re, sys, time, urllib.error, urllib.request as U
+import argparse, collections, datetime, json, math, re, sys, time, urllib.error, urllib.request as U
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -114,6 +114,9 @@ def main():
     ap.add_argument("--slack", type=int, default=8)
     ap.add_argument("--maxtok", type=int, default=24)
     ap.add_argument("--acktok", type=int, default=16)
+    ap.add_argument("--v2", action="store_true", help="C3V2_PRE_REG bands: cold x3 defines the "
+                      "boot's own target set (tier-3 lineage), decoy leak needs >= 2/3 on a "
+                      "target row, bands computed over targets; v1 (frozen) = any-leak rule")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
     url = a.url.rstrip("/")
@@ -159,11 +162,13 @@ def main():
                 ids2, _ = live_render(tok, tpl, msgs, "off")
                 est.append({"arm": arm, "row": i + 1, "expect_ptok": len(ids2),
                             "tail_tokens": [tok.decode([t]) for t in ids2[-3:]]})
+        cp = a.repeats if a.v2 else 1
         print(json.dumps({"bank_render_placeholder_acks": len(ids),
                           "bank_file_estimate_MB_at_1_2GB_per_63k": round(len(ids) * 1200 / 63000, 1),
-                          "asks_live": 100 + 100 + 100 * a.repeats + 100 + 10,
+                          "asks_live": 100 + 100 * cp + 100 * a.repeats + 100 * cp + 10,
+                          "mode": "v2" if a.v2 else "v1",
                           "encode_turns": 200,
-                          "slot_ops": 100 * a.repeats + 100 + 10 + 2,
+                          "slot_ops": 100 * a.repeats + 100 * cp + 10 + 2,
                           "samples": est}, indent=1))
         print("dry-run: no contact; bank ground truth = save n_saved at run time (acks sampled "
               f"at temp {a.temp}, so the placeholder render is an estimate)")
@@ -250,8 +255,10 @@ def main():
         ask("plumbing", f"row{i + 1}",
             [{"role": "user", "content": f"{fact(i)} Given only that, answer.\n\n{question(i)}"}],
             row=i)
-    for i in range(100):  # cold: every row is cold-unknown by selection - any gold = leak
-        ask("cold", f"row{i + 1}", [{"role": "user", "content": question(i)}], row=i)
+    for cp in range(1, (a.repeats if a.v2 else 1) + 1):  # v2: 3 cold passes = the boot's own
+        cur_pass = cp                                      #     cold baseline (tier-3 lineage)
+        for i in range(100):
+            ask("cold", f"row{i + 1}", [{"role": "user", "content": question(i)}], row=i)
 
     for cur_pass in range(1, a.repeats + 1):
         for i in range(100):
@@ -264,11 +271,12 @@ def main():
     dconv = encode([d["fact"] for d in DECOY], "decoy")
     sv = slot(url, "save", f"c3_decoy_{tag}")
     print(f"decoy bank: encoded in {time.time() - t0:.0f} s, n_saved={sv['n_saved']}")
-    cur_pass = a.repeats + 1
-    for i in range(100):
-        rs = slot(url, "restore", f"c3_decoy_{tag}")
-        ask("decoy_real", f"row{i + 1}", dconv + [{"role": "user", "content": question(i)}],
-            row=i, n_base=rs["n_restored"])
+    for dp in range(1, (a.repeats if a.v2 else 1) + 1):
+        cur_pass = a.repeats + dp
+        for i in range(100):
+            rs = slot(url, "restore", f"c3_decoy_{tag}")
+            ask("decoy_real", f"row{i + 1}", dconv + [{"role": "user", "content": question(i)}],
+                row=i, n_base=rs["n_restored"])
     for i in range(0, 100, 10):  # bonus only: the decoy bank must answer ITS OWN questions
         rs = slot(url, "restore", f"c3_decoy_{tag}")
         rec = ask("decoy_own", f"dec{DECOY[i]['n']}",
@@ -281,9 +289,8 @@ def main():
 
     plumbing = scored("plumbing")
     plumb_hits = sum(1 for r in plumbing if r["cls"] == "gold")
-    cold_leaks = [r for r in scored("cold") if r["leak"]]
+    cold_all = scored("cold")
     dreal = scored("decoy_real")
-    d_leaks = [r for r in dreal if r["leak"]]
     c3b = scored("c3b")
     geom_void = [r for r in recs if not r["geom_ok"]]
     by_pass = {p: sum(1 for r in c3b if r["pass"] == p and r["cls"] == "gold")
@@ -296,46 +303,90 @@ def main():
             coll[f"row{r['name'][3:]}->row{r['distractor_of_row'] + 1}"] += 1
     rides = c3b + dreal
     ride_all_ok = bool(c3b) and all(r["ride_ok"] for r in rides)
+
+    if a.v2:
+        # C3V2_PRE_REG bands: targets = rows with ZERO gold across ALL cold passes (the boot's
+        # own same-channel cold baseline - tier-3's own scoring lineage); cold golds are
+        # recorded, never leaks. Decoy leak needs >= 2/3 on a TARGET row (single flips are
+        # schema-priming noise, banked in d_noise). Bands run over targets, raw reported too.
+        cold_gold_rows = {int(r["name"][3:]) - 1 for r in cold_all if r["cls"] == "gold"}
+        targets = sorted(set(range(100)) - cold_gold_rows)
+        tgt_set = set(targets)
+        dg = collections.Counter()
+        for r in dreal:
+            if r["cls"] == "gold":
+                dg[int(r["name"][3:]) - 1] += 1
+        d_leak_rows = sorted(i for i, c in dg.items() if i in tgt_set and c >= 2)
+        d_noise = sorted(i for i, c in dg.items() if i in tgt_set and c == 1)
+        n_tgt = len(targets)
+        by_pass_tgt = {p: sum(1 for r in c3b if r["pass"] == p and r["cls"] == "gold"
+                              and int(r["name"][3:]) - 1 in tgt_set)
+                       for p in range(1, a.repeats + 1)}
+        thr95, thr85 = math.ceil(0.95 * n_tgt), math.ceil(0.85 * n_tgt)
+        best_tgt = max(by_pass_tgt.values()) if by_pass_tgt else -1
+        cold_leaks, d_leaks = [], d_leak_rows
+    else:  # v1 frozen: any-leak rule over pre-selected cold-unknown rows
+        cold_leaks = [r for r in cold_all if r["leak"]]
+        d_leaks = [r for r in dreal if r["leak"]]
+        n_tgt, by_pass_tgt, d_noise, cold_gold_rows, best_tgt = 100, None, [], set(), -1
     best = max(by_pass.values()) if by_pass else -1
-    band_pass = sum(1 for v in by_pass.values() if v >= 95) >= 2
+    band_pass = (sum(1 for v in by_pass_tgt.values() if v >= thr95) >= 2 if a.v2
+                 else sum(1 for v in by_pass.values() if v >= 95) >= 2)
 
     if len(plumbing) < 100 or plumb_hits < len(plumbing):
         verdict = (f"VOID - plumbing gate {plumb_hits}/{len(plumbing)} (100/100 registered): "
                    "this boot supports no C3 verdict")
     elif cold_leaks or d_leaks:
-        verdict = ("VOID - control leak: " + str([{"arm": r["arm"], "name": r["name"],
-                                                   "answer": r["answer"][:60]}
-                                                  for r in cold_leaks + d_leaks][:6]))
+        verdict = ("VOID - control leak: " +
+                   (f"target rows gold >= 2/3 under decoy install: "
+                    f"{['row%d' % (i + 1) for i in d_leaks]}" if a.v2 else
+                    str([{"arm": r["arm"], "name": r["name"], "answer": r["answer"][:60]}
+                         for r in cold_leaks + d_leaks][:6])))
     elif geom_void:
         verdict = (f"VOID - geometry guard failed on {len(geom_void)} ask(s): "
                    f"{[r['name'] + '/' + r['arm'] for r in geom_void][:6]}")
+    elif a.v2 and n_tgt < 90:
+        verdict = (f"VOID - the boot's own cold baseline swallowed {100 - n_tgt} rows (> 10): "
+                   "the venue premise (a bank of unknown facts) diverges materially from "
+                   "tier-3's banked premise; re-frame the head-to-head openly, no verdict")
     elif not ride_all_ok:
         bad = [r for r in rides if not r["ride_ok"]]
         verdict = (f"INSTALL-BROKEN - ride guard failed on {len(bad)}/{len(rides)} asks "
                    f"(cache_n {bad[0]['cache_n']} vs base {bad[0]['n_base']} typical): install "
                    "path suspect, not a memory verdict")
     elif band_pass:
-        verdict = (f"PASS-AT-SCALE - c3b gold per-pass {by_pass} (band >= 95 in >= 2 passes), "
-                   f"distractors per-pass {dist_pass}, 0 leaks, every ride green: the cartridge "
-                   "holds the whole 100-fact bank with ~50 re-read tokens/ask and NO selector - "
-                   "head-to-head vs tier-3's 100/100 at ~485 injected tokens/ask")
-    elif 85 <= best <= 94:
-        verdict = (f"DEGRADE - best pass {best}/100 (band 85-94): the channel works but the "
+        verdict = (f"PASS-AT-SCALE - c3b gold per-pass {by_pass_tgt if a.v2 else by_pass} "
+                   f"(denominator {n_tgt}, band >= {'95% of targets' if a.v2 else '95/100'} in "
+                   f">= 2 passes; raw per-pass {by_pass}), distractors per-pass {dist_pass}, "
+                   "0 leaks, every ride green: the cartridge holds the whole 100-fact bank "
+                   "with ~25 re-read tokens/ask and NO selector - head-to-head vs tier-3's "
+                   "100/100 at ~485 injected tokens/ask")
+    elif a.v2 and best_tgt >= thr95:
+        verdict = (f"MECHANISM-SENSITIVE - >= 95% of targets in only one pass "
+                   f"(per-target-pass {by_pass_tgt}): high variance; recorded, stop")
+    elif (a.v2 and best_tgt >= thr85) or (not a.v2 and 85 <= best <= 94):
+        verdict = (f"DEGRADE - best pass {best_tgt if a.v2 else best}/{n_tgt} (band "
+                   f"{'85-94% of targets' if a.v2 else '85-94'}): the channel works but the "
                    f"interference tax is real (distractors per-pass {dist_pass}, top collisions "
                    f"{coll.most_common(6)}); the marking roadmap (layer 2: tagged per-domain "
                    "banks) earns its keep")
-    elif best < 85:
-        verdict = (f"FAIL-AT-SCALE - best pass {best}/100: the raw whole-state channel "
-                   f"saturates at 100 facts (distractors {dist_pass}, top collisions "
-                   f"{coll.most_common(6)}); layered banks are mandatory before any product claim")
+    elif (a.v2 and best_tgt < thr85) or (not a.v2 and best < 85):
+        verdict = (f"FAIL-AT-SCALE - best pass {best_tgt if a.v2 else best}/{n_tgt}: the raw "
+                   f"whole-state channel saturates at 100 facts (distractors {dist_pass}, top "
+                   f"collisions {coll.most_common(6)}); layered banks are mandatory before any "
+                   "product claim")
     else:
         verdict = (f"MECHANISM-SENSITIVE - per-pass {by_pass}: >= 95 in only one pass (high "
                    "variance); recorded, stop, no venue-hunting without a new pre-registration")
 
     own = [r for r in recs if r["arm"] == "decoy_own"]
     secs = [r["secs"] for r in c3b]
+    v2x = (f"\n  v2 controls: cold passes {a.repeats}, TARGETS {n_tgt}, cold-excluded "
+           f"{['row%d' % (i + 1) for i in sorted(cold_gold_rows)]} | decoy-noise-1of3 "
+           f"{['row%d' % (i + 1) for i in d_noise]} | c3b gold per TARGET-pass {by_pass_tgt} "
+           f"(thr95={thr95}, thr85={thr85})" if a.v2 else "")
     tail = (f"\nC3 verdict @{datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds')} "
-            f"tag={tag} channel=off/temp{a.temp}/memory-muted repeats={a.repeats}\n"
+            f"tag={tag} channel=off/temp{a.temp}/memory-muted repeats={a.repeats} mode={'v2' if a.v2 else 'v1'}\n"
             f"  plumbing {plumb_hits}/{len(plumbing)} | cold leaks {len(cold_leaks)}/100 | "
             f"decoy-real leaks {len(d_leaks)}/100 | c3b gold per-pass {by_pass} best={best} | "
             f"distractors per-pass {dist_pass} top-collisions {coll.most_common(5)} | "
@@ -344,7 +395,7 @@ def main():
             f"marked c3b asks | decoy-own bonus "
             f"{sum(1 for r in own if r.get('decoy_gold_hit'))}/{len(own)} | "
             f"c3b ask seconds avg {round(sum(secs) / len(secs), 2) if secs else 'n/a'} | "
-            f"bank n_saved={n_bank}\n"
+            f"bank n_saved={n_bank}{v2x}\n"
             f"  {verdict}\n")
     print(tail)
     (HERE / f"state/c3_verdict_{tag}.txt").write_text(
