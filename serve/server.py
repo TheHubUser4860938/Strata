@@ -5335,7 +5335,10 @@ def make_handler(svc: Service):
             if op == "remember":
                 r = svc.memory.remember(str(req.get("text") or ""), scope=str(req.get("scope") or "user"),
                                         source=str(req.get("source") or "manual"),
-                                        confidence=req.get("confidence"))
+                                        confidence=req.get("confidence"),
+                                        provenance=req.get("provenance"))   # memory-core T5: the curation
+                # loop passes {turn_id, probe, gold, cls, passes} so every stored fact can be audited back
+                # to its evidence; absent -> byte-identical to before (remember() defaults provenance=None)
             elif op == "forget":
                 r = {"forgotten": svc.memory.forget(int(req.get("id") or 0))}
             elif op == "search":
