@@ -93,12 +93,22 @@ chat and returns the model's reply to the agent verbatim.
       — reply archived state/m1_answers.txt; scoring: 1-3 idk, 4-6 idk, 7-9 exact ->
       D2 VERDICT = READOUT MISS (no contamination, verdict not void; engine-load line
       proves the copy was the open table, see m1_verdict.txt venue truth chain)
-- [ ] [ME] probe_driver --phase a-check (official Gate-2 evidence) ; [PASTE] A1 observation
-- [ ] [ME] probe_driver --phase report -> state/report.txt ; commit+push window artifacts
+- [x] [ME] probe_driver --phase a-check (official Gate-2 evidence) ; [PASTE] A1 observation
+      — restore n_restored=104 == n_saved, n_read=237,422,592 == n_written (byte-exact
+      cross-restart round-trip, 155.7 ms); post-restart fresh-ask FAIL ptok=32 (no ride)
+      -> a-check CONDITION NOT MET (state/a-check.jsonl); A1 human reply FAIL both golds
+      (state/a1_observation.txt) - consistent no-ride picture across channels
+- [x] [ME] probe_driver --phase report -> state/report.txt ; commit+push window artifacts
+      — report.txt = official driver records + condition lines + verdict footer
+      (D2 READOUT MISS; b1 + a-check conditions NOT MET; no-ride finding) ; committed+pushed
+      65f3424a (venue truth chain, M1/A1/a-check, teach + verify, driver fix included)
 
 ## Phase 3 - Gate-1 (same patched dev boot; text layer is venue-independent - note it in report)
-- [ ] [ME] telemetry --tag teach-pre ; gate1_driver.py teach --url http://127.0.0.1:8005
+- [x] [ME] telemetry --tag teach-pre ; gate1_driver.py teach --url http://127.0.0.1:8005
       (expect ~100 ids; store stats count ~100) ; verify mode -> 100/100 searchable
+      — teach-pre 12:25:01Z; taught 100/100 (by_scope user:100, version 13->113), ids saved
+      state/gate1_ids.json (100); verify 100/100 searchable 0 unsane (after one-line driver
+      fix UP.parse.quote->UP.quote, plumbing-only, no measurement taken yet)
 - [ ] [ME] telemetry --tag G1-pre ; [PASTE] G1 chunks 1,2,3 in ONE fresh :8005 chat ;
       replies -> agent writes state/gate1_answers.txt (100 numbered lines, ask me for format)
 - [ ] [ME] telemetry --tag G1-post ; gate1_driver.py score --answers state/gate1_answers.txt

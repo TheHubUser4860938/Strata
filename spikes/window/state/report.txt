@@ -1,0 +1,39 @@
+== window report ==
+
+[a-check] 2 records
+  2026-10-11T12:20:33Z {'step': 'restore'} | {"id_slot": 0, "filename": "a_restart_19685.bin", "n_restored": 104, "
+  2026-10-11T12:20:34Z {'step': 'post-restart-fresh-ask', 'correct': False, 'ptok': 32} | Based on available geographical, historical, and literary records, the
+
+[a-prep] 1 records
+  2026-10-11T11:54:46Z {'step': 'saved'} | {"id_slot": 0, "filename": "a_restart_19685.bin", "n_saved": 104, "n_w
+
+[b1] 9 records
+  2026-10-11T11:47:26Z {'step': 'ack-turn'} | Acknowledged.
+  2026-10-11T11:47:26Z {'step': 'save'} | __ERROR__ <HTTPError 400: 'Bad Request'>
+  2026-10-11T11:47:26Z {'step': 'abort'} | 
+  2026-10-11T11:50:44Z {'step': 'ack-turn'} | Acknowledged.
+  2026-10-11T11:50:44Z {'step': 'save'} | {"id_slot": 0, "filename": "b1_cartridge_19444.bin", "n_saved": 48, "n
+  2026-10-11T11:50:53Z {'step': 'dissect'} | Strata-data/sessions-dev/b1_cartridge_19444.bin
+  2026-10-11T11:50:54Z {'step': 'pre-restore-fresh-ask', 'correct': False} | Based on current scientific knowledge and astronomical data, there is 
+  2026-10-11T11:50:54Z {'step': 'restore'} | {"id_slot": 0, "filename": "b1_cartridge_19444.bin", "n_restored": 48,
+  2026-10-11T11:50:55Z {'step': 'post-restore-ask', 'correct': False, 'ptok': 26} | The Fleetmaster of the Zorvane Convocation is **Kaelen Voss**.
+
+### Co
+
+PRE-REGISTERED CONDITION (b1): pre-restore-fresh-ask correct=False AND post-restore-ask correct=True (plus the prefix_hits/ptok reuse story)
+
+PRE-REGISTERED CONDITION (a-check): post-restart-fresh-ask correct=True
+
+-- verdicts appended by the window session (strict; full analysis in state/*_verdict.txt):
+-- venue: boot 1 = STOCK shard (M0); boot 2-retry = PATCHED copy (M1, a-check, G1) - proven by
+   engine line "PLE on, table 320001536 rows of .../ple-copies/q8-shard2-d2.gguf" (log L1183+)
+-- M0 PASS (1-6 idk, no leak; 7-9 exact)
+-- M1: 1-3 FAIL, 4-6 FAIL, 7-9 PASS, controls clean => D2 VERDICT = READOUT MISS (not VOID)
+-- b1 CONDITION NOT MET: save/dissect/restore healthy (48 tok / 236,728,860 B, first accepted
+   restore on this build) but post-restore fresh-ask FAIL, ptok=26 -> no prefix ride
+-- a-check CONDITION NOT MET: post-restart fresh-ask FAIL (ptok=32) - cross-restart byte-exact
+   round-trip IS verified mechanically (104 tok / 237,422,592 B in = out, 155.7 ms)
+-- B1 observation FAIL-gold (matches scripted), A1 observation FAIL-gold (matches scripted)
+-- shared finding: /slots conversation state does not ride into other conversations on this
+   one-sequence engine; a cartridge must be re-prefilled per conversation (measured cost =
+   the cartridge's own tokens)

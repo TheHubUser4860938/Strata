@@ -117,7 +117,7 @@ def verify(url):
     bad = []
     for i, r in enumerate(rows(), 1):
         key = norm(r["question"]).split()[-3]                  # distinctive word of the question
-        resp = http_json(url.rstrip("/") + f"/memory?q={UP.parse.quote(key)}")
+        resp = http_json(url.rstrip("/") + f"/memory?q={UP.quote(key)}")
         hits = [h.get("text", "") for h in resp.get("hits", [])]
         if not any(norm(r["expected_answer_contains"]) in norm(h) for h in hits):
             bad.append(i)

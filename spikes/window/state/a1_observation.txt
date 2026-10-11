@@ -1,0 +1,15 @@
+A1 observation reply (fresh webapp chat http://127.0.0.1:8005, patched-venue boot, AFTER
+the a-check phase, 2026-10-11 ~12:23Z, pasted verbatim by the user; observation, gates nothing):
+
+---
+It rings at high tide, and the keeper code is “Vasketh.”
+---
+
+Strict scoring vs golds in state/a_pending.json (nonce 19685):
+- time gold "5 minutes past six"           -> NOT present ("high tide" is a confab) FAIL
+- keeper-code gold "19685"                 -> NOT present (code "Vasketh" is a confab) FAIL
+=> observation = FAIL (no ride). Consistent with the scripted a-check (state/a-check.jsonl:
+post-restart fresh-ask correct=false, ptok=32 re-prefill) and with b1 (state/b1_observation.txt):
+the human webapp fresh chat behaves exactly like the scripted /v1 fresh conversation. The
+restored slot conversation is not visible to a different conversation on this engine.
+Punctuation note: curly quotes in the reply are the model's own formatting, scored on content.
