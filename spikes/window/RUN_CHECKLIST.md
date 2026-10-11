@@ -103,7 +103,10 @@ chat and returns the model's reply to the agent verbatim.
 - [ ] [ME] curl :8004/v1/models 200 ; journal §9 close-out entry + §0 rewrite ; push
 
 ## Optional D3 (later, user-scheduled; costs two more main restarts)
-- [ ] [ME w/ permission] edit ~/Strata/strata-iq3_s.json: add --ple-gguf <copy path> (backup
+- [ ] [ME w/ permission] edit ~/Strata/strata-iq3_s.json: add --ple-gguf <copy path> AND
+      --native-dense-gguf (repeatable) for BOTH original model shards - a bare --ple-gguf
+      swap hits v0.1.42's "duplicate split shard number" guard (see state/boot2_diagnosis.txt;
+      the check is upstream code, not fork code) (backup
       first; same tmp-file pattern) - [YOU] restart main ; [PASTE] M2 on :8004 fresh chat ;
       verdict vs M2 condition -> state/d3_verdict.txt ; [ME] restore config from backup ;
       [YOU] normal boot. Main = stock binary + memory-less: M2 is pure model+table.

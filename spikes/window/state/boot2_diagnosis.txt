@@ -1,0 +1,43 @@
+Boot-2 failure diagnosis (2026-10-11, window session; dev boot 2 with --ple-gguf -> patched copy)
+
+SYMPTOM: engine died twice (07:59:37 + 08:01:03 local) at the same line, before "session is up":
+  strata generate: native dense projections: native dense: duplicate split shard number
+  (strata-dev.log L1146, L1151; every other stage loaded fine: pack, embeddings, vision warmup)
+
+ROOT CAUSE (engine source + real GGUF metadata, no guessing):
+- src/core/native_dense.cpp L227: NativeDense::load() refuses when two shards in ONE load list
+  carry the same split.no KV. This code is stock v0.1.42 (git log main: ccfdc2eb, e6ca0a04;
+  git diff main..memory-core of this file = empty) -> the main build will hit the SAME wall.
+- src/program/generate.cpp L2420 + L2443-2456: with --native, the engine auto-globs every
+  <name>-0000N-of-0000M sibling beside it (= [00001, 00002-original]), then APPENDS the
+  --ple-gguf file to the dense shard list if its PATH STRING is not already there (L2454).
+  A copy of shard 2 renamed (q8-shard2-d2.gguf, different dir) is a THIRD file; its metadata
+  is a perfect clone of the original (verified: split.count=2, split.no=1, split.tensors.count
+  =1224 both), so the set becomes {0,1,1} -> refuse. Deterministic 2/2.
+- The patched COPY itself is fine: it was never written by the failed boots (mtime 07:32:28
+  predates them) and its metadata/tensor counts match the original exactly.
+- Earlier claim (§0 build session) that the venue switcher was "ready" = TRUE only for
+  flipping the value of --ple-gguf; it was NEVER booted with a renamed copy before now.
+
+FIX (config-only, zero C++): --native-dense-gguf is repeatable (generate.cpp L1833; help:
+"repeat for each source model shard"). Passing the ORIGINAL [00001, 00002] pair explicitly
+makes native_dense_gguf non-empty -> the auto-glob+append block (L2443-2456) is SKIPPED ->
+dense half = originals (byte-identical either way), while the n-gram TABLE opens from the
+copy via ple_table.open(o.ple_gguf) (L3065-3125, --ple-io direct reads rows from THAT file).
+set_ple_venue.py updated to emit/remove the pair symmetrically (--copy -> ON 2 shards,
+--stock -> OFF auto-glob). Resulting boot-2(retry) argv verified in config; --show:
+  --ple-gguf currently: /home/eugene/Strata-data/ple-copies/q8-shard2-d2.gguf
+  --native-dense-gguf: ON (2 shards)
+
+SELF-TEST still built into the plan: if the copy somehow were NOT consulted, M1 would score
+exactly like M0 -> "readout miss", distinguishable from a load success by the expected new
+log line "native dense projections: N native projection matrices ... in ... s" + session up.
+M0-vs-M1 remains the venue truth either way.
+
+D3 CONSEQUENCE (optional box): main's recipe "add --ple-gguf <copy>" alone would fail the
+same way (stock code!) - the dense-gguf pair must be added to ~/Strata/strata-iq3_s.json too.
+Checklist D3 box corrected.
+
+NOT TOUCHED: sessions-dev/a_restart_19685.bin (a-check evidence, cross-restart is boot 2),
+b1_cartridge_19444.bin, memory-eval store (still 0 memories), stockbak (has the dense-OFF
+stock shape). main :8004 back up and serving; dev :8005 down pending the retry boot.
