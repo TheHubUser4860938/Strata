@@ -180,8 +180,9 @@ def main():
 
     # ---- extraction ----------------------------------------------------------------------
     processed_ids: list[int] = []
-    candidates: list[dict] = []
-    seen: set[str] = set()
+    handled: set[int] = set()      # ids processed THIS run: turns are only marked processed at
+    candidates: list[dict] = []    # the END, so op=turns keeps returning them mid-run - without
+    seen: set[str] = set()         # this filter the fetch loop re-extracts the same 50 forever
     drained = fails = 0
     batch = 0
     while True:
@@ -197,6 +198,7 @@ def main():
         turns = (r.get("turns") or []) if st == 200 else []
         if a.limit:
             turns = turns[:max(0, a.limit - drained)]
+        turns = [t for t in turns if t["id"] not in handled]   # the termination fix
         if not turns:
             break
         for t in turns:
@@ -219,6 +221,7 @@ def main():
                 print(f"turn {t['id']}: extract TRANSPORT FAIL (left pending)", flush=True)
                 continue
             n = 0
+            new_facts: list[str] = []
             for ln in ans.splitlines():
                 m = re.match(r"\s*FACT:\s*(.+?)\s*\|\|\s*PROBE:\s*(.+?)\s*\|\|\s*GOLD:\s*"
                              r"(.+?)\s*\|\|\s*SCOPE:\s*(user|project)\s*$", ln, re.I)
@@ -236,14 +239,16 @@ def main():
                     continue
                 seen.add(key)
                 n += 1
+                new_facts.append(fact[:90])                # NOT candidates[-n:]: with n=0 that
                 candidates.append({"turn_id": t["id"], "turn_scope": t["scope"], "fact": fact,
                                    "probe": probe, "gold": gold,
                                    "scope": "user" if scope.lower() == "user" else t["scope"],
-                                   "extract_ptok": ptok})
+                                   "extract_ptok": ptok})  # slice returns the WHOLE list (-0 == 0)
             processed_ids.append(t["id"])
+            handled.add(t["id"])
             drained += 1
             rec({"kind": "extract", "turn_id": t["id"], "cands": n, "ptok": ptok,
-                 "facts": [c["fact"][:90] for c in candidates[-n:]]})
+                 "facts": new_facts})
         batch += 1
         if a.dry_run or (a.batches and batch >= a.batches) or (a.limit and drained >= a.limit):
             break
