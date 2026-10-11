@@ -17,7 +17,7 @@ Ground truth to match for the M-block render: strata-dev.log L1229 (boot 2, firs
 request after the patched-venue session came up): "prompt 283 tokens = 0 reused + 283 read".
 """
 from __future__ import annotations
-import json, re, sys
+import argparse, json, re, sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -25,65 +25,22 @@ ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "spikes" / "ple-overlay"))
 sys.path.insert(0, str(ROOT / "tools"))
+sys.path.insert(0, str(HERE))
 
 import ple_ngram as ple
 from serve import frontend as F
+from venue_render import (TOKDIR, load_tokenizer, load_template, live_render, token_spans,
+                          rows16_stream)
 
-TOKDIR = ROOT / "Strata-data/packs/iq3_s/tokenizer"
 M_EXPECT_TOKENS = 283          # strata-dev.log L1229, boot 2's first webapp request
+SQ_EXPECT_TOKENS = 66          # strata-dev.log L1074, B1 paste (fresh chat, thinking high)
 
 
-# ---------------------------------------------------------------- §4(a): the live render, reused
-def load_tokenizer():
-    """Same construction as serve/server.py main() for a pack tokenizer dir (L6149-6157)."""
-    import strata_tokenizer as ST
-    vocab = json.loads((TOKDIR / "vocab.json").read_text(encoding="utf-8"))
-    tokens = [None] * len(vocab)
-    for t, i in vocab.items():
-        tokens[i] = t
-    merges = (TOKDIR / "merges.txt").read_text(encoding="utf-8").split("\n")
-    types = json.loads((TOKDIR / "token_type.json").read_text())
-    return ST.Tokenizer(tokens, merges, types)
-
-
+# ---------------------------------------------------------------- extraction helpers
 def extract_blocks(md_text: str) -> list[str]:
     """Every ```-fenced block in a PASTE.md section (verbatim, incl. the wrap newlines the
     browser kept when the user pasted the block as ONE message)."""
     return [m.group(1) for m in re.finditer(r"```\n(.*?)\n```", md_text, re.S)]
-
-
-def live_render(tpl: F.ChatTemplate, tok, messages, effort_client: str):
-    """Exactly Service.encode_prompt's path for an /v1/chat/completions webapp request with
-    reasoning_effort=<settings.thinking> and no system message; returns (ids, prompt_str)."""
-    kwargs = F.effort_kwargs(effort_client)                    # webapp "high" -> {"reasoning_effort":"xhigh"}
-    marked, marked_tools, changed = F.mark_think_literals(messages, None, F.literal_tags(tok.control_tokens))
-    assert not changed, "measurement blocks quote no think/control literals"
-    prompt = tpl.render(marked, tools=None, **kwargs)         # Service.effort_end is False (no effort_position in strata-dev.json)
-    ids = tok.encode(prompt, parse_special=True)
-    return ids, prompt
-
-
-def token_spans(tok, ids, prompt: str) -> list[tuple[int, int]]:
-    """(start, end) char span in `prompt` per id, via forward `find` from the running position.
-    Guarded: the concatenation of the token texts must equal the prompt string (true for this
-    tokenizer - every control/USER_DEFINED token decodes to its own literal); a backward drift
-    inside a newline run is harmless for line labelling and cannot cross a token boundary."""
-    spans, pos = [], 0
-    for i in ids:
-        s = tok.decode([i])
-        j = prompt.find(s, pos)
-        if j < 0:
-            raise SystemExit(f"span walk stuck at id {i} ({s!r}) pos {pos}")
-        spans.append((j, j + len(s)))
-        pos = j + len(s)
-    assert "".join(tok.decode([i]) for i in ids) == prompt, "decoded stream != rendered prompt"
-    return spans
-
-
-def rows16_stream(ids: list[int]) -> list[tuple[int, ...]]:
-    """rows16 per position with the sequence's own predecessors (== what prefill.cpp feeds:
-    every prompt token gets its window, session start is the EOS-cut)."""
-    return ple.rows_for_sequence(ids)
 
 
 # ---------------------------------------------------------------- §4(b): firing + collateral
@@ -109,7 +66,9 @@ def analyze(name: str, ids, rows, spans, plan_by_hrow, facts_by_hrow, content, c
             if w is None:
                 continue
             rec = {"pos": p, "head": h, "row": int(r16[h]), "name": w["name"], "marker_pos": w["pos"],
-                   "marker_tok": tok.decode([w["marker"]]), "fact_pos": None, "fact_tok": None,
+                   "marker_tok": (tok.decode([w["marker"]]) if w.get("marker") is not None else None),
+                   "fact_pos": None, "fact_tok": None, "gold_pos": w.get("gold_pos", -1),
+                   "venues": w.get("venue", []),
                    "dist_to_answer": prompt_end - p,
                    "tap_hit": (prompt_end - p) in (0, 3, 6, 9)}
             fb = facts_by_hrow.get((w["name"], w["pos"], h))
@@ -134,12 +93,19 @@ def analyze(name: str, ids, rows, spans, plan_by_hrow, facts_by_hrow, content, c
 
 
 def main():
+    ap = argparse.ArgumentParser(description="rows16 firing audit of a D2 plan against live-rendered venues")
+    ap.add_argument("--plan", default=str(ROOT / "spikes/window/d2_plan.json"))
+    ap.add_argument("--out", default=None, help="output JSON (default: firing_table.json, or <plan-stem>_firing.json)")
+    a = ap.parse_args()
+    plan_path = Path(a.plan)
+    out_path = Path(a.out) if a.out else (HERE / "state" / (plan_path.stem + "_firing.json"
+                               if a.plan != str(ROOT / "spikes/window/d2_plan.json") else "firing_table.json"))
     tok = load_tokenizer()
     tpl = F.ChatTemplate(TOKDIR / "chat_template.jinja")
     paste = (ROOT / "spikes/window/PASTE.md").read_text()
     blocks = extract_blocks(paste)
     m_block = blocks[0]
-    plan = json.loads((ROOT / "spikes/window/d2_plan.json").read_text())
+    plan = json.loads(plan_path.read_text())
     markers = json.loads((ROOT / "spikes/window/markers.json").read_text())
 
     # provenance indexes over the 616 writes (head+row is the engine's full lookup key)
@@ -155,7 +121,7 @@ def main():
 
     # --- §4(a): the live M-block render
     messages = [{"role": "user", "content": m_block}]
-    ids, prompt = live_render(tpl, tok, messages, "high")
+    ids, prompt = live_render(tok, tpl, messages, "high")
     spans = token_spans(tok, ids, prompt)
     # char offset where the (trimmed) user-turn content begins inside the rendered prompt string
     turn_start = prompt.index("<|im_start|>user\n")
@@ -208,7 +174,7 @@ def main():
     g1_msgs = [{"role": "user", "content": preamble}] + [{"role": "user", "content": b} for b in (blocks[3], blocks[4], blocks[5])]
     assert blocks[3].lstrip().startswith("1.") and blocks[4].lstrip().startswith("34.") \
         and blocks[5].lstrip().startswith("67."), "G1 chunk map"
-    g_ids, g_prompt = live_render(tpl, tok, g1_msgs, "high")
+    g_ids, g_prompt = live_render(tok, tpl, g1_msgs, "high")
     g_hits = []
     for p, r16 in enumerate(rows16_stream(g_ids)):
         for h in range(16):
@@ -233,7 +199,8 @@ def main():
                "detail": g_hits},
     }
     (HERE / "state").mkdir(exist_ok=True)
-    (HERE / "state/firing_table.json").write_text(json.dumps(out, indent=1))
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(out, indent=1))
     print("M-block render:", len(ids), "tokens; log L1229 said", M_EXPECT_TOKENS,
           "->", "MATCH" if len(ids) == M_EXPECT_TOKENS else "MISMATCH")
     print("tail:", repr(tok.decode(ids[-8:])))

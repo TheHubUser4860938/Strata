@@ -1,0 +1,15 @@
+copying Strata-data/models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf -> Strata-data/ple-copies/q8-shard2-d2v2.gguf ...
+  4 GB (2 s)
+  8 GB (4 s)
+  12 GB (7 s)
+  16 GB (9 s)
+  20 GB (11 s)
+  24 GB (13 s)
+  28 GB (15 s)
+  32 GB (17 s)
+  36 GB (19 s)
+  40 GB (22 s)
+  44 GB (24 s)
+  48 GB (25 s)
+copy done in 26.8 s
+wrote 488 unique rows (488 plan entries) into Strata-data/ple-copies/q8-shard2-d2v2.gguf

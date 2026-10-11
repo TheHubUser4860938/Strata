@@ -1,0 +1,680 @@
+{
+ "g2": {
+  "venues": {
+   "m_block": {
+    "d2-archivist": {
+     "n": 256,
+     "gold_value_hits": 256,
+     "carried_values": [
+      " Marsh"
+     ],
+     "positions": [
+      87,
+      88,
+      89,
+      90,
+      91,
+      92,
+      174,
+      175,
+      176,
+      177,
+      196,
+      197,
+      198,
+      199,
+      200,
+      201
+     ]
+    },
+    "d2-metalsmith": {
+     "n": 192,
+     "gold_value_hits": 192,
+     "carried_values": [
+      "wick"
+     ],
+     "positions": [
+      106,
+      107,
+      108,
+      109,
+      213,
+      214,
+      215,
+      216,
+      238,
+      239,
+      240,
+      241
+     ]
+    },
+    "d2-recipe": {
+     "n": 144,
+     "gold_value_hits": 144,
+     "carried_values": [
+      "fish"
+     ],
+     "positions": [
+      117,
+      118,
+      119,
+      248,
+      249,
+      250,
+      270,
+      271,
+      272
+     ]
+    }
+   },
+   "g1_100q": {},
+   "b1_webapp": {},
+   "a1_webapp": {},
+   "cue_high:d2-archivist": {
+    "d2-archivist": {
+     "n": 144,
+     "gold_value_hits": 144,
+     "carried_values": [
+      " Marsh"
+     ],
+     "positions": [
+      79,
+      80,
+      81,
+      82,
+      83,
+      84,
+      85,
+      86,
+      87
+     ]
+    }
+   },
+   "cue_greedy:d2-archivist": {
+    "d2-archivist": {
+     "n": 144,
+     "gold_value_hits": 144,
+     "carried_values": [
+      " Marsh"
+     ],
+     "positions": [
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45
+     ]
+    }
+   },
+   "cue_high:d2-metalsmith": {
+    "d2-metalsmith": {
+     "n": 112,
+     "gold_value_hits": 112,
+     "carried_values": [
+      "wick"
+     ],
+     "positions": [
+      79,
+      80,
+      81,
+      83,
+      84,
+      85,
+      86
+     ]
+    }
+   },
+   "cue_greedy:d2-metalsmith": {
+    "d2-metalsmith": {
+     "n": 112,
+     "gold_value_hits": 112,
+     "carried_values": [
+      "wick"
+     ],
+     "positions": [
+      37,
+      38,
+      39,
+      41,
+      42,
+      43,
+      44
+     ]
+    }
+   },
+   "cue_high:d2-recipe": {
+    "d2-recipe": {
+     "n": 96,
+     "gold_value_hits": 96,
+     "carried_values": [
+      "fish"
+     ],
+     "positions": [
+      81,
+      82,
+      83,
+      84,
+      85,
+      86
+     ]
+    }
+   },
+   "cue_greedy:d2-recipe": {
+    "d2-recipe": {
+     "n": 96,
+     "gold_value_hits": 96,
+     "carried_values": [
+      "fish"
+     ],
+     "positions": [
+      39,
+      40,
+      41,
+      42,
+      43,
+      44
+     ]
+    }
+   },
+   "ctrl_cue_high:d2-archivist": {},
+   "ctrl_cue_greedy:d2-archivist": {},
+   "ctrl_ask_greedy:d2-archivist": {},
+   "ctrl_ask_high:d2-archivist": {},
+   "ctrl_cue_high:d2-metalsmith": {},
+   "ctrl_cue_greedy:d2-metalsmith": {},
+   "ctrl_ask_greedy:d2-metalsmith": {},
+   "ctrl_ask_high:d2-metalsmith": {},
+   "ctrl_cue_high:d2-recipe": {},
+   "ctrl_cue_greedy:d2-recipe": {},
+   "ctrl_ask_greedy:d2-recipe": {},
+   "ctrl_ask_high:d2-recipe": {},
+   "qfirst_greedy:d2-archivist": {
+    "d2-archivist": {
+     "n": 96,
+     "gold_value_hits": 96,
+     "carried_values": [
+      " Marsh"
+     ],
+     "positions": [
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+     ]
+    }
+   },
+   "qfirst_greedy:d2-metalsmith": {
+    "d2-metalsmith": {
+     "n": 64,
+     "gold_value_hits": 64,
+     "carried_values": [
+      "wick"
+     ],
+     "positions": [
+      10,
+      11,
+      12,
+      13
+     ]
+    }
+   },
+   "qfirst_greedy:d2-recipe": {
+    "d2-recipe": {
+     "n": 48,
+     "gold_value_hits": 48,
+     "carried_values": [
+      "fish"
+     ],
+     "positions": [
+      6,
+      7,
+      8
+     ]
+    }
+   }
+  },
+  "solo": {},
+  "cue": {
+   "d2-archivist": {
+    "cue_high": {
+     "n_tokens": 94,
+     "cue": "Voldranium-Archive custodian",
+     "tap_pos": 85,
+     "tap_window": [
+      " cust",
+      "rchive"
+     ],
+     "all_bands_written": 16,
+     "all_bands_gold": 16,
+     "content_positions": [
+      79,
+      80,
+      81,
+      82,
+      83,
+      84,
+      85,
+      86
+     ]
+    },
+    "cue_greedy": {
+     "n_tokens": 54,
+     "cue": "Voldranium-Archive custodian",
+     "tap_pos": 45,
+     "tap_window": [
+      "<|im_end|>",
+      "odian"
+     ],
+     "all_bands_written": 16,
+     "all_bands_gold": 16,
+     "content_positions": [
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44
+     ]
+    }
+   },
+   "d2-metalsmith": {
+    "cue_high": {
+     "n_tokens": 93,
+     "cue": "Klornish-Reach metropolis",
+     "tap_pos": 84,
+     "tap_window": [
+      " met",
+      "Reach"
+     ],
+     "all_bands_written": 16,
+     "all_bands_gold": 16,
+     "content_positions": [
+      79,
+      80,
+      81,
+      83,
+      84,
+      85
+     ]
+    },
+    "cue_greedy": {
+     "n_tokens": 53,
+     "cue": "Klornish-Reach metropolis",
+     "tap_pos": 44,
+     "tap_window": [
+      "<|im_end|>",
+      "ropolis"
+     ],
+     "all_bands_written": 16,
+     "all_bands_gold": 16,
+     "content_positions": [
+      37,
+      38,
+      39,
+      41,
+      42,
+      43
+     ]
+    }
+   },
+   "d2-recipe": {
+    "cue_high": {
+     "n_tokens": 93,
+     "cue": "the dish Krevvens traditionally eat",
+     "tap_pos": 84,
+     "tap_window": [
+      " traditionally",
+      "vens"
+     ],
+     "all_bands_written": 16,
+     "all_bands_gold": 16,
+     "content_positions": [
+      81,
+      82,
+      83,
+      84,
+      85
+     ]
+    },
+    "cue_greedy": {
+     "n_tokens": 53,
+     "cue": "the dish Krevvens traditionally eat",
+     "tap_pos": 44,
+     "tap_window": [
+      "<|im_end|>",
+      " eat"
+     ],
+     "all_bands_written": 16,
+     "all_bands_gold": 16,
+     "content_positions": [
+      39,
+      40,
+      41,
+      42,
+      43
+     ]
+    }
+   }
+  },
+  "question_first_info": {
+   "d2-archivist": {
+    "n_tokens": 24,
+    "reachable_positions": [
+     15,
+     18,
+     21
+    ],
+    "written_rows_reached_by_first_answer": 0
+   },
+   "d2-metalsmith": {
+    "n_tokens": 24,
+    "reachable_positions": [
+     15,
+     18,
+     21
+    ],
+    "written_rows_reached_by_first_answer": 0
+   },
+   "d2-recipe": {
+    "n_tokens": 21,
+    "reachable_positions": [
+     12,
+     15,
+     18
+    ],
+    "written_rows_reached_by_first_answer": 0
+   }
+  }
+ },
+ "g3": {
+  "n_dst_keys": 488,
+  "n_all_stopword_windows": 0,
+  "all_stopword_windows": [],
+  "n_weak_windows": 136,
+  "weak_windows": [
+   {
+    "row": 1092381,
+    "head": 0,
+    "w": [
+     " Kl",
+     " the"
+    ]
+   },
+   {
+    "row": 1815086,
+    "head": 0,
+    "w": [
+     " K",
+     " dish"
+    ]
+   },
+   {
+    "row": 2277869,
+    "head": 0,
+    "w": [
+     " Kl",
+     ":"
+    ]
+   },
+   {
+    "row": 5489281,
+    "head": 0,
+    "w": [
+     " K",
+     " traditional"
+    ]
+   },
+   {
+    "row": 7094966,
+    "head": 0,
+    "w": [
+     " V",
+     ":"
+    ]
+   },
+   {
+    "row": 7400554,
+    "head": 0,
+    "w": [
+     "Reach",
+     "-"
+    ]
+   },
+   {
+    "row": 10974150,
+    "head": 0,
+    "w": [
+     " V",
+     " the"
+    ]
+   },
+   {
+    "row": 15939759,
+    "head": 0,
+    "w": [
+     " K",
+     " the"
+    ]
+   },
+   {
+    "row": 20611973,
+    "head": 1,
+    "w": [
+     " Kl",
+     " the"
+    ]
+   },
+   {
+    "row": 23279878,
+    "head": 1,
+    "w": [
+     " K",
+     " dish"
+    ]
+   },
+   {
+    "row": 26337371,
+    "head": 1,
+    "w": [
+     "Reach",
+     "-"
+    ]
+   },
+   {
+    "row": 28657043,
+    "head": 1,
+    "w": [
+     " V",
+     " the"
+    ]
+   },
+   {
+    "row": 31635601,
+    "head": 1,
+    "w": [
+     " K",
+     " traditional"
+    ]
+   },
+   {
+    "row": 34936876,
+    "head": 1,
+    "w": [
+     " V",
+     ":"
+    ]
+   },
+   {
+    "row": 35963648,
+    "head": 1,
+    "w": [
+     " Kl",
+     ":"
+    ]
+   },
+   {
+    "row": 36309837,
+    "head": 1,
+    "w": [
+     " K",
+     " the"
+    ]
+   },
+   {
+    "row": 43287306,
+    "head": 2,
+    "w": [
+     " Kl",
+     ":"
+    ]
+   },
+   {
+    "row": 44840451,
+    "head": 2,
+    "w": [
+     " K",
+     " traditional"
+    ]
+   },
+   {
+    "row": 46503356,
+    "head": 2,
+    "w": [
+     " K",
+     " the"
+    ]
+   },
+   {
+    "row": 46637071,
+    "head": 2,
+    "w": [
+     "Reach",
+     "-"
+    ]
+   }
+  ],
+  "n_windows_without_marker_content": 0,
+  "windows_without_marker_content": [],
+  "cross_pair_shared_rows": [],
+  "sidewalk_other_text_reads_written_rows": {
+   "g1_100q": {
+    "lookups_on_written_rows": 0,
+    "pairs_touched": [],
+    "carried_values": []
+   },
+   "b1_webapp": {
+    "lookups_on_written_rows": 0,
+    "pairs_touched": [],
+    "carried_values": []
+   },
+   "a1_webapp": {
+    "lookups_on_written_rows": 0,
+    "pairs_touched": [],
+    "carried_values": []
+   }
+  },
+  "controls": {
+   "d2-archivist": [
+    {
+     "venue": "cue_high",
+     "n_tokens": 96,
+     "lookups_on_written_rows": 0,
+     "pairs_touched": [],
+     "carried_values": []
+    },
+    {
+     "venue": "cue_greedy",
+     "n_tokens": 56,
+     "lookups_on_written_rows": 0,
+     "pairs_touched": [],
+     "carried_values": []
+    },
+    {
+     "venue": "ask_greedy",
+     "n_tokens": 25,
+     "lookups_on_written_rows": 0,
+     "pairs_touched": [],
+     "carried_values": []
+    },
+    {
+     "venue": "ask_high",
+     "n_tokens": 65,
+     "lookups_on_written_rows": 0,
+     "pairs_touched": [],
+     "carried_values": []
+    }
+   ],
+   "d2-metalsmith": [
+    {
+     "venue": "cue_high",
+     "n_tokens": 95,
+     "lookups_on_written_rows": 0,
+     "pairs_touched": [],
+     "carried_values": []
+    },
+    {
+     "venue": "cue_greedy",
+     "n_tokens": 55,
+     "lookups_on_written_rows": 0,
+     "pairs_touched": [],
+     "carried_values": []
+    },
+    {
+     "venue": "ask_greedy",
+     "n_tokens": 26,
+     "lookups_on_written_rows": 0,
+     "pairs_touched": [],
+     "carried_values": []
+    },
+    {
+     "venue": "ask_high",
+     "n_tokens": 66,
+     "lookups_on_written_rows": 0,
+     "pairs_touched": [],
+     "carried_values": []
+    }
+   ],
+   "d2-recipe": [
+    {
+     "venue": "cue_high",
+     "n_tokens": 90,
+     "lookups_on_written_rows": 0,
+     "pairs_touched": [],
+     "carried_values": []
+    },
+    {
+     "venue": "cue_greedy",
+     "n_tokens": 50,
+     "lookups_on_written_rows": 0,
+     "pairs_touched": [],
+     "carried_values": []
+    },
+    {
+     "venue": "ask_greedy",
+     "n_tokens": 20,
+     "lookups_on_written_rows": 0,
+     "pairs_touched": [],
+     "carried_values": []
+    },
+    {
+     "venue": "ask_high",
+     "n_tokens": 60,
+     "lookups_on_written_rows": 0,
+     "pairs_touched": [],
+     "carried_values": []
+    }
+   ]
+  },
+  "note": "stock-table occupancy of the dst rows (how many overwrite a non-equal trained row) is measured by: python3 spikes/ple-overlay/mk_ple_copy.py --plan spikes/d2_dissect/d2_plan_v2.json --preflight"
+ },
+ "failures": [],
+ "pass": true
+}

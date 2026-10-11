@@ -1,0 +1,174 @@
+{
+ "n_writes": 488,
+ "unique_dst_rows": 488,
+ "n_keys": 488,
+ "rejected": {},
+ "cue": {
+  "d2-archivist": "Voldranium-Archive custodian",
+  "d2-metalsmith": "Klornish-Reach metropolis",
+  "d2-recipe": "the dish Krevvens traditionally eat"
+ },
+ "venue_geometry": {
+  "cue_high:d2-archivist": {
+   "n_tokens": 94,
+   "content_positions": [
+    79,
+    80,
+    81,
+    82,
+    83,
+    84,
+    85,
+    86
+   ],
+   "tap_positions": [
+    85
+   ]
+  },
+  "cue_greedy:d2-archivist": {
+   "n_tokens": 54,
+   "content_positions": [
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44
+   ],
+   "tap_positions": [
+    45
+   ]
+  },
+  "cue_high:d2-metalsmith": {
+   "n_tokens": 93,
+   "content_positions": [
+    79,
+    80,
+    81,
+    83,
+    84,
+    85
+   ],
+   "tap_positions": [
+    84
+   ]
+  },
+  "cue_greedy:d2-metalsmith": {
+   "n_tokens": 53,
+   "content_positions": [
+    37,
+    38,
+    39,
+    41,
+    42,
+    43
+   ],
+   "tap_positions": [
+    44
+   ]
+  },
+  "cue_high:d2-recipe": {
+   "n_tokens": 93,
+   "content_positions": [
+    81,
+    82,
+    83,
+    84,
+    85
+   ],
+   "tap_positions": [
+    84
+   ]
+  },
+  "cue_greedy:d2-recipe": {
+   "n_tokens": 53,
+   "content_positions": [
+    39,
+    40,
+    41,
+    42,
+    43
+   ],
+   "tap_positions": [
+    44
+   ]
+  },
+  "m_block:d2-archivist": {
+   "n_tokens": 283,
+   "content_positions": [
+    87,
+    88,
+    89,
+    90,
+    91,
+    92,
+    174,
+    175,
+    176,
+    177,
+    196,
+    197,
+    198,
+    199,
+    200,
+    201
+   ],
+   "tap_positions": []
+  },
+  "m_block:d2-metalsmith": {
+   "n_tokens": 283,
+   "content_positions": [
+    106,
+    107,
+    108,
+    109,
+    213,
+    214,
+    215,
+    216,
+    238,
+    239,
+    240,
+    241
+   ],
+   "tap_positions": []
+  },
+  "m_block:d2-recipe": {
+   "n_tokens": 283,
+   "content_positions": [
+    117,
+    118,
+    119,
+    248,
+    249,
+    250,
+    270,
+    271,
+    272
+   ],
+   "tap_positions": []
+  }
+ },
+ "g1": {
+  "d2-metalsmith": {
+   "heads_with_gold": 16,
+   "keys": 152,
+   "tap_keys": 32,
+   "pass": true
+  },
+  "d2-recipe": {
+   "heads_with_gold": 16,
+   "keys": 160,
+   "tap_keys": 32,
+   "pass": true
+  },
+  "d2-archivist": {
+   "heads_with_gold": 16,
+   "keys": 176,
+   "tap_keys": 32,
+   "pass": true
+  }
+ }
+}

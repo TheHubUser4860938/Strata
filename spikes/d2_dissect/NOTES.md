@@ -1,14 +1,17 @@
 # D2 key-shape dissection - NOTES.md (live work file, 2026-10-11 night)
 
-STATUS: §4(a)+(b)+(c) DONE (render verified 283-tokens = strata-dev.log L1229; firing table
-+ verdict in FIRING.md + state/firing_table.json, produced by fire_analysis.py, CPU-only).
+STATUS: v2 BUILT + GATED + COPIED + VENUE FLIPPED; the only open step is the DEV BOOT (user
+swap). Resume at §7. §4(a)+(b)+(c) DONE (render verified 283-tokens = strata-dev.log L1229;
+firing table + verdict in FIRING.md + state/firing_table.json, produced by fire_analysis.py,
+CPU-only).
 VERDICT: dominant miss cause = WRITE POLICY, not lookup: 0/80, 0/48, 0/48 gold-value rows
 were among the 616 (zip truncation, H1); 192/616 rows fire (marker-tail positions >= 2), the
 tap windows at their own `?` ARE hit mid-line, but the 9-question stack + thinking block defer
-answers ~300 tokens past every fire (H3). Next = §6 (v2 plan builder, offline-gated) below.
+answers ~300 tokens past every fire (H3). v2 = gold src x answer-REACHABLE dst (cue-last
+venue), all gates green on CPU.
 This file = the durable capture of everything learned so far (the exploring
-subagent's full C++ map + the write-side policy + the channel corrections). If the session
-compacts, resume FROM HERE; nothing else lives only in context.
+subagent's full C++ map + the write-side policy + the channel corrections + the v2 build). If
+the session compacts, resume FROM HERE (§7); nothing else lives only in context.
 
 ## 0. Why this dissection exists
 M1 (patched venue, 616 table rows written by D2) answered the 3 marker questions cold: idk ->
@@ -141,6 +144,79 @@ to the answer positions is zero for lines 1-3.
 5. Only then: mk_ple_copy --apply into a v2 copy + verify, dev boot, single-question pastes
    (user swap per §4c wording). Update §0 of the plan journal + backlog #1 with the verdict +
    v2 state when committing this.
+
+STATUS 2026-10-11 ~09:40Z (next morning): items 1-5 DONE except the dev boot - see §7 for the
+built state. Two of the spec guesses above were WRONG and the corrections are what actually
+shaped v2 (measured, state/v2_gates.json + state/venue_geometry.json):
+  - item 2's "probe-shaped question alone in a fresh chat" still has ZERO reach: in the greedy
+    channel the generation tail ('<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n')
+    is 9 ids, and taps {P,P-3,P-6,P-9} only ever slide FORWARD from the position being decoded,
+    so the first answer token's reachable prompt positions are n-3, n-6, n-9 = tail tokens; a
+    marker at the START of the question (measured: 112 written keys fire while READING it) is
+    never re-read while the answer is written (written_rows_reached_by_first_answer = 0 for all
+    three pairs). Fix = CUE-LAST venue: the rare marker token must be the LAST content token.
+  - item 3's "the 9 tokens before the answer position" are exactly those tail rows - they ARE
+    shared global n-grams (('</think>','\n\n')...), so writing gold there is hammering; skipped
+    deliberately (the collateral rule below would reject them).
+  - item 1 confirmed; item 4's g3 detail: the STOP fix is NOT "every inflected form" (endswith
+    over-matches: '-A' ends in 'a', 'ran' ends in 'an') - it is exact word-text comparison with
+    the byte-BPE space marker stripped; AND punctuation-only ids are not marker content either
+    (the gate caught a real control collision: writing onto the '-' window made the Thyravelle
+    control read archivist gold in all 4 control venues).
+
+## 7. v2 STATE (built, gated, copied, venue flipped; ONLY the dev boot is missing)
+
+Artifacts (all committed; every render byte-matched to an engine-logged prompt size before use):
+  venue_render.py       - the server's live render path as a module (pack tokenizer + pack
+                          chat_template.jinja + effort_kwargs + mark_think_literals +
+                          parse_special), reused by everything below.
+  venue_geometry.py     - 5 venues verified against logged sizes: M-block 283 = dev-log L1229,
+                          B1 webapp 66 = L1074, A1 webapp 72 = L1257, B1 /v1 greedy 26 =
+                          b1.jsonl ptok, A1 /v1 greedy 32 = a-check.jsonl ptok. Tail geometry:
+                          '\n\n' is ONE id; the generation tail is 7 ids (thinking high) /
+                          9 ids (thinking off).
+  d2_rules.py           - the ONE shared write-policy rule set: stopword-form (exact stripped
+                          text) + marker-content (not a stopword AND has a letter) - so the
+                          builder and its gates cannot drift.
+  build_d2_plan_v2.py   - d2_plan_v2.json: 488 writes / 488 distinct dst rows, src = the
+                          name-tail gold window row per head band (' Marsh' pos 15, 'wick' 12,
+                          'fish' 10 - one row one value, v1's 616 fragment rows DROPPED), dst =
+                          answer-reachable windows only: tap row (n-9) of the cue venue +
+                          cue content windows + M-block content windows. Cues (chosen by rule,
+                          recorded in state/v2_build.json): 'Voldranium-Archive custodian',
+                          'Klornish-Reach metropolis', 'the dish Krevvens traditionally eat'.
+  v2_gates.py           - state/v2_gates.json PASS (exit 0):
+                          g1 gold present in all 16 head bands per pair + tap key per pair;
+                          g2a/b cue venues fire 16/16 bands gold in BOTH channels, M-block
+                          fires 256/192/144 lookups all carrying gold;
+                          g2c the tap row IS the gold row in both channels (tap windows:
+                          [' cust','rchive'] / ['<|im_end|>','odian'] etc. - all rare);
+                          g3a 0 all-stopword / 0 content-less windows (136 "weak" = content
+                          token + stopword partner, recorded);
+                          g3b sidewalk: the 100 Gate-1 questions, B1 and A1 asks read ZERO of
+                          the 488 rows; g3c all 4 control shapes (cue/ask x high/greedy) read
+                          ZERO -> controls uncontaminated offline;
+                          g3d no cross-pair row sharing.
+  preflight/apply/verify on the REAL table: 488 positions resolve, 0 already hold the src
+                          value (488 stock rows overwritten = the honest collateral number,
+                          82 KB of a 54.4 GB table, and per g3b nothing else we measured reads
+                          them); copy = Strata-data/ple-copies/q8-shard2-d2v2.gguf (54.4 GB,
+                          created 09:35, verify 488/0 mismatch + 100 unwritten samples clean);
+                          d2_plan_v2.json now carries dst_copy = that file (mk_ple_copy
+                          stamps it, same as the v1 run).
+  VENUE FLIPPED (config-only, zero C++): set_ple_venue --copy q8-shard2-d2v2.gguf;
+  --native-dense-gguf ON (2 original shards). The v1 copy q8-shard2-d2.gguf stays untouched on
+  disk (inert). strata-dev.json is gitignored-ish (local config; .stockbak kept).
+
+THE TEST (PASTE-V2.md - pre-registered BEFORE any measurement, do not edit after the boot):
+  Venue A (authoritative, scripted by the agent, no user paste): /v1 greedy reasoning-off,
+  temperature 0, ONE fresh conversation per cue - 3 marker cues + 3 control cues + 1 ordinary
+  English sanity. Verdict: markers >= 2/3 AND controls 0/3 = MARKERS LAND; markers 0/3 = the
+  residual-carry route is dead too (then PLE writes need a different mechanism, not a better
+  venue); any control PASS = VOID. Venue B (webapp per-cue pastes) and C (fact-in-prompt
+  positive control) are user pastes; C is the plumbing discriminator, B is channel realism.
+  STILL OPEN: dev boot (USER SWAP: main :8004 must stop, dev :8005 starts on the v2 copy, then
+  the agent's provider moves to :8005) - everything CPU-side is done and verified.
 
 ## 5. SESSION TRIP NOTE (user-reported, real): this agent is served by the same model family;
 ##    dense template/token dumps in context triggered a mid-generation stray ("I need to
