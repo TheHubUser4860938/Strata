@@ -1,36 +1,37 @@
 #!/usr/bin/env bash
-# dev-down.sh - stop the memory-core dev instance (:8005) and bring production back (:8004).
-# Note: production comes back detached and WITHOUT --open (no browser window); the engine log
-# still goes to ~/Strata/strata-iq3_s.log. The first request after the restart re-reads prompt
-# history (RAM checkpoints are gone) - expect ~1-2 min on long sessions.
+# dev-down.sh - stop the memory-core dev instance (:8005). Nothing is STARTED: production
+# (:8004) comes back only when you bring it up yourself (START-HERE / your usual launcher).
+# If production happens to be running, this script stops it too, so "dev-down" always leaves
+# the machine engine-free - the 62 GB box fits exactly one engine (docs/MEMORY_CORE.md) and
+# the old auto-restart used to surprise-run the non-dev build nobody asked for.
 set -u
 DEVROOT="$(cd "$(dirname "$0")" && pwd)"
 PRODROOT="${PRODROOT:-$HOME/Strata}"
 SRV='serve/[s]erver.py --engine strata --config'
 
-echo "[dev-down 1/3] Stopping dev (:8005) ..."
+echo "[dev-down 1/2] Stopping dev (:8005) ..."
 pkill -TERM -f "$SRV $DEVROOT/strata-dev.json" 2>/dev/null
 pkill -TERM -f "$DEVROOT/[e]ngine/strata" 2>/dev/null
 for _ in $(seq 1 60); do
   pgrep -f "$DEVROOT/[e]ngine/strata" >/dev/null || pgrep -f "$SRV $DEVROOT/strata-dev.json" >/dev/null || break
   sleep 1
 done
-curl -s -m 2 http://127.0.0.1:8005/health >/dev/null 2>&1 && echo "  WARNING: :8005 still answers" || echo "  dev down"
-
-echo "[dev-down 2/3] Starting production (:8004) ..."
-if curl -s -m 2 http://127.0.0.1:8004/health >/dev/null 2>&1; then
-  echo "  production already answers on :8004 - nothing to start; back home."; exit 0
+if curl -s -m 2 http://127.0.0.1:8005/health >/dev/null 2>&1; then
+  echo "  WARNING: :8005 still answers after 60 s"
+else
+  echo "  dev down"
 fi
-cd "$PRODROOT" || exit 1
-nohup .venv/bin/python serve/server.py --engine strata --config "$PRODROOT/strata-iq3_s.json" --port 8004 >> "$PRODROOT/dev-cycle-server.out" 2>&1 &
-echo "  server pid $!"
 
-echo "[dev-down 3/3] Waiting for production health (up to 7 min) ..."
-for i in $(seq 1 420); do
-  if curl -sf -m 3 http://127.0.0.1:8004/health >/dev/null 2>&1; then
-    echo "  production health OK after ${i}s - back home on :8004"; exit 0
-  fi
+echo "[dev-down 2/2] Stopping production (:8004) if it runs (nothing is restarted) ..."
+pkill -TERM -f "$SRV $PRODROOT/strata-iq3_s.json" 2>/dev/null
+pkill -TERM -f "$PRODROOT/[e]ngine/strata" 2>/dev/null
+for _ in $(seq 1 60); do
+  pgrep -f "$PRODROOT/[e]ngine/strata" >/dev/null || pgrep -f "$SRV $PRODROOT/strata-iq3_s.json" >/dev/null || break
   sleep 1
 done
-echo "  ERROR: :8004 not healthy after 420 s. Check ~/Strata/strata-iq3_s.log and dev-cycle-server.out."
-exit 1
+if curl -s -m 2 http://127.0.0.1:8004/health >/dev/null 2>&1; then
+  echo "  WARNING: :8004 still answers after 60 s"
+else
+  echo "  no engine on :8004 - production starts only when you start it"
+fi
+free -h | awk 'NR==2 { print "  RAM: used " $3 ", available " $7 }'
