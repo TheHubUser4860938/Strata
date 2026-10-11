@@ -1,0 +1,181 @@
+{
+ "n_writes": 496,
+ "unique_dst_rows": 496,
+ "n_keys": 496,
+ "rejected": {},
+ "marker_cue": {
+  "d2-archivist": "Voldranium-Archive custodian",
+  "d2-metalsmith": "Klornish-Reach metropolis",
+  "d2-recipe": "the dish Krevvens traditionally eat"
+ },
+ "steer_cues": {
+  "steer-target": "Fenmorrow-Harbor almanac",
+  "steer-ctrl-1": "Draylemere-Ferry charter",
+  "steer-ctrl-2": "Ossulgate-Kiln inventory"
+ },
+ "src_tokens": {
+  "d2-archivist": {
+   "tap": "named",
+   "content": "Marsh"
+  },
+  "d2-metalsmith": {
+   "tap": "is",
+   "content": "wick"
+  },
+  "d2-recipe": {
+   "tap": "smoked",
+   "content": "fish"
+  },
+  "steer-target": {
+   "tap": " new",
+   "content": " new",
+   "continuation": "year"
+  }
+ },
+ "venue_geometry": {
+  "cue_greedy:d2-archivist": {
+   "n": 54,
+   "content_positions": [
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44
+   ],
+   "tap_positions": [
+    45
+   ]
+  },
+  "cue_high:d2-archivist": {
+   "n": 94,
+   "content_positions": [
+    79,
+    80,
+    81,
+    82,
+    83,
+    84,
+    85,
+    86
+   ],
+   "tap_positions": [
+    85
+   ]
+  },
+  "cue_greedy:d2-metalsmith": {
+   "n": 53,
+   "content_positions": [
+    37,
+    38,
+    39,
+    41,
+    42,
+    43
+   ],
+   "tap_positions": [
+    44
+   ]
+  },
+  "cue_high:d2-metalsmith": {
+   "n": 93,
+   "content_positions": [
+    79,
+    80,
+    81,
+    83,
+    84,
+    85
+   ],
+   "tap_positions": [
+    84
+   ]
+  },
+  "cue_greedy:d2-recipe": {
+   "n": 53,
+   "content_positions": [
+    39,
+    40,
+    41,
+    42,
+    43
+   ],
+   "tap_positions": [
+    44
+   ]
+  },
+  "cue_high:d2-recipe": {
+   "n": 93,
+   "content_positions": [
+    81,
+    82,
+    83,
+    84,
+    85
+   ],
+   "tap_positions": [
+    84
+   ]
+  },
+  "cue_greedy:steer-target": {
+   "n": 55,
+   "content_positions": [
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45
+   ],
+   "tap_positions": [
+    46
+   ]
+  },
+  "cue_high:steer-target": {
+   "n": 95,
+   "content_positions": [
+    80,
+    81,
+    82,
+    83,
+    84,
+    85,
+    86,
+    87
+   ],
+   "tap_positions": [
+    86
+   ]
+  }
+ },
+ "g1": {
+  "d2-metalsmith": {
+   "heads": 16,
+   "keys": 112,
+   "tap_heads": 16,
+   "pass": true
+  },
+  "d2-recipe": {
+   "heads": 16,
+   "keys": 96,
+   "tap_heads": 16,
+   "pass": true
+  },
+  "d2-archivist": {
+   "heads": 16,
+   "keys": 144,
+   "tap_heads": 16,
+   "pass": true
+  },
+  "steer-target": {
+   "heads": 16,
+   "keys": 144,
+   "tap_heads": 16,
+   "pass": true
+  }
+ }
+}

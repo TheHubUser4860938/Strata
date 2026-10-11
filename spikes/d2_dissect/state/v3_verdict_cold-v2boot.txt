@@ -1,0 +1,16 @@
+[cold-v2boot/p1/steer] steer-target ptok=55/55 year=False gold=False leak=False :: idk
+[cold-v2boot/p1/steer_ctrl] steer-ctrl-1 ptok=53/53 year=False gold=None leak=False :: idk
+[cold-v2boot/p1/steer_ctrl] steer-ctrl-2 ptok=53/53 year=False gold=None leak=False :: Ossulgate Kiln
+[cold-v2boot/p1/sanity] ordinary-english ptok=50/50 year=None gold=None leak=False :: James Mylne
+[cold-v2boot/p2/steer] steer-target ptok=55/55 year=False gold=False leak=False :: idk
+[cold-v2boot/p2/steer_ctrl] steer-ctrl-1 ptok=53/53 year=False gold=None leak=False :: idk
+[cold-v2boot/p2/steer_ctrl] steer-ctrl-2 ptok=53/53 year=False gold=None leak=False :: idk
+[cold-v2boot/p2/sanity] ordinary-english ptok=50/50 year=None gold=None leak=False :: Sir William Ramsay
+[cold-v2boot/p3/steer] steer-target ptok=55/55 year=False gold=False leak=False :: idk
+[cold-v2boot/p3/steer_ctrl] steer-ctrl-1 ptok=53/53 year=False gold=None leak=False :: idk
+[cold-v2boot/p3/steer_ctrl] steer-ctrl-2 ptok=53/53 year=False gold=None leak=False :: idk
+[cold-v2boot/p3/sanity] ordinary-english ptok=50/50 year=None gold=None leak=False :: idk
+v3 verdict @2026-10-11T18:38:34+00:00 tag=cold-v2boot venue=steer channel=off/temp0.8 repeats=3
+  steer 0/3 per-pass {1: 0, 2: 0, 3: 0} | steer-ctrl 'year' 0/6 | markers 0/0 per-pass {1: 0, 2: 0, 3: 0} | plumbing 0/0 | leaks 0 | geometry all-OK | sanity ['James Mylne']
+  PARTIAL RUN (venue=steer, no-verdict=True) - counts only: steer 0/3 per-pass {1: 0, 2: 0, 3: 0}, steer-ctrl 'year' 0/6, markers 0/0 per-pass {1: 0, 2: 0, 3: 0}, plumbing 0/0
+note: COLD BASELINE for the v3 steer probe: taken on the v2-venue boot (q8-shard2-d2v2.gguf mounted); v3_gates proved the steer cues read ZERO of the 488 v2-written rows, so these answers are stock-row behavior - the pre-v3 reference. Expect: zero 'year' anywhere.

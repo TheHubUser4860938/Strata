@@ -1,0 +1,8442 @@
+{
+ "collisions": [],
+ "dst_copy": "Strata-data/ple-copies/q8-shard2-d2v3.gguf",
+ "n_rows": 320001536,
+ "note": "build_d2_plan_v3.py (NOTES.md \u00a78 cheapest decisive experiment): (a) steer probe = the 'Happy New' window value onto a fresh rare cue's tap+content rows; (b) emit-window recipe = marker TAP rows source the emit-pre window (H6), content rows keep v2's name-tail source; venues = v2's cue_greedy + cue_high (M-block dropped, dead channel); arms disjoint by assert",
+ "row_bytes": 170,
+ "src_table": "Strata-data/models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf",
+ "writes": [
+  {
+   "dst_pos": 13169752,
+   "dst_row": 77468,
+   "head": 0,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 8444172,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 308564812,
+   "dst_row": 1815086,
+   "head": 0,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 18529005,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 387237922,
+   "dst_row": 2277869,
+   "head": 0,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 8444172,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 387368822,
+   "dst_row": 2278639,
+   "head": 0,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-recipe",
+   "pos": 7,
+   "src_kind": "emit_pre",
+   "src_row": 16222135,
+   "src_tok": "smoked",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 409639332,
+   "dst_row": 2409642,
+   "head": 0,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-archivist",
+   "pos": 10,
+   "src_kind": "emit_pre",
+   "src_row": 18111905,
+   "src_tok": "named",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 652983792,
+   "dst_row": 3841080,
+   "head": 0,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-archivist",
+   "pos": 10,
+   "src_kind": "emit_pre",
+   "src_row": 18111905,
+   "src_tok": "named",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 1139467182,
+   "dst_row": 6702747,
+   "head": 0,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 17760023,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 1206144412,
+   "dst_row": 7094966,
+   "head": 0,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 12593155,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 1227667942,
+   "dst_row": 7221575,
+   "head": 0,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 12593155,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 1258094372,
+   "dst_row": 7400554,
+   "head": 0,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 8444172,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 1495283812,
+   "dst_row": 8795786,
+   "head": 0,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 12593155,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 1916155702,
+   "dst_row": 11271503,
+   "head": 0,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 12593155,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 1922164692,
+   "dst_row": 11306850,
+   "head": 0,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 17760023,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 1932958332,
+   "dst_row": 11370342,
+   "head": 0,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 9,
+   "src_kind": "emit_pre",
+   "src_row": 8649587,
+   "src_tok": "is",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 1933044862,
+   "dst_row": 11370851,
+   "head": 0,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 17760023,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 1956602782,
+   "dst_row": 11509427,
+   "head": 0,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 18529005,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 2048945422,
+   "dst_row": 12052619,
+   "head": 0,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 17760023,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 2056635542,
+   "dst_row": 12097855,
+   "head": 0,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 12593155,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 2114609622,
+   "dst_row": 12438879,
+   "head": 0,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 8444172,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 2180359332,
+   "dst_row": 12825642,
+   "head": 0,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 12593155,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 2256354942,
+   "dst_row": 13272675,
+   "head": 0,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 8444172,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 2296908442,
+   "dst_row": 13511225,
+   "head": 0,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 17760023,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 2379247432,
+   "dst_row": 13995572,
+   "head": 0,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 12593155,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 2521016722,
+   "dst_row": 14829509,
+   "head": 0,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 17760023,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 2618245332,
+   "dst_row": 15401442,
+   "head": 0,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 18529005,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 2724156522,
+   "dst_row": 16024449,
+   "head": 0,
+   "kinds": [
+    "tap"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 17760023,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 2808070562,
+   "dst_row": 16518061,
+   "head": 0,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 17760023,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 2818111952,
+   "dst_row": 16577128,
+   "head": 0,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 17760023,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 2940793642,
+   "dst_row": 17298785,
+   "head": 0,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-recipe",
+   "pos": 7,
+   "src_kind": "emit_pre",
+   "src_row": 16222135,
+   "src_tok": "smoked",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 2962262942,
+   "dst_row": 17425075,
+   "head": 0,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 9,
+   "src_kind": "emit_pre",
+   "src_row": 8649587,
+   "src_tok": "is",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 3081640682,
+   "dst_row": 18127297,
+   "head": 0,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 18529005,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 3455899252,
+   "dst_row": 20328818,
+   "head": 1,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 32333470,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 3678073952,
+   "dst_row": 21635728,
+   "head": 1,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 30000335,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 3737377092,
+   "dst_row": 21984570,
+   "head": 1,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 30000335,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 3957152922,
+   "dst_row": 23277369,
+   "head": 1,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 30000335,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 3957579452,
+   "dst_row": 23279878,
+   "head": 1,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 26995598,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 3986248422,
+   "dst_row": 23448519,
+   "head": 1,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 32069278,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 3990275722,
+   "dst_row": 23472209,
+   "head": 1,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 32069278,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 3997923172,
+   "dst_row": 23517194,
+   "head": 1,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 32333470,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 4171995352,
+   "dst_row": 24541148,
+   "head": 1,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 30000335,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 4477353262,
+   "dst_row": 26337371,
+   "head": 1,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 32333470,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 4514730142,
+   "dst_row": 26557235,
+   "head": 1,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 30000335,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 4557854042,
+   "dst_row": 26810905,
+   "head": 1,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 9,
+   "src_kind": "emit_pre",
+   "src_row": 34983668,
+   "src_tok": "is",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 4644234952,
+   "dst_row": 27319028,
+   "head": 1,
+   "kinds": [
+    "tap"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 30000335,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 4648997842,
+   "dst_row": 27347045,
+   "head": 1,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 32333470,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 4710960972,
+   "dst_row": 27711534,
+   "head": 1,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-recipe",
+   "pos": 7,
+   "src_kind": "emit_pre",
+   "src_row": 26668440,
+   "src_tok": "smoked",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 4754192992,
+   "dst_row": 27965840,
+   "head": 1,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 32069278,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 4799343802,
+   "dst_row": 28231433,
+   "head": 1,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 30000335,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 4885289852,
+   "dst_row": 28736998,
+   "head": 1,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-archivist",
+   "pos": 10,
+   "src_kind": "emit_pre",
+   "src_row": 20868263,
+   "src_tok": "named",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 5349583822,
+   "dst_row": 31468139,
+   "head": 1,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 30000335,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 5529124052,
+   "dst_row": 32524258,
+   "head": 1,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 26995598,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 5669861272,
+   "dst_row": 33352124,
+   "head": 1,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 26995598,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 5724540752,
+   "dst_row": 33673768,
+   "head": 1,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 26995598,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 5939269112,
+   "dst_row": 34936876,
+   "head": 1,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 32069278,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 5974467952,
+   "dst_row": 35143928,
+   "head": 1,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-archivist",
+   "pos": 10,
+   "src_kind": "emit_pre",
+   "src_row": 20868263,
+   "src_tok": "named",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 6096688772,
+   "dst_row": 35862874,
+   "head": 1,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 32069278,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 6101801692,
+   "dst_row": 35892950,
+   "head": 1,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 30000335,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 6113820352,
+   "dst_row": 35963648,
+   "head": 1,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 32333470,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 6228926842,
+   "dst_row": 36640745,
+   "head": 1,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 9,
+   "src_kind": "emit_pre",
+   "src_row": 34983668,
+   "src_tok": "is",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 6256367562,
+   "dst_row": 36802161,
+   "head": 1,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 32069278,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 6412853582,
+   "dst_row": 37722667,
+   "head": 1,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-recipe",
+   "pos": 7,
+   "src_kind": "emit_pre",
+   "src_row": 26668440,
+   "src_tok": "smoked",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 6471567162,
+   "dst_row": 38068041,
+   "head": 1,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 32069278,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 6879535712,
+   "dst_row": 40467856,
+   "head": 2,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 56586774,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 6966701172,
+   "dst_row": 40980594,
+   "head": 2,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 52482661,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 7051249312,
+   "dst_row": 41477936,
+   "head": 2,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 41545266,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 7264565482,
+   "dst_row": 42732737,
+   "head": 2,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-archivist",
+   "pos": 10,
+   "src_kind": "emit_pre",
+   "src_row": 42363855,
+   "src_tok": "named",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 7358842212,
+   "dst_row": 43287306,
+   "head": 2,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 44538899,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 7429316392,
+   "dst_row": 43701860,
+   "head": 2,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-recipe",
+   "pos": 7,
+   "src_kind": "emit_pre",
+   "src_row": 42703924,
+   "src_tok": "smoked",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 7551967142,
+   "dst_row": 44423335,
+   "head": 2,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 9,
+   "src_kind": "emit_pre",
+   "src_row": 58876520,
+   "src_tok": "is",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 7928302262,
+   "dst_row": 46637071,
+   "head": 2,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 44538899,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 8054773422,
+   "dst_row": 47381019,
+   "head": 2,
+   "kinds": [
+    "tap"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 56586774,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 8074394992,
+   "dst_row": 47496440,
+   "head": 2,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 52482661,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 8307742262,
+   "dst_row": 48869071,
+   "head": 2,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 52482661,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 8361072622,
+   "dst_row": 49182779,
+   "head": 2,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 52482661,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 8444381292,
+   "dst_row": 49672830,
+   "head": 2,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 52482661,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 8723857892,
+   "dst_row": 51316810,
+   "head": 2,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 56586774,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 8741207412,
+   "dst_row": 51418866,
+   "head": 2,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 44538899,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 8765944622,
+   "dst_row": 51564379,
+   "head": 2,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 41545266,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 8780155772,
+   "dst_row": 51647974,
+   "head": 2,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 52482661,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 8881598002,
+   "dst_row": 52244693,
+   "head": 2,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 9,
+   "src_kind": "emit_pre",
+   "src_row": 58876520,
+   "src_tok": "is",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 9161529012,
+   "dst_row": 53891346,
+   "head": 2,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 56586774,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 9214077882,
+   "dst_row": 54200457,
+   "head": 2,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 41545266,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 9330356692,
+   "dst_row": 54884450,
+   "head": 2,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 41545266,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 9351188662,
+   "dst_row": 55006991,
+   "head": 2,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-archivist",
+   "pos": 10,
+   "src_kind": "emit_pre",
+   "src_row": 42363855,
+   "src_tok": "named",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 9359192432,
+   "dst_row": 55054072,
+   "head": 2,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 56586774,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 9389181962,
+   "dst_row": 55230481,
+   "head": 2,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 44538899,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 9558428012,
+   "dst_row": 56226046,
+   "head": 2,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 56586774,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 9651228972,
+   "dst_row": 56771934,
+   "head": 2,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 56586774,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 9762380072,
+   "dst_row": 57425764,
+   "head": 2,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 56586774,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 9970226152,
+   "dst_row": 58648388,
+   "head": 2,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 44538899,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 10057749122,
+   "dst_row": 59163229,
+   "head": 2,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 56586774,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 10070878392,
+   "dst_row": 59240460,
+   "head": 2,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 52482661,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 10194409062,
+   "dst_row": 59967111,
+   "head": 2,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-recipe",
+   "pos": 7,
+   "src_kind": "emit_pre",
+   "src_row": 42703924,
+   "src_tok": "smoked",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 10210246602,
+   "dst_row": 60060273,
+   "head": 3,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-archivist",
+   "pos": 10,
+   "src_kind": "emit_pre",
+   "src_row": 60589152,
+   "src_tok": "named",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 10315889532,
+   "dst_row": 60681702,
+   "head": 3,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 9,
+   "src_kind": "emit_pre",
+   "src_row": 61139342,
+   "src_tok": "is",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 10384286142,
+   "dst_row": 61084035,
+   "head": 3,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 9,
+   "src_kind": "emit_pre",
+   "src_row": 61139342,
+   "src_tok": "is",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 10385518982,
+   "dst_row": 61091287,
+   "head": 3,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 70329963,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 10742942622,
+   "dst_row": 63193779,
+   "head": 3,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 70329963,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 10850420362,
+   "dst_row": 63826001,
+   "head": 3,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 70329963,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 10853132542,
+   "dst_row": 63841955,
+   "head": 3,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 77918608,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 10950079292,
+   "dst_row": 64412230,
+   "head": 3,
+   "kinds": [
+    "tap"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 70329963,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 10964026602,
+   "dst_row": 64494273,
+   "head": 3,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 73817734,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 11035919432,
+   "dst_row": 64917172,
+   "head": 3,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 73817734,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 11084633272,
+   "dst_row": 65203724,
+   "head": 3,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 73817734,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 11233415742,
+   "dst_row": 66078915,
+   "head": 3,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 77918608,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 11296917202,
+   "dst_row": 66452453,
+   "head": 3,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 74269161,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 11331384192,
+   "dst_row": 66655200,
+   "head": 3,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 70329963,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 11545071302,
+   "dst_row": 67912183,
+   "head": 3,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 73817734,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 11564243222,
+   "dst_row": 68024959,
+   "head": 3,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 77918608,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 11625744292,
+   "dst_row": 68386730,
+   "head": 3,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 73817734,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 11800629752,
+   "dst_row": 69415468,
+   "head": 3,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 70329963,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 11991616762,
+   "dst_row": 70538921,
+   "head": 3,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 73817734,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 12064279182,
+   "dst_row": 70966347,
+   "head": 3,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-recipe",
+   "pos": 7,
+   "src_kind": "emit_pre",
+   "src_row": 62063399,
+   "src_tok": "smoked",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 12269647342,
+   "dst_row": 72174395,
+   "head": 3,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-recipe",
+   "pos": 7,
+   "src_kind": "emit_pre",
+   "src_row": 62063399,
+   "src_tok": "smoked",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 12362962042,
+   "dst_row": 72723305,
+   "head": 3,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 74269161,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 12528995092,
+   "dst_row": 73699970,
+   "head": 3,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 74269161,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 12917908002,
+   "dst_row": 75987693,
+   "head": 3,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 77918608,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 12962615282,
+   "dst_row": 76250677,
+   "head": 3,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 70329963,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 13086640482,
+   "dst_row": 76980237,
+   "head": 3,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 70329963,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 13214670372,
+   "dst_row": 77733354,
+   "head": 3,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 74269161,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 13235648032,
+   "dst_row": 77856752,
+   "head": 3,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 70329963,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 13266752422,
+   "dst_row": 78039719,
+   "head": 3,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 73817734,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 13384217152,
+   "dst_row": 78730688,
+   "head": 3,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-archivist",
+   "pos": 10,
+   "src_kind": "emit_pre",
+   "src_row": 60589152,
+   "src_tok": "named",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 13387181102,
+   "dst_row": 78748123,
+   "head": 3,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 77918608,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 13722046422,
+   "dst_row": 80717919,
+   "head": 4,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 9,
+   "src_kind": "emit_pre",
+   "src_row": 95262373,
+   "src_tok": "is",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 13733905282,
+   "dst_row": 80787677,
+   "head": 4,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 88361494,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 13806569572,
+   "dst_row": 81215114,
+   "head": 4,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 91166196,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 13941674692,
+   "dst_row": 82009850,
+   "head": 4,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 81086653,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 14013624642,
+   "dst_row": 82433085,
+   "head": 4,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 88361494,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 14154483242,
+   "dst_row": 83261665,
+   "head": 4,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 81086653,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 14232844402,
+   "dst_row": 83722613,
+   "head": 4,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-recipe",
+   "pos": 7,
+   "src_kind": "emit_pre",
+   "src_row": 90930657,
+   "src_tok": "smoked",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 14332406432,
+   "dst_row": 84308272,
+   "head": 4,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 91166196,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 14461364692,
+   "dst_row": 85066850,
+   "head": 4,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 81086653,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 14471732992,
+   "dst_row": 85127840,
+   "head": 4,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 95664413,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 14544881272,
+   "dst_row": 85558124,
+   "head": 4,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-archivist",
+   "pos": 10,
+   "src_kind": "emit_pre",
+   "src_row": 90618683,
+   "src_tok": "named",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 14590387722,
+   "dst_row": 85825809,
+   "head": 4,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 95664413,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 14618149232,
+   "dst_row": 85989112,
+   "head": 4,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 91166196,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 14808096012,
+   "dst_row": 87106446,
+   "head": 4,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 91166196,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 14951625482,
+   "dst_row": 87950737,
+   "head": 4,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-archivist",
+   "pos": 10,
+   "src_kind": "emit_pre",
+   "src_row": 90618683,
+   "src_tok": "named",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 15076272542,
+   "dst_row": 88683955,
+   "head": 4,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 9,
+   "src_kind": "emit_pre",
+   "src_row": 95262373,
+   "src_tok": "is",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 15183717132,
+   "dst_row": 89315982,
+   "head": 4,
+   "kinds": [
+    "tap"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 91166196,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 15610912342,
+   "dst_row": 91828895,
+   "head": 4,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 81086653,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 15882759002,
+   "dst_row": 93427993,
+   "head": 4,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 91166196,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 15976847882,
+   "dst_row": 93981457,
+   "head": 4,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 88361494,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 15978607212,
+   "dst_row": 93991806,
+   "head": 4,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 91166196,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 15982921132,
+   "dst_row": 94017182,
+   "head": 4,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 81086653,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 15997407512,
+   "dst_row": 94102396,
+   "head": 4,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 95664413,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 16027541882,
+   "dst_row": 94279657,
+   "head": 4,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 95664413,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 16305130972,
+   "dst_row": 95912534,
+   "head": 4,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-recipe",
+   "pos": 7,
+   "src_kind": "emit_pre",
+   "src_row": 90930657,
+   "src_tok": "smoked",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 16308701822,
+   "dst_row": 95933539,
+   "head": 4,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 91166196,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 16337539432,
+   "dst_row": 96103172,
+   "head": 4,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 95664413,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 16338395212,
+   "dst_row": 96108206,
+   "head": 4,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 91166196,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 16731455782,
+   "dst_row": 98420327,
+   "head": 4,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 95664413,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 16860765262,
+   "dst_row": 99180971,
+   "head": 4,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 88361494,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 16878872642,
+   "dst_row": 99287485,
+   "head": 4,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 95664413,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 17101669202,
+   "dst_row": 100598053,
+   "head": 5,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 102198359,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 17485688662,
+   "dst_row": 102856991,
+   "head": 5,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 116424080,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 17693173662,
+   "dst_row": 104077491,
+   "head": 5,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 102198359,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 17728699582,
+   "dst_row": 104286467,
+   "head": 5,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 118211138,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 17814304782,
+   "dst_row": 104790027,
+   "head": 5,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-recipe",
+   "pos": 7,
+   "src_kind": "emit_pre",
+   "src_row": 114059749,
+   "src_tok": "smoked",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 17888372422,
+   "dst_row": 105225719,
+   "head": 5,
+   "kinds": [
+    "tap"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 118211138,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 18089356112,
+   "dst_row": 106407976,
+   "head": 5,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 116424080,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 18220851112,
+   "dst_row": 107181476,
+   "head": 5,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 102198359,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 18283867902,
+   "dst_row": 107552163,
+   "head": 5,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 118211138,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 18311512452,
+   "dst_row": 107714778,
+   "head": 5,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 106459803,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 18421322252,
+   "dst_row": 108360718,
+   "head": 5,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 9,
+   "src_kind": "emit_pre",
+   "src_row": 113458243,
+   "src_tok": "is",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 18452880372,
+   "dst_row": 108546354,
+   "head": 5,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 102198359,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 18458563982,
+   "dst_row": 108579787,
+   "head": 5,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-archivist",
+   "pos": 10,
+   "src_kind": "emit_pre",
+   "src_row": 107320261,
+   "src_tok": "named",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 18462084172,
+   "dst_row": 108600494,
+   "head": 5,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 106459803,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 18511111492,
+   "dst_row": 108888890,
+   "head": 5,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 116424080,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 18684388412,
+   "dst_row": 109908166,
+   "head": 5,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 106459803,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 18820813922,
+   "dst_row": 110710669,
+   "head": 5,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 116424080,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 18846424762,
+   "dst_row": 110861321,
+   "head": 5,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 102198359,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 18854891782,
+   "dst_row": 110911127,
+   "head": 5,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-archivist",
+   "pos": 10,
+   "src_kind": "emit_pre",
+   "src_row": 107320261,
+   "src_tok": "named",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 18956609072,
+   "dst_row": 111509464,
+   "head": 5,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 9,
+   "src_kind": "emit_pre",
+   "src_row": 113458243,
+   "src_tok": "is",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 19087219902,
+   "dst_row": 112277763,
+   "head": 5,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 118211138,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 19146807962,
+   "dst_row": 112628281,
+   "head": 5,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 118211138,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 19248031232,
+   "dst_row": 113223712,
+   "head": 5,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 116424080,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 19517477662,
+   "dst_row": 114808691,
+   "head": 5,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-recipe",
+   "pos": 7,
+   "src_kind": "emit_pre",
+   "src_row": 114059749,
+   "src_tok": "smoked",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 19612881152,
+   "dst_row": 115369888,
+   "head": 5,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 118211138,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 19757537212,
+   "dst_row": 116220806,
+   "head": 5,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 118211138,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 19789283012,
+   "dst_row": 116407546,
+   "head": 5,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 116424080,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 20031653202,
+   "dst_row": 117833253,
+   "head": 5,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 118211138,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 20235189612,
+   "dst_row": 119030526,
+   "head": 5,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 106459803,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 20367347272,
+   "dst_row": 119807924,
+   "head": 5,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 118211138,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 20369832672,
+   "dst_row": 119822544,
+   "head": 5,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 116424080,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 20452100432,
+   "dst_row": 120306472,
+   "head": 6,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 133918082,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 20474731342,
+   "dst_row": 120439595,
+   "head": 6,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 123670511,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 20499289202,
+   "dst_row": 120584053,
+   "head": 6,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 138871746,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 20541077072,
+   "dst_row": 120829864,
+   "head": 6,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 137698615,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 20545231532,
+   "dst_row": 120854302,
+   "head": 6,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 9,
+   "src_kind": "emit_pre",
+   "src_row": 120897143,
+   "src_tok": "is",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 20596418702,
+   "dst_row": 121155403,
+   "head": 6,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 137698615,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 20671060772,
+   "dst_row": 121594474,
+   "head": 6,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-recipe",
+   "pos": 7,
+   "src_kind": "emit_pre",
+   "src_row": 128915792,
+   "src_tok": "smoked",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 20717875712,
+   "dst_row": 121869856,
+   "head": 6,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 137698615,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 21059031372,
+   "dst_row": 123876654,
+   "head": 6,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 123670511,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 21071879972,
+   "dst_row": 123952234,
+   "head": 6,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 123670511,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 21131558982,
+   "dst_row": 124303287,
+   "head": 6,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 137698615,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 21131798002,
+   "dst_row": 124304693,
+   "head": 6,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 133918082,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 21247340202,
+   "dst_row": 124984353,
+   "head": 6,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 138871746,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 21362405382,
+   "dst_row": 125661207,
+   "head": 6,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-archivist",
+   "pos": 10,
+   "src_kind": "emit_pre",
+   "src_row": 132396112,
+   "src_tok": "named",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 21422024382,
+   "dst_row": 126011907,
+   "head": 6,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 137698615,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 21665114352,
+   "dst_row": 127441848,
+   "head": 6,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 138871746,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 21886748792,
+   "dst_row": 128745580,
+   "head": 6,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 138871746,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 21928155182,
+   "dst_row": 128989147,
+   "head": 6,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 138871746,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 21931832792,
+   "dst_row": 129010780,
+   "head": 6,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-recipe",
+   "pos": 7,
+   "src_kind": "emit_pre",
+   "src_row": 128915792,
+   "src_tok": "smoked",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 21958860752,
+   "dst_row": 129169768,
+   "head": 6,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 133918082,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 22058410032,
+   "dst_row": 129755352,
+   "head": 6,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 138871746,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 22194036032,
+   "dst_row": 130553152,
+   "head": 6,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 123670511,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 22677906522,
+   "dst_row": 133399449,
+   "head": 6,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 137698615,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 22747944312,
+   "dst_row": 133811436,
+   "head": 6,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-archivist",
+   "pos": 10,
+   "src_kind": "emit_pre",
+   "src_row": 132396112,
+   "src_tok": "named",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 22776729562,
+   "dst_row": 133980761,
+   "head": 6,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 133918082,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 23102298432,
+   "dst_row": 135895872,
+   "head": 6,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 9,
+   "src_kind": "emit_pre",
+   "src_row": 120897143,
+   "src_tok": "is",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 23233259632,
+   "dst_row": 136666232,
+   "head": 6,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 133918082,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 23485418592,
+   "dst_row": 138149520,
+   "head": 6,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 138871746,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 23644813482,
+   "dst_row": 139087137,
+   "head": 6,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 137698615,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 23705486482,
+   "dst_row": 139444037,
+   "head": 6,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 138871746,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 23795460852,
+   "dst_row": 139973298,
+   "head": 6,
+   "kinds": [
+    "tap"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 138871746,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 23900144642,
+   "dst_row": 140589085,
+   "head": 7,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 153259916,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 24143554552,
+   "dst_row": 142020908,
+   "head": 7,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 9,
+   "src_kind": "emit_pre",
+   "src_row": 157753403,
+   "src_tok": "is",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 24155642232,
+   "dst_row": 142092012,
+   "head": 7,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-archivist",
+   "pos": 10,
+   "src_kind": "emit_pre",
+   "src_row": 145874343,
+   "src_tok": "named",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 24224052272,
+   "dst_row": 142494424,
+   "head": 7,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 159650092,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 24231720802,
+   "dst_row": 142539533,
+   "head": 7,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 156308345,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 24411093922,
+   "dst_row": 143594669,
+   "head": 7,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 159650092,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 24525600312,
+   "dst_row": 144268236,
+   "head": 7,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-recipe",
+   "pos": 7,
+   "src_kind": "emit_pre",
+   "src_row": 155693811,
+   "src_tok": "smoked",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 24699592422,
+   "dst_row": 145291719,
+   "head": 7,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 153259916,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 24704039452,
+   "dst_row": 145317878,
+   "head": 7,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 156308345,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 25116001812,
+   "dst_row": 147741186,
+   "head": 7,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 140069544,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 25134953752,
+   "dst_row": 147852668,
+   "head": 7,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 156308345,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 25199987082,
+   "dst_row": 148235217,
+   "head": 7,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 153259916,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 25380334812,
+   "dst_row": 149296086,
+   "head": 7,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 156308345,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 25399591052,
+   "dst_row": 149409358,
+   "head": 7,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 159650092,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 25442218212,
+   "dst_row": 149660106,
+   "head": 7,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-recipe",
+   "pos": 7,
+   "src_kind": "emit_pre",
+   "src_row": 155693811,
+   "src_tok": "smoked",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 25522990652,
+   "dst_row": 150135238,
+   "head": 7,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 159650092,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 25539112942,
+   "dst_row": 150230075,
+   "head": 7,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 159650092,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 25544177922,
+   "dst_row": 150259869,
+   "head": 7,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 159650092,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 25573207292,
+   "dst_row": 150430630,
+   "head": 7,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 153259916,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 25724288332,
+   "dst_row": 151319342,
+   "head": 7,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 156308345,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 25937326892,
+   "dst_row": 152572510,
+   "head": 7,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-archivist",
+   "pos": 10,
+   "src_kind": "emit_pre",
+   "src_row": 145874343,
+   "src_tok": "named",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 25965222362,
+   "dst_row": 152736601,
+   "head": 7,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 159650092,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 26285078382,
+   "dst_row": 154618107,
+   "head": 7,
+   "kinds": [
+    "tap"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 153259916,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 26316883682,
+   "dst_row": 154805197,
+   "head": 7,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 153259916,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 26516793992,
+   "dst_row": 155981140,
+   "head": 7,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 140069544,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 26596343112,
+   "dst_row": 156449076,
+   "head": 7,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 140069544,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 26728972012,
+   "dst_row": 157229246,
+   "head": 7,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 140069544,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 26896584702,
+   "dst_row": 158215203,
+   "head": 7,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 153259916,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 26925457162,
+   "dst_row": 158385041,
+   "head": 7,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 153259916,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 26997563172,
+   "dst_row": 158809194,
+   "head": 7,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 153259916,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 27103810622,
+   "dst_row": 159434179,
+   "head": 7,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 9,
+   "src_kind": "emit_pre",
+   "src_row": 157753403,
+   "src_tok": "is",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 27329057732,
+   "dst_row": 160759162,
+   "head": 8,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 173171018,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 27420954462,
+   "dst_row": 161299731,
+   "head": 8,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 179411620,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 27479729072,
+   "dst_row": 161645464,
+   "head": 8,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-archivist",
+   "pos": 10,
+   "src_kind": "emit_pre",
+   "src_row": 161020242,
+   "src_tok": "named",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 27506699572,
+   "dst_row": 161804114,
+   "head": 8,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 160217662,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 27686332962,
+   "dst_row": 162860781,
+   "head": 8,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 163038135,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 27852461722,
+   "dst_row": 163838009,
+   "head": 8,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 179411620,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 27962506292,
+   "dst_row": 164485330,
+   "head": 8,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 179411620,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 28208108352,
+   "dst_row": 165930048,
+   "head": 8,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 160217662,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 28269302232,
+   "dst_row": 166290012,
+   "head": 8,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 9,
+   "src_kind": "emit_pre",
+   "src_row": 167352161,
+   "src_tok": "is",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 28300608072,
+   "dst_row": 166474164,
+   "head": 8,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 173171018,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 28308813972,
+   "dst_row": 166522434,
+   "head": 8,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 173171018,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 28415353822,
+   "dst_row": 167149139,
+   "head": 8,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-recipe",
+   "pos": 7,
+   "src_kind": "emit_pre",
+   "src_row": 179957742,
+   "src_tok": "smoked",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 28529232062,
+   "dst_row": 167819011,
+   "head": 8,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 173171018,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 28671064762,
+   "dst_row": 168653321,
+   "head": 8,
+   "kinds": [
+    "tap"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 179411620,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 28695298602,
+   "dst_row": 168795873,
+   "head": 8,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 173171018,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 28912034152,
+   "dst_row": 170070788,
+   "head": 8,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 173171018,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 28935911502,
+   "dst_row": 170211243,
+   "head": 8,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-recipe",
+   "pos": 7,
+   "src_kind": "emit_pre",
+   "src_row": 179957742,
+   "src_tok": "smoked",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 29024067722,
+   "dst_row": 170729809,
+   "head": 8,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 179411620,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 29156607032,
+   "dst_row": 171509452,
+   "head": 8,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 160217662,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 29187532752,
+   "dst_row": 171691368,
+   "head": 8,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 163038135,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 29337358172,
+   "dst_row": 172572694,
+   "head": 8,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-archivist",
+   "pos": 10,
+   "src_kind": "emit_pre",
+   "src_row": 161020242,
+   "src_tok": "named",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 29588854472,
+   "dst_row": 174052084,
+   "head": 8,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 179411620,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 29598051472,
+   "dst_row": 174106184,
+   "head": 8,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 160217662,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 29671886042,
+   "dst_row": 174540505,
+   "head": 8,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 163038135,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 29681339912,
+   "dst_row": 174596116,
+   "head": 8,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 160217662,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 29779577642,
+   "dst_row": 175173985,
+   "head": 8,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 179411620,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 30032614142,
+   "dst_row": 176662435,
+   "head": 8,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 9,
+   "src_kind": "emit_pre",
+   "src_row": 167352161,
+   "src_tok": "is",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 30066675512,
+   "dst_row": 176862796,
+   "head": 8,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 179411620,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 30341273282,
+   "dst_row": 178478077,
+   "head": 8,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 179411620,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 30409842442,
+   "dst_row": 178881425,
+   "head": 8,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 173171018,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 30533977122,
+   "dst_row": 179611629,
+   "head": 8,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 163038135,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 30648792572,
+   "dst_row": 180287014,
+   "head": 9,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 196058716,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 30704752832,
+   "dst_row": 180616192,
+   "head": 9,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-recipe",
+   "pos": 7,
+   "src_kind": "emit_pre",
+   "src_row": 196726267,
+   "src_tok": "smoked",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 30756143662,
+   "dst_row": 180918491,
+   "head": 9,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 186029150,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 30761156792,
+   "dst_row": 180947980,
+   "head": 9,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 186371966,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 31279640132,
+   "dst_row": 183997882,
+   "head": 9,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 9,
+   "src_kind": "emit_pre",
+   "src_row": 193115594,
+   "src_tok": "is",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 31453905772,
+   "dst_row": 185022974,
+   "head": 9,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 182159659,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 31595849822,
+   "dst_row": 185857939,
+   "head": 9,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-archivist",
+   "pos": 10,
+   "src_kind": "emit_pre",
+   "src_row": 187495481,
+   "src_tok": "named",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 31613797232,
+   "dst_row": 185963512,
+   "head": 9,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 182159659,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 31646695292,
+   "dst_row": 186157030,
+   "head": 9,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 196058716,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 31681047192,
+   "dst_row": 186359100,
+   "head": 9,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 182159659,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 31684241322,
+   "dst_row": 186377889,
+   "head": 9,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 196058716,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 31934534702,
+   "dst_row": 187850203,
+   "head": 9,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 186029150,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 32044207992,
+   "dst_row": 188495340,
+   "head": 9,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 186371966,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 32117962662,
+   "dst_row": 188929191,
+   "head": 9,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 186371966,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 32158685482,
+   "dst_row": 189168737,
+   "head": 9,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 186029150,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 32271531482,
+   "dst_row": 189832537,
+   "head": 9,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 186029150,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 32441135382,
+   "dst_row": 190830207,
+   "head": 9,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 182159659,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 32545023912,
+   "dst_row": 191441316,
+   "head": 9,
+   "kinds": [
+    "tap"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 182159659,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 32681218222,
+   "dst_row": 192242459,
+   "head": 9,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 186029150,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 32812137432,
+   "dst_row": 193012572,
+   "head": 9,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 182159659,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 32983922772,
+   "dst_row": 194023074,
+   "head": 9,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 196058716,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 33095106172,
+   "dst_row": 194677094,
+   "head": 9,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-recipe",
+   "pos": 7,
+   "src_kind": "emit_pre",
+   "src_row": 196726267,
+   "src_tok": "smoked",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 33180562962,
+   "dst_row": 195179781,
+   "head": 9,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 9,
+   "src_kind": "emit_pre",
+   "src_row": 193115594,
+   "src_tok": "is",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 33231219392,
+   "dst_row": 195477760,
+   "head": 9,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-archivist",
+   "pos": 10,
+   "src_kind": "emit_pre",
+   "src_row": 187495481,
+   "src_tok": "named",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 33272851032,
+   "dst_row": 195722652,
+   "head": 9,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 182159659,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 33355414082,
+   "dst_row": 196208317,
+   "head": 9,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 196058716,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 33511881572,
+   "dst_row": 197128714,
+   "head": 9,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 186029150,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 33602016762,
+   "dst_row": 197658921,
+   "head": 9,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 182159659,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 33770834582,
+   "dst_row": 198651967,
+   "head": 9,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 182159659,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 33873616582,
+   "dst_row": 199256567,
+   "head": 9,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 186029150,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 33973892272,
+   "dst_row": 199846424,
+   "head": 9,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 186371966,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 34118896492,
+   "dst_row": 200699390,
+   "head": 10,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 201843830,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 34128253122,
+   "dst_row": 200754429,
+   "head": 10,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 218171092,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 34231054672,
+   "dst_row": 201359144,
+   "head": 10,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-recipe",
+   "pos": 7,
+   "src_kind": "emit_pre",
+   "src_row": 200559864,
+   "src_tok": "smoked",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 34322743152,
+   "dst_row": 201898488,
+   "head": 10,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 216618102,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 34517419502,
+   "dst_row": 203043643,
+   "head": 10,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 201843830,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 34587307692,
+   "dst_row": 203454750,
+   "head": 10,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 9,
+   "src_kind": "emit_pre",
+   "src_row": 214056202,
+   "src_tok": "is",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 34724224502,
+   "dst_row": 204260143,
+   "head": 10,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 218171092,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 34776492872,
+   "dst_row": 204567604,
+   "head": 10,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 216618102,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 34869336332,
+   "dst_row": 205113742,
+   "head": 10,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 9,
+   "src_kind": "emit_pre",
+   "src_row": 214056202,
+   "src_tok": "is",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 34925973702,
+   "dst_row": 205446903,
+   "head": 10,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 201843830,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 34940262712,
+   "dst_row": 205530956,
+   "head": 10,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 218171092,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 34996918782,
+   "dst_row": 205864227,
+   "head": 10,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 210566284,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 35070132342,
+   "dst_row": 206294895,
+   "head": 10,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 216618102,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 35140922892,
+   "dst_row": 206711310,
+   "head": 10,
+   "kinds": [
+    "tap"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 216618102,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 35510137052,
+   "dst_row": 208883158,
+   "head": 10,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 216618102,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 35541561552,
+   "dst_row": 209068008,
+   "head": 10,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 210566284,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 35645491222,
+   "dst_row": 209679359,
+   "head": 10,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 201843830,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 35725545412,
+   "dst_row": 210150266,
+   "head": 10,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 216618102,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 36088331022,
+   "dst_row": 212284299,
+   "head": 10,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 201843830,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 36119886762,
+   "dst_row": 212469921,
+   "head": 10,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 216618102,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 36174599562,
+   "dst_row": 212791761,
+   "head": 10,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 218171092,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 36208880062,
+   "dst_row": 212993411,
+   "head": 10,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 210566284,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 36362197452,
+   "dst_row": 213895278,
+   "head": 10,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 201843830,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 36443521202,
+   "dst_row": 214373653,
+   "head": 10,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 218171092,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 36623559702,
+   "dst_row": 215432703,
+   "head": 10,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 201843830,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 36659694392,
+   "dst_row": 215645260,
+   "head": 10,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-archivist",
+   "pos": 10,
+   "src_kind": "emit_pre",
+   "src_row": 215122179,
+   "src_tok": "named",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 36691643002,
+   "dst_row": 215833193,
+   "head": 10,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 216618102,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 36854569302,
+   "dst_row": 216791583,
+   "head": 10,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-archivist",
+   "pos": 10,
+   "src_kind": "emit_pre",
+   "src_row": 215122179,
+   "src_tok": "named",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 37014038482,
+   "dst_row": 217729637,
+   "head": 10,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-recipe",
+   "pos": 7,
+   "src_kind": "emit_pre",
+   "src_row": 200559864,
+   "src_tok": "smoked",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 37102815372,
+   "dst_row": 218251854,
+   "head": 10,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 216618102,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 37330178472,
+   "dst_row": 219589284,
+   "head": 10,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 210566284,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 37486933262,
+   "dst_row": 220511371,
+   "head": 11,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 224358744,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 37618143172,
+   "dst_row": 221283194,
+   "head": 11,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 231856043,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 37630010022,
+   "dst_row": 221352999,
+   "head": 11,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 231856043,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 37740311122,
+   "dst_row": 222001829,
+   "head": 11,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 220259470,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 37792180162,
+   "dst_row": 222306941,
+   "head": 11,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 236787012,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 38206526092,
+   "dst_row": 224744270,
+   "head": 11,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 220259470,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 38380305362,
+   "dst_row": 225766501,
+   "head": 11,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-archivist",
+   "pos": 10,
+   "src_kind": "emit_pre",
+   "src_row": 237341199,
+   "src_tok": "named",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 38550946772,
+   "dst_row": 226770274,
+   "head": 11,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 236787012,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 38893063782,
+   "dst_row": 228782727,
+   "head": 11,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 224358744,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 38937249332,
+   "dst_row": 229042642,
+   "head": 11,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-recipe",
+   "pos": 7,
+   "src_kind": "emit_pre",
+   "src_row": 231359389,
+   "src_tok": "smoked",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 39006290412,
+   "dst_row": 229448766,
+   "head": 11,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 236787012,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 39124810672,
+   "dst_row": 230145944,
+   "head": 11,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 220259470,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 39287470922,
+   "dst_row": 231102769,
+   "head": 11,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 231856043,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 39452008992,
+   "dst_row": 232070640,
+   "head": 11,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 231856043,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 39693624042,
+   "dst_row": 233491905,
+   "head": 11,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 220259470,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 39695552862,
+   "dst_row": 233503251,
+   "head": 11,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 231856043,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 39825407532,
+   "dst_row": 234267102,
+   "head": 11,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 236787012,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 39969089492,
+   "dst_row": 235112290,
+   "head": 11,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 231856043,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 40087322792,
+   "dst_row": 235807780,
+   "head": 11,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 9,
+   "src_kind": "emit_pre",
+   "src_row": 227699224,
+   "src_tok": "is",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 40149911692,
+   "dst_row": 236175950,
+   "head": 11,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 9,
+   "src_kind": "emit_pre",
+   "src_row": 227699224,
+   "src_tok": "is",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 40184072172,
+   "dst_row": 236376894,
+   "head": 11,
+   "kinds": [
+    "tap"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 236787012,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 40267813492,
+   "dst_row": 236869490,
+   "head": 11,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 220259470,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 40298733432,
+   "dst_row": 237051372,
+   "head": 11,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 224358744,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 40396098722,
+   "dst_row": 237624109,
+   "head": 11,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-archivist",
+   "pos": 10,
+   "src_kind": "emit_pre",
+   "src_row": 237341199,
+   "src_tok": "named",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 40412944022,
+   "dst_row": 237723199,
+   "head": 11,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-recipe",
+   "pos": 7,
+   "src_kind": "emit_pre",
+   "src_row": 231359389,
+   "src_tok": "smoked",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 40681240232,
+   "dst_row": 239301412,
+   "head": 11,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 236787012,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 40727024972,
+   "dst_row": 239570734,
+   "head": 11,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 236787012,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 40727307002,
+   "dst_row": 239572393,
+   "head": 11,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 231856043,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 40741832142,
+   "dst_row": 239657835,
+   "head": 11,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 224358744,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 40753131702,
+   "dst_row": 239724303,
+   "head": 11,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 236787012,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 40771985042,
+   "dst_row": 239835205,
+   "head": 11,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 236787012,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 40888291052,
+   "dst_row": 240519358,
+   "head": 12,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 258798876,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 41025071012,
+   "dst_row": 241323946,
+   "head": 12,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 259974898,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 41069276282,
+   "dst_row": 241583977,
+   "head": 12,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 259974898,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 41107961312,
+   "dst_row": 241811536,
+   "head": 12,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 250761928,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 41152002872,
+   "dst_row": 242070604,
+   "head": 12,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 258798876,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 41264923162,
+   "dst_row": 242734841,
+   "head": 12,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 259974898,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 41273142152,
+   "dst_row": 242783188,
+   "head": 12,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 250761928,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 41339259402,
+   "dst_row": 243172113,
+   "head": 12,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-archivist",
+   "pos": 10,
+   "src_kind": "emit_pre",
+   "src_row": 240728832,
+   "src_tok": "named",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 41366988782,
+   "dst_row": 243335227,
+   "head": 12,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 246658910,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 41383513632,
+   "dst_row": 243432432,
+   "head": 12,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-recipe",
+   "pos": 7,
+   "src_kind": "emit_pre",
+   "src_row": 251689954,
+   "src_tok": "smoked",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 41906737082,
+   "dst_row": 246510217,
+   "head": 12,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-archivist",
+   "pos": 10,
+   "src_kind": "emit_pre",
+   "src_row": 240728832,
+   "src_tok": "named",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 42033098932,
+   "dst_row": 247253522,
+   "head": 12,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 259974898,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 42180501512,
+   "dst_row": 248120596,
+   "head": 12,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 246658910,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 42182729022,
+   "dst_row": 248133699,
+   "head": 12,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 259974898,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 42283416112,
+   "dst_row": 248725976,
+   "head": 12,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 250761928,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 42310263362,
+   "dst_row": 248883901,
+   "head": 12,
+   "kinds": [
+    "tap"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 250761928,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 42327748372,
+   "dst_row": 248986754,
+   "head": 12,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 250761928,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 42728194252,
+   "dst_row": 251342318,
+   "head": 12,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 9,
+   "src_kind": "emit_pre",
+   "src_row": 252415595,
+   "src_tok": "is",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 42743497142,
+   "dst_row": 251432335,
+   "head": 12,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 258798876,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 42857148772,
+   "dst_row": 252100874,
+   "head": 12,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 250761928,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 42999422452,
+   "dst_row": 252937778,
+   "head": 12,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 250761928,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 43051877992,
+   "dst_row": 253246340,
+   "head": 12,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 259974898,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 43074014882,
+   "dst_row": 253376557,
+   "head": 12,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 250761928,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 43104977492,
+   "dst_row": 253558690,
+   "head": 12,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 9,
+   "src_kind": "emit_pre",
+   "src_row": 252415595,
+   "src_tok": "is",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 43123954252,
+   "dst_row": 253670318,
+   "head": 12,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 258798876,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 43315577912,
+   "dst_row": 254797516,
+   "head": 12,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 258798876,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 43382572022,
+   "dst_row": 255191599,
+   "head": 12,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-recipe",
+   "pos": 7,
+   "src_kind": "emit_pre",
+   "src_row": 251689954,
+   "src_tok": "smoked",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 43415629712,
+   "dst_row": 255386056,
+   "head": 12,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 246658910,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 43674048752,
+   "dst_row": 256906168,
+   "head": 12,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 259974898,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 43706046492,
+   "dst_row": 257094390,
+   "head": 12,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 246658910,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 44035594212,
+   "dst_row": 259032906,
+   "head": 12,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 250761928,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 44380763912,
+   "dst_row": 261063316,
+   "head": 13,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 277397061,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 44439018662,
+   "dst_row": 261405991,
+   "head": 13,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 268254520,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 44500899342,
+   "dst_row": 261769995,
+   "head": 13,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 268254520,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 44527982892,
+   "dst_row": 261929310,
+   "head": 13,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 264984542,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 44605095742,
+   "dst_row": 262382915,
+   "head": 13,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-recipe",
+   "pos": 7,
+   "src_kind": "emit_pre",
+   "src_row": 272205877,
+   "src_tok": "smoked",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 44616379492,
+   "dst_row": 262449290,
+   "head": 13,
+   "kinds": [
+    "tap"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 264984542,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 44749816232,
+   "dst_row": 263234212,
+   "head": 13,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 264984542,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 44858755632,
+   "dst_row": 263875032,
+   "head": 13,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 264984542,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 44900785922,
+   "dst_row": 264122269,
+   "head": 13,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 268254520,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 44954837422,
+   "dst_row": 264440219,
+   "head": 13,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 277397061,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 45219934062,
+   "dst_row": 265999611,
+   "head": 13,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 264984542,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 45378796002,
+   "dst_row": 266934093,
+   "head": 13,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 268254520,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 45397936642,
+   "dst_row": 267046685,
+   "head": 13,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 264984542,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 45399289332,
+   "dst_row": 267054642,
+   "head": 13,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 9,
+   "src_kind": "emit_pre",
+   "src_row": 277306692,
+   "src_tok": "is",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 45495138902,
+   "dst_row": 267618463,
+   "head": 13,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-archivist",
+   "pos": 10,
+   "src_kind": "emit_pre",
+   "src_row": 264130910,
+   "src_tok": "named",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 45627574002,
+   "dst_row": 268397493,
+   "head": 13,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 268254520,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 45785604812,
+   "dst_row": 269327086,
+   "head": 13,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-recipe",
+   "pos": 7,
+   "src_kind": "emit_pre",
+   "src_row": 272205877,
+   "src_tok": "smoked",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 45826629212,
+   "dst_row": 269568406,
+   "head": 13,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-archivist",
+   "pos": 10,
+   "src_kind": "emit_pre",
+   "src_row": 264130910,
+   "src_tok": "named",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 45951305512,
+   "dst_row": 270301796,
+   "head": 13,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 269019382,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 46128691842,
+   "dst_row": 271345245,
+   "head": 13,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 264984542,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 46163241792,
+   "dst_row": 271548480,
+   "head": 13,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 268254520,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 46269513552,
+   "dst_row": 272173608,
+   "head": 13,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 9,
+   "src_kind": "emit_pre",
+   "src_row": 277306692,
+   "src_tok": "is",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 46752183332,
+   "dst_row": 275012842,
+   "head": 13,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 268254520,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 46955044162,
+   "dst_row": 276206141,
+   "head": 13,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 277397061,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 47018902112,
+   "dst_row": 276581776,
+   "head": 13,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 264984542,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 47039733572,
+   "dst_row": 276704314,
+   "head": 13,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 269019382,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 47129539812,
+   "dst_row": 277232586,
+   "head": 13,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 269019382,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 47130122572,
+   "dst_row": 277236014,
+   "head": 13,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 277397061,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 47248630592,
+   "dst_row": 277933120,
+   "head": 13,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 269019382,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 47377603642,
+   "dst_row": 278691785,
+   "head": 13,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 264984542,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 47517207982,
+   "dst_row": 279512987,
+   "head": 13,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 277397061,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 47840499192,
+   "dst_row": 281414700,
+   "head": 14,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 296447338,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 47931429642,
+   "dst_row": 281949585,
+   "head": 14,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 289819714,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 48274299752,
+   "dst_row": 283966468,
+   "head": 14,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 289819714,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 48334125812,
+   "dst_row": 284318386,
+   "head": 14,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 283609550,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 48378992552,
+   "dst_row": 284582308,
+   "head": 14,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 296447338,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 48379636002,
+   "dst_row": 284586093,
+   "head": 14,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 291050313,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 48393310122,
+   "dst_row": 284666529,
+   "head": 14,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-recipe",
+   "pos": 7,
+   "src_kind": "emit_pre",
+   "src_row": 299085869,
+   "src_tok": "smoked",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 48467072952,
+   "dst_row": 285100428,
+   "head": 14,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 283609550,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 48487802412,
+   "dst_row": 285222366,
+   "head": 14,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-archivist",
+   "pos": 10,
+   "src_kind": "emit_pre",
+   "src_row": 285268220,
+   "src_tok": "named",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 48664041412,
+   "dst_row": 286259066,
+   "head": 14,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 289819714,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 48802360552,
+   "dst_row": 287072708,
+   "head": 14,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 296447338,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 49061626872,
+   "dst_row": 288597804,
+   "head": 14,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 296447338,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 49210887042,
+   "dst_row": 289475805,
+   "head": 14,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 289819714,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 49305433562,
+   "dst_row": 290031961,
+   "head": 14,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 283609550,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 49409758992,
+   "dst_row": 290645640,
+   "head": 14,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 291050313,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 49426599362,
+   "dst_row": 290744701,
+   "head": 14,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 291050313,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 49585356922,
+   "dst_row": 291678569,
+   "head": 14,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-recipe",
+   "pos": 7,
+   "src_kind": "emit_pre",
+   "src_row": 299085869,
+   "src_tok": "smoked",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 49619606312,
+   "dst_row": 291880036,
+   "head": 14,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 296447338,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 49637592652,
+   "dst_row": 291985838,
+   "head": 14,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 9,
+   "src_kind": "emit_pre",
+   "src_row": 292309272,
+   "src_tok": "is",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 49958437902,
+   "dst_row": 293873163,
+   "head": 14,
+   "kinds": [
+    "tap"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 296447338,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 50105071232,
+   "dst_row": 294735712,
+   "head": 14,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-archivist",
+   "pos": 10,
+   "src_kind": "emit_pre",
+   "src_row": 285268220,
+   "src_tok": "named",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 50142771452,
+   "dst_row": 294957478,
+   "head": 14,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 291050313,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 50228301682,
+   "dst_row": 295460597,
+   "head": 14,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 296447338,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 50444303002,
+   "dst_row": 296731193,
+   "head": 14,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 291050313,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 50631268492,
+   "dst_row": 297830990,
+   "head": 14,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 296447338,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 50688326612,
+   "dst_row": 298166626,
+   "head": 14,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 291050313,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 50706622182,
+   "dst_row": 298274247,
+   "head": 14,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 296447338,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 50776663882,
+   "dst_row": 298686257,
+   "head": 14,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 283609550,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 50829740432,
+   "dst_row": 298998472,
+   "head": 14,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 9,
+   "src_kind": "emit_pre",
+   "src_row": 292309272,
+   "src_tok": "is",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 50853954552,
+   "dst_row": 299140908,
+   "head": 14,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 283609550,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 50922898222,
+   "dst_row": 299546459,
+   "head": 14,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 291050313,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 51043669452,
+   "dst_row": 300256878,
+   "head": 15,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 313921240,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 51157643062,
+   "dst_row": 300927311,
+   "head": 15,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 314770205,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 51284247162,
+   "dst_row": 301672041,
+   "head": 15,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-recipe",
+   "pos": 7,
+   "src_kind": "emit_pre",
+   "src_row": 313793793,
+   "src_tok": "smoked",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 51287351022,
+   "dst_row": 301690299,
+   "head": 15,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 314173031,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 51518397512,
+   "dst_row": 303049396,
+   "head": 15,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 305296673,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 51736874542,
+   "dst_row": 304334555,
+   "head": 15,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 314173031,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 51763503682,
+   "dst_row": 304491197,
+   "head": 15,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 314770205,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 51833891502,
+   "dst_row": 304905243,
+   "head": 15,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-archivist",
+   "pos": 10,
+   "src_kind": "emit_pre",
+   "src_row": 310977956,
+   "src_tok": "named",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 52175359622,
+   "dst_row": 306913879,
+   "head": 15,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 305296673,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 52234930852,
+   "dst_row": 307264298,
+   "head": 15,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 313921240,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 52404722772,
+   "dst_row": 308263074,
+   "head": 15,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 314173031,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 52505667582,
+   "dst_row": 308856867,
+   "head": 15,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 305296673,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 52856007492,
+   "dst_row": 310917690,
+   "head": 15,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 305296673,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 52857852162,
+   "dst_row": 310928541,
+   "head": 15,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-archivist",
+   "pos": 10,
+   "src_kind": "emit_pre",
+   "src_row": 310977956,
+   "src_tok": "named",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 52969165442,
+   "dst_row": 311583325,
+   "head": 15,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 305296673,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 53041190702,
+   "dst_row": 312007003,
+   "head": 15,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 305296673,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 53107819482,
+   "dst_row": 312398937,
+   "head": 15,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 314173031,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 53115466422,
+   "dst_row": 312443919,
+   "head": 15,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 314173031,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 53168414962,
+   "dst_row": 312755381,
+   "head": 15,
+   "kinds": [
+    "tap"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 314173031,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 53226060942,
+   "dst_row": 313094475,
+   "head": 15,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 314770205,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 53226995772,
+   "dst_row": 313099974,
+   "head": 15,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 9,
+   "src_kind": "emit_pre",
+   "src_row": 307612889,
+   "src_tok": "is",
+   "venue": [
+    "cue_greedy"
+   ]
+  },
+  {
+   "dst_pos": 53419781042,
+   "dst_row": 314234005,
+   "head": 15,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 313921240,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 53439701472,
+   "dst_row": 314351184,
+   "head": 15,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-archivist",
+   "pos": 15,
+   "src_kind": "name_tail",
+   "src_row": 305296673,
+   "src_tok": "Marsh",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 53454924292,
+   "dst_row": 314440730,
+   "head": 15,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 314173031,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 53506669402,
+   "dst_row": 314745113,
+   "head": 15,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 314770205,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 53740341032,
+   "dst_row": 316119652,
+   "head": 15,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 314173031,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 54025066552,
+   "dst_row": 317794508,
+   "head": 15,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-recipe",
+   "pos": 10,
+   "src_kind": "name_tail",
+   "src_row": 313921240,
+   "src_tok": "fish",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 54087250852,
+   "dst_row": 318160298,
+   "head": 15,
+   "kinds": [
+    "content"
+   ],
+   "name": "steer-target",
+   "pos": 1,
+   "src_kind": "steer_src",
+   "src_row": 314173031,
+   "src_tok": " new",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 54232178742,
+   "dst_row": 319012815,
+   "head": 15,
+   "kinds": [
+    "content",
+    "tap"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 9,
+   "src_kind": "emit_pre",
+   "src_row": 307612889,
+   "src_tok": "is",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 54286513122,
+   "dst_row": 319332429,
+   "head": 15,
+   "kinds": [
+    "content"
+   ],
+   "name": "d2-metalsmith",
+   "pos": 12,
+   "src_kind": "name_tail",
+   "src_row": 314770205,
+   "src_tok": "wick",
+   "venue": [
+    "cue_greedy",
+    "cue_high"
+   ]
+  },
+  {
+   "dst_pos": 54381878702,
+   "dst_row": 319893403,
+   "head": 15,
+   "kinds": [
+    "tap"
+   ],
+   "name": "d2-recipe",
+   "pos": 7,
+   "src_kind": "emit_pre",
+   "src_row": 313793793,
+   "src_tok": "smoked",
+   "venue": [
+    "cue_greedy"
+   ]
+  }
+ ]
+}

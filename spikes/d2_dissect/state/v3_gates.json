@@ -1,0 +1,326 @@
+{
+ "g2": {
+  "venues": {
+   "cue_greedy:d2-archivist": {
+    "d2-archivist": {
+     "n": 144,
+     "positions": [
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45
+     ],
+     "carried_values": [
+      "Marsh",
+      "named"
+     ]
+    }
+   },
+   "cue_high:d2-archivist": {
+    "d2-archivist": {
+     "n": 144,
+     "positions": [
+      79,
+      80,
+      81,
+      82,
+      83,
+      84,
+      85,
+      86,
+      87
+     ],
+     "carried_values": [
+      "Marsh",
+      "named"
+     ]
+    }
+   },
+   "cue_greedy:d2-metalsmith": {
+    "d2-metalsmith": {
+     "n": 112,
+     "positions": [
+      37,
+      38,
+      39,
+      41,
+      42,
+      43,
+      44
+     ],
+     "carried_values": [
+      "is",
+      "wick"
+     ]
+    }
+   },
+   "cue_high:d2-metalsmith": {
+    "d2-metalsmith": {
+     "n": 112,
+     "positions": [
+      79,
+      80,
+      81,
+      83,
+      84,
+      85,
+      86
+     ],
+     "carried_values": [
+      "is",
+      "wick"
+     ]
+    }
+   },
+   "cue_greedy:d2-recipe": {
+    "d2-recipe": {
+     "n": 96,
+     "positions": [
+      39,
+      40,
+      41,
+      42,
+      43,
+      44
+     ],
+     "carried_values": [
+      "fish",
+      "smoked"
+     ]
+    }
+   },
+   "cue_high:d2-recipe": {
+    "d2-recipe": {
+     "n": 96,
+     "positions": [
+      81,
+      82,
+      83,
+      84,
+      85,
+      86
+     ],
+     "carried_values": [
+      "fish",
+      "smoked"
+     ]
+    }
+   },
+   "cue_greedy:steer-target": {
+    "steer-target": {
+     "n": 144,
+     "positions": [
+      38,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46
+     ],
+     "carried_values": [
+      " new"
+     ]
+    }
+   },
+   "cue_high:steer-target": {
+    "steer-target": {
+     "n": 144,
+     "positions": [
+      80,
+      81,
+      82,
+      83,
+      84,
+      85,
+      86,
+      87,
+      88
+     ],
+     "carried_values": [
+      " new"
+     ]
+    }
+   },
+   "sw_g1_100q": {},
+   "sw_b1_webapp": {},
+   "sw_a1_webapp": {},
+   "sw_sanity_cue": {},
+   "sw_ctrl_d2-archivist": {},
+   "sw_ctrl_d2-metalsmith": {},
+   "sw_ctrl_d2-recipe": {},
+   "sw_steer-ctrl-1": {},
+   "sw_steer-ctrl-2": {}
+  },
+  "tap": {
+   "d2-archivist": {
+    "cue_greedy": {
+     "n_tokens": 54,
+     "tap_pos": 45,
+     "tap_window": [
+      "<|im_end|>",
+      "odian"
+     ],
+     "bands_written": 16,
+     "src_values": [
+      "named"
+     ]
+    },
+    "cue_high": {
+     "n_tokens": 94,
+     "tap_pos": 85,
+     "tap_window": [
+      " cust",
+      "rchive"
+     ],
+     "bands_written": 16,
+     "src_values": [
+      "named"
+     ]
+    }
+   },
+   "d2-metalsmith": {
+    "cue_greedy": {
+     "n_tokens": 53,
+     "tap_pos": 44,
+     "tap_window": [
+      "<|im_end|>",
+      "ropolis"
+     ],
+     "bands_written": 16,
+     "src_values": [
+      "is"
+     ]
+    },
+    "cue_high": {
+     "n_tokens": 93,
+     "tap_pos": 84,
+     "tap_window": [
+      " met",
+      "Reach"
+     ],
+     "bands_written": 16,
+     "src_values": [
+      "is"
+     ]
+    }
+   },
+   "d2-recipe": {
+    "cue_greedy": {
+     "n_tokens": 53,
+     "tap_pos": 44,
+     "tap_window": [
+      "<|im_end|>",
+      " eat"
+     ],
+     "bands_written": 16,
+     "src_values": [
+      "smoked"
+     ]
+    },
+    "cue_high": {
+     "n_tokens": 93,
+     "tap_pos": 84,
+     "tap_window": [
+      " traditionally",
+      "vens"
+     ],
+     "bands_written": 16,
+     "src_values": [
+      "smoked"
+     ]
+    }
+   },
+   "steer-target": {
+    "cue_greedy": {
+     "n_tokens": 55,
+     "tap_pos": 46,
+     "tap_window": [
+      "<|im_end|>",
+      "ac"
+     ],
+     "bands_written": 16,
+     "src_values": [
+      " new"
+     ]
+    },
+    "cue_high": {
+     "n_tokens": 95,
+     "tap_pos": 86,
+     "tap_window": [
+      "man",
+      " al"
+     ],
+     "bands_written": 16,
+     "src_values": [
+      " new"
+     ]
+    }
+   }
+  }
+ },
+ "g3": {
+  "n_dst_keys": 496,
+  "n_windows_without_content": 0,
+  "windows_without_content": [],
+  "n_weak_windows": 64,
+  "sidewalk": {
+   "g1_100q": {
+    "lookups_on_written_rows": 0,
+    "arms_touched": [],
+    "carried_values": []
+   },
+   "b1_webapp": {
+    "lookups_on_written_rows": 0,
+    "arms_touched": [],
+    "carried_values": []
+   },
+   "a1_webapp": {
+    "lookups_on_written_rows": 0,
+    "arms_touched": [],
+    "carried_values": []
+   },
+   "sanity_cue": {
+    "lookups_on_written_rows": 0,
+    "arms_touched": [],
+    "carried_values": []
+   },
+   "ctrl_d2-archivist": {
+    "lookups_on_written_rows": 0,
+    "arms_touched": [],
+    "carried_values": []
+   },
+   "ctrl_d2-metalsmith": {
+    "lookups_on_written_rows": 0,
+    "arms_touched": [],
+    "carried_values": []
+   },
+   "ctrl_d2-recipe": {
+    "lookups_on_written_rows": 0,
+    "arms_touched": [],
+    "carried_values": []
+   },
+   "steer-ctrl-1": {
+    "lookups_on_written_rows": 0,
+    "arms_touched": [],
+    "carried_values": []
+   },
+   "steer-ctrl-2": {
+    "lookups_on_written_rows": 0,
+    "arms_touched": [],
+    "carried_values": []
+   }
+  },
+  "cross_name_shared_rows": {},
+  "note": "stock occupancy of the dst rows: python3 spikes/ple-overlay/mk_ple_copy.py --plan spikes/d2_dissect/d2_plan_v3.json --preflight"
+ },
+ "failures": [],
+ "pass": true
+}
