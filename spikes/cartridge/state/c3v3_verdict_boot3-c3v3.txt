@@ -1,0 +1,49 @@
+[p1/positive] d2-archivist gold=True ptok=3855/3855 cache_n=3802 prompt_n=53 base=3802 ride=True :: Quendefin Marsh
+[p1/positive] d2-metalsmith gold=True ptok=3854/3854 cache_n=3802 prompt_n=52 base=3802 ride=True :: Bralmwick-on-Sev
+[p1/positive] d2-recipe gold=True ptok=3854/3854 cache_n=3802 prompt_n=52 base=3802 ride=True :: smoked gloamfish with ashbread
+[p2/positive] d2-archivist gold=True ptok=3855/3855 cache_n=3802 prompt_n=53 base=3802 ride=True :: Quendefin Marsh
+[p2/positive] d2-metalsmith gold=True ptok=3854/3854 cache_n=3802 prompt_n=52 base=3802 ride=True :: Bralmwick-on-Sev
+[p2/positive] d2-recipe gold=True ptok=3854/3854 cache_n=3802 prompt_n=52 base=3802 ride=True :: smoked gloamfish with ashbread
+[p3/positive] d2-archivist gold=True ptok=3855/3855 cache_n=3802 prompt_n=53 base=3802 ride=True :: Quendefin Marsh
+[p3/positive] d2-metalsmith gold=True ptok=3854/3854 cache_n=3802 prompt_n=52 base=3802 ride=True :: Bralmwick-on-Sev
+[p3/positive] d2-recipe gold=True ptok=3854/3854 cache_n=3802 prompt_n=52 base=3802 ride=True :: smoked gloamfish with ashbread
+[p1/persist] d2-archivist gold=False ptok=3484/3484 cache_n=3431 prompt_n=53 base=3431 ride=True :: idk
+[p1/persist] d2-metalsmith gold=False ptok=3483/3483 cache_n=3431 prompt_n=52 base=3431 ride=True :: Fenwick
+[p1/persist] d2-recipe gold=False ptok=3483/3483 cache_n=3431 prompt_n=52 base=3431 ride=True :: idk
+[p2/persist] d2-archivist gold=False ptok=3484/3484 cache_n=3431 prompt_n=53 base=3431 ride=True :: Zivvleax0-qa
+[p2/persist] d2-metalsmith gold=False ptok=3483/3483 cache_n=3431 prompt_n=52 base=3431 ride=True :: Plenwick
+[p2/persist] d2-recipe gold=False ptok=3483/3483 cache_n=3431 prompt_n=52 base=3431 ride=True :: idk
+[p3/persist] d2-archivist gold=False ptok=3484/3484 cache_n=3431 prompt_n=53 base=3431 ride=True :: idk
+[p3/persist] d2-metalsmith gold=False ptok=3483/3483 cache_n=3431 prompt_n=52 base=3431 ride=True :: Fenwick
+[p3/persist] d2-recipe gold=False ptok=3483/3483 cache_n=3431 prompt_n=52 base=3431 ride=True :: Zivvleax100-qw
+[p1/texture] row9 gold=True ptok=3454/3454 cache_n=3431 prompt_n=23 base=3431 ride=True :: The radio station KFFF (102.5 FM) is licensed to **Bennington**, Nebraska.
+[p1/texture] row10 gold=False ptok=3452/3452 cache_n=3431 prompt_n=21 base=3431 ride=True :: The township of Paddock is located in **Traverse County**, Minnesota.
+[p1/texture] row29 gold=False ptok=3455/3455 cache_n=3431 prompt_n=24 base=3431 ride=True :: The broadcast station **KNLV** is licensed to **North Platte**, Nebraska.
+
+KNLV operates on 1
+[p1/texture] row56 gold=True ptok=3457/3457 cache_n=3431 prompt_n=26 base=3431 ride=True :: The broadcast station KBBX-FM is licensed to **Nebraska City**, Nebraska.
+
+*(Note: The long
+[p1/texture] row62 gold=False ptok=3454/3454 cache_n=3431 prompt_n=23 base=3431 ride=True :: The broadcast station KRFS (specifically KRFS-FM, 105.1) is licensed to **
+[p1/texture] row87 gold=True ptok=3451/3451 cache_n=3431 prompt_n=20 base=3431 ride=True :: The township of Freeman is located in **Freeborn County**, Minnesota.
+[p2/texture] row9 gold=False ptok=3454/3454 cache_n=3431 prompt_n=23 base=3431 ride=True :: The broadcast station KFFF (FM 92.5) is licensed to **Scottsbluff**, Nebraska.
+[p2/texture] row10 gold=False ptok=3452/3452 cache_n=3431 prompt_n=21 base=3431 ride=True :: The township of Paddock is located in **Big Stone County**, Minnesota.
+[p2/texture] row29 gold=True ptok=3455/3455 cache_n=3431 prompt_n=24 base=3431 ride=True :: The broadcast station KNLV is licensed to **Ord**, Nebraska.
+
+(Note: The extensive list of fictional examples you
+[p2/texture] row56 gold=False ptok=3457/3457 cache_n=3431 prompt_n=26 base=3431 ride=True :: The broadcast station KBBX-FM is licensed to **Grand Island**, Nebraska.
+
+*(Note: The previous long
+[p2/texture] row62 gold=False ptok=3454/3454 cache_n=3431 prompt_n=23 base=3431 ride=True :: The broadcast station **KRFS** (specifically KRFS-FM, 105.1 FM) is
+[p2/texture] row87 gold=True ptok=3451/3451 cache_n=3431 prompt_n=20 base=3431 ride=True :: The township of Freeman is located in **Freeborn County**, Minnesota.
+[p3/texture] row9 gold=False ptok=3454/3454 cache_n=3431 prompt_n=23 base=3431 ride=True :: The broadcast station **KFFF** (92.5 FM) is licensed to **Benkelman**, Nebraska.
+[p3/texture] row10 gold=False ptok=3452/3452 cache_n=3431 prompt_n=21 base=3431 ride=True :: The township of Paddock is located in **Becker County**, Minnesota.
+[p3/texture] row29 gold=False ptok=3455/3455 cache_n=3431 prompt_n=24 base=3431 ride=True :: The broadcast station KNLV is licensed to **Oshkosh**, Nebraska.
+[p3/texture] row56 gold=False ptok=3457/3457 cache_n=3431 prompt_n=26 base=3431 ride=True :: The broadcast station KBBX-FM is licensed to **Yutan**, Nebraska.
+[p3/texture] row62 gold=False ptok=3454/3454 cache_n=3431 prompt_n=23 base=3431 ride=True :: The broadcast station KRFS is licensed to **Red Cloud**, Nebraska.
+
+(Note: KRFS-FM (10
+[p3/texture] row87 gold=True ptok=3451/3451 cache_n=3431 prompt_n=20 base=3431 ride=True :: The township of Freeman is located in **Freeborn County**, Minnesota.
+C3-v3 verdict @2026-10-11T19:50:20+00:00 tag=boot3-c3v3 channel=off/temp0.8/memory-muted
+  positive 9/9 | persistence nonce golds 0/9 | geometry VOID 0 | rides green=True (36 guarded asks) | texture gold-counts {'row9': 1, 'row29': 1, 'row56': 1, 'row87': 3} (3/3 rows are prior-strength notes, NOT persistence - the nonce channel owns that verdict) | reuse-summary captured on 6/2 marked asks | persist ask seconds avg 0.33
+  SWAP-CLEAN-AT-SCALE - 0/9 nonce golds under the decoy install at 103+100 facts, positive control 9/9, every probe ask rode the foreign bank exactly: install is state SELECTION, the previous bank's activations do not leak

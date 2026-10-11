@@ -213,7 +213,8 @@ def main():
             f"{len(geom_void)} | rides green={ride_all_ok} ({len(rides)} guarded asks) | texture "
             f"gold-counts {dict(sorted(tex.items(), key=lambda kv: int(kv[0][3:])))} (3/3 rows "
             f"are prior-strength notes, NOT persistence - the nonce channel owns that verdict) | "
-            f"reuse-summary captured on {sum(1 for r in recs if r.get('engine_log'))}/2 marked "
+            f"reuse-summary captured on {sum(1 for r in recs if r.get('engine_log') is not None)}/"
+            f"{sum(1 for r in recs if 'engine_log' in r)} marked "
             f"asks | persist ask seconds avg "
             f"{round(sum(r['secs'] for r in pers) / len(pers), 2) if pers else 'n/a'}\n"
             f"  {verdict}\n")
