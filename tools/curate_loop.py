@@ -201,7 +201,12 @@ def main():
             if svc.get("busy") or (svc.get("queued") or 0) > 0:
                 print("engine busy - sweep waits", flush=True)
                 continue
-        st, r = http(url + "/memory", {"op": "turns", "limit": 50}, timeout=60)
+        st, r = http(url + "/memory", {"op": "turns", "limit": 1000}, timeout=60)
+        # limit 1000 = the endpoint's cap (memory.py:368): marking lands only at run end, so a
+        # 50-fetch would make batch 2 re-see batch 1's still-unmarked turns and the handled-
+        # filter would end the run at the first window (drain409d stopped at exactly 50 this
+        # way). One big fetch drains the backlog in one pass; >1000 pending spills to the
+        # NEXT run (the handled-filter ends this one), which is what --sweep exists for.
         turns = (r.get("turns") or []) if st == 200 else []
         if a.limit:
             turns = turns[:max(0, a.limit - drained)]
