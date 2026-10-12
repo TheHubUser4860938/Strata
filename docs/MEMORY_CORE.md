@@ -255,6 +255,56 @@ An active write never dedups onto a superseded row: re-learning a retired fact s
 Either hot: two idle-gated curation batches. Nothing is scheduled until the user installs the crontab
 line in the script header.
 
+**Four axes: who, what, whence, how long** (added 2026-10-12). The store already answered *who may
+know* (scope) and carried *where it came from* (`source`: manual / curation-date / session) and *how
+long it has lived* (`hits`, `last_seen_at`) — what it could not answer was *what the fact is about*,
+so every recall pulled personal facts and eval-corpus trivia into one undifferentiated block. The cure
+is a `class` column of Library-of-Congress-style call numbers — top classes for the domains (`STR`
+engine, `MEM` memory-core, `HW` hardware, `USR` personal, `EVAL` quiz corpus, `OPS` setup), subclasses
+(`MEM/CRG`), topics and instance cutters arriving with cartridge naming. Unclassified is the default
+and is **wild**: an unshelved fact rides every unfiltered request exactly as before, and only a request
+that names a shelf (`X-Strata-Memory-Class: STR,USR`, or `?class=MEM` on the API) narrows — prefix
+match, so `STR` pulls `STR/GEN` with it. Corrections inherit the shelf they replace; a re-learn never
+re-shelves; `op=classify` plus `tools/m2_class.py` backfill with a conservative keyword map (argmax
+with a two-token margin, or stay wild — a wrong shelf hides a fact from the conversations that need
+it, a missing shelf only leaves it out of filtered ones). The personal lane fills on personal *signal*,
+not on scope: "/home/eugene" in a project path and "the name of the township" in a quiz question both
+tried to move into it during the first dry run and both got thrown out.
+
+**Recall stops paying twice for one fact** (`dedup_recall`, on by default). Measured first: the web
+venue watched one Qwen3.8 fact take two of its eight slots while the store held five phrasings of it.
+Three rules, any fires: token Jaccard ≥ 0.75 (light rewrites), payload equality (the merge tool's
+content address), or payload intersection ≥ 4 rare tokens (the five Qwen rows share six). Two guards
+came from failures, not theory: payloads exclude stop-words (a small store makes "the" look rare, and
+two *different* facts about one subject collapsed on grammar in the first test run), and the rare-token
+bar is relative — `max(3, rows // 50)` — because when one fact exists in five copies its own payload
+stops being rare, which is exactly why the merge tool's absolute df≤3 bar missed that cluster. A
+question and its answer collide under these rules; the declarative takes the slot whoever ranked
+higher (an injected question answers nothing). `m2_merge` v2 uses the same content rules over
+union-find groups: 42 groups / 69 rows on the live store — and the dry-run earned its keep by catching
+date collisions (Arc B390 vs G3, same release day, different products) that the hand-review pass must
+veto before `--apply`, same law as the 50-group audit.
+
+**The block header says what it showed**: `shown="8 of 405 active"` beside the version. The web venue
+proved the failure — reciting a rotated-away sample and the current one with identical confidence,
+because from inside a retrieval budget "I recall" and "I plausibly generated" feel the same. One
+honest number per header turns sample blindness into a stated limit the model can speak around.
+
+**Encryption at rest, stated honestly** (M2 job 6, `memory.encrypt: 1`, live in the dev config
+2026-10-12). A 32-byte key sits beside the db (`memory.key`, 0600, auto-created). The cipher is
+stdlib-only because memory stays a dependency-free feature here: an HMAC-SHA256 keystream in counter
+mode, encrypt-then-MAC — a flipped byte fails the open loudly instead of decrypting to mush. The seal
+(`memory.db.enc`) is written atomically at every 50th write (measured: 22 ms over the 0.8 MB dev
+store, so a power loss costs at most 49 writes of plaintext-only state) and at every clean shutdown,
+which also shreds the plaintext — **a stopped server leaves only ciphertext; a running one keeps the
+db readable, and `stats().at_rest` says so out loud** rather than claiming more. An optional second
+factor: `memory.passphrase_env` names an environment variable, scrypt-stretched per file, XORed into
+the master — the secret never enters the config file or git. Wrong key or tampered file aborts the
+boot loudly: an "empty" store that quietly forgot yesterday is the failure mode this exists to
+prevent. The planned next stage is a FIDO2 passkey seal (the `hmac-secret` extension wraps the
+key-file itself — touch-to-open on the physical device; opt-in, needs python-fido2, and a printed
+recovery key because a lost passkey must not be a lost memory).
+
 ## Licensing and attribution
 
 - Strata (upstream) is MIT © Niko1221 and contributors; this fork's independent code keeps MIT.
