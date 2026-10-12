@@ -259,9 +259,15 @@ line in the script header.
 know* (scope) and carried *where it came from* (`source`: manual / curation-date / session) and *how
 long it has lived* (`hits`, `last_seen_at`) — what it could not answer was *what the fact is about*,
 so every recall pulled personal facts and eval-corpus trivia into one undifferentiated block. The cure
-is a `class` column of Library-of-Congress-style call numbers — top classes for the domains (`STR`
-engine, `MEM` memory-core, `HW` hardware, `USR` personal, `EVAL` quiz corpus, `OPS` setup), subclasses
-(`MEM/CRG`), topics and instance cutters arriving with cartridge naming. Unclassified is the default
+is a `class` column of Library-of-Congress-style call numbers. Taxonomy v1.1 (2026-10-12, grown
+from store content, not invented — a content scan found the clusters first): top classes `STR`
+engine, `MEM` memory-core, `HW` this machine, `USR` personal, `EVAL` quiz corpus, `OPS` setup,
+plus `FIC` fiction canon, `TECH` industry knowledge, `DEC` decision records. The notation's three
+tiers are all in production now: subclasses (`USR/PREF` — preferences are personal whatever their
+scope), per-setting cutters (`FIC/VOLDR`, `FIC/KREVV`, `FIC/OPUVV`, `FIC/THYRA` — the instance tier
+M3's cartridge banks will use, `MEM/CRG.3.431`), and genre shelves (one `decided` verb decides a
+DEC record, unlike USR where a stray word is noise). 15 shelves populated; `class=FIC` pulls the
+whole fiction family in one query. Unclassified is the default
 and is **wild**: an unshelved fact rides every unfiltered request exactly as before, and only a request
 that names a shelf (`X-Strata-Memory-Class: STR,USR`, or `?class=MEM` on the API) narrows — prefix
 match, so `STR` pulls `STR/GEN` with it. Corrections inherit the shelf they replace; a re-learn never
@@ -269,7 +275,15 @@ re-shelves; `op=classify` plus `tools/m2_class.py` backfill with a conservative 
 with a two-token margin, or stay wild — a wrong shelf hides a fact from the conversations that need
 it, a missing shelf only leaves it out of filtered ones). The personal lane fills on personal *signal*,
 not on scope: "/home/eugene" in a project path and "the name of the township" in a quiz question both
-tried to move into it during the first dry run and both got thrown out.
+tried to move into it during the first dry run and both got thrown out. Measured end to end the same
+day: one question asked three ways — unfiltered 1,617 prompt tokens and the right answer; `class=USR`
+292 tokens and the right answer; `class=EVAL` and an honest "I do not know" — the shelf decides what
+the model can know about you per conversation, at a fifth of the bytes. And the point of all this,
+as the user framed it: **shelves are how the model's knowledge grows without retraining or LoRA** —
+a classified corpus is knowledge addressed by call number, importable a conversation at a time,
+retrieved by the exact request that needs it. The honest limits ride with it: retrieval buys recall,
+not reasoning; the context budget still caps what any ask can carry; and a shelf's search quality
+gets a step change when the Phase 4 embedder gives every shelf a centroid to rank against.
 
 **Recall stops paying twice for one fact** (`dedup_recall`, on by default). Measured first: the web
 venue watched one Qwen3.8 fact take two of its eight slots while the store held five phrasings of it.
