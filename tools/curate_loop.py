@@ -200,6 +200,21 @@ CLASS_MAP = {
              "stations", "minnesota", "nebraska", "quiz", "gold", "probe", "probes", "canary",
              "canaries", "zylophwick", "greemak", "corpus", "bench", "benchmark", "venue",
              "venues", "gate", "f1", "recall_limit"},
+    # 2026-10-12 taxonomy v1.1 - grown from the store, not invented: a content scan found 12
+    # fiction-canon rows wild, ~30 industry rows homeless and 7 decision records with no shelf.
+    # An empty shelf is a promise retrieval cannot keep; a shelf the store already fills is one.
+    "FIC": {"krevven", "krevvens", "wendfallen", "voldranium", "opuvvi", "opuvvian", "vasketh",
+            "thule", "thyravelle", "gerudo", "zephyrine", "quorindine", "aurelith", "dusthenom",
+            "conjurin", "conjurins", "cuisine", "dish", "dishes", "canon", "fictional", "archive",
+            "custodian", "keeper", "bell", "tide", "expanse"},
+    # NB nvidia/amd/gpu stay OUT of TECH: they are the tokens of MY machine's requirements (HW);
+    # industry facts arrive with their own names (intel, dlss, epyc, arc) - sharing the generic
+    # words would tie every requirement row against every news row and the margin would go wild.
+    "TECH": {"intel", "arc", "b390", "panther", "wildcat", "dlss", "epyc", "9006", "geforce",
+             "blackwell", "rdna", "gddr", "2k27", "wembanyama", "caitlin", "nba", "laptop",
+             "laptops", "introduces", "announced"},
+    "DEC": {"decided", "decision", "decisions", "approved", "greenlit", "chose", "opted",
+            "vetoed", "rejected", "overruled"},
     "OPS": {"setup", "install", "installation", "dev-up", "dev-up.sh", "dev-down", "dev-down.sh",
             "config", "venv", "cron", "crontab", "systemd", "timer", "git", "commit", "commits",
             "push", "branch", "rebase", "release", "build", "compiled", "compiler", "snapper"},
@@ -210,26 +225,48 @@ CLASS_MAP = {
     "USR": {"eugene", "prefers", "preference", "preferences", "personal", "privately", "adult",
             "family", "middle", "username", "daily", "likes", "loves", "hates",
             "wants", "hobbies", "birthday", "daughter", "son", "wife", "husband", "learning",
-            "language", "lives", "friend", "kids", "email"},
+            "language", "lives", "friend", "kids", "email", "personalization", "goal"},
             # "home" stays out too: /home/eugene/ appears in every project path - paths are not
             # the personal lane
 }
 
 
+# The first real SUBCLASSES and CUTTERS, and what proved them: preferences are personal taste
+# whatever their scope (USR/PREF), decision records are a genre one verb decides (DEC), and the
+# fiction canon carries per-setting cutters exactly like LCC's instance tier - FIC/KREVV is the
+# Krevven shelf, FIC/VOLDR the Voldranium shelf, and M3's cartridge banks (MEM/CRG.3.431) will
+# use the same mechanism, one shelf per session bank.
+FIC_CUTTERS = {"krevven": "KREVV", "krevvens": "KREVV", "voldranium": "VOLDR", "thule": "VOLDR",
+               "custodian": "VOLDR", "archive": "VOLDR", "opuvvi": "OPUVV", "opuvvian": "OPUVV",
+               "gerudo": "OPUVV", "expanse": "OPUVV", "wendfallen": "WENDF",
+               "thyravelle": "THYRA", "codex": "THYRA"}
+PREF_V = ("prefers", "preference", "preferences", "wants", "likes", "loves", "hates")
+
+
 def fact_class(fact: str, scope: str) -> str:
-    """The v1 shelf mark for a stored fact (PHASE 4.5): a conservative top-class keyword map, argmax
-    with a margin - two or more distinct class tokens clear of the runner-up, or the fact stays
-    unclassified, which recall treats as wild: it rides every UNFILTERED request exactly as before.
-    Wrong shelves are worse than no shelves: a misfiled fact hides from the conversations that need
-    it and shows up in the ones that don't. An uncertain user-scope fact still lands on USR (the
-    personal lane is a shelf of its own, and its content is decided by WHO the fact is about, not
-    what words it uses); an uncertain project fact stays wild. Subclasses (MEM/CRG) arrive with
-    embedder centroids (Phase 4), not with more keywords."""
+    """The shelf mark for a stored fact (PHASE 4.5). Order is deliberate:
+    1. USR/PREF - "user" plus a preference verb: taste is personal by nature, first subclass.
+    2. DEC      - one decision verb decides the GENRE (unlike USR, where a stray word is noise,
+                  "decided" IS the record) - but only when nothing else outscores it.
+    3. argmax with a 2-token margin over the runner-up, or the fact stays WILD: it rides every
+       unfiltered request exactly as before, and joins no filtered one. Wrong shelves hide
+       facts; wild shelves only wait.
+    4. A confident USR score still shelves personal; everything else stays wild.
+    Subclasses beyond these (MEM/CRG, STR/VER) arrive with the embedder's centroids (Phase 4)
+    or a human hand - not with more keywords."""
     toks = set(_norm(fact).split())
     scores = {cls: len(toks & set(words)) for cls, words in CLASS_MAP.items()}
+    if "user" in toks and any(v in toks for v in PREF_V):
+        return "USR/PREF"
+    if scores["DEC"] >= 1 and scores["DEC"] >= max(scores.values()):
+        return "DEC"
     ranked = sorted(scores.values(), reverse=True)
     if ranked[0] >= 2 and ranked[0] - ranked[1] >= 2:
-        return max(scores, key=scores.get)
+        top = max(scores, key=scores.get)
+        if top == "FIC":
+            cut = next((FIC_CUTTERS[t] for t in toks if t in FIC_CUTTERS), None)
+            return f"FIC/{cut}" if cut else "FIC"
+        return top
     # NO keywords, no shelf - even for user scope. "The user's dev server was rebooted" is about
     # infrastructure, not the person; wild (unclassified) rides every UNFILTERED request, which is
     # the safe home for an uncertain fact. The USR lane fills on personal SIGNAL (>= 2 tokens),
