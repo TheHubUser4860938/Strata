@@ -42,8 +42,8 @@ answers) - deliberately UNTRACKED by git (personal-hygiene policy); the evidence
 git is the aggregate counts + the verdict block, never raw personal text.
 """
 from __future__ import annotations
-import argparse, datetime, json, re, sqlite3, sys, time
-import urllib.error, urllib.request as U
+import argparse, collections, datetime, json, re, sqlite3, sys, time
+import urllib.error, urllib.parse, urllib.request as U
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -127,6 +127,58 @@ def classify(cold: list[dict]) -> tuple[str, bool]:
     if len(confab) == len(cold):
         return "CORRECT", False
     return "FILL", bool(confab)                             # 0/3 with any confab = mixed
+
+
+def _norm(text):
+    """Same identity the store dedups on (serve.memory.norm_text), copied so the loop stays a
+    standalone script: casefolded, punctuation to spaces, whitespace collapsed."""
+    return " ".join("".join(c if c.isalnum() or c.isspace() else " " for c in str(text).casefold()).split())
+
+
+def _payload(text, df):
+    """A fact's content address: only its rare tokens (document frequency <= 3). The boilerplate of a
+    template-shaped corpus carries no information; the payload is what makes the fact itself."""
+    return frozenset(t for t in set(_norm(text).split()) if df.get(t, 0) <= 3)
+
+
+def supersede_id(url, fact, scope, log):
+    """The id of the active fact this CORRECT-class candidate replaces, or None. Matched by content
+    address (serve.m2_merge's rule): same payload, different text, same scope, and NOT a mere
+    rephrase (an identical payload with a different value token is a contradiction, which is what
+    CORRECT means). Prefers the row with the most hits - the one recall actually serves, so the fix
+    lands where the wrong fact was winning. None on any lookup trouble: a correction that cannot
+    find its target still stores as a plain new fact (op=remember), never fails."""
+    try:
+        st, r = http(f"{url}/memory?scope={urllib.parse.quote(scope)}&limit=500")
+        rows = [(m["id"], m["text"], m.get("hits", 0)) for m in (r or {}).get("memories", [])] if st == 200 else []
+    except Exception as e:                                    # noqa: BLE001 - a lookup is never worth losing a fact
+        log({"kind": "supersede_lookup", "err": str(e)[:100]})
+        return None
+    if not rows:
+        return None
+    df = collections.Counter(t for _, txt, _ in rows for t in set(_norm(txt).split()))
+    pay = _payload(fact, df)
+    if not pay:                                               # all-boilerplate: too weak to target anything
+        return None
+    want = _norm(fact)
+    # shared rare tokens, not whole-payload equality: a rephrase shares the FULL payload, a true
+    # contradiction ("KCVN is licensed to Frisco" vs the Cozad row) shares the SUBJECT tokens -
+    # both are the fact this one replaces; identical text is dedup's job, not supersede's. A lone
+    # shared token only targets when it dominates the smaller payload (>=0.5): one incidental
+    # rare-word coincidence ("broadcasts") must not retire an unrelated fact
+    def ok(pay2):
+        inter = len(pay & pay2)
+        return inter >= 2 or (inter >= 1 and inter >= 0.5 * min(len(pay), len(pay2)))
+    scored = sorted(((len(pay & _payload(txt, df)), h, i) for i, txt, h in rows
+                     if _norm(txt) != want and ok(_payload(txt, df))), reverse=True)
+    if not scored:
+        return None
+    if len(scored) > 1 and scored[0][:2] == scored[1][:2]:    # two rows share the subject equally:
+        log({"kind": "supersede_ambiguous", "shared": scored[0][0], "ids": [s[2] for s in scored[:4]]})
+        return None                                           # ambiguous target: store as a new fact
+    shared, hits_old, old = scored[0]
+    log({"kind": "supersede", "old_id": old, "shared": shared, "payload": sorted(pay)[:8]})
+    return old
 
 
 def main():
@@ -314,19 +366,29 @@ def main():
             # §11: DONT-STORE is "log noise, not memory" - the review list carries it, the
             # store does not. (drain409e audit found 5 DONT-STOREs stored by the pre-fix
             # code; they were forgotten by hand the same night, source-tag verified.)
-            st, r = http(url + "/memory", {
-                "op": "remember", "text": c["fact"], "scope": c["scope"],
-                "source": f"curation-{datetime.date.today().isoformat()}",
-                "provenance": {"turn_id": c["turn_id"], "probe": c["probe"], "gold": c["gold"],
-                               "cls": cls, "mixed": mixed, "passes": cold, "model": model}},
-                timeout=60)
+            fields = {"text": c["fact"], "scope": c["scope"],
+                      "source": f"curation-{datetime.date.today().isoformat()}",
+                      "provenance": {"turn_id": c["turn_id"], "probe": c["probe"], "gold": c["gold"],
+                                     "cls": cls, "mixed": mixed, "passes": cold, "model": model}}
+            body = {"op": "remember", **fields}
+            if cls == "CORRECT":
+                # job 7 routing: a correction SUPERSEDES the fact it contradicts (found by content
+                # address) instead of parking a 121st near-dupe beside it in recall
+                old = supersede_id(url, c["fact"], c["scope"], rec)
+                if old:
+                    body = {"op": "correct", "id": old, **fields}
+                    c["supersedes"] = old
+            st, r = http(url + "/memory", body, timeout=60)
+            if st == 400 and body["op"] == "correct":         # server predates op=correct: plain store
+                st, r = http(url + "/memory", {"op": "remember", **fields}, timeout=60)
+                c["supersedes"] = "deferred:server-predates-correct"
             c["mem_id"] = (r or {}).get("id")
             if st != 200:
                 rec({"kind": "remember", "turn_id": c["turn_id"], "http": st,
                      "err": str(r)[:120]})
         stored[cls] = stored.get(cls, 0) + 1
         rec({"kind": "score", "turn_id": c["turn_id"], "cls": cls, "mixed": mixed,
-             "fact": c["fact"][:90], "gold": c["gold"][:40],
+             "fact": c["fact"][:90], "gold": c["gold"][:40], "supersedes": c.get("supersedes"),
              "hits": [x["gold_hit"] for x in cold]})
         review.append(f"[{cls}{'/mixed' if mixed else ''}] (turn {c['turn_id']}) {c['fact']}\n"
                       f"    probe: {c['probe']}  gold: {c['gold']}  "
