@@ -206,6 +206,55 @@ for D2's writes. Still open, and D0 does NOT settle it: value calibration (the r
 written rows must land in-distribution) — that is precisely what the D2 marker probe tests in the
 coordinated window. Record: `spikes/ple-overlay/NOTES.md`.
 
+## Store operations — consolidation, budget, invalidation, self-feeding journal (added 2026-10-11/12)
+
+Four server-side capabilities, all opt-in or byte-identical-when-off, each triggered by a
+measurement rather than a guess. Unit-tested without a GPU (`serve/test_memory.py`, 25 cases);
+live-verified on the dev build (RTX 4090 / 62 GB, engine 0.1.43/0.1.43.1).
+
+**The journal feeds itself.** A `/v1/chat/completions` request that is not muted (`X-Strata-Memory: off`)
+journals its exchange — now even when nothing was recalled. That last part was a real bug: the journal
+context was built only when a recall block was injected, so every no-hit exchange streamed an answer and
+was then forgotten, and a project scope with no facts yet could never bootstrap (empty store → no recall
+→ no journal → empty store, forever). Found live: this very OpenCode session had stopped journaling at
+13:46 because its provider config carried a mute header from an earlier benchmarking run; removing the
+header and decoupling the journal from recall reopened the artery, and the session's own turns began
+landing in the queue mid-conversation. A request with no user text (a bare tool-continuation) still
+skips the journal — an answer nobody asked for is curation noise.
+
+**Consolidation by content address.** The store dedups by exact normalized text on write, but the curation
+loop re-derives the same fact in different phrasings, and the eval corpus is template-shaped ("KXXX is
+licensed to YYY" and the question that asks it share every boilerplate token). Token similarity cannot
+separate them — it flagged 4,161 "near-dupes" among facts that differ only in the payload. `tools/m2_merge.py`
+hashes the payload instead: the rare tokens (document frequency ≤ 3) of each fact's normalized text. Two
+active facts with the same payload in one scope are the same fact said differently. The survivor is the
+most informative row (a declarative beats a question, since a question stored as a fact injects no
+answer). 50 honest groups, 52 redundant rows — 13% of the store — retired in one command, zero engine
+calls. Negation-mismatched groups ("X is Y" vs "X is not Y" share a payload, mean opposite things) are
+reported, never merged.
+
+**A budget that speaks before the wall.** `memory.max_memories` (0 = unlimited, the default path
+byte-identical to earlier releases) caps the store at write time. A crossing write retires the worst
+never-recalled rows first (lowest confidence, then oldest) and never touches a fact the recall has
+actually served (`hits > 0`) or the write that triggered it — a budget that eats its own input makes a
+sieve. `GET /memory` reports `max_memories` and `pressure` at 80% of the cap, so a background pass can
+consolidate before the store silently overflows. Dev budget 1,500; the store ran 355–381 through the
+work, well under, pressure false.
+
+**Corrections version facts, they do not delete them.** A fact that stops being true is marked, not
+removed: `invalid_at` and `superseded_by` (two instant ALTERs, old databases migrate on first open) turn
+every overwrite into a walkable chain. Recall, search, the budget and write-time dedup see only active
+rows; `op=invalidate` and `op=correct` retire or replace, and `GET /memory?include_invalid=1` shows the
+history. This is why "Alice works at Acme" and "Alice works at Beta" no longer retrieve with equal
+authority — the pattern Zep/Graphiti publish for temporal knowledge graphs, adapted to a flat text store.
+An active write never dedups onto a superseded row: re-learning a retired fact starts a new chain.
+`m2_merge` now retires by default; `--hard` still deletes.
+
+**The loop runs on a trigger, not a clock.** `tools/sweep_cron.sh` reads two numbers from `GET /memory` —
+`pressure` and the pending-turn count. Both cool: one curl and exit, the engine never sees the tick.
+Either hot: two idle-gated curation batches. Nothing is scheduled until the user installs the crontab
+line in the script header.
+
 ## Licensing and attribution
 
 - Strata (upstream) is MIT © Niko1221 and contributors; this fork's independent code keeps MIT.
