@@ -181,6 +181,62 @@ def supersede_id(url, fact, scope, log):
     return old
 
 
+# Top-class keyword map for the v1 shelf mark (PHASE 4.5). Deliberately small and distinctive:
+# these are the tokens that DECIDE a shelf, not the ones that decorate a sentence. "token" and
+# "model" appear everywhere; "generate.cpp" and "vram" do not.
+CLASS_MAP = {
+    "STR": {"engine", "generate.cpp", "prefill", "decode", "cuda", "hip", "sycl", "nvcc", "mtp",
+            "drafter", "drafts", "draft", "speculative", "quantized", "quant", "gguf", "ggml",
+            "yarn", "rope", "k8v4", "pcie", "overlap", "checkpoints", "checkpoint", "llama.cpp",
+            "flash-next", "qwen3.8", "iq3_s", "unloaded", "unload", "slot", "slots", "context"},
+    "MEM": {"memory", "memories", "recall", "injection", "injected", "journal", "journaled",
+            "journaling", "curation", "curation's", "curated", "curate", "sweep", "swept",
+            "cartridge", "cartridges", "mam", "fts", "invalidate", "invalidation", "supersede",
+            "supersede_id", "supersedes", "superseded", "budget", "store", "facts", "fact",
+            "dedup", "dedups", "deduplicated", "merge", "m2_merge", "provenance", "scopes", "scope"},
+    "HW": {"gpu", "vram", "rtx", "4090", "5070", "nvidia", "amd", "radeon", "epyc", "ryzen",
+           "x3d", "ddr", "ddr5", "ram", "cpu", "ssd", "nvme", "motherboard", "cooler", "psu"},
+    "EVAL": {"township", "townships", "county", "counties", "licensed", "broadcast", "station",
+             "stations", "minnesota", "nebraska", "quiz", "gold", "probe", "probes", "canary",
+             "canaries", "zylophwick", "greemak", "corpus", "bench", "benchmark", "venue",
+             "venues", "gate", "f1", "recall_limit"},
+    "OPS": {"setup", "install", "installation", "dev-up", "dev-up.sh", "dev-down", "dev-down.sh",
+            "config", "venv", "cron", "crontab", "systemd", "timer", "git", "commit", "commits",
+            "push", "branch", "rebase", "release", "build", "compiled", "compiler", "snapper"},
+    # NB "user" is deliberately NOT a USR keyword: every journaled fact reads "The user ..." -
+    # it would score 1 everywhere, quietly stealing the margin from real shelves. Scope already
+    # says a fact is the user's; the USR SHELF is for facts that are personal by content. Same
+    # reason "name" stays out: "the name of the township" is a quiz question, not a name fact.
+    "USR": {"eugene", "prefers", "preference", "preferences", "personal", "privately", "adult",
+            "family", "middle", "username", "daily", "likes", "loves", "hates",
+            "wants", "hobbies", "birthday", "daughter", "son", "wife", "husband", "learning",
+            "language", "lives", "friend", "kids", "email"},
+            # "home" stays out too: /home/eugene/ appears in every project path - paths are not
+            # the personal lane
+}
+
+
+def fact_class(fact: str, scope: str) -> str:
+    """The v1 shelf mark for a stored fact (PHASE 4.5): a conservative top-class keyword map, argmax
+    with a margin - two or more distinct class tokens clear of the runner-up, or the fact stays
+    unclassified, which recall treats as wild: it rides every UNFILTERED request exactly as before.
+    Wrong shelves are worse than no shelves: a misfiled fact hides from the conversations that need
+    it and shows up in the ones that don't. An uncertain user-scope fact still lands on USR (the
+    personal lane is a shelf of its own, and its content is decided by WHO the fact is about, not
+    what words it uses); an uncertain project fact stays wild. Subclasses (MEM/CRG) arrive with
+    embedder centroids (Phase 4), not with more keywords."""
+    toks = set(_norm(fact).split())
+    scores = {cls: len(toks & set(words)) for cls, words in CLASS_MAP.items()}
+    ranked = sorted(scores.values(), reverse=True)
+    if ranked[0] >= 2 and ranked[0] - ranked[1] >= 2:
+        return max(scores, key=scores.get)
+    # NO keywords, no shelf - even for user scope. "The user's dev server was rebooted" is about
+    # infrastructure, not the person; wild (unclassified) rides every UNFILTERED request, which is
+    # the safe home for an uncertain fact. The USR lane fills on personal SIGNAL (>= 2 tokens),
+    # not on scope and not on one stray word like "language" in a technical sentence.
+    return "USR" if scores["USR"] >= 2 else ""
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--url", default="http://127.0.0.1:8005")
@@ -368,6 +424,7 @@ def main():
             # code; they were forgotten by hand the same night, source-tag verified.)
             fields = {"text": c["fact"], "scope": c["scope"],
                       "source": f"curation-{datetime.date.today().isoformat()}",
+                      "class": fact_class(c["fact"], c["scope"]),   # PHASE 4.5: shelf at store time
                       "provenance": {"turn_id": c["turn_id"], "probe": c["probe"], "gold": c["gold"],
                                      "cls": cls, "mixed": mixed, "passes": cold, "model": model}}
             body = {"op": "remember", **fields}
