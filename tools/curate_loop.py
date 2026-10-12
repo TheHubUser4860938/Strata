@@ -195,11 +195,17 @@ CLASS_MAP = {
             "supersede_id", "supersedes", "superseded", "budget", "store", "facts", "fact",
             "dedup", "dedups", "deduplicated", "merge", "m2_merge", "provenance", "scopes", "scope"},
     "HW": {"gpu", "vram", "rtx", "4090", "5070", "nvidia", "amd", "radeon", "epyc", "ryzen",
-           "x3d", "ddr", "ddr5", "ram", "cpu", "ssd", "nvme", "motherboard", "cooler", "psu"},
+           "x3d", "ddr", "ddr5", "ram", "cpu", "ssd", "nvme", "motherboard", "cooler", "psu",
+           "passkey", "yubikey", "desktop", "plugged"},   # the user's own security hardware (scan 2026-10-12)
     "EVAL": {"township", "townships", "county", "counties", "licensed", "broadcast", "station",
              "stations", "minnesota", "nebraska", "quiz", "gold", "probe", "probes", "canary",
              "canaries", "zylophwick", "greemak", "corpus", "bench", "benchmark", "venue",
-             "venues", "gate", "f1", "recall_limit"},
+             "venues", "gate", "f1", "recall_limit",
+             # 2026-10-12 wild-scan: the FAA-airport arm of the same quiz corpus sat homeless
+             # (105+ rows) because the map knew stations and townships but not airports -
+             # class=EVAL was silently MISSING a third of the corpus it claimed to filter.
+             "airport", "airports", "faa", "municipal", "identifier", "field", "assigned",
+             "aviation", "trivia"},
     # 2026-10-12 taxonomy v1.1 - grown from the store, not invented: a content scan found 12
     # fiction-canon rows wild, ~30 industry rows homeless and 7 decision records with no shelf.
     # An empty shelf is a promise retrieval cannot keep; a shelf the store already fills is one.
@@ -217,7 +223,8 @@ CLASS_MAP = {
             "vetoed", "rejected", "overruled"},
     "OPS": {"setup", "install", "installation", "dev-up", "dev-up.sh", "dev-down", "dev-down.sh",
             "config", "venv", "cron", "crontab", "systemd", "timer", "git", "commit", "commits",
-            "push", "branch", "rebase", "release", "build", "compiled", "compiler", "snapper"},
+            "push", "branch", "rebase", "release", "build", "compiled", "compiler", "snapper",
+            "reboot", "rebooted", "restart", "restarted"},  # server lifecycle (scan 2026-10-12)
     # NB "user" is deliberately NOT a USR keyword: every journaled fact reads "The user ..." -
     # it would score 1 everywhere, quietly stealing the margin from real shelves. Scope already
     # says a fact is the user's; the USR SHELF is for facts that are personal by content. Same
