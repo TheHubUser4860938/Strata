@@ -6739,7 +6739,14 @@ def main() -> int:
     except KeyboardInterrupt:
         print("\n[strata] stopping (Ctrl+C again to end the engine at once) ...", flush=True)
         closers = [httpd.shutdown, getattr(engine, "close", None), vision.shutdown if vision else None,
-                   hub.close if hub is not None else None]
+                   hub.close if hub is not None else None,
+                   # memory-core M2 job 6: a clean stop must SEAL and SHRED - without this closer the
+                   # periodic every-50-writes seal keeps memory.db.enc fresh, but the plaintext db
+                   # survives the stop too, and "a stopped server leaves only ciphertext" stays a
+                   # promise instead of a fact. Last in line: requests are done by then, and
+                   # close() takes the store lock, so a final straggler journal (which swallows its
+                   # own errors) can never break the exit.
+                   svc.memory.close if getattr(svc, "memory", None) is not None else None]
         for close in filter(None, closers):
             try:
                 close()
