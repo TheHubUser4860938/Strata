@@ -422,5 +422,232 @@ class MemoryOff(unittest.TestCase):
         self.assertEqual(body["choices"][0]["message"]["content"], "the mock answer")
 
 
+class ClassAxis(unittest.TestCase):
+    """PHASE 4.5: call numbers (class = WHAT, scope = WHO), prefix-filtered recall, near-dupe
+    suppression at injection, and the honest shown-count header."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.mem = MemoryService(self.tmp.name)
+
+    def tearDown(self):
+        self.mem.close()
+        self.tmp.cleanup()
+
+    def test_class_defaults_empty_and_search_reports_it(self):
+        self.mem.remember("the zebra-mango deploy window is 04:40 UTC", scope="ops")
+        hits = self.mem.search("zebra-mango deploy window", scope="ops")
+        self.assertEqual(hits[0]["class"], "", "unclassified is the default, wild by design")
+
+    def test_filter_prefixes_and_wild_behaviour(self):
+        self.mem.remember("generate.cpp owns the decode loop", scope="ops", klass="STR")
+        self.mem.remember("generate.cpp also submits the overlap signal", scope="ops", klass="STR/GEN")
+        self.mem.remember("the recall block budget is a shelf decision", scope="ops", klass="MEM")
+        self.mem.remember("KTNC is licensed to Falls City, Nebraska", scope="ops", klass="EVAL")
+        self.mem.remember("the stray fact nobody shelved", scope="ops")
+        got = lambda q, **kw: {h["text"] for h in self.mem.search(q, scope="ops", **kw)}
+        self.assertEqual(got("generate.cpp decode overlap signal", classes=["STR"]),
+                         {"generate.cpp owns the decode loop",
+                          "generate.cpp also submits the overlap signal"},
+                         "a prefix pulls its whole subtree (STR takes STR/GEN)")
+        self.assertEqual(got("recall block budget shelf", classes=["MEM"]),
+                         {"the recall block budget is a shelf decision"})
+        self.assertEqual(got("generate.cpp recall licensed", classes=["MEM", "EVAL"]),
+                         {"the recall block budget is a shelf decision",
+                          "KTNC is licensed to Falls City, Nebraska"},
+                         "multiple prefixes OR")
+        unfiltered = got("generate.cpp recall licensed stray")
+        self.assertIn("the stray fact nobody shelved", unfiltered,
+                      "wild facts ride EVERY unfiltered request")
+        self.assertNotIn("the stray fact nobody shelved",
+                         got("generate.cpp recall licensed stray", classes=["STR"]),
+                      "a request that names shelves deliberately leaves wild facts out")
+
+    def test_class_validation_and_quiet_drop(self):
+        from serve.memory import class_name
+        self.assertEqual(class_name(" mem/crg.3 "), "MEM/CRG.3")
+        with self.assertRaises(ValueError):
+            self.mem.remember("junk shelf", klass="engine internals")
+        self.assertEqual(class_name("engine internals", quiet=True), "",
+                         "headers may carry anything: junk drops, never raises")
+
+    def test_correct_inherits_the_shelf(self):
+        a = self.mem.remember("the widget greemak works at Acme Foundry", scope="user", klass="STR")
+        b = self.mem.correct("the widget greemak works at Beta Foundry", a["id"], scope="user")
+        shelved = {m["id"]: m["class"] for m in self.mem.list_memories(scope="user", limit=50)}
+        self.assertEqual(shelved[b["id"]], "STR", "a correction never re-shelves its fact")
+
+    def test_remember_dedup_fills_but_never_reshelves(self):
+        r = self.mem.remember("the fallow pit yields blue slate", scope="ops", klass="MEM")
+        d = self.mem.remember("the fallow pit yields blue slate", scope="ops", klass="EVAL")
+        self.assertTrue(d["deduped"])
+        shelved = {m["id"]: m["class"] for m in self.mem.list_memories(scope="ops", limit=50)}
+        self.assertEqual(shelved[r["id"]], "MEM", "the shelf is a decision, not a guess to churn")
+        e = self.mem.remember("the hollow pit yields grey slate", scope="ops")   # different fact
+        e2 = self.mem.remember("the hollow pit yields grey slate", scope="ops", klass="HW")
+        shelved = {m["id"]: m["class"] for m in self.mem.list_memories(scope="ops", limit=50)}
+        self.assertEqual(shelved[e2["id"]], "HW", "an empty shelf DOES fill on the next learning")
+
+    def test_classify_moves_a_fact_and_history_keeps_its_shelf(self):
+        a = self.mem.remember("the quarry seam runs under Route 9", scope="ops")
+        self.assertTrue(self.mem.classify(a["id"], "HW"))
+        self.assertEqual(self.mem.list_memories(scope="ops", limit=50)[0]["class"], "HW")
+        b = self.mem.correct("the quarry seam runs under Route 19", a["id"], scope="ops")
+        self.assertTrue(self.mem.classify(a["id"], "OPS"))          # re-shelve the SUPERSEDED row
+        hist = {m["id"]: m["class"] for m in
+                self.mem.list_memories(scope="ops", limit=50, include_invalid=True)}
+        self.assertEqual(hist[a["id"]], "OPS", "history keeps its shelf marks")
+        self.assertEqual(hist[b["id"]], "HW", "the live row inherited at correct-time, untouched")
+
+    def test_recall_suppresses_near_dupes_and_prefers_the_fact(self):
+        # the five-Qwen-cluster shape, from the live store 2026-10-12: paraphrases whose shared
+        # identity tokens are NOT rare (they appear in every copy) - the v1 absolute-bar blind spot
+        for t in ("Strata runs Qwen3.8-Flash-Next as its single supported model in many quantized sizes",
+                  "Strata runs Qwen3.8-Flash-Next exclusively in various compressed sizes and versions",
+                  "the Qwen3.8-Flash-Next model is Strata's one base model, offered in several quants",
+                  "the zebra-mango deploy window is 04:40 UTC"):
+            self.mem.remember(t, scope="ops")
+        hits = self.mem.search("which model does strata run quantized sizes", scope="ops")
+        qwen = [h for h in hits if "flash-next" in h["text"].lower()]
+        self.assertEqual(len(qwen), 1, "three phrasings, one slot")
+        # question and its answer collide as near-dupes: the FACT wins the slot, whoever ranked first
+        self.mem.remember("In which Nebraska town is QZZXQ licensed to broadcast?", scope="ops")
+        self.mem.remember("QZZXQ is licensed to Frisco, Nebraska to broadcast", scope="ops")
+        hits = self.mem.search("which Nebraska town QZZXQ licensed broadcast", scope="ops")
+        zq = [h["text"] for h in hits if "qzzxq" in h["text"].lower()]
+        self.assertEqual(zq, ["QZZXQ is licensed to Frisco, Nebraska to broadcast"],
+                         "an injected question answers nothing: the declarative bumps it")
+
+    def test_dedup_recall_off_keeps_both(self):
+        off = MemoryService(self.tmp.name + "/off", dedup_recall=False)
+        try:
+            off.remember("Strata runs Qwen3.8-Flash-Next as its single supported model", scope="ops")
+            off.remember("Strata runs Qwen3.8-Flash-Next in various quantized sizes", scope="ops")
+            hits = off.search("strata qwen3.8 flash-next model", scope="ops")
+            self.assertEqual(len([h for h in hits if "flash-next" in h["text"].lower()]), 2,
+                             "dedup_recall=False is the old behaviour, byte-for-byte")
+        finally:
+            off.close()
+
+    def test_block_header_shows_the_sample_honestly(self):
+        for i in range(12):
+            self.mem.remember(f"fact {i} about the flibber-gauge instrument number {i}", scope="ops")
+        block, shown, _ = self.mem.block_for(
+            [{"role": "user", "content": "flibber gauge instrument facts"}], "ops")
+        self.assertIn(f'shown="{len(shown)} of 12 active"', block.splitlines()[0],
+                      "the model can tell a slice from the whole store")
+
+    def test_request_state_class_header(self):
+        self.mem.remember("the flibber gauge reads torque in newton meters", scope="ops", klass="HW")
+        self.mem.remember("the flibber gauge committee meets in Itasca County", scope="ops", klass="EVAL")
+        msgs = [{"role": "user", "content": "what does the flibber gauge read in?"}]
+        out, ctx = request_state(self.mem, msgs,
+                                 {"X-Strata-Memory-Scope": "ops", "X-Strata-Memory-Class": "HW"},
+                                 {"model": "m"})
+        self.assertIn("newton meters", out[0]["content"])
+        self.assertNotIn("Itasca", out[0]["content"], "the class header keeps committee trivia out")
+        out2, _ = request_state(self.mem, msgs,
+                                {"X-Strata-Memory-Scope": "ops", "X-Strata-Memory-Class": "junk shelf!"},
+                                {"model": "m"})
+        self.assertIn("Itasca", out2[0]["content"],
+                      "junk in the class header drops the filter - never breaks the request")
+
+
+class EncryptionAtRest(unittest.TestCase):
+    """M2 job 6: key-file encryption, honest about its threat model - ciphertext when STOPPED,
+    plaintext while running, loud failure on tamper, and an optional scrypt-stretched passphrase
+    that never enters the config file or git."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.dir = self.tmp.name
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _reopen(self, **kw):
+        return MemoryService(self.dir, encrypt=True, **kw)
+
+    def test_roundtrip_key_and_shred(self):
+        m = self._reopen()
+        m.remember("Eugene is the user's middle name, not their first", scope="user")
+        m.close()
+        self.assertFalse(os.path.exists(os.path.join(self.dir, "memory.db")),
+                         "a clean stop of an encrypted store leaves NO plaintext behind")
+        self.assertTrue(os.path.exists(os.path.join(self.dir, "memory.db.enc")))
+        key = os.path.join(self.dir, "memory.key")
+        self.assertEqual(os.stat(key).st_mode & 0o777, 0o600, "the key-file is 0600 beside the db")
+        self.assertEqual(len(open(key, "rb").read()), 32)
+        m = self._reopen()
+        try:
+            hits = m.search("which name is eugene", scope="user")
+            self.assertTrue(hits, "the store came back through the seal intact")
+            self.assertIn("middle name", hits[0]["text"])
+        finally:
+            m.close()
+
+    def test_tamper_fails_loudly_not_empty(self):
+        m = self._reopen()
+        m.remember("the sealed store never opens quietly wrong", scope="user")
+        m.close()
+        blob = bytearray(open(os.path.join(self.dir, "memory.db.enc"), "rb").read())
+        blob[-33] ^= 1                                    # flip one ciphertext byte (just before the tag)
+        open(os.path.join(self.dir, "memory.db.enc"), "wb").write(bytes(blob))
+        with self.assertRaises(ValueError, msg="a flipped byte must fail the MAC, not decrypt to mush"):
+            self._reopen()
+
+    def test_wrong_key_fails_loudly(self):
+        m = self._reopen()
+        m.remember("a lost key must not look like an empty store", scope="user")
+        m.close()
+        open(os.path.join(self.dir, "memory.key"), "wb").write(b"\x01" * 32)
+        with self.assertRaises(ValueError):
+            self._reopen()
+
+    def test_passphrase_is_a_second_factor(self):
+        os.environ["STRATA_TEST_PW"] = "zippel-township-1898"
+        try:
+            m = self._reopen(passphrase_env="STRATA_TEST_PW")
+            m.remember("the passphrase never enters the config file or git", scope="user")
+            m.close()
+            with self.assertRaises(ValueError):
+                self._reopen()                            # key alone: wrong (no passphrase in env)
+            m = self._reopen(passphrase_env="STRATA_TEST_PW")
+            try:
+                self.assertTrue(m.search("passphrase config file git", scope="user"))
+            finally:
+                m.close()
+        finally:
+            del os.environ["STRATA_TEST_PW"]
+
+    def test_periodic_snapshot_keeps_plaintext_for_crash_recovery(self):
+        m = self._reopen()
+        try:
+            for i in range(50):                           # the 50-write seal cadence
+                m.remember(f"snapshot probe number {i} for the seal cadence", scope="user")
+            self.assertTrue(os.path.exists(os.path.join(self.dir, "memory.db.enc")),
+                            "50 writes sealed a snapshot")
+            self.assertTrue(os.path.exists(os.path.join(self.dir, "memory.db")),
+                            "and the plaintext stayed: a crash mid-run loses at most 49 writes")
+        finally:
+            m.close()
+
+    def test_stats_report_at_rest_and_by_class(self):
+        m = self._reopen()
+        try:
+            m.remember("generate.cpp owns the decode loop", scope="ops", klass="STR")
+            s = m.stats()
+            self.assertEqual(s["by_class"], {"STR": 1})
+            self.assertEqual(s["at_rest"]["mode"], "key-file")
+            self.assertTrue(s["at_rest"]["plaintext_while_running"])
+        finally:
+            m.close()
+        plain = MemoryService(os.path.join(self.dir, "plain"))
+        try:
+            self.assertEqual(plain.stats()["at_rest"], "off")
+        finally:
+            plain.close()
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

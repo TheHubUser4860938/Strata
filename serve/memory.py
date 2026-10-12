@@ -31,6 +31,7 @@ independent and keeps Strata's MIT license.
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
 import math
 import os
@@ -47,6 +48,31 @@ DEFAULT_PROJECT = "default"             # requests that name no scope land in th
 WORD_RE = re.compile(r"\w{2,}", re.UNICODE)
 MAX_QUERY_WORDS = 12                    # a MATCH over more words than these stops being a query and becomes noise
 AGE_SCALE_DAYS = 90.0                   # recency half-life-ish: exp(-age_days / this) feeds the ranking blend
+STOP = frozenset(("a an and are as at be by can could did do does for from had has have he her his how i if in "
+                  "is it its me my no not of on or our she so than that the their them then there these they this "
+                  "to us we what when where which who whom whose why will with would you your").split())
+                                      # words that never carry a fact's payload, whatever the corpus says: in a
+                                      # five-row test store "the" has df 2 and looks RARE, but it is never a
+                                      # subject - excluding them is what stops two different facts about one
+                                      # subject (the flibber-gauge pair, measured) from deduping on grammar
+CLASS_RE = re.compile(r"[A-Z][A-Z0-9]*(?:/[A-Z0-9]+)*(?:\.[A-Za-z0-9]+)?\Z")
+                                      # a call number, PHASE 4.5: Library-of-Congress style shelf marks -
+                                      # STR, MEM/CRG, MEM/CRG.3, MEM/CRG.3.431. The class axis answers
+                                      # WHAT a fact is about; scope answers WHO may know it. The two are
+                                      # orthogonal, and recall can filter by class prefix the way a
+                                      # reader pulls a shelf, not a wing.
+
+
+def class_name(value, *, quiet: bool = False) -> str:
+    """A call number as stored: upper-cased, validated. Spaces are NOT stripped - "engine internals"
+    must fail, not silently weld itself into ENGINEINTERNALS. quiet=True (request headers may carry
+    anything) drops junk to '' instead of raising."""
+    v = str(value or "").strip().upper()
+    if not v or CLASS_RE.fullmatch(v):
+        return v
+    if quiet:
+        return ""
+    raise ValueError('class must look like a call number: STR, MEM/CRG, MEM/CRG.3.431')
 
 
 def scope_name(value, fallback: str = DEFAULT_PROJECT) -> str:
@@ -100,7 +126,8 @@ class MemoryService:
     def __init__(self, directory: str, *, max_block_chars: int = 6000, recall_limit: int = 8,
                  cache_entries: int = 64, inject: bool = True, per_turn: bool = True,
                  turn_recall_limit: int = 8, turn_block_chars: int = 2000,
-                 max_memories: int = 0):
+                 max_memories: int = 0, dedup_recall: bool = True,
+                 encrypt: bool = False, key_file: str = "", passphrase_env: str = ""):
         self.directory = memory_dir(directory)      # absolute, created 0700 - same rules as slot_save_path
         self.db_path = os.path.join(self.directory, "memory.db")
         self.max_block_chars = max(200, int(max_block_chars))
@@ -109,6 +136,23 @@ class MemoryService:
         self.turn_recall_limit = max(1, min(50, int(turn_recall_limit)))
         self.turn_block_chars = max(200, int(turn_block_chars))
         self.inject = bool(inject)
+        # near-dupe suppression at recall (measured on the live store 2026-10-12: the web venue watched
+        # one Qwen3.8 fact take two of its eight slots; the store held FIVE phrasings of it). Off with
+        # dedup_recall=False; the search() ranking itself is untouched - this only stops the same fact
+        # riding twice under different words.
+        self.dedup_recall = bool(dedup_recall)
+        # at-rest encryption (M2 job 6, opt-in: encrypt=False keeps every byte exactly as earlier
+        # releases left them). Threat model stated honestly: the key-file sits BESIDE the db, so this
+        # stops the casual snoop - anyone who browses or copies the store dir while the server is
+        # STOPPED finds ciphertext. It does not stop a thief who owns a running machine: the open db
+        # is plaintext while serving, which is what stats()["at_rest"] says out loud. The passphrase
+        # (an ENVIRONMENT VARIABLE named by config, so the secret never enters the config file or git)
+        # and a FIDO2 passkey seal raise the bar in stages - see _reveal/_seal.
+        self.encrypt = bool(encrypt)
+        self.key_path = key_file or os.path.join(self.directory, "memory.key")
+        self.passphrase_env = passphrase_env or ""
+        self._writes = 0
+        self._sealed_at: float | None = None
         # budget (M2 job 5, opt-in: 0 = no cap, the path stays byte-identical to every earlier release).
         # Over-cap writes evict the WORST never-recalled rows first (lowest confidence, then oldest) and
         # NEVER touch a fact the recall has actually served (hits>0) - those retire only by human review
@@ -118,6 +162,12 @@ class MemoryService:
         self.lock = threading.Lock()
         self._blocks: OrderedDict[tuple[str, str], tuple[str, list[int]]] = OrderedDict()  # (scope, key) -> pinned (block, shown ids)
         self._cache_entries = max(1, int(cache_entries))
+        if self.encrypt:
+            self._key_bytes()                                   # create the 0600 key-file when missing
+            if not os.path.exists(self.db_path) and os.path.exists(self.db_path + ".enc"):
+                self._reveal()                                  # ciphertext -> fresh plaintext db
+            # if BOTH the plaintext db and a .enc exist, a crash left the plaintext: it is the newer
+            # truth (the .enc is only as fresh as the last seal), so it wins and the next seal renews.
         self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
         with self.lock:
             self.conn.execute("PRAGMA journal_mode=WAL")
@@ -175,6 +225,12 @@ class MemoryService:
                 self.conn.execute("alter table memories add column invalid_at REAL")
             if "superseded_by" not in cols:
                 self.conn.execute("alter table memories add column superseded_by INTEGER")
+            # PHASE 4.5 first column: the class axis (call number). '' = unclassified, and unclassified
+            # is WILD by design - a fact nobody shelved still surfaces in unfiltered recall exactly as
+            # before, so every byte of the pre-classification store keeps behaving identically. Only a
+            # request that ASKS for a class prefix narrows to shelved rows; the default path never does.
+            if "class" not in cols:
+                self.conn.execute("alter table memories add column class TEXT NOT NULL DEFAULT ''")
             self.conn.commit()
 
     # ---- store ---------------------------------------------------------------
@@ -187,31 +243,37 @@ class MemoryService:
         self.conn.execute("update meta set value = cast(cast(value as integer) + 1 as text) where key='version'")
 
     def remember(self, text: str, scope: str = USER_SCOPE, source: str = "manual",
-                 confidence: float | None = None, provenance: dict | None = None) -> dict:
+                 confidence: float | None = None, provenance: dict | None = None,
+                 klass: str | None = None) -> dict:
         """Store one durable fact. An active row with the same normalized text and scope is updated instead
-        of duplicated: the curation loop may propose the same thing many times."""
+        of duplicated: the curation loop may propose the same thing many times. klass is the call number
+        (class axis, PHASE 4.5): a re-learned fact never RE-SHELVES a row that already has one - the
+        shelf is a decision, not a guess to be overwritten - but fills a shelf that is still empty."""
         text = " ".join(str(text).split())
         if not text:
             raise ValueError("memory text is empty")
         if len(text) > 4000:
             raise ValueError("memory text is over 4000 characters - split it into separate facts")
         scope = scope_name(scope, USER_SCOPE)
+        klass = class_name(klass) if klass else ""
         conf = 0.8 if confidence is None else max(0.0, min(1.0, float(confidence)))
         now = time.time()
         with self.lock:
             same = self.conn.execute(
-                "select id, text from memories where scope=? and invalid_at is null", (scope,)).fetchall()
+                "select id, text, class from memories where scope=? and invalid_at is null", (scope,)).fetchall()
             hit = next((r for r in same if norm_text(r[1]) == norm_text(text)), None)
             if hit:
-                self.conn.execute("update memories set updated_at=?, confidence=max(confidence,?) where id=?",
-                                  (now, conf, hit[0]))
+                self.conn.execute(
+                    "update memories set updated_at=?, confidence=max(confidence,?), class=? where id=?",
+                    (now, conf, hit[2] or klass, hit[0]))
                 self.conn.commit()
+                self._touched()
                 return {"id": hit[0], "deduped": True}
             cur = self.conn.execute(
-                "insert into memories(scope,text,source,provenance,confidence,created_at,updated_at)"
-                " values(?,?,?,?,?,?,?)",
+                "insert into memories(scope,text,source,provenance,confidence,created_at,updated_at,class)"
+                " values(?,?,?,?,?,?,?,?)",
                 (scope, text, str(source)[:40], json.dumps(provenance, ensure_ascii=False) if provenance else None,
-                 conf, now, now))
+                 conf, now, now, klass))
             evicted: list[int] = []
             if self.max_memories:
                 # the budget line: over cap, the worst NEVER-RECALLED rows go first (lowest confidence,
@@ -228,6 +290,7 @@ class MemoryService:
                         evicted = [g[0] for g in gone]
             self._bump()
             self.conn.commit()
+            self._touched()
             out = {"id": cur.lastrowid, "deduped": False}
             if evicted:
                 out["evicted"] = evicted
@@ -238,6 +301,7 @@ class MemoryService:
             gone = self.conn.execute("delete from memories where id=?", (int(memory_id),))
             self._bump()
             self.conn.commit()
+            self._touched()
             return gone.rowcount > 0
 
     def invalidate(self, memory_id: int, by_id: int | None = None) -> bool:
@@ -251,26 +315,54 @@ class MemoryService:
                 (time.time(), int(by_id) if by_id else None, time.time(), int(memory_id)))
             self._bump()
             self.conn.commit()
+            self._touched()
             return r.rowcount > 0
 
     def correct(self, text: str, old_id: int, scope: str = USER_SCOPE, source: str = "manual",
-                confidence: float | None = None, provenance: dict | None = None) -> dict:
+                confidence: float | None = None, provenance: dict | None = None,
+                klass: str | None = None) -> dict:
         """One step, Zep-style: the new fact lands, the old one is invalidated pointing at it.
-        An unknown old_id still stores the new fact (a correction of a forgotten fact is a fill)."""
-        new = self.remember(text, scope=scope, source=source, confidence=confidence, provenance=provenance)
+        An unknown old_id still stores the new fact (a correction of a forgotten fact is a fill).
+        A correction never re-shelves its fact (PHASE 4.5): with no class given, the replacement
+        inherits the shelf of the row it supersedes - the correction is about the same subject, so
+        it belongs on the same shelf, and a fix that drifted classes would hide itself from exactly
+        the conversations that need it."""
+        if klass is None:
+            with self.lock:
+                old = self.conn.execute("select class from memories where id=?", (int(old_id),)).fetchone()
+            klass = old[0] if old and old[0] else None
+        new = self.remember(text, scope=scope, source=source, confidence=confidence,
+                            provenance=provenance, klass=klass)
         self.invalidate(old_id, by_id=new["id"])
         new["invalidated"] = int(old_id)
         return new
 
+    def classify(self, memory_id: int, klass: str) -> bool:
+        """Shelve one fact (op=classify, the backfill and the hand-review path). Works on superseded
+        rows too - history keeps its shelf marks. The row's own scope stays untouched: class says
+        what, scope says who."""
+        klass = class_name(klass)
+        with self.lock:
+            r = self.conn.execute("update memories set class=?, updated_at=updated_at where id=?",
+                                  (klass, int(memory_id)))
+            self._bump()
+            self.conn.commit()
+            self._touched()
+            return r.rowcount > 0
+
     def list_memories(self, scope: str | None = None, limit: int = 100,
-                      include_invalid: bool = False) -> list[dict]:
+                      include_invalid: bool = False, klass: str | None = None) -> list[dict]:
         """The store newest-first. Invalidated (superseded) rows are hidden by default - the caller
         wants what the recall can serve; include_invalid brings back the version history with its
-        invalid_at / superseded_by chain for the review list and as-of inspection."""
+        invalid_at / superseded_by chain for the review list and as-of inspection. klass filters to
+        one shelf subtree (prefix match: MEM pulls MEM/CRG with it)."""
         conds, params = [], []
         if scope:
             conds.append("scope=?")
             params.append(scope)
+        if klass:
+            conds.append("class LIKE ?")
+            params.append(class_name(klass, quiet=True) + "%")
         if not include_invalid:
             conds.append("invalid_at is null")
         params.append(max(1, min(500, int(limit))))
@@ -278,35 +370,105 @@ class MemoryService:
         where = (" where " + " and ".join(conds)) if conds else ""
         with self.lock:
             rows = self.conn.execute(
-                "select id,scope,text,source,confidence,created_at,updated_at,hits" + cols
+                "select id,scope,text,source,confidence,created_at,updated_at,hits,class" + cols
                 + " from memories" + where + " order by updated_at desc limit ?", params).fetchall()
         return [dict(id=r[0], scope=r[1], text=r[2], source=r[3], confidence=r[4],
-                     created_at=round(r[5], 1), updated_at=round(r[6], 1), hits=r[7],
-                     **({"invalid_at": round(r[8], 1) if r[8] else None, "superseded_by": r[9]}
+                     created_at=round(r[5], 1), updated_at=round(r[6], 1), hits=r[7], **{"class": r[8]},
+                     **({"invalid_at": round(r[9], 1) if r[9] else None, "superseded_by": r[10]}
                         if include_invalid else {})) for r in rows]
 
     # ---- recall --------------------------------------------------------------
 
-    def search(self, query: str, scope: str = DEFAULT_PROJECT, limit: int | None = None) -> list[dict]:
+    @staticmethod
+    def _is_declarative(text: str) -> bool:
+        """A fact states; a question asks. When the two collide as near-dupes the fact wins - the
+        merge tool's survivor rule, applied at injection time (an injected question answers nothing)."""
+        t = str(text).strip()
+        if t.endswith("?"):
+            return False
+        first = t.lower().split(maxsplit=1)[0] if t else ""
+        return first not in ("who", "what", "when", "where", "why", "which", "how", "whose", "whom",
+                             "is", "are", "was", "were", "do", "does", "did", "can", "could", "in",
+                             "on", "at", "from", "name", "identify", "list", "state", "tell", "given")
+
+    def _dedupe(self, hits: list[dict]) -> list[dict]:
+        """Near-dupe suppression for the ranked candidates (measured 2026-10-12: five rows phrased the
+        same Qwen3.8 fact; the web venue watched two of its eight slots go to it in one block). Three
+        rules, any one fires: token Jaccard >= 0.75 catches light rewrites; payload EQUALITY is the
+        merge tool's content address (same rare tail = same fact); payload INTERSECTION >= 4 catches
+        paraphrase clusters (the five Qwen rows share six rare tokens). A 2-3 token subject match is
+        NOT enough here - injection dedups with no human in the loop, and "the flibber gauge reads
+        torque" beside "the flibber gauge committee meets in Itasca" are two facts worth both slots
+        (measured, this test suite). Payloads exclude STOP words, and the rare-token bar is RELATIVE,
+        max(3, active_rows // 50): when the same fact exists five times its payload tokens stop being
+        rare - the measured blind spot that made the absolute df<=3 merge bar miss this exact cluster.
+        A question and its answer collide under these rules; the declarative always wins the slot,
+        whoever ranked higher."""
+        with self.lock:
+            rows = self.conn.execute(
+                "select id, text from memories where invalid_at is null").fetchall()
+        toks = {r[0]: set(norm_text(r[1]).split()) for r in rows}
+        df: dict[str, int] = {}
+        for s in toks.values():
+            for t in s:
+                df[t] = df.get(t, 0) + 1
+        bar = max(3, len(toks) // 50)
+        def payload(ts):
+            return frozenset(t for t in ts if t not in STOP and df.get(t, 0) <= bar) if ts else frozenset()
+        kept: list[dict] = []
+        for h in hits:
+            ts = toks.get(h["id"])
+            if ts is None:                                  # row vanished mid-search: keep it, harmless
+                kept.append(h)
+                continue
+            pay = payload(ts)
+            clash = None
+            for k in kept:
+                kts = toks.get(k["id"], set())
+                union = ts | kts
+                kpay = payload(kts)
+                if (union and len(ts & kts) >= 0.75 * len(union)) or (pay and pay == kpay) or (
+                        pay and kpay and len(pay & kpay) >= 4):
+                    clash = k
+                    break
+            if clash is None:
+                kept.append(h)
+            elif self._is_declarative(h["text"]) and not self._is_declarative(clash["text"]):
+                kept[kept.index(clash)] = h                 # the fact bumps its own question from the slot
+        return kept
+
+    def search(self, query: str, scope: str = DEFAULT_PROJECT, limit: int | None = None,
+               classes: list[str] | None = None) -> list[dict]:
         """FTS5 bm25 candidates over the user scope plus this request's project scope, then re-ordered by a
-        blend: 0.75 rank + 0.25 recency + 0.10 confidence, all in [0,1]-ish. Returns at most `limit`."""
+        blend: 0.75 rank + 0.25 recency + 0.10 confidence, all in [0,1]-ish. Returns at most `limit`.
+        classes (PHASE 4.5) filters to shelf subtrees by prefix - a conversation about the engine asks
+        for ["STR","USR"] and the eval corpus trivia simply is not in the candidate set. Unclassified
+        facts ('') match NO prefix: they ride every UNFILTERED request exactly as before, and a request
+        that names classes deliberately narrows to what has been shelved."""
         limit = self.recall_limit if limit is None else max(1, min(50, int(limit)))
         words = WORD_RE.findall(query.lower())[:MAX_QUERY_WORDS]
         if not words:
             return []
         match = " OR ".join(f'"{w}"' for w in words)
-        scopes, params = [USER_SCOPE], [match]
+        scopes = [USER_SCOPE]
         s = scope_name(scope)
         if s != USER_SCOPE:
             scopes.append(s)
-        params.append(limit * 3)
+        shelf = ""
+        prefixes = []
+        if classes:
+            ok = [class_name(c, quiet=True) for c in classes]
+            ok = [c for c in ok if c]
+            if ok:
+                shelf = " and (" + " or ".join("m.class like ?" for _ in ok) + ")"
+                prefixes = [c + "%" for c in ok]
         with self.lock:
             rows = self.conn.execute(
-                f"select m.id, m.scope, m.text, m.confidence, m.updated_at, bm25(mem_fts) as r"
+                f"select m.id, m.scope, m.text, m.confidence, m.updated_at, m.class, bm25(mem_fts) as r"
                 " from mem_fts join memories m on m.id = mem_fts.rowid"
                 " where mem_fts match ? and m.invalid_at is null and m.scope in ("
-                + ",".join("?" * len(scopes)) + ")"
-                " order by r limit ?", [match] + scopes + [limit * 3]).fetchall()
+                + ",".join("?" * len(scopes)) + ")" + shelf
+                + " order by r limit ?", [match] + scopes + prefixes + [limit * 3]).fetchall()
         if not rows:
             return []
         k = len(rows)
@@ -315,8 +477,10 @@ class MemoryService:
         for pos, r in enumerate(rows):
             fresh = math.exp(-max(0.0, now - r[4]) / 86400.0 / AGE_SCALE_DAYS)
             score = 0.75 * ((k - pos) / k) + 0.25 * fresh + 0.10 * r[3]
-            out.append(dict(id=r[0], scope=r[1], text=r[2], score=round(score, 4)))
+            out.append(dict(id=r[0], scope=r[1], text=r[2], score=round(score, 4), **{"class": r[5]}))
         out.sort(key=lambda x: -x["score"])
+        if self.dedup_recall:
+            out = self._dedupe(out)
         hits = out[:limit]
         if hits:
             self._seen([h["id"] for h in hits])
@@ -333,11 +497,20 @@ class MemoryService:
         """One fact block, byte-shaped identically for head and tail use: header + instruction line +
         one "[n] (scope) text" line per fact, kept under `budget` characters. Returns the block and the
         hits it ACTUALLY shows - what a later request dedups against and what the journal credits must
-        be the lines the model really read, not everything the search returned."""
-        lines = [f'<server_memory version="{self.version()}" scope="{scope}">',
-                 "Long-term memory of this user, kept by the inference server and shared by all their"
-                 " applications. Use it silently when relevant - never mention these notes, this tag, or"
-                 " 'remembering' to the user; if a note conflicts with what the user says now, they win."]
+        be the lines the model really read, not everything the search returned. The header carries
+        "shown X of N active" (measured need, web venue 2026-10-12: with a rotating retrieval sample
+        the model cannot tell a full view from a slice, and recites either with equal confidence -
+        one honest number in the header turns 'I recall' into 'I was shown this')."""
+        with self.lock:
+            n_active = self.conn.execute(
+                "select count(*) from memories where invalid_at is null").fetchone()[0]
+        v, instruction = self.version(), (
+            "Long-term memory of this user, kept by the inference server and shared by all their"
+            " applications. Use it silently when relevant - never mention these notes, this tag, or"
+            " 'remembering' to the user; if a note conflicts with what the user says now, they win.")
+        def head(n: int) -> str:      # the count is written AFTER trimming: shown = what the model reads
+            return f'<server_memory version="{v}" scope="{scope}" shown="{n} of {n_active} active">'
+        lines = [head(len(hits)), instruction]
         lines += [f"[{i + 1}] ({h['scope']}) {h['text']}" for i, h in enumerate(hits)]
         lines.append("</server_memory>")
         trimmed, used = [], len(lines[0]) + len(lines[-1]) + 120          # the header and the instruction line cost
@@ -348,27 +521,32 @@ class MemoryService:
                 break
             trimmed.append(line)
             shown.append(h)
-        return "\n".join([lines[0], lines[1]] + trimmed + [lines[-1]]), shown
+        return "\n".join([head(len(shown)), instruction] + trimmed + [lines[-1]]), shown
 
-    def block_for(self, messages: list[dict], scope: str) -> tuple[str | None, list[dict], str]:
+    def block_for(self, messages: list[dict], scope: str,
+                  classes: list[str] | None = None) -> tuple[str | None, list[dict], str]:
         """The hidden system block for this conversation - or (None, [], "") when there is no user text to
-        recall with. Pinned per (scope, first user message): byte-stable while cached, fresh bytes for a
-        new conversation. The query is the last user message; the search also uses the first one when the
-        conversation's newest text is a tool result. The returned hits are the facts the block SHOWS
-        (id-only dicts once pinned) - per-turn fresh recall is `turn_block_for`, not this."""
+        recall with. Pinned per (scope, classes, first user message): byte-stable while cached, fresh
+        bytes for a new conversation or a different shelf request - a block pinned for a ["STR"]
+        conversation must never answer an ["EVAL"] one. The query is the last user message; the search
+        also uses the first one when the conversation's newest text is a tool result. The returned hits
+        are the facts the block SHOWS (id-only dicts once pinned) - per-turn fresh recall is
+        `turn_block_for`, not this."""
         users = [text_of(m.get("content")) for m in messages if isinstance(m, dict) and m.get("role") == "user"]
         users = [u for u in users if u.strip()]
         if not users:
             return None, [], ""
         scope = scope_name(scope)
-        key = (scope, "h" + hashlib.sha1(norm_text(users[0]).encode("utf-8", "replace")).hexdigest()[:16])
+        shelf = ",".join(sorted(set(class_name(c, quiet=True) for c in classes or ()))) if classes else ""
+        key = (scope, "h" + hashlib.sha1(
+            (norm_text(users[0]) + "|" + shelf).encode("utf-8", "replace")).hexdigest()[:16])
         query = users[-1][:400] if len(users[-1].strip()) > 3 else users[0][:400]
         pinned = self._blocks.get(key)
         if pinned is not None:
             self._blocks.move_to_end(key)
             block, ids = pinned
             return block, [{"id": i} for i in ids], query
-        hits = self.search(query, scope=scope)
+        hits = self.search(query, scope=scope, classes=classes)
         if not hits:
             return None, [], query
         block, shown = self._render_block(hits, self.max_block_chars, scope)
@@ -378,7 +556,8 @@ class MemoryService:
         return block, shown, query
 
     def turn_block_for(self, messages: list[dict], scope: str,
-                       exclude_ids: list[int] | tuple[int, ...] = ()):
+                       exclude_ids: list[int] | tuple[int, ...] = (),
+                       classes: list[str] | None = None):
         """Fresh recall for the conversation's NEWEST user message, minus the facts the pinned head
         block already carries -> (block | None, shown hits). It is merged into that message rather than
         the system head (see request_state): a 184k-token agent session reuses ~99.9% of its prompt
@@ -396,14 +575,16 @@ class MemoryService:
             return None, []
         scope = scope_name(scope)
         seen = sorted(set(int(i) for i in exclude_ids or ()))
-        material = f"{norm_text(users[-1][:400])}|{','.join(map(str, seen))}"
+        shelf = ",".join(sorted(set(class_name(c, quiet=True) for c in classes or ()))) if classes else ""
+        material = f"{norm_text(users[-1][:400])}|{','.join(map(str, seen))}|{shelf}"
         key = (scope, "t" + hashlib.sha1(material.encode("utf-8", "replace")).hexdigest()[:16])
         pinned = self._blocks.get(key)
         if pinned is not None:
             self._blocks.move_to_end(key)
             block, ids = pinned
             return (block or None), [{"id": i} for i in ids]
-        hits = [h for h in self.search(users[-1][:400], scope=scope) if h["id"] not in set(seen)]
+        hits = [h for h in self.search(users[-1][:400], scope=scope, classes=classes)
+                if h["id"] not in set(seen)]
         hits = hits[:self.turn_recall_limit]
         if not hits:
             self._blocks[key] = ("", [])            # the miss is pinned too: same message, same nothing
@@ -426,6 +607,7 @@ class MemoryService:
                 (scope_name(scope), user_text[:8000], assistant_text[:16000],
                  (model or "")[:80] or None, time.time()))
             self.conn.commit()
+            self._touched()
             return cur.lastrowid
 
     def pending_turns(self, limit: int = 200) -> list[dict]:
@@ -442,6 +624,7 @@ class MemoryService:
         with self.lock:
             self.conn.executemany("update turns set processed=1 where id=?", [(int(i),) for i in ids])
             self.conn.commit()
+            self._touched()
 
     # ---- stats ----------------------------------------------------------------
 
@@ -450,12 +633,21 @@ class MemoryService:
             memories = self.conn.execute("select count(*) from memories where invalid_at is null").fetchone()[0]
             by_scope = dict(self.conn.execute(
                 "select scope, count(*) from memories where invalid_at is null group by scope").fetchall())
+            by_class = {(r[0] or "unclassified"): r[1] for r in self.conn.execute(
+                "select class, count(*) from memories where invalid_at is null group by class").fetchall()}
             invalid = self.conn.execute("select count(*) from memories where invalid_at is not null").fetchone()[0]
             pending = self.conn.execute("select count(*) from turns where processed=0").fetchone()[0]
             turns = self.conn.execute("select count(*) from turns").fetchone()[0]
         return {"version": self.version(), "memories": memories, "by_scope": by_scope,
+                "by_class": by_class,
                 "turns": turns, "turns_pending": pending, "inject": self.inject,
                 "max_memories": self.max_memories, "invalid": invalid,
+                "dedup_recall": self.dedup_recall,
+                "at_rest": ("off" if not self.encrypt else {
+                    "mode": "key-file" + ("+passphrase-env" if self.passphrase_env else ""),
+                    "key_file": self.key_path,
+                    "sealed_at": round(self._sealed_at, 1) if self._sealed_at else None,
+                    "plaintext_while_running": True}),   # the honest state of a RUNNING encrypted store
                 "pressure": bool(self.max_memories) and memories >= 0.8 * self.max_memories,
                 "recall_limit": self.recall_limit, "max_block_chars": self.max_block_chars,
                 "per_turn": self.per_turn, "turn_recall_limit": self.turn_recall_limit,
@@ -464,7 +656,123 @@ class MemoryService:
 
     def close(self) -> None:
         with self.lock:
+            sealed = self._seal() if self.encrypt else False
             self.conn.close()
+        if sealed:                                  # clean stop of an encrypted store: ciphertext only
+            for suffix in ("", "-shm", "-wal"):
+                try:
+                    os.remove(self.db_path + suffix)
+                except OSError:
+                    pass
+
+    # ---- at-rest encryption (M2 job 6; every method below is dead code unless encrypt=True) ----
+    # Cipher built from stdlib parts, because this fork keeps memory dependency-free: an
+    # HMAC-SHA256 keystream in counter mode (HMAC-SHA256 is a PRF; CTR over a PRF is a stream
+    # cipher), encrypt-then-MAC - the tag covers header+ciphertext, so a flipped byte fails the
+    # open LOUDLY instead of decrypting to mush. AES-GCM would be the library answer (the
+    # `cryptography` package is not in this venv); this is the dependency-free one, stated as
+    # such rather than pretending otherwise. File: b"SMEM1" | nonce(16) | ciphertext | tag(32).
+    # The passphrase, when memory.passphrase_env names an environment variable that is set, is
+    # scrypt-stretched and XORed into the master - key-file AND passphrase are both needed to
+    # open, and the secret never enters the config file or git. A FIDO2 passkey seal
+    # (hmac-secret extension, the key-file itself wrapped by the device) is the planned next
+    # stage: tools/passkey_seal.py, needs python-fido2, touch-to-open at dev-up.
+
+    def _key_bytes(self) -> bytes:
+        """The 32-byte master, created 0600 on first use. O_EXCL closes the create race; a loser
+        simply reads what the winner wrote."""
+        if not os.path.exists(self.key_path):
+            try:
+                fd = os.open(self.key_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+                try:
+                    os.write(fd, os.urandom(32))
+                finally:
+                    os.close(fd)
+            except FileExistsError:
+                pass
+        with open(self.key_path, "rb") as f:
+            key = f.read()
+        if len(key) != 32:
+            raise ValueError(f"memory key-file {self.key_path} is {len(key)} bytes, expected 32")
+        return key
+
+    def _crypt_keys(self, nonce: bytes) -> tuple[bytes, bytes]:
+        master = self._key_bytes()
+        pw = os.environ.get(self.passphrase_env, "") if self.passphrase_env else ""
+        if pw:                                      # scrypt per-file salt (the nonce): one leaked
+            master = bytes(a ^ b for a, b in zip(  # ciphertext does not make the passphrase cheap
+                master, hashlib.scrypt(pw.encode("utf-8"), salt=nonce, n=16384, r=8, p=1,
+                                       dklen=32, maxmem=64 * 1024 * 1024)))
+        return (hmac.new(master, b"strata-memory-enc", hashlib.sha256).digest(),
+                hmac.new(master, b"strata-memory-mac", hashlib.sha256).digest())
+
+    @staticmethod
+    def _xor_stream(key: bytes, nonce: bytes, data: bytes) -> bytes:
+        """CTR-mode XOR: keystream block i = HMAC-SHA256(key, nonce || i_be64). The big-int XOR
+        keeps the byte loop out of Python (a whole-store pass is tens of ms, not seconds)."""
+        blocks = -(-len(data) // 32)
+        ks = b"".join(hmac.new(key, nonce + i.to_bytes(8, "big"), hashlib.sha256).digest()
+                      for i in range(blocks))[:len(data)]
+        return (int.from_bytes(data, "big") ^ int.from_bytes(ks, "big")).to_bytes(len(data), "big")
+
+    def _touched(self) -> None:
+        """One more committed write. Every 50th, seal a snapshot: a machine that loses power then
+        loses at most 49 writes of plaintext-only state, and the next boot reveals from the seal.
+        Caller holds self.lock (the seal itself takes no lock)."""
+        if not self.encrypt:
+            return
+        self._writes += 1
+        if self._writes % 50 == 0:
+            self._seal()
+
+    def _seal(self) -> bool:
+        """Checkpoint the WAL, then write memory.db.enc atomically (tmp + rename + fsync). The
+        plaintext STAYS: a crash mid-run must lose nothing, so while the server runs the store is
+        plaintext on disk and stats() says so out loud. Only a clean close() shreds it."""
+        try:
+            self.conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+            with open(self.db_path, "rb") as f:
+                raw = f.read()
+            nonce = os.urandom(16)
+            enc_key, mac_key = self._crypt_keys(nonce)
+            body = b"SMEM1" + nonce + self._xor_stream(enc_key, nonce, raw)
+            tmp = self.db_path + ".enc.tmp"
+            with open(tmp, "wb") as f:
+                f.write(body + hmac.new(mac_key, body, hashlib.sha256).digest())
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp, self.db_path + ".enc")
+            self._sealed_at = time.time()
+            return True
+        except OSError:
+            return False
+
+    def _reveal(self) -> None:
+        """memory.db.enc -> fresh plaintext db, before the connection opens. A bad tag is FATAL on
+        purpose: starting an 'empty' store because the key changed or the file was tampered with
+        would quietly forget everything the user was shown yesterday - and the model would never
+        know. The decrypted SQLite header is a free extra integrity check."""
+        with open(self.db_path + ".enc", "rb") as f:
+            blob = f.read()
+        if len(blob) < 53 or blob[:5] != b"SMEM1":
+            raise ValueError("memory.db.enc: not a sealed store (bad magic)")
+        nonce, ct, tag = blob[5:21], blob[21:-32], blob[-32:]
+        enc_key, mac_key = self._crypt_keys(nonce)
+        if not hmac.compare_digest(hmac.new(mac_key, blob[:-32], hashlib.sha256).digest(), tag):
+            raise ValueError("memory.db.enc failed its MAC: wrong key or passphrase, or the file changed")
+        raw = self._xor_stream(enc_key, nonce, ct)
+        if raw[:16] != b"SQLite format 3\x00":
+            raise ValueError("memory.db.enc decrypted to something that is not a SQLite file")
+        tmp = self.db_path + ".tmp"
+        with open(tmp, "wb") as f:
+            f.write(raw)
+        os.replace(tmp, self.db_path)
+        for suffix in ("-shm", "-wal"):
+            try:
+                os.remove(self.db_path + suffix)
+            except FileNotFoundError:
+                pass
+        self._sealed_at = time.time()
 
 
 # ---- server glue ---------------------------------------------------------------
@@ -484,7 +792,13 @@ def request_state(mem: "MemoryService | None", messages: list[dict], headers, re
     if (headers.get("X-Strata-Memory") or "").strip().lower() in ("off", "mute", "0"):
         return messages, None
     scope = scope_name(headers.get("X-Strata-Memory-Scope"))
-    block, hits, query = mem.block_for(messages, scope)
+    # the class axis (PHASE 4.5): "X-Strata-Memory-Class: STR,USR" pulls engine talk off the eval
+    # corpus. Junk prefixes are dropped quietly (a header may carry anything, and a half-valid list
+    # still filters); NOTHING in the header means every fact stays eligible, byte-identical to the
+    # pre-class store - the filter only ever narrows what a request that asks for a shelf sees.
+    classes = [c for c in (class_name(x, quiet=True)
+                           for x in (headers.get("X-Strata-Memory-Class") or "").split(",")) if c] or None
+    block, hits, query = mem.block_for(messages, scope, classes)
     users = [text_of(m.get("content")) for m in messages if isinstance(m, dict) and m.get("role") == "user"]
     last_user = next((u for u in reversed(users) if u.strip()), "")
     if block is None:
@@ -496,7 +810,7 @@ def request_state(mem: "MemoryService | None", messages: list[dict], headers, re
             return messages, None
         return messages, {"scope": scope, "user": last_user, "model": req.get("model"), "query": query,
                           "hits": []}
-    tblock, thits = mem.turn_block_for(messages, scope, [h["id"] for h in hits])
+    tblock, thits = mem.turn_block_for(messages, scope, [h["id"] for h in hits], classes)
     ctx = {"scope": scope, "user": last_user, "model": req.get("model"), "query": query,
            "hits": [h["id"] for h in hits] + [h["id"] for h in thits]}
     # The Qwen chat template allows ONE system message, at index 0 ("System message must be at the

@@ -5308,25 +5308,31 @@ def make_handler(svc: Service):
                 return
             qs = parse_qs(urlsplit(self.path).query)
             try:
-                limit = max(1, min(200, int((qs.get("limit") or ["50"])[0])))
-            except ValueError:
-                limit = 50
+                limit = max(1, min(500, int((qs.get("limit") or ["50"])[0])))   # 500: matches list_memories'
+            except ValueError:                                                  # cap - the backfill pages
+                limit = 50                                                      # through it in one call
             q = (qs.get("q") or [""])[0]
             scope = (qs.get("scope") or [""])[0]
+            klass = (qs.get("class") or [""])[0]        # shelf subtree (PHASE 4.5): ?class=MEM/CRG or STR,USR
+            prefixes = [c for c in (memory_api.class_name(x, quiet=True)
+                                    for x in klass.split(",")) if c] or None
             if q:
                 self._json(200, {"query": q, "scope": memory_api.scope_name(scope),
-                                 "hits": svc.memory.search(q, scope=scope, limit=limit)})
+                                 "hits": svc.memory.search(q, scope=scope, limit=limit, classes=prefixes)})
                 return
             inv = (qs.get("include_invalid") or [""])[0]   # ?include_invalid=1 walks the version history too
             self._json(200, {"stats": svc.memory.stats(),
                              "memories": svc.memory.list_memories(scope=memory_api.scope_name(scope, "") or None,
-                                                                  limit=limit, include_invalid=inv not in ("", "0"))})
+                                                                  limit=limit, include_invalid=inv not in ("", "0"),
+                                                                  klass=(prefixes or [None])[0])})
 
         def _memory_post(self, req):
             """memory-core: POST /memory - manage the store over HTTP: {"op": "remember", "text": ..., "scope"?,
-            "source"?, "confidence"?} add a fact; "forget" {"id"}; "invalidate" {"id", "by"?} retire a fact
-            from recall keeping the version history; "correct" {"id", "text", ...} store a replacement and
-            supersede the fact it replaces; "search" {"q", "scope"?, "limit"?};
+            "source"?, "confidence"?, "class"?} add a fact (class = the call number, PHASE 4.5); "forget"
+            {"id"}; "invalidate" {"id", "by"?} retire a fact from recall keeping the version history;
+            "correct" {"id", "text", ...} store a replacement and supersede the fact it replaces (inherits
+            the old row's shelf unless told otherwise); "classify" {"id", "class"} shelve one fact;
+            "search" {"q", "scope"?, "limit"?, "class"? comma-separated shelf prefixes};
             "turn" {"user", "assistant", "scope"?, "model"?} journal one exchange by hand (what the eval
             harness posts); "turns" {} list the un-curated journaled turns. Bad fields are 400s like any other
             malformed request."""
@@ -5339,9 +5345,10 @@ def make_handler(svc: Service):
                 r = svc.memory.remember(str(req.get("text") or ""), scope=str(req.get("scope") or "user"),
                                         source=str(req.get("source") or "manual"),
                                         confidence=req.get("confidence"),
-                                        provenance=req.get("provenance"))   # memory-core T5: the curation
-                # loop passes {turn_id, probe, gold, cls, passes} so every stored fact can be audited back
-                # to its evidence; absent -> byte-identical to before (remember() defaults provenance=None)
+                                        provenance=req.get("provenance"),
+                                        klass=req.get("class"))      # memory-core PHASE 4.5: the call number
+                # the curation loop passes provenance {turn_id, probe, gold, cls, passes} so every
+                # stored fact can be audited back to its evidence; absent -> byte-identical to before
             elif op == "forget":
                 r = {"forgotten": svc.memory.forget(int(req.get("id") or 0))}
             elif op == "invalidate":
@@ -5355,18 +5362,24 @@ def make_handler(svc: Service):
                                        scope=str(req.get("scope") or "user"),
                                        source=str(req.get("source") or "manual"),
                                        confidence=req.get("confidence"),
-                                       provenance=req.get("provenance"))
+                                       provenance=req.get("provenance"),
+                                       klass=req.get("class"))       # absent -> inherits the old row's shelf
+            elif op == "classify":
+                # PHASE 4.5: shelve one fact (the backfill tool and the hand-review path)
+                r = {"classified": svc.memory.classify(int(req.get("id") or 0), str(req.get("class") or ""))}
             elif op == "search":
                 lim = int(req.get("limit") or 0) or None
+                classes = [c for c in (memory_api.class_name(x, quiet=True)
+                                       for x in str(req.get("class") or "").split(",")) if c] or None
                 r = {"hits": svc.memory.search(str(req.get("q") or ""), scope=str(req.get("scope") or "default"),
-                                               limit=lim)}
+                                               limit=lim, classes=classes)}
             elif op == "turn":
                 r = {"id": svc.memory.journal_turn(str(req.get("scope") or "default"), str(req.get("user") or ""),
                                                    str(req.get("assistant") or ""), req.get("model"))}
             elif op == "turns":
                 r = {"turns": svc.memory.pending_turns(int(req.get("limit") or 50))}
             else:
-                raise ValueError('op: one of "remember", "forget", "invalidate", "correct", '
+                raise ValueError('op: one of "remember", "forget", "invalidate", "correct", "classify", '
                                  '"search", "turn", "turns"')
             self._json(200, {"ok": True, **r})
 
@@ -6620,6 +6633,10 @@ def main() -> int:
                 turn_recall_limit=mcfg.get("turn_recall_limit") or 8,
                 turn_block_chars=mcfg.get("turn_block_chars") or 2000,
                 max_memories=mcfg.get("max_memories") or 0,
+                dedup_recall=mcfg.get("dedup_recall") is not False,
+                encrypt=mcfg.get("encrypt") not in (None, False, 0, "", "off"),
+                key_file=str(mcfg.get("key_file") or ""),
+                passphrase_env=str(mcfg.get("passphrase_env") or ""),
                 inject=mcfg.get("inject") is not False)
         except (ValueError, OSError, TypeError) as e:
             raise SystemExit(f"[strata] memory: {e}")
@@ -6627,7 +6644,8 @@ def main() -> int:
               f"(inject {'on' if svc.memory.inject else 'off'}, recall {svc.memory.recall_limit} notes "
               f"<= {svc.memory.max_block_chars} chars; per-turn {'on ' if svc.memory.per_turn else 'off'}"
               f"{svc.memory.turn_recall_limit} notes <= {svc.memory.turn_block_chars} chars; "
-              f"budget {svc.memory.max_memories or 'unlimited'}; GET /memory to inspect)", flush=True)
+              f"budget {svc.memory.max_memories or 'unlimited'}; "
+              f"at-rest {svc.memory.encrypt and 'key-file' or 'off'}; GET /memory to inspect)", flush=True)
     mode = str(cfg.get("anthropic_thinking") or "model")   # #278: "on_request" = only when the request asks
     if mode not in ("model", "on_request"):
         raise SystemExit(f"[strata] config anthropic_thinking must be \"model\" or \"on_request\", not {mode!r}")
