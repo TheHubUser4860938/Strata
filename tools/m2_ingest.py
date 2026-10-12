@@ -45,6 +45,20 @@ def clean(line: str) -> str:
     return " ".join(s.split())
 
 
+def strip_fences(text: str) -> str:
+    """Drop fenced code blocks ENTIRELY, markers included: prose between the blocks is knowledge,
+    the code inside them is syntax the store was never meant to recite (the first real-world doc
+    test - a 22k-word SDK migration guide - made this bug obvious)."""
+    out, in_fence = [], False
+    for line in text.splitlines():
+        if line.strip().startswith("```"):
+            in_fence = not in_fence
+            continue
+        if not in_fence:
+            out.append(line)
+    return "\n".join(out)
+
+
 def units(text: str, unit: str) -> list[str]:
     if unit == "line":
         return [c for c in (clean(l) for l in text.splitlines()) if c]
@@ -72,10 +86,10 @@ def main():
     a = ap.parse_args()
 
     src = f"ingest-{datetime.date.today().isoformat()}"
-    stored = deduped = skipped = 0
+    stored = deduped = skipped = evicted = 0
     by_class: Counter = Counter()
-    for name, text in [(f, (sys.stdin.read() if f == "-" else Path(f).read_text(encoding="utf-8",
-                                                                                  errors="replace")))
+    for name, text in [(f, (sys.stdin.read() if f == "-" else
+                            strip_fences(Path(f).read_text(encoding="utf-8", errors="replace"))))
                        for f in a.files]:
         for n, sent in enumerate(units(text, a.unit), 1):
             if not (a.min <= len(sent) <= a.max):
@@ -97,9 +111,10 @@ def main():
                 deduped += 1
             else:
                 stored += 1
+            evicted += len(r.get("evicted") or [])   # the budget line spoke: name what it cost
     what = "would store" if a.dry_run else "stored"
-    print(f"{what} {stored}, deduped {deduped}, skipped {skipped} "
-          f"(out of size bounds); shelves: {dict(by_class)}")
+    print(f"{what} {stored}, deduped {deduped}, skipped {skipped} (out of size bounds), "
+          f"budget-evicted {evicted}; shelves: {dict(by_class)}")
     if a.dry_run:
         print("dry-run: pass without --dry-run to post through the API")
 
