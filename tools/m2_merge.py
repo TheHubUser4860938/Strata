@@ -30,11 +30,26 @@ from serve.memory import STOP, norm_text  # noqa: E402  (same identity + same st
 NEG = {"not", "no", "never", "n't", "none", "without", "isnt", "arent"}
 WH = ("who", "what", "when", "where", "which", "why", "how", "is", "are", "was",
      "does", "did", "do", "in", "on", "at", "can", "has", "have", "name", "list")
+META_V = ("identified", "asked", "requested", "refers", "referenced", "instructed", "tracking",
+          "provided", "noted", "stated", "plans", "intending", "intends", "decided", "shared",
+          "gave", "discussed", "observed", "discovered", "interest", "interested", "working",
+          "likely", "saved")
 
 
 def declarative(text: str) -> bool:
     t = text.strip()
     return not t.endswith("?") and t.split(" ", 1)[0].lower().strip(",.;:") not in WH
+
+
+def meta(text: str) -> bool:
+    """A fact ABOUT the conversation rather than IN it: "The user identified that X", "The
+    assistant found defect Y". Measured 2026-10-12, the merge review: these share payload tokens
+    with the facts they discuss (the taxonomy-discussion row swallowed the Blackberry/Itasca,
+    Darnen/Stevens and Tynsid/Polk township facts whole) and they are usually LONGER, so the
+    survivor rule kept the commentary and dropped the content - exactly backwards. The survivor
+    now prefers the fact over the conversation about the fact."""
+    w = norm_text(text).split()[:5]
+    return ("user" in w or "assistant" in w) and any(m in w for m in META_V)
 
 
 def payload_of(tokens, df, bar):
@@ -102,6 +117,9 @@ def main():
     ap.add_argument("--hard", action="store_true", help="with --apply: delete (op=forget) instead of "
                                                         "invalidate - history gone, not just out of recall")
     ap.add_argument("--show", type=int, default=6, help="sample groups to print")
+    ap.add_argument("--exclude", default="", help="comma-separated loser ids to skip (the hand-"
+                                                  "review veto: value-mismatch collisions like B390 "
+                                                  "vs G3 share a predicate but are different facts)")
     a = ap.parse_args()
 
     conn = sqlite3.connect(a.db)
@@ -115,26 +133,33 @@ def main():
     bar = max(3, len(rows) // 50)          # the RELATIVE rare-token bar (see groups())
 
     gr, skipped = groups(rows, df, bar)
+    exclude = {int(x) for x in a.exclude.split(",") if x.strip()}
     drop, keep_ids = [], []
     for key, idx in sorted(gr, key=lambda kv: (kv[0][0], min(kv[1]))):
-        best = sorted(idx, key=lambda i: (declarative(rows[i]["text"]),
+        # survivor: NOT meta (a conversation about a fact never outlives the fact - not even when
+        # the commentary is declarative and the fact rides in a question-with-answer: measured,
+        # "the user asked where KMNE-FM is licensed" beat the row that CONTAINED Bassett) >
+        # declarative > most informative text > oldest row
+        best = sorted(idx, key=lambda i: (not meta(rows[i]["text"]), declarative(rows[i]["text"]),
                                           len(norm_text(rows[i]["text"])), -rows[i]["created_at"]))[-1]
         keep_ids.append(rows[best]["id"])
         for i in idx:
             if i != best:
                 drop.append((rows[i]["id"], rows[best]["id"], rows[i]["text"], rows[best]["text"]))
 
-    print(f"memories: {len(rows)}  rare-token bar df<={bar}  payload groups: {len(gr)}  mergeable: {len(drop)}"
-          f"  negation-skipped: {skipped}")
-    for _, _, loser, winner in drop[:a.show]:
-        print(f"  keep {winner[:60]!r}\n  drop {loser[:60]!r}")
+    kept_drop = [d for d in drop if d[0] not in exclude]
+    print(f"memories: {len(rows)}  rare-token bar df<={bar}  payload groups: {len(gr)}  "
+          f"mergeable: {len(kept_drop)}"
+          f"  negation-skipped: {skipped}  excluded: {len(drop) - len(kept_drop)}")
+    for loser_id, winner_id, loser, winner in kept_drop[:a.show]:
+        print(f"  drop [{loser_id}] {loser[:64]!r}\n    by [{winner_id}] {winner[:64]!r}")
     if not a.apply:
         print("dry run - add --apply to retire the redundant rows (or --hard to delete them)")
         return
 
     n = 0
     op, okkey = ("forget", "forgotten") if a.hard else ("invalidate", "invalidated")
-    for loser_id, winner_id, _, _ in drop:
+    for loser_id, winner_id, _, _ in kept_drop:
         body = {"op": op, "id": loser_id}
         if op == "invalidate":
             body["by"] = winner_id
