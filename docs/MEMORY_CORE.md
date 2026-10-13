@@ -405,6 +405,18 @@ credential to its KV content (upstream llama.cpp says so in #29678): the cartrid
 personal facts in bytes the model can re-read, so treat the `slot_save_path` directory with the
 same care as `memory.db.enc`.
 
+**Venue day, as one command each (built 2026-10-13).** F: boot the dev server with `memory.dir`
+pointed at a fresh venue store and `max_memories: 0` (the oracle set alone is ~6k rows), then
+`python3 tools/lme_harness.py --data longmemeval_oracle.json --out lme_oracle.jsonl --repeats 3
+--muted-control` (pilot `--limit 5` first; resumable; the gold-map sidecar is what makes resume
+safe). M3c: with nothing else on the port, `python3 tools/m3c_venue.py --ask <gold question about
+a standing fact> --gold <substring>` - it checks the cartridge is active, lists standing rows to
+choose from, measures restore (`timings.restore_ms`), warm-vs-cold (`timings.cache_n` = tokens the
+engine did not re-read - the prefix law made visible), and the wrong-cartridge control (restore
+`c5_comp.bin`, ask muted: the honest answer is the unknown-marker; a leak exits 2 and stops the
+venue). Both scripts read timings from RESPONSES, never from engine logs - log lines can carry the
+template's delimiter, and one already poisoned a data point this week.
+
 ## Licensing and attribution
 
 - Strata (upstream) is MIT © Niko1221 and contributors; this fork's independent code keeps MIT.
