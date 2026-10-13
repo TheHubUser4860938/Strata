@@ -10,11 +10,12 @@ import http.client
 import json
 import os
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
 from serve.frontend import ChatTemplate
-from serve.memory import MemoryService, request_state
+from serve.memory import MemoryService, request_state, time_bound
 from serve.server import ByteTokenizer, MockEngine, Service, serve
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -528,6 +529,52 @@ class ClassAxis(unittest.TestCase):
                              "dedup_recall=False is the old behaviour, byte-for-byte")
         finally:
             off.close()
+
+    def test_dedupe_bar_capped_on_a_wide_store(self):
+        # the 2026-10-12 airport cascade in miniature: at 300 rows the uncapped relative bar is
+        # exactly 6 - the document frequency of the six airport rows' OWN connectives - so the old
+        # rule called faa/location/identifier/municipal/airport payload and collapsed six DIFFERENT
+        # facts into one slot. The capped bar (5) excludes them: subjects differ, all six survive.
+        wide = MemoryService(self.tmp.name + "/wide")
+        try:
+            for i in range(294):
+                wide.remember(f"filler row number {i} keeps the ledger wide zq{i}", scope="ops")
+            for subj, ident in (("Westhope", "D64"), ("Pruetz", "5K9"), ("Arthur", "1A2"),
+                                ("Lakebird", "Q77"), ("Canyon", "M31"), ("Prairie", "T88")):
+                wide.remember(f"The FAA location identifier for {subj} Municipal Airport is {ident}.",
+                              scope="ops")
+            hits = wide.search("faa location identifier municipal airport", scope="ops", limit=8)
+            air = [h for h in hits if "faa" in h["text"].lower()]
+            self.assertEqual(len(air), 6,
+                             "six subjects sharing six-row connectives must all keep their slots")
+        finally:
+            wide.close()
+
+    def test_search_date_index_since_until(self):
+        # the Primnox date-index lesson (2026-10-12): "when did we decide X" is an episodic
+        # question, and every row already carries its created_at stamp - search() now bounds on it
+        old = self.mem.remember("the standup agenda moved to the lake cabin", scope="ops")
+        with self.mem.lock:
+            self.mem.conn.execute("update memories set created_at = created_at - 864000 * 10"
+                                  " where id = ?", (old["id"],))
+            self.mem.conn.commit()
+        new = self.mem.remember("the standup agenda moved back to the office tower", scope="ops")
+        now = time.time()
+        self.assertEqual([h["id"] for h in self.mem.search("standup agenda", scope="ops",
+                                                           until=now - 864000 * 5)], [old["id"]])
+        self.assertEqual([h["id"] for h in self.mem.search("standup agenda", scope="ops",
+                                                           since=now - 3600)], [new["id"]])
+        self.assertEqual({h["id"] for h in self.mem.search("standup agenda", scope="ops")},
+                         {old["id"], new["id"]}, "no bounds is byte-identical to the old window")
+
+    def test_time_bound_parses_dates_and_rejects_junk(self):
+        self.assertIsNone(time_bound(None))
+        self.assertIsNone(time_bound(""))
+        self.assertEqual(time_bound("1000.5"), 1000.5)
+        self.assertEqual(time_bound("2026-01-01"), 1767225600.0)
+        self.assertEqual(time_bound("2026-01-01T00:00:00"), 1767225600.0)
+        with self.assertRaises(ValueError):
+            time_bound("last tuesday")
 
     def test_block_header_shows_the_sample_honestly(self):
         for i in range(12):

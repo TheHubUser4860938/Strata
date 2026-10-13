@@ -30,6 +30,7 @@ independent and keeps Strata's MIT license.
 """
 from __future__ import annotations
 
+import datetime
 import hashlib
 import hmac
 import json
@@ -117,6 +118,27 @@ def memory_dir(value: str, base: str | None = None) -> str:
     if not os.path.isdir(path):
         raise ValueError(f"memory dir {path} is not a directory")
     return path
+
+
+def time_bound(value) -> float | None:
+    """A /memory date-index bound (?since= / ?until=, 2026-10-12): epoch seconds, an ISO date
+    (2026-10-12, read as UTC midnight), or an ISO datetime. None for empty/None - the default
+    window stays byte-identical. Junk raises ValueError, which the API answers with a 400:
+    silently reading "last tuesday" as "no bound" would widen the window without anyone noticing."""
+    if value is None or str(value).strip() == "":
+        return None
+    s = str(value).strip()
+    try:
+        return float(s)
+    except ValueError:
+        pass
+    for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%d"):
+        try:
+            return datetime.datetime.strptime(s[:19], fmt).replace(
+                tzinfo=datetime.timezone.utc).timestamp()
+        except ValueError:
+            continue
+    raise ValueError(f"bad date {s!r}: use YYYY-MM-DD, an ISO datetime, or epoch seconds")
 
 
 class MemoryService:
@@ -399,9 +421,12 @@ class MemoryService:
         paraphrase clusters (the five Qwen rows share six rare tokens). A 2-3 token subject match is
         NOT enough here - injection dedups with no human in the loop, and "the flibber gauge reads
         torque" beside "the flibber gauge committee meets in Itasca" are two facts worth both slots
-        (measured, this test suite). Payloads exclude STOP words, and the rare-token bar is RELATIVE,
-        max(3, active_rows // 50): when the same fact exists five times its payload tokens stop being
-        rare - the measured blind spot that made the absolute df<=3 merge bar miss this exact cluster.
+        (measured, this test suite). Payloads exclude STOP words, and the rare-token bar is RELATIVE
+        but CAPPED, max(3, min(active_rows // 50, 5)): when the same fact exists five times its
+        payload tokens stop being rare - the measured blind spot that made the absolute df<=3 merge
+        bar miss this exact cluster - but a bar that keeps growing with the store eventually calls a
+        small sub-corpus's own connectives rare and collapses its DIFFERENT facts into one slot
+        (the 2026-10-12 airport cascade at 2,384 rows). The read path caps; the merge tool does not.
         A question and its answer collide under these rules; the declarative always wins the slot,
         whoever ranked higher."""
         with self.lock:
@@ -412,7 +437,13 @@ class MemoryService:
         for s in toks.values():
             for t in s:
                 df[t] = df.get(t, 0) + 1
-        bar = max(3, len(toks) // 50)
+        bar = max(3, min(len(toks) // 50, 5))
+        # the cap is the 2026-10-12 airport lesson: at 2,384 rows the uncapped relative bar hit 47,
+        # which made a 6-row sub-corpus's OWN connectives (faa/location/identifier/municipal, df 6)
+        # look rare, and recall collapsed Westhope/Pruetz/Arthur into one slot. The read path caps
+        # at 5 - a missed merge costs one slot, a false collapse HIDES a fact with no human to spot
+        # it; the merge tool (tools/m2_merge) keeps the uncapped relative bar because there a human
+        # vetoes every group before anything retires.
         def payload(ts):
             return frozenset(t for t in ts if t not in STOP and df.get(t, 0) <= bar) if ts else frozenset()
         kept: list[dict] = []
@@ -438,13 +469,18 @@ class MemoryService:
         return kept
 
     def search(self, query: str, scope: str = DEFAULT_PROJECT, limit: int | None = None,
-               classes: list[str] | None = None) -> list[dict]:
+               classes: list[str] | None = None, since: float | None = None,
+               until: float | None = None) -> list[dict]:
         """FTS5 bm25 candidates over the user scope plus this request's project scope, then re-ordered by a
         blend: 0.75 rank + 0.25 recency + 0.10 confidence, all in [0,1]-ish. Returns at most `limit`.
         classes (PHASE 4.5) filters to shelf subtrees by prefix - a conversation about the engine asks
         for ["STR","USR"] and the eval corpus trivia simply is not in the candidate set. Unclassified
         facts ('') match NO prefix: they ride every UNFILTERED request exactly as before, and a request
-        that names classes deliberately narrows to what has been shelved."""
+        that names classes deliberately narrows to what has been shelved.
+        since/until (2026-10-12, the Primnox date-index lesson): epoch-seconds bounds on created_at.
+        "When did we decide X" and "what did we know last month" are episodic questions, and every row
+        already carries its stamp - filtering on it is the date index. Both None (every request today)
+        keeps the ranking byte-identical to before."""
         limit = self.recall_limit if limit is None else max(1, min(50, int(limit)))
         words = WORD_RE.findall(query.lower())[:MAX_QUERY_WORDS]
         if not words:
@@ -462,13 +498,19 @@ class MemoryService:
             if ok:
                 shelf = " and (" + " or ".join("m.class like ?" for _ in ok) + ")"
                 prefixes = [c + "%" for c in ok]
+        bounds = ""
+        bparams: list[float] = []
+        for cmp_op, v in ((">=", since), ("<=", until)):
+            if v is not None:
+                bounds += f" and m.created_at {cmp_op} ?"
+                bparams.append(float(v))
         with self.lock:
             rows = self.conn.execute(
                 f"select m.id, m.scope, m.text, m.confidence, m.updated_at, m.class, bm25(mem_fts) as r"
                 " from mem_fts join memories m on m.id = mem_fts.rowid"
                 " where mem_fts match ? and m.invalid_at is null and m.scope in ("
-                + ",".join("?" * len(scopes)) + ")" + shelf
-                + " order by r limit ?", [match] + scopes + prefixes + [limit * 3]).fetchall()
+                + ",".join("?" * len(scopes)) + ")" + shelf + bounds
+                + " order by r limit ?", [match] + scopes + prefixes + bparams + [limit * 3]).fetchall()
         if not rows:
             return []
         k = len(rows)

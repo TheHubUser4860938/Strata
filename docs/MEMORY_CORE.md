@@ -123,15 +123,21 @@ turn), scope isolation, mute, and journal deltas, all measured at :8005 on 2026-
 - **Journal:** every completed chat-completions exchange is appended to `turns` (raw material for the
   Stage 3 curation loop and the eval harness) - collected transparently from the streamed chunks; a store
   error never breaks an answer.
-- **Control API:** `GET /memory` (stats + recent facts; `?q=` for a recall probe, `?scope=`, `?limit=`) and
+- **Control API:** `GET /memory` (stats + recent facts; `?q=` for a recall probe, `?scope=`, `?limit=`,
+  `?class=` shelf prefixes, and since 2026-10-12 `?since=` / `?until=` date bounds - epoch seconds,
+  ISO date or datetime, junk is a 400: the date index for episodic questions, adopted from the
+  Primnox "memory like a book" design) and
   `POST /memory` `{"op": "remember|forget|search|turn|turns", ...}` - for the web app, for operators, and
   for the eval harness (hand-posted turns). Gated by the API key like `/props` and `/slots`.
-- **Tests:** `python -m unittest serve.test_memory` (19 tests, no GPU): store/dedup/scope/stickiness units,
+- **Tests:** `python -m unittest serve.test_memory` (44 tests, no GPU): store/dedup/scope/stickiness units,
   a mock-engine HTTP end-to-end (inject → journal → mute → forget), memory-off 404 + byte-identical chat,
   400s for bad input, and (2026-10-11) a PerTurnRecall class: tail follows a new message while the pinned
   head stays byte-identical, head/tail dedup, replay determinism, `per_turn:false` = old behaviour, budget
-  edges and content-part merging. The full `serve/test_*.py` suite re-ran on this change: **709 tests,
-  OK (skipped=11)** - 702 before, the default path still guards untouched.
+  edges and content-part merging; (2026-10-12) ClassAxis gained the capped dedup bar, the date index and
+  `time_bound` parsing. The loop's correction-target picker has its own offline suite:
+  `python3 tools/test_curate_supersede.py` (8 tests, the live Westhope cascade as fixture). Re-run on
+  the 2026-10-12 change: `serve.test_memory` 44 OK, `serve.test_server` 304 OK, the earlier full-suite
+  figure (709 OK, skipped=11, 2026-10-11) still holds for the untouched paths.
 - **Known gaps for the live pass:** injection currently rides `/v1/chat/completions` only (Anthropic and
   Responses dialects are next); no embeddings in ranking yet (lexical + recency first, embedder when the
   eval says it pays); curation loop is Stage 3 (the `turns` table is its queue).
@@ -249,6 +255,15 @@ history. This is why "Alice works at Acme" and "Alice works at Beta" no longer r
 authority — the pattern Zep/Graphiti publish for temporal knowledge graphs, adapted to a flat text store.
 An active write never dedups onto a superseded row: re-learning a retired fact starts a new chain.
 `m2_merge` now retires by default; `--hard` still deletes.
+The sweep's first live corrections (2026-10-12) found the targeting bug the same day: in a small
+sub-corpus the connectives *are* rare - `faa/location/identifier/municipal` sit at df 3-6 among the
+airport rows - so a Pruetz correction retired a Westhope row and an Arthur row retired that, a
+Westhope→Pruetz→Arthur chain of nonsense, and the sweep targeted rows its own batch had created
+40 seconds earlier. Two guards anchor every supersede target now: the shared payload must include a
+token **unique to the target** (its subject - "westhope", never "faa"), and rows created at or after
+the batch start are siblings, not prior truth. Probe-shaped traffic (a quiz question in, a ≤12-word
+answer out - the user's own quiz format) restates the gold sheet instead of correcting the world:
+its CORRECT verdicts demote to FILL and never target anything.
 
 **The loop runs on a trigger, not a clock.** `tools/sweep_cron.sh` reads two numbers from `GET /memory` —
 `pressure` and the pending-turn count. Both cool: one curl and exit, the engine never sees the tick.
@@ -291,8 +306,13 @@ Three rules, any fires: token Jaccard ≥ 0.75 (light rewrites), payload equalit
 content address), or payload intersection ≥ 4 rare tokens (the five Qwen rows share six). Two guards
 came from failures, not theory: payloads exclude stop-words (a small store makes "the" look rare, and
 two *different* facts about one subject collapsed on grammar in the first test run), and the rare-token
-bar is relative — `max(3, rows // 50)` — because when one fact exists in five copies its own payload
-stops being rare, which is exactly why the merge tool's absolute df≤3 bar missed that cluster. A
+bar is relative but capped — `max(3, min(rows // 50, 5))` — because when one fact exists in five
+copies its own payload stops being rare (why the merge tool's absolute df≤3 bar missed the Qwen
+cluster), and because a bar that keeps growing with the store eventually calls a small sub-corpus's
+own connectives rare and collapses its *different* facts into one slot (the 2026-10-12 airport
+cascade at 2,384 rows). The read path caps - no human vetoes an injection, and a false collapse
+hides a fact while a missed merge costs only one slot; `m2_merge` keeps the uncapped relative bar
+because there a human reviews every group. A
 question and its answer collide under these rules; the declarative takes the slot whoever ranked
 higher (an injected question answers nothing). `m2_merge` v2 uses the same content rules over
 union-find groups: 42 groups / 69 rows on the live store — and the dry-run earned its keep by catching

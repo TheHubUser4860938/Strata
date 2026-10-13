@@ -135,49 +135,89 @@ def _norm(text):
     return " ".join("".join(c if c.isalnum() or c.isspace() else " " for c in str(text).casefold()).split())
 
 
+# words that never carry a fact's payload, whatever the corpus says - copied from serve/memory.py
+# (same standalone-script reason as _norm above): without this, a small fetched store makes "the"
+# look rare (df 1) and two unrelated sentences "share" it; the live store hides the bug only
+# because df(the) is always huge. memory.py's _dedupe and tools/m2_merge both exclude STOP; now
+# all three content addresses agree.
+STOP = frozenset(("a an and are as at be by can could did do does for from had has have he her his how i if in "
+                  "is it its me my no not of on or our she so than that the their them then there these they this "
+                  "to us we what when where which who whom whose why will with would you your").split())
+
+
 def _payload(text, df):
-    """A fact's content address: only its rare tokens (document frequency <= 3). The boilerplate of a
-    template-shaped corpus carries no information; the payload is what makes the fact itself."""
-    return frozenset(t for t in set(_norm(text).split()) if df.get(t, 0) <= 3)
+    """A fact's content address: only its rare tokens (STOP words out, document frequency <= 3).
+    The boilerplate of a template-shaped corpus carries no information; the payload is what makes
+    the fact itself."""
+    return frozenset(t for t in set(_norm(text).split()) if t not in STOP and df.get(t, 0) <= 3)
 
 
-def supersede_id(url, fact, scope, log):
-    """The id of the active fact this CORRECT-class candidate replaces, or None. Matched by content
-    address (serve.m2_merge's rule): same payload, different text, same scope, and NOT a mere
-    rephrase (an identical payload with a different value token is a contradiction, which is what
-    CORRECT means). Prefers the row with the most hits - the one recall actually serves, so the fix
-    lands where the wrong fact was winning. None on any lookup trouble: a correction that cannot
-    find its target still stores as a plain new fact (op=remember), never fails."""
-    try:
-        st, r = http(f"{url}/memory?scope={urllib.parse.quote(scope)}&limit=500")
-        rows = [(m["id"], m["text"], m.get("hits", 0)) for m in (r or {}).get("memories", [])] if st == 200 else []
-    except Exception as e:                                    # noqa: BLE001 - a lookup is never worth losing a fact
-        log({"kind": "supersede_lookup", "err": str(e)[:100]})
-        return None
-    if not rows:
-        return None
-    df = collections.Counter(t for _, txt, _ in rows for t in set(_norm(txt).split()))
+def _probe_shape(user, assistant):
+    """True when a turn looks like the venue's own quiz traffic: a question in, an answer of <= 12
+    words out (the user's quiz format: entity name or idk). Probe answers are the model hearing the
+    gold sheet - they must not mint corrections or personal state-claims (measured 2026-10-12: the
+    sweep digested think-token experiment turns and let one quiz answer SUPERSEDE another airport's
+    fact). Cheap text shape, deliberately: it gates only the CORRECT route, nothing else."""
+    u = str(user or "").strip()
+    a = str(assistant or "").strip()
+    return u.endswith("?") and 0 < len(a.split()) <= 12
+
+
+def _pick_target(fact, rows, min_created=0.0):
+    """Pure matching (unit-tested offline in tools/test_curate_supersede.py): rows are
+    (id, text, hits, created_at) tuples of active facts; returns (id, shared, ambiguous_ids or
+    None). Beyond the payload-intersection rule, two guards added after the measured 2026-10-12
+    Westhope->Pruetz->Arthur cascade:
+    SUBJECT: the shared tokens must include one with df <= 1 in the fetched store - the target's
+    own unique subject. Corpus connectives lie about rarity in small sub-corpora: faa/location/
+    identifier/municipal sat at df 3-6 in the airport rows and made every airport row "match"
+    every other, so a Pruetz correction ate a Westhope row 40 seconds old.
+    SIBLINGS: rows created at or after min_created belong to THIS batch, not to the prior truth -
+    candidates from one sweep must not supersede each other's fresh rows."""
+    rows = [r for r in rows if not min_created or float(r[3] or 0) < min_created]
+    df = collections.Counter(t for _, txt, _, _ in rows for t in set(_norm(txt).split()))
     pay = _payload(fact, df)
     if not pay:                                               # all-boilerplate: too weak to target anything
-        return None
+        return None, 0, None
     want = _norm(fact)
     # shared rare tokens, not whole-payload equality: a rephrase shares the FULL payload, a true
     # contradiction ("KCVN is licensed to Frisco" vs the Cozad row) shares the SUBJECT tokens -
     # both are the fact this one replaces; identical text is dedup's job, not supersede's. A lone
     # shared token only targets when it dominates the smaller payload (>=0.5): one incidental
-    # rare-word coincidence ("broadcasts") must not retire an unrelated fact
+    # rare-word coincidence ("broadcasts") must not retire an unrelated fact - and the whole
+    # match must be anchored by a token unique to the target (the SUBJECT rule above).
     def ok(pay2):
-        inter = len(pay & pay2)
-        return inter >= 2 or (inter >= 1 and inter >= 0.5 * min(len(pay), len(pay2)))
-    scored = sorted(((len(pay & _payload(txt, df)), h, i) for i, txt, h in rows
+        inter = pay & pay2
+        return ((len(inter) >= 2 or (len(inter) >= 1 and len(inter) >= 0.5 * min(len(pay), len(pay2))))
+                and any(df.get(t, 0) <= 1 for t in inter))
+    scored = sorted(((len(pay & _payload(txt, df)), h, i) for i, txt, h, _ca in rows
                      if _norm(txt) != want and ok(_payload(txt, df))), reverse=True)
     if not scored:
-        return None
+        return None, 0, None
     if len(scored) > 1 and scored[0][:2] == scored[1][:2]:    # two rows share the subject equally:
-        log({"kind": "supersede_ambiguous", "shared": scored[0][0], "ids": [s[2] for s in scored[:4]]})
-        return None                                           # ambiguous target: store as a new fact
-    shared, hits_old, old = scored[0]
-    log({"kind": "supersede", "old_id": old, "shared": shared, "payload": sorted(pay)[:8]})
+        return None, scored[0][0], [s[2] for s in scored[:4]]  # ambiguous: store as a new fact
+    return scored[0][2], scored[0][0], None
+
+
+def supersede_id(url, fact, scope, log, min_created=0.0):
+    """The id of the active fact this CORRECT-class candidate replaces, or None (see _pick_target
+    for the matching rules). Prefers the row with the most hits - the one recall actually serves,
+    so the fix lands where the wrong fact was winning. None on any lookup trouble: a correction
+    that cannot find its target still stores as a plain new fact (op=remember), never fails."""
+    try:
+        st, r = http(f"{url}/memory?scope={urllib.parse.quote(scope)}&limit=500")
+        rows = [(m["id"], m["text"], m.get("hits", 0), m.get("created_at", 0))
+                for m in (r or {}).get("memories", [])] if st == 200 else []
+    except Exception as e:                                    # noqa: BLE001 - a lookup is never worth losing a fact
+        log({"kind": "supersede_lookup", "err": str(e)[:100]})
+        return None
+    if not rows:
+        return None
+    old, shared, amb = _pick_target(fact, rows, min_created)
+    if old is None and shared:
+        log({"kind": "supersede_ambiguous", "shared": shared, "ids": amb})
+    elif old is not None:
+        log({"kind": "supersede", "old_id": old, "shared": shared})
     return old
 
 
@@ -358,7 +398,9 @@ def main():
     seen: set[str] = set()         # this filter the fetch loop re-extracts the same 50 forever
     drained = fails = 0
     batch = 0
-    while True:
+    batch_start = time.time()     # sibling protection for supersede: a correction's target must
+    while True:                   # predate this batch - candidates from one sweep must not eat
+                                  # each other's fresh rows (the 2026-10-12 turn-565-ate-564 bug)
         # idle gate (hot-loop shape): never extract into the middle of someone's request
         if a.sweep and batch:
             time.sleep(a.interval)
@@ -422,6 +464,7 @@ def main():
                 new_facts.append(fact[:90])                # NOT candidates[-n:]: with n=0 that
                 candidates.append({"turn_id": t["id"], "turn_scope": t["scope"], "fact": fact,
                                    "probe": probe, "gold": gold,
+                                   "turn_probe": _probe_shape(t["user"], t["assistant"]),
                                    "scope": "user" if scope.lower() == "user" else t["scope"],
                                    "extract_ptok": ptok})  # slice returns the WHOLE list (-0 == 0)
             processed_ids.append(t["id"])
@@ -471,6 +514,15 @@ def main():
             cls, mixed = classify(cold)
             full = cold
         c["cls"], c["mixed"], c["cold"] = cls, mixed, full
+        if cls == "CORRECT" and c.get("turn_probe"):
+            # trust-axis policy (measured 2026-10-12): probe-shaped traffic - quiz question in,
+            # <=12-word answer out - RESTATES the gold sheet, it does not correct the world. Its
+            # CORRECT verdict demotes to FILL: stored, shelved, journaled, but it never gets a
+            # supersede target - that is how turn 565 retired turn 564's 40-second-old row. The
+            # venue's original call survives in the review line and the probe_demote record.
+            rec({"kind": "probe_demote", "turn_id": c["turn_id"], "fact": c["fact"][:80]})
+            cls = "FILL"
+            c["demoted"] = "probe"
         if cls not in ("UNSCORED", "DONT-STORE") and not a.no_store:
             # §11: DONT-STORE is "log noise, not memory" - the review list carries it, the
             # store does not. (drain409e audit found 5 DONT-STOREs stored by the pre-fix
@@ -484,7 +536,7 @@ def main():
             if cls == "CORRECT":
                 # job 7 routing: a correction SUPERSEDES the fact it contradicts (found by content
                 # address) instead of parking a 121st near-dupe beside it in recall
-                old = supersede_id(url, c["fact"], c["scope"], rec)
+                old = supersede_id(url, c["fact"], c["scope"], rec, min_created=batch_start)
                 if old:
                     body = {"op": "correct", "id": old, **fields}
                     c["supersedes"] = old

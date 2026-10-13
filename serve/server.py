@@ -5316,9 +5316,16 @@ def make_handler(svc: Service):
             klass = (qs.get("class") or [""])[0]        # shelf subtree (PHASE 4.5): ?class=MEM/CRG or STR,USR
             prefixes = [c for c in (memory_api.class_name(x, quiet=True)
                                     for x in klass.split(",")) if c] or None
+            try:                                        # ?since= / ?until=: the date index (Primnox lesson)
+                since = memory_api.time_bound((qs.get("since") or [""])[0])
+                until = memory_api.time_bound((qs.get("until") or [""])[0])
+            except ValueError as e:
+                self._json(400, {"error": {"message": str(e)}})
+                return
             if q:
                 self._json(200, {"query": q, "scope": memory_api.scope_name(scope),
-                                 "hits": svc.memory.search(q, scope=scope, limit=limit, classes=prefixes)})
+                                 "hits": svc.memory.search(q, scope=scope, limit=limit, classes=prefixes,
+                                                           since=since, until=until)})
                 return
             inv = (qs.get("include_invalid") or [""])[0]   # ?include_invalid=1 walks the version history too
             self._json(200, {"stats": svc.memory.stats(),
@@ -5332,7 +5339,8 @@ def make_handler(svc: Service):
             {"id"}; "invalidate" {"id", "by"?} retire a fact from recall keeping the version history;
             "correct" {"id", "text", ...} store a replacement and supersede the fact it replaces (inherits
             the old row's shelf unless told otherwise); "classify" {"id", "class"} shelve one fact;
-            "search" {"q", "scope"?, "limit"?, "class"? comma-separated shelf prefixes};
+            "search" {"q", "scope"?, "limit"?, "class"? comma-separated shelf prefixes, "since"?/
+            "until"? date bounds: epoch, ISO date or datetime - the date index};
             "turn" {"user", "assistant", "scope"?, "model"?} journal one exchange by hand (what the eval
             harness posts); "turns" {} list the un-curated journaled turns. Bad fields are 400s like any other
             malformed request."""
@@ -5372,7 +5380,9 @@ def make_handler(svc: Service):
                 classes = [c for c in (memory_api.class_name(x, quiet=True)
                                        for x in str(req.get("class") or "").split(",")) if c] or None
                 r = {"hits": svc.memory.search(str(req.get("q") or ""), scope=str(req.get("scope") or "default"),
-                                               limit=lim, classes=classes)}
+                                               limit=lim, classes=classes,
+                                               since=memory_api.time_bound(req.get("since")),
+                                               until=memory_api.time_bound(req.get("until")))}
             elif op == "turn":
                 r = {"id": svc.memory.journal_turn(str(req.get("scope") or "default"), str(req.get("user") or ""),
                                                    str(req.get("assistant") or ""), req.get("model"))}
