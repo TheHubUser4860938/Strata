@@ -4760,7 +4760,7 @@ def structured_chunks(chunks, validator):
 
 
 # ------------------------------------------------------------------------------------------------ Anthropic
-def anthropic_events(svc: Service, req: dict, ids, thinking, tools, max_new, cancel, force=None):
+def anthropic_events(svc: Service, req: dict, ids, thinking, tools, max_new, cancel, force=None, run=None):
     mid = "msg_" + uuid.uuid4().hex[:24]
     yield "message_start", {"type": "message_start", "message": {
         "id": mid, "type": "message", "role": "assistant", "model": svc.model_for(req), "content": [],
@@ -4771,10 +4771,12 @@ def anthropic_events(svc: Service, req: dict, ids, thinking, tools, max_new, can
         return ("content_block_stop", {"type": "content_block_stop", "index": index})
 
     streamed, finished = set(), set()              # calls sent piece by piece; those whose final tool_call came (#211)
-    for kind, x in svc.run(ids, thinking, tools, max_new, req, cancel, force=force):
+    for kind, x in run if run is not None else svc.run(ids, thinking, tools, max_new, req, cancel, force=force):
         if kind == "ping":
             yield None
             continue
+        if kind == "mcp":                           # memory-core C parity: a server-run tool round stays internal -
+            continue                                # this dialect gets one seamless answer (the trace rides the chat route)
         if kind == "event":
             ev: Event = x
             if ev.kind == "tool_args":
@@ -4822,10 +4824,11 @@ def anthropic_events(svc: Service, req: dict, ids, thinking, tools, max_new, can
             # which is cache_read_input_tokens (message_start could only say the whole prompt).  At least the last
             # prompt token is always read, and Claude Code takes an input_tokens of 0 as "not given" and keeps
             # message_start's whole prompt beside cache_read_input_tokens: the prompt counted twice (#1013)
-            reused = max(0, min(x.get("reused") or 0, len(ids) - 1))
+            prompt = x.get("prompt_tokens") or len(ids)     # after an internal tool round: prompt for the final round
+            reused = max(0, min(x.get("reused") or 0, prompt - 1))
             yield "message_delta", {"type": "message_delta", "delta": {"stop_reason": stop,
                                                                        "stop_sequence": x.get("stop_sequence")},
-                                    "usage": {"input_tokens": len(ids) - reused, "cache_read_input_tokens": reused,
+                                    "usage": {"input_tokens": prompt - reused, "cache_read_input_tokens": reused,
                                               "output_tokens": x["completion_tokens"]}}
             yield "message_stop", {"type": "message_stop"}
 
@@ -5878,7 +5881,7 @@ def make_handler(svc: Service):
             cancel = threading.Event()
             self._watch_client(cancel)                       # #430 #431 (#1999: before prepare, which can take long)
             try:
-                ids, thinking, tools, max_new, asm, validator, req, mem_ctx = self._responses_prepare(req, cancel)
+                ids, thinking, tools, max_new, asm, validator, req, mem_ctx, messages, kw = self._responses_prepare(req, cancel)
             except ClientGone:
                 self._note(outcome="disconnected")
                 return
@@ -5889,13 +5892,21 @@ def make_handler(svc: Service):
             except (GpuBusy, EngineStarting, EngineStuck, EngineDied) as e:
                 return self._json(503, responses_error_body(str(e), "server_error", code="server_error"))
 
+            # memory-core C parity: the server-side browse loop on this dialect too - the tool joined the
+            # render in _responses_prepare (mem_ctx says so), and the loop feeds results back internally.
+            run = None
+            if mem_ctx is not None and mem_ctx.get("memory_tool"):
+                run = run_with_mcp(svc, None, messages, tools, kw, ids, thinking, max_new,
+                                   int(req.get("max_output_tokens") or 0), req, cancel, set(),
+                                   memory_name="memory_search", memory_ctx=mem_ctx)
+
             def check(text, finish):
                 return validated_json(text, validator, finish)
 
             def events():
                 yield from asm.start()
                 done = None
-                for kind, x in svc.run(ids, thinking, tools, max_new, req, cancel):
+                for kind, x in run if run is not None else svc.run(ids, thinking, tools, max_new, req, cancel):
                     if kind == "ping":
                         yield None
                     elif kind == "event":
@@ -5986,6 +5997,16 @@ def make_handler(svc: Service):
                         messages = svc.cartridges.prepend(messages)
                 else:
                     svc.cartridges.invalidate()
+            # memory-core C parity (2026-10-13): the browse tool for Codex too. The tool list here is in the
+            # template's flat form; the flag rides mem_ctx (the return tuple is already wide) and _responses
+            # builds the loop after prepare. Internal rounds never reach the assembler: run_with_mcp swallows
+            # the events of names it serves itself.
+            if svc.memory is not None and mem_ctx is not None and (
+                    svc.memory.tool or (self.headers.get("X-Strata-Memory-Tool") or "").strip().lower()
+                    in ("1", "on", "true")):
+                if "memory_search" not in {t.get("name") for t in tools or [] if isinstance(t, dict)}:
+                    tools = (tools or []) + [memory_api.MEMORY_TOOL]
+                    mem_ctx["memory_tool"] = True
             noted = svc.__dict__.setdefault("hosted_tools_noted", set())   # said once per tool, not per request
             if set(skipped) - noted:
                 print(f"[strata] /v1/responses: left out the hosted tools {', '.join(sorted(set(skipped) - noted))} "
@@ -6031,7 +6052,7 @@ def make_handler(svc: Service):
             asm = responses_api.Assembler(req, svc.model_for(req), len(ids), names,
                                           "reasoning.encrypted_content" in include, validator is not None)
             # the request is also the sampling dict, as on the chat path (temperature, top_p, top_k, seed, ...)
-            return ids, thinking, tools, max_new, asm, validator, req, mem_ctx
+            return ids, thinking, tools, max_new, asm, validator, req, mem_ctx, messages, kw
 
         def _count_tokens(self, req):
             """Anthropic's token count, which Claude Code asks for its context figures: the prompt this server would
@@ -6063,10 +6084,21 @@ def make_handler(svc: Service):
                         messages = svc.cartridges.prepend(messages)
                 else:
                     svc.cartridges.invalidate()
-            if tool_choice_of(req.get("tool_choice"))[0] == "none":   # Anthropic's {"type": "none"}: no tools offered
+            no_tools = tool_choice_of(req.get("tool_choice"))[0] == "none"   # Anthropic's {"type": "none"}
+            if no_tools:
                 tools = None
             force = forced_call(req.get("tool_choice"), tools)        # "any" / {"type": "tool", "name": N}
-            max_new = int(req.get("max_tokens") or 0)                  # 0/-1: the rest of the context
+            max_new = max_req = int(req.get("max_tokens") or 0)      # 0/-1: the rest of the context
+            # memory-core C parity (2026-10-13): the browse tool rides this dialect too - same gate, same
+            # server-side loop, and the internal rounds never reach the client (anthropic_events skips them).
+            # Tools here are already in the template's flat form, which is exactly what MEMORY_TOOL carries.
+            memory_name = None
+            if svc.memory is not None and mem_ctx is not None and not no_tools and (
+                    svc.memory.tool or (self.headers.get("X-Strata-Memory-Tool") or "").strip().lower()
+                    in ("1", "on", "true")):
+                if "memory_search" not in {t.get("name") for t in tools or [] if isinstance(t, dict)}:
+                    tools = (tools or []) + [memory_api.MEMORY_TOOL]
+                    memory_name = "memory_search"
             svc.reasoning_budget(req)                         # a bad value is a 400 before anything is sent
             stop_strings(req)                                 # ... and so is a bad stop / stop_sequences
             check_request_sampling(req)                       # ... and a sampling field of the wrong type
@@ -6074,7 +6106,9 @@ def make_handler(svc: Service):
             self._watch_client(cancel)                       # #430 #431 (#1999: before prepare, which can take long)
             ids, thinking, max_new = svc.prepare(messages, tools, kw, max_new, force=force, req=req, cancel=cancel)
             _debug_req("anthropic", req, messages, tools, max_new, thinking, len(ids))
-            events = anthropic_events(svc, req, ids, thinking, tools, max_new, cancel, force=force)
+            run = run_with_mcp(svc, None, messages, tools, kw, ids, thinking, max_new, max_req, req, cancel,
+                               set(), memory_name=memory_name, memory_ctx=mem_ctx) if memory_name else None
+            events = anthropic_events(svc, req, ids, thinking, tools, max_new, cancel, force=force, run=run)
             events = self._capture(events, "anthropic")
             if mem_ctx is not None:                       # memory-core: journal this exchange when it completes
                 events = memory_api.journal_stream(events, svc.memory, mem_ctx)

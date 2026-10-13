@@ -120,28 +120,28 @@ def memory_dir(value: str, base: str | None = None) -> str:
     return path
 
 
+# The tool in the CHAT TEMPLATE's flat form ({name, description, parameters}) - what MCP's
+# template_tools produce and what the renderer's `tool | tojson` line expects. The OpenAI route
+# flattens the client's nested tools before this is appended, so flat is the only correct shape.
 MEMORY_TOOL = {
-    "type": "function",
-    "function": {
-        "name": "memory_search",
-        "description": ("Search this machine's long-term memory store - facts the user stated, decisions taken, "
-                        "and ingested documents, all kept on shelves by subject. Use it whenever the memory block "
-                        "already in context is not enough, or you are unsure a fact is really there: ask with the "
-                        "words of the question. Narrow with class (a shelf prefix like POL, TECH, USR, or MEM/CRG) "
-                        "and/or since/until dates (YYYY-MM-DD) for when-said questions. Call it directly, do not "
-                        "narrate first. Answer from the facts it returns; if it finds nothing, say so plainly."),
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "q": {"type": "string", "description": "the words to recall (a question or key phrase)"},
-                "class": {"type": "string", "description": "optional comma-separated shelf prefixes to filter by"},
-                "since": {"type": "string", "description": "optional lower date bound: YYYY-MM-DD or epoch seconds"},
-                "until": {"type": "string", "description": "optional upper date bound: YYYY-MM-DD or epoch seconds"},
-                "limit": {"type": "integer", "description": "max facts to return, 1-20 (default 8)"},
-            },
-            "required": ["q"],
+    "name": "memory_search",
+    "description": ("Search this machine's long-term memory store - facts the user stated, decisions taken, "
+                    "and ingested documents, all kept on shelves by subject. Use it whenever the memory block "
+                    "already in context is not enough, or you are unsure a fact is really there: ask with the "
+                    "words of the question. Narrow with class (a shelf prefix like POL, TECH, USR, or MEM/CRG) "
+                    "and/or since/until dates (YYYY-MM-DD) for when-said questions. Call it directly, do not "
+                    "narrate first. Answer from the facts it returns; if it finds nothing, say so plainly."),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "q": {"type": "string", "description": "the words to recall (a question or key phrase)"},
+            "class": {"type": "string", "description": "optional comma-separated shelf prefixes to filter by"},
+            "since": {"type": "string", "description": "optional lower date bound: YYYY-MM-DD or epoch seconds"},
+            "until": {"type": "string", "description": "optional upper date bound: YYYY-MM-DD or epoch seconds"},
+            "limit": {"type": "integer", "description": "max facts to return, 1-20 (default 8)"},
         },
-    },
+        "required": ["q"],
+}
 }
 
 

@@ -496,6 +496,46 @@ class MemoryTool(unittest.TestCase):
         self.assertEqual(st, 200, body)
         self.assertNotIn("strata_mcp", body["choices"][0]["message"])
 
+    def test_anthropic_route_runs_the_same_loop(self):
+        # C parity (2026-10-13): Claude Code rides /v1/messages and gets the identical server-side
+        # browse - the tool round stays internal, the answer is the whole reply, and usage reports
+        # the FINAL round's prompt (the engine read that one, not the first).
+        st, body = self.http("POST", "/memory", {"op": "remember",
+                                                 "text": "The zygost scale reads 41.2 after calibration",
+                                                 "scope": "fw"})
+        self.assertEqual(st, 200, body)
+        st, body = self.http("POST", "/v1/messages",
+                             {"model": "m", "max_tokens": 256, "thinking": {"type": "disabled"},
+                              "messages": [{"role": "user",
+                                            "content": "what does memory say about the zygost scale?"}]},
+                             headers=[("X-Strata-Memory-Scope", "fw")])
+        self.assertEqual(st, 200, body)
+        self.assertEqual([b["text"] for b in body["content"] if b["type"] == "text"],
+                         ["the mock answer after recall"], "round 2's answer is the whole reply")
+        self.assertEqual(body["stop_reason"], "end_turn")
+        self.assertFalse([b for b in body["content"] if b["type"] == "tool_use"],
+                         "the internal call never leaks to the client")
+        self.assertEqual(body["usage"]["input_tokens"], len(self.engine.last_prompt),
+                         "input_tokens counts the final round's prompt, the one the engine read")
+
+    def test_responses_route_runs_the_same_loop(self):
+        # C parity: Codex CLI rides /v1/responses - same loop, and the assembler never sees the
+        # internal call (run_with_mcp swallows the events of names it serves itself).
+        st, body = self.http("POST", "/memory", {"op": "remember",
+                                                 "text": "The zygost scale reads 41.2 after calibration",
+                                                 "scope": "fw"})
+        self.assertEqual(st, 200, body)
+        st, body = self.http("POST", "/v1/responses",
+                             {"model": "m", "max_output_tokens": 256, "reasoning": {"effort": "off"},
+                              "input": "what does memory say about the zygost scale?"},
+                             headers=[("X-Strata-Memory-Scope", "fw")])
+        self.assertEqual(st, 200, body)
+        texts = [c["text"] for item in body["output"] if item["type"] == "message"
+                 for c in item.get("content", []) if c.get("type") == "output_text"]
+        self.assertEqual(texts, ["the mock answer after recall"])
+        self.assertFalse([i for i in body["output"] if i["type"] == "function_call"],
+                         "no function_call item reaches the Codex client")
+
     def test_tool_result_shape(self):
         self.svc.memory.remember("The zygost scale reads 41.2 after calibration", scope="fw")
         r = tool_result(self.svc.memory, {"q": "zygost scale"}, scope="fw")
