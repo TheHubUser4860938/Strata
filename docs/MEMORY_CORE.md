@@ -381,6 +381,14 @@ standing status, never knowledge. Every failure path leaves the request complete
 cartridge adds speed and never risk. `GET /memory` grows a `cartridges` view (shelves, facts,
 left-for-block, file, bytes, state); `POST {"op": "cartridge"}` re-seeds now, 400 when off.
 
+**The store's own page (item D).** `GET /memory-ui` (only when memory is on) serves a panel:
+stats cards (rows/cap/pressure, pending turns, at-rest seal, cartridge state), search with
+scope/class filters, the fifty most recent facts with per-row **Forget**, an **Add a fact** box
+(class + scope), and a **Reseed cartridge** button when cartridges are on. It is a window, not a
+wall: every action is the same `/memory` API any client uses, the page follows the web app's
+auth (Bearer key via the API-key button, same sessionStorage pattern as the monitor), and the
+server gained exactly one route line for it.
+
 **Honest scope, stated before the venue proves it:** a cartridge is a prefix, not telepathy - the
 standing text still rides the prompt, and what the venue will measure is the time: ~0.1 s restore
 against ~0.5 s prefill per 2k tokens, every conversation, every restart. One known upstream

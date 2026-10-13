@@ -5225,8 +5225,10 @@ def make_handler(svc: Service):
                 if self._authorized():
                     self._json(200, svc.mcp.status() if svc.mcp else {"servers": [], "tools": 0})
                 return
-            if path == "" or (path == "/api-monitor" and svc.api_monitor):
-                body = (ROOT / "serve" / "web" / ("monitor.html" if path else "index.html")).read_bytes()
+            if path == "" or (path == "/api-monitor" and svc.api_monitor) or \
+                    (path == "/memory-ui" and svc.memory is not None):   # memory-core D: the store's own page
+                body = (ROOT / "serve" / "web" / ("monitor.html" if path == "/api-monitor" else
+                                                   "memory.html" if path == "/memory-ui" else "index.html")).read_bytes()
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
                 self.send_header("Content-Length", str(len(body)))

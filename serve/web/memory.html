@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Strata - Memory</title>
+<link rel="icon" href="/web/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/web/tokens.css">
+<link rel="stylesheet" href="/web/app.css">
+<style>
+*{box-sizing:border-box}body{margin:0;background:var(--st-bg);color:var(--st-ink);font:15px/1.5 var(--st-font)}
+button,input,textarea,select{font:inherit}button{cursor:pointer;color:inherit;background:var(--st-surface-2);border:1px solid var(--st-line);border-radius:9px;padding:8px 13px}button:hover{border-color:var(--st-accent)}button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--st-focus);outline-offset:3px}[hidden]{display:none!important}
+header{height:70px;padding:0 32px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--st-line);background:var(--st-surface)}.brand{font-size:23px;font-weight:700;letter-spacing:-.5px}.brand span{font-size:13px;font-weight:400;margin-left:14px;color:var(--st-ink-muted)}
+main{max-width:1200px;margin:auto;padding:28px 32px}h1{margin:0;font-size:29px;letter-spacing:-.7px}.sub,.muted{color:var(--st-ink-muted)}.sub{margin:4px 0 0}.controls{display:flex;gap:8px;flex-wrap:wrap}.primary{background:var(--st-accent);color:var(--st-accent-ink);border-color:transparent}
+.notice{margin-top:16px;padding:10px 14px;background:var(--st-danger-tint);color:var(--st-danger-text);border-radius:9px}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:24px 0}.card{padding:18px 20px;border:1px solid var(--st-line);border-radius:13px;background:var(--st-surface)}.label{font-size:12px;color:var(--st-ink-muted);text-transform:uppercase;letter-spacing:.8px}.value{font-size:26px;font-weight:500;line-height:1.4;margin-top:3px}.small{font-size:12px;color:var(--st-ink-muted);overflow-wrap:anywhere}
+.panel{border:1px solid var(--st-line);border-radius:14px;background:var(--st-surface);overflow:hidden;margin-top:22px}.panel-bar{padding:14px 18px;border-bottom:1px solid var(--st-line);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+input,textarea{color:inherit;border:1px solid var(--st-line);background:var(--st-bg);padding:8px 10px;border-radius:8px}#q{flex:1;min-width:220px}#addtext{width:100%;min-height:64px;resize:vertical}
+.facts{list-style:none;margin:0;padding:0}.fact{display:flex;gap:14px;align-items:flex-start;padding:13px 18px;border-bottom:1px solid var(--st-line-soft)}.fact:last-child{border-bottom:0}
+.fact .body{flex:1;min-width:0}.fact .txt{overflow-wrap:anywhere;white-space:pre-wrap}.chip{font-size:11px;border-radius:5px;padding:2px 6px;background:var(--st-surface-2);color:var(--st-ink-muted);margin-right:6px;font-family:var(--st-font-mono)}.chip.cls{color:var(--st-accent-text);background:var(--st-accent-tint)}
+.meta{font-size:12px;color:var(--st-ink-muted);margin-top:3px}.empty{padding:46px 24px;text-align:center;color:var(--st-ink-muted)}
+.addrow{display:flex;gap:8px;padding:14px 18px;flex-wrap:wrap}.addrow input{width:150px}footer{margin-top:14px;font-size:12px;color:var(--st-ink-muted)}
+@media(max-width:800px){.cards{grid-template-columns:repeat(2,1fr)}main,header{padding-left:16px;padding-right:16px}}
+</style>
+<script defer src="/web/memory.js"></script>
+</head>
+<body>
+<header><div class="brand">Strata <span>Local inference</span></div><div class="controls"><button id="key">API key</button><button id="theme" aria-label="Switch color theme">Light / dark</button></div></header>
+<main>
+<div><h1>Memory</h1><p class="sub">What this server remembers between conversations - the store every client shares.</p></div>
+<div id="error" class="notice" role="status" hidden></div>
+<div class="cards">
+  <div class="card"><div class="label">Facts</div><div class="value" id="rows">-</div><div class="small" id="rowsub"></div></div>
+  <div class="card"><div class="label">Curation</div><div class="value" id="pending">-</div><div class="small" id="pendsub"></div></div>
+  <div class="card"><div class="label">At rest</div><div class="value" id="rest">-</div><div class="small" id="restsub"></div></div>
+  <div class="card"><div class="label">Cartridge</div><div class="value" id="cart">-</div><div class="small" id="cartsub"></div></div>
+</div>
+<div class="panel">
+  <div class="panel-bar">
+    <input id="q" placeholder="Search the store - words of the question">
+    <input id="scope" placeholder="scope (optional)" style="width:150px">
+    <input id="klass" placeholder="class (POL,USR)" style="width:140px">
+    <button id="search" class="primary">Search</button>
+    <button id="browse">Browse recent</button>
+  </div>
+  <ul class="facts" id="list"><li class="empty">Loading...</li></ul>
+</div>
+<div class="panel">
+  <div class="panel-bar"><h2 style="margin:0;font-size:17px">Add a fact</h2></div>
+  <div class="addrow" style="flex-direction:column;align-items:stretch">
+    <textarea id="addtext" placeholder="One fact per line, as it should be remembered."></textarea>
+    <div class="addrow" style="padding:0">
+      <input id="addclass" placeholder="class (optional)">
+      <input id="addscope" placeholder="scope (optional)">
+      <button id="remember" class="primary">Remember</button>
+      <span class="small" id="addnote"></span>
+    </div>
+  </div>
+</div>
+<footer>Every operation here is the same <code>/memory</code> API any client uses. <button id="reseed" hidden>Reseed cartridge</button></footer>
+</main>
+</body>
+</html>

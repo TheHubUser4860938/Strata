@@ -423,6 +423,14 @@ class ServerMemory(unittest.TestCase):
         self.assertLess(used(muted), used(body), "the injected block must be bytes in the prompt")
         self.assertEqual(self.http("GET", "/memory")[1]["stats"]["turns"], before + 1)
 
+    def test_ui_page_and_script_are_served(self):
+        # item D (2026-10-13): the store's own page - one route line, zero new API
+        st, body = self.http("GET", "/memory-ui")
+        self.assertEqual(st, 200)
+        self.assertIn("<title>Strata - Memory</title>", body)
+        st, body = self.http("GET", "/web/memory.js")
+        self.assertEqual(st, 200, "the page's script rides the same static handler the app uses")
+
     def test_bad_requests_are_400(self):
         st, body = self.http("POST", "/memory", {"op": "remember", "text": ""})
         self.assertEqual(st, 400, body)
@@ -687,6 +695,10 @@ class MemoryOff(unittest.TestCase):
             return r.status, json.loads(data)
         except ValueError:
             return r.status, data
+
+    def test_ui_page_is_404_when_memory_off(self):
+        st, _ = self.http("GET", "/memory-ui")
+        self.assertEqual(st, 404, "no store, no page - the route hides itself")
 
     def test_memory_404_and_plain_chat(self):
         st, body = self.http("GET", "/memory")
