@@ -42,8 +42,16 @@ from __future__ import annotations
 import argparse, json, re, sys, time, urllib.error, urllib.parse, urllib.request as U
 
 DATE_RE = re.compile(r"^\s*(\d{4}-\d{2}-\d{2})")
-ANSWER_RULE = ("Answer in a few words from the memory you carry. If it does not hold what "
-               "is needed, reply exactly: idk")
+ANSWER_RULES = {
+    "direct": ("Answer in a few words from the memory you carry. If it does not hold what "
+               "is needed, reply exactly: idk"),
+    # The benchmark authors' own recommendation ("con": extract useful information first, then
+    # reason over it) - the oracle pilot (2026-013-13) showed the failure it targets: top-1
+    # recall was 3/3 while one answer still picked the wrong fact out of the block.
+    "con": ("First quote the memory lines that bear on the question, then give the final answer "
+            "in a few words on its own last line. If the memory does not hold what is needed, "
+            "reply exactly idk on the last line."),
+}
 
 
 def scrub(s: str) -> str:
@@ -119,14 +127,14 @@ def recall(url: str, q: dict, scope: str, where: dict, k: int) -> dict:
             "session_top3": flag(lambda v: any(x[1] in gold_sids for x in v[:3]))}
 
 
-def ask(url: str, q: dict, scope: str, muted: bool) -> str:
+def ask(url: str, q: dict, scope: str, muted: bool, style: str = "direct") -> str:
     """One fresh conversation, one answer. The server injects from the question's own scope
     (that IS the product path); a muted control request carries the header that turns
     memory off, and the cold baseline gets no scope at all."""
     hdrs = ({"X-Strata-Memory": "off"} if muted
             else {"X-Strata-Memory-Scope": scope})
     body = {"model": "", "messages": [{"role": "user",
-                                       "content": f"{q['question']}\n\n{ANSWER_RULE}"}],
+                                       "content": f"{q['question']}\n\n{ANSWER_RULES[style]}"}],
             "max_tokens": 500, "temperature": 0.8, "reasoning_effort": "off"}
     r = post(url, "/v1/chat/completions", body, headers=hdrs)
     return (r["choices"][0]["message"].get("content") or "").strip()
@@ -138,7 +146,8 @@ def judge(url: str, q: dict, hypothesis: str) -> bool:
     discipline; a hangup or junk counts as incorrect, never as a free pass."""
     prompt = (f"Question: {q['question']}\nGold answer: {q['answer']}\n"
               f"Model answer: {hypothesis or '(empty)'}\n"
-              "Is the model answer semantically correct for the gold? Reply exactly yes or no.")
+              "Treat the model answer's LAST line as its answer; earlier lines may be quoted "
+              "evidence. Is that answer semantically correct for the gold? Reply exactly yes or no.")
     try:
         r = post(url, "/v1/chat/completions",
                  {"model": "", "messages": [{"role": "user", "content": prompt}],
@@ -166,8 +175,8 @@ def load_map(map_path: str) -> dict[str, dict[int, tuple[bool, str]]]:
 
 def run(url: str, data: list[dict], out_path: str, repeats: int, k: int, types: set,
         skip_ingest: bool, use_judge: bool, muted_control: bool, limit: int,
-        log=print) -> dict:
-    done, map_path = {}, out_path + ".map"
+        style: str = "direct", map_path: str | None = None, log=print) -> dict:
+    done, map_path = {}, map_path or out_path + ".map"
     try:
         for line in open(out_path):
             o = json.loads(line)
@@ -205,7 +214,7 @@ def run(url: str, data: list[dict], out_path: str, repeats: int, k: int, types: 
             for rep in range(repeats):
                 if rep in done.get(qid, ()):
                     continue
-                hyp = scrub(ask(url, q, scope, muted=False))
+                hyp = scrub(ask(url, q, scope, muted=False, style=style))
                 cold = scrub(ask(url, q, scope, muted=True)) if muted_control else None
                 ok = judge(url, q, hyp) if use_judge else None
                 if ok is not None:
@@ -242,8 +251,10 @@ def metrics(out_path: str) -> dict:
             r[key] = round(sum(vals) / len(vals), 3) if vals else None
         cor = [x["correct"] for x in sub if x["correct"] is not None]
         r["accuracy"] = round(sum(cor) / len(cor), 3) if cor else None
-        r["idk_rate"] = round(sum(1 for x in sub if "idk" in (x["hypothesis"] or "").lower())
-                              / len(sub), 3) if sub else None
+        # con-style hypotheses can MENTION idk while answering; only the final line is the answer
+        def is_idk(x):
+            return "idk" in (x["hypothesis"] or "").strip().lower().split("\n")[-1]
+        r["idk_rate"] = round(sum(1 for x in sub if is_idk(x)) / len(sub), 3) if sub else None
         return r
 
     out["overall"] = agg(rows)
@@ -264,6 +275,10 @@ def main(argv=None) -> int:
     ap.add_argument("--skip-ingest", action="store_true", help="rows already in the store")
     ap.add_argument("--no-judge", action="store_true")
     ap.add_argument("--muted-control", action="store_true", help="also ask each question cold")
+    ap.add_argument("--style", choices=("direct", "con"), default="direct",
+                    help="answer instruction: direct, or the authors' recommended extract-then-answer")
+    ap.add_argument("--map", dest="map_path", default=None,
+                    help="gold-map sidecar (default: OUT.map) - point at an earlier run's map to --skip-ingest")
     a = ap.parse_args(argv)
     data = json.load(open(a.data))
     st = get(a.url, "/memory", {"limit": 1}).get("stats", {})
@@ -272,10 +287,10 @@ def main(argv=None) -> int:
         print(f"[lme] store cap {cap} (rows {st.get('memories')}): a full run wants max_memories 0 "
               "on a dedicated venue store - the oracle set alone is ~6k rows", file=sys.stderr)
     got = run(a.url, data, a.out, a.repeats, a.recall_k, {t.strip() for t in a.types.split(",")
-            if t.strip()}, a.skip_ingest, not a.no_judge, a.muted_control, a.limit)
+            if t.strip()}, a.skip_ingest, not a.no_judge, a.muted_control, a.limit, a.style, a.map_path)
     with open(a.out + ".metrics.json", "w") as f:                  # the venue record
         json.dump({"data": a.data, "url": a.url, "repeats": a.repeats, "recall_k": a.recall_k,
-                   "muted_control": a.muted_control, **got}, f, indent=1)
+                   "muted_control": a.muted_control, "style": a.style, **got}, f, indent=1)
     return 0
 
 
