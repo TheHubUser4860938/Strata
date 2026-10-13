@@ -64,24 +64,26 @@ class Venue(unittest.TestCase):
         by = {}
         for r in rows:
             by[r["m"]] = by.get(r["m"], 0) + 1
-        self.assertEqual(by, {"M1_restore": 2, "M2_warm": 2, "M2_cold": 2,
-                              "M3_wrongcartridge_muted": 2, "M3_rightfile_warm": 2})
+        self.assertEqual(by, {"M1_restore": 2, "M1b_pin": 1, "M2_warm": 2, "M2_cold": 2,
+                              "M2d_continuation": 1, "M3_wrongcartridge_muted": 2,
+                              "M3_rightfile_warm": 2})
         cart_file = [f for f in os.listdir(self.slots.name) if f.startswith("MEM-CRG-")][0]
-        # 6 restores of the right file, and the count is the state machine made visible:
-        # M1 x2 + the warm asks that follow a muted one (muted invalidates, so the next
-        # standing request restores - the law M3b shipped, firing exactly as designed:
-        # M2 warm rep1 x1 + positive-control ensure x1) + the script's own explicit
-        # restores x2. If this number drifts, the invalidation law changed - read it,
-        # do not renumber it.
-        self.assertEqual(self.restores.count(cart_file), 6)
-        self.assertEqual(self.restores.count("c5_comp.bin"), 2)     # the wrong cartridge ran
+        # 7 restores of the right file, and the count is the state machine made visible:
+        # M1 x2 + every standing ask that follows a muted one (muted invalidates, so the
+        # next standing request restores - the law M3b shipped, firing exactly as designed:
+        # M2 warm rep1 x1, M2d after cold rep1 x1, positive-control ensure x1) + the
+        # script's own explicit restores x2. If this number drifts, the invalidation law
+        # changed - read it, do not renumber it.
+        self.assertEqual(self.restores.count(cart_file), 7)
+        self.assertEqual(self.restores.count("c5_comp.bin"), 1)      # M1b: the pin probe (mock has no pin)
+        self.assertEqual(sum(1 for f in self.restores if f.startswith("MEMCTRL-")), 2)  # the live-made control
         mfile = json.load(open(self.out + ".metrics.json"))
         met = mfile["metrics"]
-        self.assertEqual(met["restore_ms_median"], 1)               # the mock's honest 1 ms
+        self.assertEqual(met["restore_ms_median"], 1)                # the mock's honest 1 ms
         self.assertEqual(met["control"]["leaks"], 0)
-        self.assertEqual(met["warm"]["gold_hits"], 0)               # mock answers are not gold
-        self.assertIsNone(met["warm"]["prompt_ms_median"])          # no timings from the mock: None, not invented
-        self.assertIn("pass shape", met["reading"])
+        self.assertEqual(met["warm"]["gold_hits"], 0)                # mock answers are not gold
+        self.assertIsNone(met["warm"]["prompt_ms_median"])           # no timings from the mock: None, not invented
+        self.assertIn("PASS SHAPE", met["reading"].upper())
 
     def test_preflight_refuses_a_quiet_cartridge(self):
         self.svc.cartridges.state = "failed: venue not ready"

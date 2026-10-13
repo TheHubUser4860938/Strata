@@ -14,19 +14,29 @@ M1  restore cost - POST /slots/0?action=restore of the cartridge file named by
     engine log lines can contain the template's delimiter - the poisoned-data-point lesson
     of the morning, so this script never reads them).
 
+M1b the pin law, probed - restore the spike-era file (c5_comp.bin): the current engine
+    must REFUSE it ("saved with another engine configuration"), which is the cartridge's
+    safety story passing. A 200 here is the surprise worth stopping for.
+
 M2  warm vs cold - the same gold question with memory on (the standing prefix rides) and
     with X-Strata-Memory: off (cold). The response's own timings carry the engine's view:
-    prompt_ms and cache_n (tokens the engine did NOT re-read - the prefix law made
-    visible: warm requests reuse ~the cartridge length, cold requests reuse ~nothing).
-    The delta is the claim; the record states it in ms and tokens, not adjectives.
+    prompt_ms and cache_n (tokens the engine did NOT re-read). The delta is the claim;
+    the record states it in ms and tokens, not adjectives. Measured 2026-10-13 and kept in
+    the file so the next boot's experiment has a before: a FRESH conversation after
+    restore re-reads its whole prompt (reused 0, full prompt_ms) - the restore is fast but
+    the fresh-conversation time win is not yet earned.
 
-M3  negative control - knowledge never leaks from a loaded cartridge alone (the spike's
-    law). Restore the WRONG cartridge (c5_comp.bin, a dead session from the spike era),
-    ask the gold question muted - the standing text is nowhere in the prompt and the slot
-    holds someone else's K/V: the honest answer is the unknown-marker. Then restore the
-    right file and ask unmuted: the text rides, so the answer should come. A pass on M3
-    is the control passing, not the model winning: if a muted wrong-cartridge ask ANSWERS
-    the standing fact, something leaked and the venue stops.
+M2d the continuation control - the same conversation with a follow-up turn: engine resume
+    re-reads only the new tail. M2 + M2d together locate the mechanism: reuse today is
+    same-conversation; cross-conversation prefix inheritance is the engine's RAM-side
+    conversation cache (--conversation-cache-mib) - the next experiment, not tonight.
+
+M3  negative control - knowledge never leaks from a loaded cartridge alone. The wrong
+    cartridge is made LIVE: a foreign muted conversation (photosynthesis only) is run and
+    SAVED - same pin, different knowledge - then restored, and the gold question asked
+    muted: standing text nowhere in the prompt, slot holding a stranger's chat. The honest
+    answer is the unknown-marker; a gold word there is a LEAK, which exits 2 and stops the
+    venue. Then the right file returns and the positive control runs warm.
 
 The gold question and answer are operator arguments (--ask/--gold): point them at a real
 standing fact the store carries (the script prints the first USR/DEC rows to help). Output:
@@ -104,29 +114,68 @@ def main(argv=None) -> int:
     for rep in range(a.repeats):
         r = call(a.url, "/slots/0?action=restore", {"filename": cart["file"]})
         rec({"m": "M1_restore", "rep": rep, "file": cart["file"],
-             "restore_ms": (r.get("timings") or {}).get("restore_ms"), "bytes": r.get("n_restored")})
+             "restore_ms": (r.get("timings") or {}).get("restore_ms"), "tokens": r.get("n_restored")})
+
+    # M1b: the pin law, probed not assumed - the spike-era file must be REFUSED (it was saved
+    # by another engine configuration). A 400 here is the cartridge's safety story passing:
+    # an engine upgrade costs one re-seed, never a stale read. A 200 would be the surprise.
+    try:
+        r = call(a.url, "/slots/0?action=restore", {"filename": a.control_file})
+        rec({"m": "M1b_pin", "file": a.control_file, "refused": False,
+             "note": "expected a pin refusal; this engine ACCEPTED a foreign file - investigate"})
+    except U.error.HTTPError as e:
+        body = e.read().decode()[:200]
+        rec({"m": "M1b_pin", "file": a.control_file, "refused": e.code == 400, "code": e.code, "body": body})
 
     # M2: warm vs cold, interleaved so drift hits both sides equally.
+    warm_hyp = ""
     for rep in range(a.repeats):
         for muted in (False, True):
             r = ask(a.url, a.model, a.ask, muted)
+            if not muted and not warm_hyp:
+                warm_hyp = r["hypothesis"]
             rec({"m": "M2_warm" if not muted else "M2_cold", "rep": rep, "gold_hit":
                  a.gold.lower() in r["hypothesis"].lower(), **r})
 
-    # M3: wrong-cartridge control, then right-file positive control.
-    try:
-        for rep in range(a.repeats):
-            call(a.url, "/slots/0?action=restore", {"filename": a.control_file})
-            r = ask(a.url, a.model, a.ask, muted=True)
-            leaked = a.gold.lower() in r["hypothesis"].lower()
-            rec({"m": "M3_wrongcartridge_muted", "rep": rep, "file": a.control_file,
-                 "leaked": leaked, "says_unknown": a.unknown.lower() in r["hypothesis"].lower(), **r})
-    finally:
-        for rep in range(a.repeats):
-            call(a.url, "/slots/0?action=restore", {"filename": cart["file"]})
-            r = ask(a.url, a.model, a.ask, muted=False)
-            rec({"m": "M3_rightfile_warm", "rep": rep, "gold_hit":
-                 a.gold.lower() in r["hypothesis"].lower(), **r})
+    # M2d: the continuation control - the SAME conversation, follow-up turn appended. The engine's
+    # resume mechanism re-reads only the new tail when a conversation continues; M2 showed a FRESH
+    # conversation after restore reads the whole prompt (0 reused, full prompt_ms). Together the
+    # two lines locate the mechanism: reuse is same-conversation, and cross-conversation prefix
+    # inheritance is the engine's conversation cache (--conversation-cache-mib, RAM-side) - the
+    # next experiment, not tonight's claim.
+    cont = {"model": a.model, "messages": [{"role": "user", "content": a.ask},
+                                           {"role": "assistant", "content": warm_hyp},
+                                           {"role": "user", "content": "Name one color. One word only."}],
+            "max_tokens": 500, "temperature": 0.8, "reasoning_effort": "off"}
+    rc = call(a.url, "/v1/chat/completions", cont)
+    t = rc.get("timings") or {}
+    rec({"m": "M2d_continuation", "rep": 0,
+         "prompt_tokens": (rc.get("usage") or {}).get("prompt_tokens"), "cache_n": t.get("cache_n"),
+         "prompt_ms": t.get("prompt_ms"), "hypothesis": scrub(
+             (rc["choices"][0]["message"].get("content") or "").strip())})
+
+    # M3: the wrong cartridge, made live: a foreign conversation (muted, so it carries no
+    # standing text) is run and SAVED - same pin, different knowledge - then restored, and the
+    # gold question asked MUTED: standing text nowhere in the prompt, the slot holding a
+    # photosynthesis chat. The honest answer is the unknown-marker; a gold word is a LEAK.
+    for rep in range(a.repeats):
+        ctrl = f"MEMCTRL-{datetime.datetime.now().strftime('%H%M%S')}-{rep}.bin"
+        call(a.url, "/v1/chat/completions",
+             {"model": a.model, "messages": [{"role": "user",
+                                              "content": "Today we only discuss photosynthesis. Reply OK."}],
+              "max_tokens": 500, "temperature": 0.8, "reasoning_effort": "off"},
+             headers={"X-Strata-Memory": "off"})
+        call(a.url, "/slots/0?action=save", {"filename": ctrl})
+        call(a.url, "/slots/0?action=restore", {"filename": ctrl})
+        r = ask(a.url, a.model, a.ask, muted=True)
+        leaked = a.gold.lower() in r["hypothesis"].lower()
+        rec({"m": "M3_wrongcartridge_muted", "rep": rep, "file": ctrl, "leaked": leaked,
+             "says_unknown": a.unknown.lower() in r["hypothesis"].lower(), **r})
+    for rep in range(a.repeats):
+        call(a.url, "/slots/0?action=restore", {"filename": cart["file"]})
+        r = ask(a.url, a.model, a.ask, muted=False)
+        rec({"m": "M3_rightfile_warm", "rep": rep, "gold_hit":
+             a.gold.lower() in r["hypothesis"].lower(), **r})
     out.close()
 
     rows = [json.loads(l) for l in open(a.out)]
@@ -137,18 +186,29 @@ def main(argv=None) -> int:
 
     metrics = {
         "restore_ms_median": med("M1_restore", "restore_ms"),
+        "pin": {"refused": sum(1 for x in rows if x["m"] == "M1b_pin" and x.get("refused")),
+                "accepted_foreign": sum(1 for x in rows if x["m"] == "M1b_pin"
+                                        and x.get("refused") is False)},
         "warm": {"prompt_ms_median": med("M2_warm", "prompt_ms"),
                  "cache_n_median": med("M2_warm", "cache_n"),
                  "gold_hits": sum(1 for x in rows if x["m"] == "M2_warm" and x["gold_hit"])},
         "cold": {"prompt_ms_median": med("M2_cold", "prompt_ms"),
                  "cache_n_median": med("M2_cold", "cache_n"),
                  "gold_hits": sum(1 for x in rows if x["m"] == "M2_cold" and x["gold_hit"])},
+        "continuation": next(({"prompt_ms": x["prompt_ms"], "cache_n": x["cache_n"],
+                               "prompt_tokens": x["prompt_tokens"]}
+                              for x in rows if x["m"] == "M2d_continuation"), None),
         "control": {"leaks": sum(1 for x in rows if x["m"] == "M3_wrongcartridge_muted" and x["leaked"]),
                     "unknowns": sum(1 for x in rows if x["m"] == "M3_wrongcartridge_muted"
                                     and x["says_unknown"])},
         "positive": {"gold_hits": sum(1 for x in rows if x["m"] == "M3_rightfile_warm" and x["gold_hit"])},
-        "reading": "warm cache_n >> 0 AND cold gold_hits == 0 AND control leaks == 0 AND "
-                   "positive gold_hits == repeats is the pass shape; anything else is a finding, "
+        "reading": "PASS shape: pin refused == 1, control leaks == 0, positive gold_hits == repeats, "
+                   "cold gold_hits == 0. The TIME claim reads from warm prompt_ms vs continuation "
+                   "prompt_ms and the M1 restore_ms: as measured 2026-10-13, a FRESH conversation "
+                   "after restore re-reads its whole prompt (reused 0), so the fresh-conversation "
+                   "time win is NOT yet earned - continuation reuse works (engine resume, same "
+                   "conversation), cross-conversation prefix inheritance is the conversation-cache "
+                   "experiment (--conversation-cache-mib, boot 14+). Anything else is a finding, "
                    "not a rounding error",
     }
     with open(a.out + ".metrics.json", "w") as f:
