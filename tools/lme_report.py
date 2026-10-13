@@ -26,7 +26,11 @@ s1 = [l["session_top1"] for l in lines if l.get("session_top1") is not None]
 s3 = [l["session_top3"] for l in lines if l.get("session_top3") is not None]
 cold = [l for l in lines if l.get("cold_hypothesis") is not None]
 cold_idk = sum(1 for l in cold if "idk" in (l.get("cold_hypothesis") or "").lower())
-cold_correct = sum(1 for l in cold if l.get("cold_correct"))
+# leak view: a cold answer that carries the gold substring (the record has no judged-cold
+# field - counting one was a false zero in the first draft of this report)
+cold_leak = sum(1 for l in cold
+                if str(l.get("gold", "")).lower().strip()
+                and str(l.get("gold", "")).lower().strip() in (l.get("cold_hypothesis") or "").lower())
 # majority per question (>= 2 of the repeats judged correct) - the pass/fail view
 maj = {q: sum(1 for r in rs if r.get("correct")) >= 2 for q, rs in by_q.items()
        if len(rs) >= 3}
@@ -42,7 +46,7 @@ print(f"accuracy (majority >=2/3):  {maj_all}/{len(maj)} = {maj_all / max(len(ma
 for name, xs in (("turn_top1", t1), ("turn_top3", t3), ("session_top1", s1), ("session_top3", s3)):
     print(f"{name:14s}              {sum(xs) / max(len(xs), 1):.3f}  (n={len(xs)})")
 print(f"muted control: idk {cold_idk}/{len(cold)} = {cold_idk / max(len(cold), 1):.3f}"
-      f" | judged correct cold {cold_correct}/{len(cold)} (leak view)")
+      f" | gold-substring leaks {cold_leak}/{len(cold)} = {cold_leak / max(len(cold), 1):.4f}")
 print("per-repeat correct:", {r: f"{per_rep[(r, True)]}/{per_rep[(r, True)] + per_rep[(r, False)]}"
                               for r in sorted({k[0] for k in per_rep})})
 by_type = collections.defaultdict(lambda: [0, 0])

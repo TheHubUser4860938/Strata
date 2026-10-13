@@ -443,6 +443,55 @@ assistant's own harness - replaces the slot's last prompt and silently invalidat
 probe (run 4's spoiled line is filed as proof). Run M2d first, or run the venue when nothing else
 is conversing.
 
+## F venue - LongMemEval oracle on the built-in memory (measured 2026-10-13, boot 16)
+
+The benchmark claim, run on the benchmark it is named for: **LongMemEval-V1 oracle** (500 questions,
+official dataset from `xiaowu0162/LongMemEval`, ICLR 2025 - the abstract's own headline is that
+commercial assistants and long-context LLMs drop ~30% accuracy on sustained-interaction memory,
+verified against arXiv:2410.10813v2 the day this ran). Protocol: a dedicated store (`memory-venue`,
+unlimited budget - the oracle's ~13k turns would thrash the dev store's cap), every haystack turn
+remembered through the same `/memory` API any client uses, one fresh conversation per ask,
+temperature 0.8, 3 repeats, and the **official checker prompt verbatim** (the type-specific
+templates from `evaluate_qa.py`, embedded in the harness). The judge model is local - the same
+engine, memory muted, temp 0, 10 tokens: the paper's decoding shape, a non-paper model. That is
+disclosed everywhere this number travels.
+
+**Accuracy: 0.683 per line (1,025/1,500); 0.694 by question majority (correct in >= 2 of 3
+repeats).** Per-repeat 342/336/347 of 500 - the spread is temperature, not flakiness. By type:
+
+| question type | accuracy | note |
+|---|---|---|
+| single-session-user | 0.953 | the fact was stated by the user: recall is near-free |
+| single-session-assistant | 0.905 | the fact was in the assistant's own answer - remembered with the "The assistant told the user:" lead |
+| single-session-preference | 0.878 | judged by the paper's rubric template |
+| knowledge-update | 0.727 | newest-value law works more than it fails |
+| abstention | 0.667 | the honest `idk` path; the other third invents an answer |
+| multi-session | 0.639 | reasoning across two remembered sessions |
+| temporal-reasoning | 0.425 | the known weak spot: day arithmetic over injected note dates, even with the checker's off-by-one tolerance |
+
+**Recall, the Primnox-style view, scored inside each question's own scope:** turn_top1 0.509,
+turn_top3 0.749; session-level 1.000/1.000 - with only the question's haystack in scope, landing in
+the right session is easy by design and the turn-level numbers are the honest ones. **The cold
+control is the strongest line in the record: with memory muted, 0.984 of asks answer `idk`, and
+gold-substring leaks are 2 of 1,500 (0.13%)** - and 14 of the 24 non-`idk` cold answers are
+preference questions confabulating a personality, not facts surfacing from nowhere.
+
+What this venue does NOT claim: it is not the paper's full-history oracle (retrieval rides the
+store's FTS5 + scoring, no embedding model, and the answer reads recalled notes, not 24 raw
+sessions); the scoped design makes session-level recall trivially high; and the judge is local.
+The claim is precise: on the official questions, with the official checker, this memory answers
+0.68-0.69 correctly and is honest about not knowing 98% of the time it cannot see the fact.
+
+Venue incidents, filed because the class matters: the run crashed three times - the store's
+4,000-char single-fact cap met long haystack turns (`535d247b` chunking, every chunk carries the
+turn's gold), and 32 of the 500 questions carry **int** answers, which bit the judge template and
+then `scrub` (`47d9916a`, `0d416954` - the class closed by normalizing at the load boundary, not
+per consumer). The resume contract held all three times: the out-file + gold-map sidecar skip
+completed question-repeats exactly, and no line was lost beyond the crashed repeat itself.
+Records: `spikes/lme/oracle-20261013-full.jsonl` (+ `.map`, `.metrics.json`); rerun with
+`python3 tools/lme_harness.py --data <oracle.json> --repeats 3 --style con --muted-control
+--out <out.jsonl>` and aggregate with `python3 tools/lme_report.py <out.jsonl>`.
+
 ## Licensing and attribution
 
 - Strata (upstream) is MIT © Niko1221 and contributors; this fork's independent code keeps MIT.

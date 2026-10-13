@@ -33,6 +33,15 @@ Status, October 2026 — the text tier is live on the dev server and the K/V tie
   behavior venue. The earned claims today are fast slot reload, pin-verified provenance, and
   parked repeats; nothing here claims prefill skipped per conversation.
   Protocol and raw records: `spikes/cartridge/M3C_PRE_REG.md`.
+- **Benchmark, measured (2026-10-13):** on **LongMemEval-V1 oracle** — all 500 official questions,
+  3 repeats, one fresh conversation per ask, the benchmark's own checker prompt verbatim — the
+  built-in memory answers **0.68** correctly (0.69 by question majority), with per-repeat spread
+  of ±5 questions. The cold control is the line to trust: memory muted, **98.4% answer `idk`** and
+  gold leaks are **2 in 1,500**. Recall splits honestly: single-session 0.91–0.95, preferences
+  0.88, knowledge-update 0.73, multi-session 0.64, abstention 0.67, temporal arithmetic 0.43 —
+  the known weak spot. The judge model is local (same engine, paper's decoding shape, disclosed);
+  full protocol, caveats, and records: `docs/MEMORY_CORE.md` (F venue section) +
+  `spikes/lme/oracle-20261013-full.jsonl`.
 - **Phase 2, state-without-text (open research):** porting the *AKBASCORE MAM / NIRVANA cognitive
   cartridge* idea — knowledge stored as model-produced K/V (v1.3.0 "CUT3": 56 tensors per fact, one
   file each, SHA-256 manifested) and read back with no source text in the prompt, which on this
