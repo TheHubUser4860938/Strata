@@ -425,7 +425,11 @@ choose from, measures restore (`timings.restore_ms`), warm-vs-cold (`timings.cac
 engine did not re-read - the prefix law made visible), and the wrong-cartridge control (restore
 `c5_comp.bin`, ask muted: the honest answer is the unknown-marker; a leak exits 2 and stops the
 venue). Both scripts read timings from RESPONSES, never from engine logs - log lines can carry the
-template's delimiter, and one already poisoned a data point this week.
+template's delimiter, and one already poisoned a data point this week. M2d's adjacent pair wants
+the port quiet in the real sense: an interleaved request from ANY client - including this
+assistant's own harness - replaces the slot's last prompt and silently invalidates the continuation
+probe (run 4's spoiled line is filed as proof). Run M2d first, or run the venue when nothing else
+is conversing.
 
 ## Licensing and attribution
 
