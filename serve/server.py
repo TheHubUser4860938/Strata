@@ -5691,7 +5691,7 @@ def make_handler(svc: Service):
             cancel = threading.Event()
             self._watch_client(cancel)                       # #430 #431 (#1999: before prepare, which can take long)
             try:
-                ids, thinking, tools, max_new, asm, validator, req = self._responses_prepare(req, cancel)
+                ids, thinking, tools, max_new, asm, validator, req, mem_ctx = self._responses_prepare(req, cancel)
             except ClientGone:
                 self._note(outcome="disconnected")
                 return
@@ -5718,6 +5718,8 @@ def make_handler(svc: Service):
                 if done is not None and done["finish"] != "cancel" and not cancel.is_set():
                     yield from asm.finish(done, check)
             items = self._capture(events(), "responses")
+            if mem_ctx is not None:                       # memory-core: journal this exchange when it completes
+                items = memory_api.journal_stream(items, svc.memory, mem_ctx)
             if not req.get("stream"):
                 try:
                     result = responses_api.collect(items)
@@ -5786,6 +5788,10 @@ def make_handler(svc: Service):
                 messages, validator = prepare_format(responses_api.text_format(req), messages, with_tools=bool(tools))
             except ValueError as e:
                 raise ResponsesError(str(e).replace("response_format", "text.format"), "text.format") from None
+            # memory-core fork (beta item B, 2026-10-12): Codex CLI rides this route, so the
+            # harness-independence claim needs the injection here too. After prepare_format so
+            # the format's own system text is already part of the head request_state merges into.
+            messages, mem_ctx = memory_api.request_state(svc.memory, messages, self.headers, req)
             noted = svc.__dict__.setdefault("hosted_tools_noted", set())   # said once per tool, not per request
             if set(skipped) - noted:
                 print(f"[strata] /v1/responses: left out the hosted tools {', '.join(sorted(set(skipped) - noted))} "
@@ -5831,13 +5837,17 @@ def make_handler(svc: Service):
             asm = responses_api.Assembler(req, svc.model_for(req), len(ids), names,
                                           "reasoning.encrypted_content" in include, validator is not None)
             # the request is also the sampling dict, as on the chat path (temperature, top_p, top_k, seed, ...)
-            return ids, thinking, tools, max_new, asm, validator, req
+            return ids, thinking, tools, max_new, asm, validator, req, mem_ctx
 
         def _count_tokens(self, req):
             """Anthropic's token count, which Claude Code asks for its context figures: the prompt this server would
             read for the same request, rendered and tokenized - the model does not run."""
             req = svc.with_shared(req, "anthropic")
             messages, tools, kw = anthropic_to_messages(req, svc.anthropic_think_unasked)
+            # memory-core fork (beta item B): the count must reflect the prompt this server ACTUALLY
+            # reads - with memory on, the injected block is bytes in that prompt, and a client that
+            # budgets by this number (Claude Code's context bar) deserves the honest figure.
+            messages, _ = memory_api.request_state(svc.memory, messages, self.headers, req)
             stop_strings(req)                                 # the same 400 as the request itself would get
             check_request_sampling(req)                       # ... likewise a sampling field of the wrong type
             self._json(200, {"input_tokens": len(svc.encode_prompt(messages, tools, kw))})
@@ -5847,6 +5857,11 @@ def make_handler(svc: Service):
             req = svc.with_shared(req, "anthropic")
             messages, tools, kw = anthropic_to_messages(req, svc.anthropic_think_unasked)
             self._no_local_images(messages)
+            # memory-core fork (beta item B, 2026-10-12): the injection and journaling that
+            # /v1/chat/completions got at Stage 1 - Claude Code rides this route, and the
+            # harness-independence claim is only as wide as the dialects that carry it. With
+            # memory off or muted, messages comes back the exact list it was (upstream path).
+            messages, mem_ctx = memory_api.request_state(svc.memory, messages, self.headers, req)
             if tool_choice_of(req.get("tool_choice"))[0] == "none":   # Anthropic's {"type": "none"}: no tools offered
                 tools = None
             force = forced_call(req.get("tool_choice"), tools)        # "any" / {"type": "tool", "name": N}
@@ -5860,6 +5875,8 @@ def make_handler(svc: Service):
             _debug_req("anthropic", req, messages, tools, max_new, thinking, len(ids))
             events = anthropic_events(svc, req, ids, thinking, tools, max_new, cancel, force=force)
             events = self._capture(events, "anthropic")
+            if mem_ctx is not None:                       # memory-core: journal this exchange when it completes
+                events = memory_api.journal_stream(events, svc.memory, mem_ctx)
             if not req.get("stream"):
                 return self._json(200, anthropic_collect(events))
             self._sse()

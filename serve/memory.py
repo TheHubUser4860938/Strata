@@ -911,3 +911,35 @@ def journal_chunks(chunks, mem: "MemoryService", ctx: dict):
                 mem.journal_turn(ctx["scope"], ctx["user"], text, ctx.get("model"))
             except Exception:      # noqa: BLE001 - the journal is never allowed to break a reply
                 pass
+
+
+def journal_stream(items, mem: "MemoryService", ctx: dict):
+    """The dialect twin of journal_chunks (beta item B, 2026-10-12): wraps the Anthropic event
+    stream (items are (name, event) tuples, keepalives None) or the Responses event stream
+    (items are dicts) and journals the completed answer. Text comes from the deltas each API
+    defines - content_block_delta/text_delta for Anthropic, response.output_text.delta for
+    Responses; thinking_delta and reasoning deltas are deliberately NOT collected: the answer
+    is the turn, the rumination is not. Transparent like its twin: every item passes through
+    unchanged on the same schedule, journaling rides in finally, and a store error never
+    breaks an answer the user already watched."""
+    parts: list[str] = []
+    try:
+        for item in items:
+            e = item[1] if isinstance(item, tuple) and len(item) == 2 and isinstance(item[1], dict) \
+                else (item if isinstance(item, dict) else None)
+            if e is not None:
+                t = e.get("type")
+                if t == "content_block_delta":
+                    d = e.get("delta") or {}
+                    if d.get("type") == "text_delta" and isinstance(d.get("text"), str):
+                        parts.append(d["text"])
+                elif t == "response.output_text.delta" and isinstance(e.get("delta"), str):
+                    parts.append(e["delta"])
+            yield item
+    finally:
+        text = "".join(parts).strip()
+        if text:
+            try:
+                mem.journal_turn(ctx["scope"], ctx["user"], text, ctx.get("model"))
+            except Exception:      # noqa: BLE001 - the journal is never allowed to break a reply
+                pass

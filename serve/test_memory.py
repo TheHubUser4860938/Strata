@@ -375,6 +375,54 @@ class ServerMemory(unittest.TestCase):
         self.assertEqual(st, 200, body)
         self.assertEqual(body["choices"][0]["message"]["content"], "the mock answer")
 
+    def test_anthropic_dialect_injects_and_journals(self):
+        # beta item B (2026-10-12): Claude Code rides /v1/messages - the harness-independence
+        # claim breaks if memory only rides the OpenAI route. The prompt-size delta between a
+        # request and its muted twin proves the block reached the ENGINE, not just that the
+        # journal fired (mem_ctx exists even when nothing recalls).
+        st, body = self.http("POST", "/memory", {"op": "remember",
+                                                 "text": "The Zephyr staging mirror runs on :9099",
+                                                 "scope": "fw"})
+        self.assertEqual(st, 200, body)
+        msg = {"model": "m", "max_tokens": 64, "thinking": {"type": "disabled"},
+               "messages": [{"role": "user", "content": "which port is the Zephyr staging mirror?"}]}
+        hdr = [("X-Strata-Memory-Scope", "fw")]
+        before = self.http("GET", "/memory")[1]["stats"]["turns"]
+        st, body = self.http("POST", "/v1/messages", msg, headers=hdr)
+        self.assertEqual(st, 200, body)
+        self.assertEqual("".join(b.get("text", "") for b in body.get("content", [])), "the mock answer",
+                         "the answer must survive the new wrappers untouched")
+        self.assertEqual(self.http("GET", "/memory")[1]["stats"]["turns"], before + 1,
+                         "the exchange was journaled")
+        st, muted = self.http("POST", "/v1/messages", msg, headers=hdr + [("X-Strata-Memory", "off")])
+        self.assertEqual(st, 200, muted)
+        self.assertLess(muted["usage"]["input_tokens"], body["usage"]["input_tokens"],
+                        "the injected block must be bytes in the prompt, not just in the journal")
+        self.assertEqual(self.http("GET", "/memory")[1]["stats"]["turns"], before + 1,
+                         "the mute header skips memory entirely on this dialect too")
+
+    def test_responses_dialect_injects_and_journals(self):
+        # and the Responses route (Codex CLI): same parity, same proof
+        st, body = self.http("POST", "/memory", {"op": "remember",
+                                                 "text": "The Quillon deploy window is 03:15 UTC",
+                                                 "scope": "fw"})
+        self.assertEqual(st, 200, body)
+        req = {"model": "m", "max_output_tokens": 64, "reasoning": {"effort": "none"},
+               "input": [{"role": "user",
+                          "content": [{"type": "input_text", "text": "when is the Quillon deploy window?"}]}]}
+        hdr = [("X-Strata-Memory-Scope", "fw")]
+        before = self.http("GET", "/memory")[1]["stats"]["turns"]
+        st, body = self.http("POST", "/v1/responses", req, headers=hdr)
+        self.assertEqual(st, 200, body)
+        text = "".join(c.get("text", "") for o in body.get("output", []) for c in (o.get("content") or []))
+        self.assertIn("the mock answer", text)
+        self.assertEqual(self.http("GET", "/memory")[1]["stats"]["turns"], before + 1)
+        st, muted = self.http("POST", "/v1/responses", req, headers=hdr + [("X-Strata-Memory", "off")])
+        self.assertEqual(st, 200, muted)
+        used = lambda b: (b.get("usage") or {}).get("input_tokens") or (b.get("usage") or {}).get("prompt_tokens") or 0
+        self.assertLess(used(muted), used(body), "the injected block must be bytes in the prompt")
+        self.assertEqual(self.http("GET", "/memory")[1]["stats"]["turns"], before + 1)
+
     def test_bad_requests_are_400(self):
         st, body = self.http("POST", "/memory", {"op": "remember", "text": ""})
         self.assertEqual(st, 400, body)
