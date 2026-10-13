@@ -350,10 +350,10 @@ milliseconds, the model continues - all inside one request, so no client tool wi
 route that offers it. The machinery is the MCP tool loop (`run_with_mcp`), production-tested since
 the web app shipped: the memory call is a second executor - no hub, no worker thread, same events
 in the same order, same client-visible trace (`strata_mcp`), so the web app shows memory rounds for
-free. v1 scope, stated precisely: the loop rides the **OpenAI chat route** today (OpenCode, the web
-app, curl, OpenAI-SDK clients); the Anthropic and Responses routes carry the recall block and the
-cartridge but not the tool - wiring the loop to those dialects is the next small wire, so "any
-harness" is the design, "chat route" is today's fact. Opt-in twice over: config
+free. Dialect reach, measured at boot 14 (2026-10-13): the loop rides **all three dialects** -
+/v1/messages (Claude Code) and /v1/responses (Codex CLI) answered a browse-only question 2/2 each,
+no tool item leaked, and `input_tokens` reported the final round's prompt (the accounting fix in
+the same commit); the trace field rides the chat route only (v1, documented). Opt-in twice over: config
 `"tool": true` for every conversation, or the `X-Strata-Memory-Tool: 1` header for one. Off (the
 default): no tool joins the request's list and the prompt bytes are as before. A muted request
 gets no tool - memory off means off. Scoping: the call searches the request's scope pair; a call
