@@ -178,11 +178,32 @@ def tool_result(mem: "MemoryService", arguments, scope: str = "default",
     return _tool_done(t0, True, json.dumps({"found": len(facts), "facts": facts}, ensure_ascii=False))
 
 
+def prepend_head(messages: list[dict], text: str) -> list[dict]:
+    """Merge standing text at the very front of the prompt system - BEFORE the volatile recall
+    block that request_state merged in, because the restored cartridge prefix is reused only
+    while the bytes match from token 0 (measured 2026-10-12: a per-conversation block ahead of
+    the cartridge killed reuse at token ~250). Same one-system merge the block uses: the Qwen
+    template allows exactly one system message, at index 0."""
+    if not text:
+        return messages
+    head = messages[0] if messages and isinstance(messages[0], dict) else None
+    if head is not None and head.get("role") in ("system", "developer"):
+        c = head.get("content")
+        if isinstance(c, list):
+            merged = dict(head, content=[{"type": "text", "text": text}] + list(c))
+        elif isinstance(c, str) and c.strip():
+            merged = dict(head, content=f"{text}\n\n{c}")
+        else:
+            merged = dict(head, content=text)
+        return [merged] + list(messages[1:])
+    return [{"role": "system", "content": text}] + list(messages)
+
+
 def time_bound(value) -> float | None:
     """A /memory date-index bound (?since= / ?until=, 2026-10-12): epoch seconds, an ISO date
-    (2026-10-12, read as UTC midnight), or an ISO datetime. None for empty/None - the default
-    window stays byte-identical. Junk raises ValueError, which the API answers with a 400:
-    silently reading "last tuesday" as "no bound" would widen the window without anyone noticing."""
+    (read as UTC midnight), or an ISO datetime. None for empty/None - the default window stays
+    byte-identical. Junk raises ValueError, which the API answers with a 400: silently reading
+    "last tuesday" as "no bound" would widen the window without anyone noticing."""
     if value is None or str(value).strip() == "":
         return None
     s = str(value).strip()
@@ -530,6 +551,36 @@ class MemoryService:
             elif self._is_declarative(h["text"]) and not self._is_declarative(clash["text"]):
                 kept[kept.index(clash)] = h                 # the fact bumps its own question from the slot
         return kept
+
+    def cartridge_text(self, prefixes: list[str], max_chars: int = 4000) -> tuple[str, int, int]:
+        """The standing text of the tier-2 cartridge (M3b, 2026-10-12): the rows of these shelf
+        subtrees, confidence descending then id ascending - never by hits, because hits drift with
+        every recall and the cartridge file is only valid for its exact bytes (the engine reuses the
+        restored prefix while the prompt matches it, token for token, measured by the spike the same
+        night: reuse dies at the first differing token). Returns (text, n_facts, n_left_out); the
+        left-out rows still ride the tier-3 block, so a small budget costs standing status, never
+        knowledge. Unclassified rows match no prefix: the cartridge holds shelved facts on purpose -
+        the call number IS the graduation criterion."""
+        ok = [c for c in (class_name(p, quiet=True) for p in prefixes) if c]
+        if not ok:
+            return "", 0, 0
+        with self.lock:
+            rows = self.conn.execute(
+                "select id, class, text, confidence from memories where invalid_at is null and ("
+                + " or ".join("class like ?" for _ in ok) + ") order by confidence desc, id asc",
+                [c + "%" for c in ok]).fetchall()
+        header = "STANDING MEMORY - always known; never restate it, never search for it:"
+        lines, used, left = [], len(header) + 1, 0
+        for i, (_rid, cls, txt, _conf) in enumerate(rows, 1):
+            ln = f"{i}. [{cls}] {txt}"
+            if used + len(ln) + 1 > max_chars:
+                left += 1
+                continue
+            lines.append(ln)
+            used += len(ln) + 1
+        if not lines:
+            return "", 0, left
+        return header + "\n" + "\n".join(lines), len(lines), left
 
     def search(self, query: str, scope: str = DEFAULT_PROJECT, limit: int | None = None,
                classes: list[str] | None = None, since: float | None = None,

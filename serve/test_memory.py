@@ -16,7 +16,7 @@ from pathlib import Path
 
 from serve.frontend import ChatTemplate
 from serve.memory import MemoryService, request_state, time_bound, tool_result
-from serve.server import ByteTokenizer, MockEngine, Service, serve
+from serve.server import ByteTokenizer, Cartridges, MockEngine, Service, serve
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -507,6 +507,117 @@ class MemoryTool(unittest.TestCase):
         self.assertFalse(bad["ok"], "a junk date is an honest tool error, not a widened window")
         empty = tool_result(self.svc.memory, {}, scope="fw")
         self.assertFalse(empty["ok"], "q is required")
+
+
+class Cartridge(unittest.TestCase):
+    """M3b tier-2 standing cartridge (2026-10-12): the standing shelves ride every prompt as its
+    FIRST system bytes, and their K/V comes back from the engine session file instead of being
+    re-prefilled - restore measured at ~0.1 s for 260 MB on the live box. The mock's session_file
+    stands in for the disk transfer; the prefix law is checked at the token."""
+
+    SCRIPT = ["OK", "first answer", "second answer", "muted answer", "third answer"]
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.slots = tempfile.TemporaryDirectory()
+        self.tok = ByteTokenizer()
+        self.engine = MockEngine(self.tok, list(self.SCRIPT), max_context=131072)
+        self.svc = Service(self.engine, self.tok, ChatTemplate(ROOT / "serve/chat_template.jinja"))
+        self.svc.memory = MemoryService(self.tmp.name)
+        self.svc.slot_save_path = self.slots.name
+        self.svc.cartridges = Cartridges(self.svc, {"enabled": True, "class_prefixes": ["USR"], "max_chars": 400})
+        self.calls = {"save": 0, "restore": 0}
+        orig = self.engine.session_file
+
+        def counted(action, path):
+            self.calls[action] = self.calls.get(action, 0) + 1
+            return orig(action, path)
+        self.engine.session_file = counted
+        self.httpd = serve(self.svc, port=0)
+        self.port = self.httpd.server_address[1]
+        st, body = self.http("POST", "/memory", {"op": "remember", "scope": "user", "class": "USR",
+                                                 "text": "The user's launch ritual is coffee before code"})
+        self.assertEqual(st, 200, body)
+
+    def tearDown(self):
+        self.httpd.shutdown()
+        self.httpd.server_close()
+        self.svc.memory.close()
+        self.tmp.cleanup()
+        self.slots.cleanup()
+
+    def http(self, verb, path, body=None, headers=()):
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=30)
+        hdrs = {"Content-Type": "application/json"}
+        hdrs.update({k: v for k, v in headers})
+        conn.request(verb, path, json.dumps(body) if body is not None else None, hdrs)
+        r = conn.getresponse()
+        data = r.read().decode()
+        conn.close()
+        try:
+            return r.status, json.loads(data)
+        except ValueError:
+            return r.status, data
+
+    def prompt_text(self):
+        return bytes(t for t in self.engine.last_prompt if t < 256).decode("utf-8", "replace")
+
+    def ask(self, text, headers=()):
+        return self.http("POST", "/v1/chat/completions",
+                         {"model": "m", "max_tokens": 64, "reasoning_effort": "off",
+                          "messages": [{"role": "user", "content": text}]}, headers=list(headers))
+
+    def test_seed_then_the_standing_text_rides_every_conversation(self):
+        st, body = self.ask("what is my launch ritual?")
+        self.assertEqual(st, 200, body)
+        self.assertEqual(body["choices"][0]["message"]["content"], "first answer")
+        p = self.prompt_text()
+        self.assertIn("STANDING MEMORY", p)
+        self.assertIn("launch ritual", p, "the standing fact rides the prompt: the win is time, not magic")
+        files = [f for f in os.listdir(self.slots.name) if f.startswith("MEM-CRG-")]
+        self.assertEqual(len(files), 1, "the seed saved exactly one cartridge file")
+        self.assertEqual(self.calls, {"save": 1, "restore": 0})
+        # second fresh conversation: the slot still stands on the same bytes - no restore, no re-seed
+        st, body = self.ask("second question")
+        self.assertEqual(body["choices"][0]["message"]["content"], "second answer")
+        self.assertIn("STANDING MEMORY", self.prompt_text())
+        self.assertEqual(self.calls, {"save": 1, "restore": 0})
+        st, stats = self.http("GET", "/memory")
+        cart = stats["stats"]["cartridges"]
+        self.assertEqual(cart["state"], "seeded")
+        self.assertEqual(cart["facts"], 1)
+
+    def test_muted_request_invalidates_and_the_next_one_restores(self):
+        st, body = self.ask("first question")
+        self.assertEqual(st, 200, body)
+        st, body = self.ask("muted question", headers=[("X-Strata-Memory", "off")])
+        self.assertEqual(st, 200, body)        # which scripted string it answers with is fixture noise;
+        self.assertNotIn("STANDING MEMORY", self.prompt_text(), "memory off means the cartridge off")
+        self.assertEqual(self.calls["restore"], 0)
+        st, body = self.ask("third question")
+        self.assertEqual(st, 200, body)
+        self.assertIn("STANDING MEMORY", self.prompt_text())
+        self.assertEqual(self.calls["restore"], 1, "the muted conversation replaced the slot: restore once")
+        self.assertEqual(self.calls["save"], 1, "no re-seed - the file survived, only the slot moved")
+
+    def test_cartridge_text_is_deterministic_shelved_only_and_bounded(self):
+        m = self.svc.memory
+        a = m.cartridge_text(["USR"])
+        self.assertEqual(a, m.cartridge_text(["USR"]), "same store, same bytes, file stays valid")
+        self.assertEqual(m.cartridge_text([""])[0], "", "wild facts graduate to no shelf")
+        m.remember("The user's car is a maroon estate with a crooked mirror", scope="user", klass="USR")
+        text, n, left = m.cartridge_text(["USR"], max_chars=180)
+        self.assertEqual(n, 1, "the budget keeps the strongest fact standing")
+        self.assertGreaterEqual(left, 1, "the rest are counted, never silently dropped")
+        self.assertIn("coffee", text)   # conf ties: id order keeps the first row
+
+    def test_reseed_op_reports_and_off_is_a_400(self):
+        st, body = self.http("POST", "/memory", {"op": "cartridge"})
+        self.assertEqual(st, 200, body)
+        self.assertIn(body["cartridge"]["state"], ("seeded", "loaded"))
+        self.svc.cartridges = None
+        st, body = self.http("POST", "/memory", {"op": "cartridge"})
+        self.assertEqual(st, 400, body)
 
 
 class MemoryOff(unittest.TestCase):

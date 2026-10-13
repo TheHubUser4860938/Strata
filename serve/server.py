@@ -296,6 +296,18 @@ class MockEngine:
                 time.sleep(self.delay)
             yield t
 
+    def session_file(self, action: str, path: str) -> dict:
+        """Disk sessions in the mock: SAVE writes a stand-in file of the last prompt, RESTORE reads
+        it back - enough for the cartridge lifecycle (seed, save, restore, gc) without the engine."""
+        if action == "save":
+            data = b"MOCKSESSION:" + str(len(self.last_prompt)).encode()
+            with open(path, "wb") as f:
+                f.write(data)
+            return {"tokens": len(self.last_prompt), "bytes": len(data), "ms": 1}
+        with open(path, "rb") as f:
+            data = f.read()
+        return {"tokens": 7, "bytes": len(data), "ms": 1}
+
 
 class EngineDied(RuntimeError):
     """The engine process ended in the middle of a request (issue #27: on Linux, the out-of-memory killer)."""
@@ -2877,6 +2889,7 @@ class Service:
         self.fifo = threading.Lock()
         self.slot_save_path = None                    # --slot-save-path: /slots/0?action=save|restore (off when None)
         self.memory = None                            # memory-core fork: serve/memory.py store (off unless configured)
+        self.cartridges = None                        # memory-core M3b: tier-2 standing cartridge (off unless configured)
         self.embeddings = threading.local()           # the current request's image embeddings file (GENI)
         self.api_key = ""                              # when set, /v1/* needs it (Bearer or x-api-key)
         # #458 (opt-in, the config's "effort_position": "end"): a non-default reasoning effort goes in a short system
@@ -4460,6 +4473,133 @@ def run_with_mcp(svc: Service, hub, messages, tools, kw, ids, thinking, max_new,
     yield "done", {**done, "completion_tokens": total, "prompt_tokens": len(ids)}
 
 
+# ------------------------------------------------------------------------------------------------ tier-2 cartridge (M3b)
+class Cartridges:
+    """The tier-2 standing cartridge (M3b, 2026-10-12): one global K/V prefix per engine pin, built
+    from the standing shelves and kept as an engine session file, so every conversation starts with
+    its KV already in the slot - the spike measured restore at ~0.1 s against ~0.5 s of prefill per
+    2k tokens, every conversation, every restart.
+
+    The spike wrote the design laws, so they are the docstring: (1) the prefix is reused only while
+    the prompt matches it byte for byte from token 0 - the standing text rides FIRST, ahead of the
+    volatile per-conversation recall block (reuse died at token ~250 when the block led); (2) a
+    session file is a prefix, not telepathy - the text still rides in the prompt, the win is time,
+    and the venue must claim nothing louder; (3) the engine validates the pin inside the file
+    (model fingerprint, engine version, rope config, geometry), so this class never computes pins:
+    it tries the file and re-seeds on refusal - an engine upgrade costs one re-seed, never a stale
+    read; (4) one slot, one FIFO: off with --batch, like slot_action itself; (5) a request that
+    does not carry the standing text (muted) replaces the slot's state, so the next standing
+    request restores again - 0.1 s, honestly charged.
+
+    Best-effort by construction: any failure leaves the text un-prepended and the request
+    completely normal - the cartridge only ever adds speed, never risk."""
+
+    def __init__(self, svc: Service, cfg: dict):
+        self.svc = svc
+        self.prefixes = [p for p in (memory_api.class_name(x, quiet=True)
+                                     for x in (cfg.get("class_prefixes") or ["USR", "DEC"])) if p]
+        self.max_chars = max(200, int(cfg.get("max_chars") or 4000))
+        self.text, self.n_facts, self.n_left = "", 0, 0
+        self.file, self.applied, self.bytes = None, None, 0
+        self.state = "pending"
+        self.lock = threading.Lock()
+
+    def build(self):
+        self.text, self.n_facts, self.n_left = self.svc.memory.cartridge_text(self.prefixes, self.max_chars)
+        if not self.text:
+            self.file = None
+            return
+        self.file = "MEM-CRG-" + hashlib.sha256(self.text.encode()).hexdigest()[:8] + ".bin"
+
+    def prepend(self, messages):
+        return memory_api.prepend_head(messages, self.text) if self.text else messages
+
+    def invalidate(self):
+        with self.lock:
+            if self.state in ("loaded", "seeded"):
+                self.state = "pending"        # a muted conversation replaced the slot's state
+
+    def ensure(self):
+        """Make the slot hold the standing text's K/V before the request renders. Called from the
+        request path; holds its lock across seed/restore so parallel lanes never interleave a
+        session transfer (the engine refuses it anyway - #465 - but a clean wait beats a retry)."""
+        with self.lock:
+            self.build()
+            if not self.file:
+                self.state = "failed: no shelved facts to stand"
+                return
+            if self.state in ("loaded", "seeded") and self.file == self.applied:
+                return
+            svc = self.svc
+            if getattr(svc.engine, "batch", 0):
+                self.state = "failed: slot save is off with parallel requests"
+                return
+            try:
+                svc.load()
+            except Exception:                                     # noqa: BLE001 - the request reports real load failures
+                return
+            path = os.path.join(svc.slot_save_path, self.file)
+            if os.path.exists(path):
+                code, r = svc.slot_action("0", "restore", self.file)
+                if code == 200:
+                    self.state, self.applied, self.bytes = "loaded", self.file, os.path.getsize(path)
+                    print(f"[strata] cartridge: restored {self.file} ({self.n_facts} standing facts, "
+                          f"{self.bytes:,} B)", flush=True)
+                    self.gc()
+                    return
+                print(f"[strata] cartridge: restore of {self.file} refused ({str(r)[:100]}) - re-seeding",
+                      flush=True)
+            self.seed(path)
+
+    def seed(self, path):
+        try:
+            ids, thinking, max_new = self.svc.prepare(
+                [{"role": "system", "content": self.text},
+                 {"role": "user", "content": "Acknowledge with OK only."}], None, {}, 24)
+            for kind, x in self.svc.run(ids, thinking, None, max_new or 24, {}, threading.Event()):
+                if kind == "done":
+                    break
+        except Exception as e:                                    # noqa: BLE001 - seeding is best-effort
+            self.state = f"failed: seed {type(e).__name__}"
+            print(f"[strata] cartridge: seed failed ({e})", flush=True)
+            return
+        code, r = self.svc.slot_action("0", "save", self.file)
+        if code != 200:
+            self.state = f"failed: save {code}"
+            print(f"[strata] cartridge: save refused ({str(r)[:100]})", flush=True)
+            return
+        self.state, self.applied = "seeded", self.file
+        self.bytes = os.path.getsize(path) if os.path.exists(path) else 0
+        print(f"[strata] cartridge: seeded {self.file} ({self.n_facts} standing facts, {self.bytes:,} B; "
+              f"{self.n_left} left for the recall block)", flush=True)
+        self.gc()
+
+    def gc(self):
+        """One cartridge file per content hash; yesterday's standing set is dead weight once the
+        text moved - the store, not the file, is the archive (pin-rotation re-seeds from it)."""
+        try:
+            for f in sorted(os.listdir(self.svc.slot_save_path)):
+                if f.startswith("MEM-CRG-") and f.endswith(".bin") and f != self.applied:
+                    os.remove(os.path.join(self.svc.slot_save_path, f))
+        except OSError:
+            pass
+
+    def reseed(self):
+        with self.lock:
+            self.build()
+            if self.file:
+                p = os.path.join(self.svc.slot_save_path, self.file)
+                if os.path.exists(p):
+                    os.remove(p)                                  # force a fresh seed, not a restore
+            self.state, self.applied = "pending", None
+        self.ensure()
+        return self.view()
+
+    def view(self):
+        return {"shelves": self.prefixes, "max_chars": self.max_chars, "facts": self.n_facts,
+                "left_for_block": self.n_left, "file": self.applied, "bytes": self.bytes, "state": self.state}
+
+
 # ------------------------------------------------------------------------------------------------ OpenAI
 # The engine's last PP line stops short of the prompt: up to `--short-read` tokens (generate.cpp's `short_read`, 64 by
 # default) are read through the verify windows instead of the batched path, so the batched path never reports the whole
@@ -5347,7 +5487,10 @@ def make_handler(svc: Service):
                                                            since=since, until=until)})
                 return
             inv = (qs.get("include_invalid") or [""])[0]   # ?include_invalid=1 walks the version history too
-            self._json(200, {"stats": svc.memory.stats(),
+            stats = svc.memory.stats()
+            if getattr(svc, "cartridges", None) is not None:    # M3b: the cartridge reports beside the store
+                stats["cartridges"] = svc.cartridges.view()
+            self._json(200, {"stats": stats,
                              "memories": svc.memory.list_memories(scope=memory_api.scope_name(scope, "") or None,
                                                                   limit=limit, include_invalid=inv not in ("", "0"),
                                                                   klass=(prefixes or [None])[0])})
@@ -5361,7 +5504,8 @@ def make_handler(svc: Service):
             "search" {"q", "scope"?, "limit"?, "class"? comma-separated shelf prefixes, "since"?/
             "until"? date bounds: epoch, ISO date or datetime - the date index};
             "turn" {"user", "assistant", "scope"?, "model"?} journal one exchange by hand (what the eval
-            harness posts); "turns" {} list the un-curated journaled turns. Bad fields are 400s like any other
+            harness posts); "turns" {} list the un-curated journaled turns; "cartridge" {} re-seed the
+            tier-2 standing cartridge (M3b; 400 when cartridges are off). Bad fields are 400s like any other
             malformed request."""
             if svc.memory is None:
                 self._json(404, {"error": {"message": 'memory is off: add "memory" to the engine config, or '
@@ -5402,6 +5546,10 @@ def make_handler(svc: Service):
                                                limit=lim, classes=classes,
                                                since=memory_api.time_bound(req.get("since")),
                                                until=memory_api.time_bound(req.get("until")))}
+            elif op == "cartridge":                               # M3b: rebuild the standing text and re-seed now
+                if svc.cartridges is None:
+                    raise ValueError("cartridges are off (memory.cartridges.enabled in the config)")
+                r = {"cartridge": svc.cartridges.reseed()}
             elif op == "turn":
                 r = {"id": svc.memory.journal_turn(str(req.get("scope") or "default"), str(req.get("user") or ""),
                                                    str(req.get("assistant") or ""), req.get("model"))}
@@ -5650,6 +5798,13 @@ def make_handler(svc: Service):
                 if "memory_search" not in own:                    # the request's own tool wins the name (MCP rule)
                     tools = (tools or []) + [memory_api.MEMORY_TOOL]
                     memory_name = "memory_search"
+            if svc.cartridges is not None:                        # M3b: standing text first, recall block after
+                if mem_ctx is not None:
+                    svc.cartridges.ensure()                       # seed once or restore ~0.1 s; best-effort
+                    if svc.cartridges.state in ("loaded", "seeded"):
+                        messages = svc.cartridges.prepend(messages)
+                else:
+                    svc.cartridges.invalidate()                   # muted: this conversation will replace the slot
             if force and use_mcp:
                 raise ValueError("a forced tool_choice with MCP tools is not supported")
             svc.reasoning_budget(req)                         # a bad value is a 400 before anything is sent
@@ -5824,6 +5979,13 @@ def make_handler(svc: Service):
             # harness-independence claim needs the injection here too. After prepare_format so
             # the format's own system text is already part of the head request_state merges into.
             messages, mem_ctx = memory_api.request_state(svc.memory, messages, self.headers, req)
+            if svc.cartridges is not None:                        # M3b parity, same law as the other routes
+                if mem_ctx is not None:
+                    svc.cartridges.ensure()
+                    if svc.cartridges.state in ("loaded", "seeded"):
+                        messages = svc.cartridges.prepend(messages)
+                else:
+                    svc.cartridges.invalidate()
             noted = svc.__dict__.setdefault("hosted_tools_noted", set())   # said once per tool, not per request
             if set(skipped) - noted:
                 print(f"[strata] /v1/responses: left out the hosted tools {', '.join(sorted(set(skipped) - noted))} "
@@ -5894,6 +6056,13 @@ def make_handler(svc: Service):
             # harness-independence claim is only as wide as the dialects that carry it. With
             # memory off or muted, messages comes back the exact list it was (upstream path).
             messages, mem_ctx = memory_api.request_state(svc.memory, messages, self.headers, req)
+            if svc.cartridges is not None:                        # M3b parity: Claude Code conversations stand on
+                if mem_ctx is not None:                           # the same cartridge prefix (one slot is shared
+                    svc.cartridges.ensure()                       # by every dialect, so the prefix law is too)
+                    if svc.cartridges.state in ("loaded", "seeded"):
+                        messages = svc.cartridges.prepend(messages)
+                else:
+                    svc.cartridges.invalidate()
             if tool_choice_of(req.get("tool_choice"))[0] == "none":   # Anthropic's {"type": "none"}: no tools offered
                 tools = None
             force = forced_call(req.get("tool_choice"), tools)        # "any" / {"type": "tool", "name": N}
@@ -6707,6 +6876,18 @@ def main() -> int:
               f"budget {svc.memory.max_memories or 'unlimited'}; "
               f"at-rest {svc.memory.encrypt and 'key-file' or 'off'}; "
               f"tool {svc.memory.tool and 'on' or 'off'} (X-Strata-Memory-Tool: 1 per request); GET /memory to inspect)", flush=True)
+        # M3b: the tier-2 standing cartridge rides the same config - {"cartridges": {"enabled": true,
+        # "class_prefixes": [...], "max_chars": N}} - and needs slot_save_path for its session file.
+        cart_cfg = mcfg.get("cartridges")
+        if isinstance(cart_cfg, dict) and cart_cfg.get("enabled") not in (None, False, 0, "", "off"):
+            if not svc.slot_save_path:
+                print("[strata] memory: cartridges need slot_save_path - staying off", flush=True)
+            else:
+                svc.cartridges = Cartridges(svc, cart_cfg)
+                print(f"[strata] memory cartridge on: shelves {', '.join(svc.cartridges.prefixes) or '(none)'} "
+                      f"up to {svc.cartridges.max_chars:,} chars, file dir {svc.slot_save_path} "
+                      f"(restored at the first standing request; the engine pins the file to model+engine)",
+                      flush=True)
     mode = str(cfg.get("anthropic_thinking") or "model")   # #278: "on_request" = only when the request asks
     if mode not in ("model", "on_request"):
         raise SystemExit(f"[strata] config anthropic_thinking must be \"model\" or \"on_request\", not {mode!r}")
