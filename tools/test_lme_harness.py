@@ -120,6 +120,41 @@ class Harness(unittest.TestCase):
         with self.assertRaises(SystemExit):
             H.main(self.argv("--skip-ingest"))
 
+    def test_long_turns_chunk_under_the_store_limit(self):
+        # the venue crash, 2026-10-13 (full oracle, question 16): LongMemEval haystack turns -
+        # mostly assistant answers - run past the store's 4,000-char single-fact cap and
+        # remember refused mid-ingest (HTTP 400). The harness splits long turns at word
+        # boundaries; every chunk carries the turn's gold, and NO content is lost.
+        long = "".join(f"note{i:04d} alpha beta gamma delta " for i in range(360)) + \
+            "and the calibrated zygost reading was 77.3"
+        q3 = {"question_id": "q3", "question_type": "single-session-user",
+              "question": "what reading did the zygost give?", "answer": "77.3",
+              "question_date": "2023-06-03 (Wed) 09:00",
+              "haystack_session_ids": ["s_l"], "answer_session_ids": ["s_l"],
+              "haystack_dates": ["2023-05-06 (Sat) 07:00"],
+              "haystack_sessions": [[
+                  {"role": "user", "content": "I will ask you to remember a reading", "has_answer": False},
+                  {"role": "assistant", "content": long, "has_answer": True}]]}
+        with open(self.data, "w") as f:
+            json.dump([q3], f)
+        H.main(self.argv())                                    # pre-fix: HTTPError 400 here
+        rows = self.svc.memory.list_memories(scope="lme_q3", limit=100)
+        self.assertTrue(all(len(m["text"]) <= 4000 for m in rows),
+                        "a stored row crossed the 4,000-char law")
+        lead = "The assistant told the user:"
+        # chunks after the first START with the boundary space, so match on content, not prefix;
+        # order by insertion id - lexicographic text order would scramble the phases
+        pieces = [m["text"] for m in sorted((m for m in rows if lead in m["text"] or "note" in m["text"]),
+                                            key=lambda m: m["id"])]
+        self.assertGreater(len(pieces), 2, "the long turn must exist as several chunks")
+        cut0 = pieces[0].index(lead) + len(lead) + 1        # +1: the one space after the colon
+        joined = pieces[0][cut0:] + "".join(" " + p for p in pieces[1:])   # one space per seam
+        self.assertEqual(joined, long, "chunking lost, reordered, or mis-split content")
+        maps = H.load_map(self.out + ".map")["q3"]
+        gold_rows = [rid for rid, (ha, sid) in maps.items() if ha]
+        self.assertGreaterEqual(len(gold_rows), 2, "chunks of the answer turn must carry its gold")
+        self.assertTrue(any("77.3" in m["text"] for m in rows), "the evidence tail vanished")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

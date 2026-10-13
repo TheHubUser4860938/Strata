@@ -106,8 +106,12 @@ def ingest(url: str, q: dict, scope: str) -> dict[int, tuple[bool, str]]:
                 cut = min(len(full), start + 3900)
                 if cut < len(full):
                     cut = max(full.rfind(" ", start, cut), start + 1)   # never mid-word
-                pieces.append(full[start:cut])
-                start = cut
+                    pieces.append(full[start:cut])
+                    start = cut + 1        # the boundary space is consumed: the store strips
+                                           # leading whitespace, so it must not ride the next piece
+                else:
+                    pieces.append(full[start:cut])
+                    start = cut
             for piece in pieces:
                 r = post(url, "/memory", {"op": "remember", "text": piece, "scope": scope})
                 rid = r.get("id")
