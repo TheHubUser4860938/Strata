@@ -12,14 +12,20 @@ Status, October 2026 — the text tier is live on the dev server and the K/V tie
   journal feeds itself from conversations; a curation loop classifies, dedups, and consolidates with
   human-gated merge review; a budget speaks before it's full; `?since=`/`?until=` date windows answer
   when-said questions; encryption at rest seals atomically and shreds plaintext on clean shutdown
-  (round-trip proven); and, opt-in, the model browses its own store mid-answer with a `memory_search`
+  (round-trip proven); the store has its own page (`/memory-ui`: stats, search, forget, re-seed);
+  and, opt-in, the model browses its own store mid-answer with a `memory_search`
   tool the server runs itself — no client tool wiring on the route that offers it.
-- **Tier 2, KV cartridges (built, verification at next boot):** the store's standing shelves are seeded
-  once as an engine session file and restored ahead of every conversation — measured on this engine:
-  save 1,973 tokens → 260 MB (132 KB/token, the slot's whole state), restore 105 ms, against ~0.5 s of
-  prefill per 2k tokens per conversation. The prefix law is measured, not assumed: reuse holds only
-  while prompt bytes match from token 0, so standing text rides ahead of the volatile recall block.
-  The restored text still rides the prompt — the win so far is time; the venue will say more or less.
+- **Tier 2, KV cartridges (built; first venue ran the day they booted, 2026-10-13):** the store's
+  standing shelves are seeded once as an engine session file and restored ahead of every
+  conversation. Measured on this engine: save 1,973 tokens → 260 MB (132 KB/token, the slot's
+  whole state); restore **81 ms** for 247 MB; the pin law **refuses foreign files** by config
+  fingerprint; the knowledge delta is **real** - warm 3/3 correct, cold 3/3 `idk`,
+  wrong-cartridge control 0 leaks. What did not measure yet: the fresh-conversation prefill win -
+  engine resume extends only the same conversation (one adjacent probe gave back 2,871 tokens,
+  1,837 ms → 599 ms), so cross-conversation inheritance waits on the RAM-side conversation-cache
+  experiment. The earned claims are fast slot reload, pin-verified provenance, and standing text
+  ahead of the volatile recall block; nothing here claims prefill skipped per conversation.
+  Protocol and raw records: `spikes/cartridge/M3C_PRE_REG.md`.
 - **Phase 2, state-without-text (open research):** porting the *AKBASCORE MAM / NIRVANA cognitive
   cartridge* idea — knowledge stored as model-produced K/V (v1.3.0 "CUT3": 56 tensors per fact, one
   file each, SHA-256 manifested) and read back with no source text in the prompt, which on this

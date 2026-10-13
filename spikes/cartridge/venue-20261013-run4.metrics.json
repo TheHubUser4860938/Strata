@@ -1,0 +1,47 @@
+{
+ "ask": "What graphics card does this machine have?",
+ "gold": "4090",
+ "repeats": 3,
+ "cartridge": {
+  "shelves": [
+   "USR",
+   "DEC"
+  ],
+  "max_chars": 4000,
+  "facts": 21,
+  "left_for_block": 0,
+  "file": "MEM-CRG-3af0d3bd.bin",
+  "bytes": 246840664,
+  "state": "loaded"
+ },
+ "metrics": {
+  "restore_ms_median": 80.8,
+  "pin": {
+   "refused": 1,
+   "accepted_foreign": 0
+  },
+  "warm": {
+   "prompt_ms_median": 1937.0,
+   "cache_n_median": 0,
+   "gold_hits": 3
+  },
+  "cold": {
+   "prompt_ms_median": 203.4,
+   "cache_n_median": 0,
+   "gold_hits": 0
+  },
+  "continuation": {
+   "fresh_prompt_ms": 1893.9,
+   "cont_prompt_ms": 2330.5,
+   "cont_cache_n": 0
+  },
+  "control": {
+   "leaks": 0,
+   "unknowns": 3
+  },
+  "positive": {
+   "gold_hits": 3
+  },
+  "reading": "PASS shape: pin refused == 1, control leaks == 0, positive gold_hits == repeats, cold gold_hits == 0. The TIME claim reads from warm prompt_ms vs continuation prompt_ms and the M1 restore_ms: as measured 2026-10-13, a FRESH conversation after restore re-reads its whole prompt (reused 0), so the fresh-conversation time win is NOT yet earned - continuation reuse works (engine resume, same conversation), cross-conversation prefix inheritance is the conversation-cache experiment (--conversation-cache-mib, boot 14+). Anything else is a finding, not a rounding error"
+ }
+}

@@ -390,14 +390,24 @@ auth (Bearer key via the API-key button, same sessionStorage pattern as the moni
 server gained exactly one route line for it.
 
 **Honest scope, stated before the venue proves it:** a cartridge is a prefix, not telepathy - the
-standing text still rides the prompt, and what the venue will measure is the time: ~0.1 s restore
-against ~0.5 s prefill per 2k tokens, every conversation, every restart. One known upstream
-limitation belongs in the beta matrix: session SAVE fails ("invalid K/V extent") on engines that
-load **no MTP drafter** - upstream issue #1444, root cause diagnosed (the save passes the unloaded
-drafter with `max_cells == 0`), fix in PR #1492, open and unmerged as of 2026-10-12, verified on an
-RTX 4090 D. A server that loads MTP (this dev box, engine 0.1.43.1) is unaffected - save and
-restore measured working - and where save is refused the cartridge degrades to no-cartridge
-requests, never a broken conversation. MAM's state-without-text
+standing text still rides the prompt, and the claim is about time. The first live venue ran the
+same week the feature booted (2026-10-13, `tools/m3c_venue.py`, records in `spikes/cartridge/`):
+restore **measured 81 ms** (median of 3, 247 MB); the pin law **measured working** (a file from
+another engine configuration is refused with "config fingerprint differs"); the knowledge delta
+**measured real** (warm 3/3 correct, cold 3/3 `idk`, wrong-cartridge control 3/3 no leak). What
+did NOT measure: the fresh-conversation time win. A new conversation right after a restore re-reads
+its whole prompt (reused 0, full prompt_ms) - engine resume is strict extension of the last prompt
+the slot saw, and one clean adjacent probe confirmed the mechanism is real for continuations
+(2,871 tokens given back, 1,837 ms -> 599 ms). Cross-conversation prefix inheritance is therefore
+an open experiment with a name - the RAM-side conversation cache (`--conversation-cache-mib`,
+upstream: faster, does not survive restarts) - and until it lands, the cartridge's earned value is
+fast slot reload, not prefill skipped per conversation. One known upstream limitation belongs in
+the beta matrix: session SAVE fails ("invalid K/V extent") on engines that load **no MTP drafter** -
+upstream issue #1444, root cause diagnosed (the save passes the unloaded drafter with
+`max_cells == 0`), fix in PR #1492, open and unmerged as of 2026-10-12, verified on an RTX 4090 D.
+A server that loads MTP (this dev box, engine 0.1.43.1) is unaffected - save and restore measured
+working - and where save is refused the cartridge degrades to no-cartridge requests, never a
+broken conversation. MAM's state-without-text
 recall (answer with the fact text nowhere in the prompt) needs engine grafting - Spike B - and is
 not claimed here. A muted conversation replaces the slot's state, so the next standing request
 pays one restore back (0.1 s, tracked by a flag, not a guess). And a session file is an access
