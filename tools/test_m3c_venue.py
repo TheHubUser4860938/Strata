@@ -89,6 +89,15 @@ class Venue(unittest.TestCase):
             V.main(["--url", self.url, "--ask", "q", "--gold", "g", "--repeats", "1",
                     "--out", self.out])
 
+    def test_pending_self_warms_then_the_venue_runs(self):
+        # "pending" means the next standing request restores - the venue BECOMES that request
+        self.svc.cartridges.state = "pending"
+        code = V.main(["--url", self.url, "--ask", "what is my launch ritual?",
+                       "--gold", "coffee", "--repeats", "1", "--out", self.out])
+        self.assertEqual(code, 0)
+        self.assertGreaterEqual(self.restores.count(
+            [f for f in os.listdir(self.slots.name) if f.startswith("MEM-CRG-")][0]), 4)  # warm-up + M1 + M3
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

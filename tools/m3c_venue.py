@@ -78,6 +78,13 @@ def main(argv=None) -> int:
 
     stats = call(a.url, "/memory?limit=1", method="GET", timeout=30)["stats"]
     cart = stats.get("cartridges") or {}
+    if cart.get("state") == "pending":
+        # "pending" is not a failure - it is the law saying "the next standing request
+        # restores". Be that request: one tiny warm-up ask, then re-read the view. (A
+        # textless or muted request - a harness title call, an operator probe - invalidates
+        # the slot honestly, and it is luck of timing whether the venue finds it loaded.)
+        ask(a.url, a.model, "warm the cartridge", muted=False)
+        cart = (call(a.url, "/memory?limit=1", method="GET", timeout=30)["stats"].get("cartridges") or {})
     if cart.get("state") not in ("loaded", "seeded") or not cart.get("file"):
         raise SystemExit(f"cartridge not active (state={cart.get('state')!r}) - venue not ready")
     print(f"[m3c] cartridge {cart['file']} ({cart.get('facts')} facts, {cart.get('bytes', 0) / 1e6:.0f} MB)")
