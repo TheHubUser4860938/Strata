@@ -15,7 +15,7 @@ import unittest
 from pathlib import Path
 
 from serve.frontend import ChatTemplate
-from serve.memory import MemoryService, request_state, time_bound
+from serve.memory import MemoryService, request_state, time_bound, tool_result
 from serve.server import ByteTokenizer, MockEngine, Service, serve
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -428,6 +428,85 @@ class ServerMemory(unittest.TestCase):
         self.assertEqual(st, 400, body)
         st, body = self.http("POST", "/memory", {"op": "nope"})
         self.assertEqual(st, 400)
+
+
+class MemoryTool(unittest.TestCase):
+    """C (agentic recall, 2026-10-12): the model calls memory_search and the SERVER runs it and
+    lets the model continue - server-side so every harness gets browsing with zero client wiring.
+    Fresh fixture per test: the scripted engine hands out its rounds one request at a time."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        tok = ByteTokenizer()
+        call = ("<tool_call>\n<function=memory_search>\n<parameter=q>\nzygost scale calibration\n"
+                "</parameter>\n</function>\n</tool_call>")
+        self.engine = MockEngine(tok, [call, "the mock answer after recall"], max_context=131072)
+        self.svc = Service(self.engine, tok, ChatTemplate(ROOT / "serve/chat_template.jinja"))
+        self.svc.memory = MemoryService(self.tmp.name, tool=True)
+        self.httpd = serve(self.svc, port=0)
+        self.port = self.httpd.server_address[1]
+
+    def tearDown(self):
+        self.httpd.shutdown()
+        self.httpd.server_close()
+        self.svc.memory.close()
+        self.tmp.cleanup()
+
+    def http(self, verb, path, body=None, headers=()):
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=30)
+        hdrs = {"Content-Type": "application/json"}
+        hdrs.update({k: v for k, v in headers})
+        conn.request(verb, path, json.dumps(body) if body is not None else None, hdrs)
+        r = conn.getresponse()
+        data = r.read().decode()
+        conn.close()
+        try:
+            return r.status, json.loads(data)
+        except ValueError:
+            return r.status, data
+
+    def test_server_runs_the_search_and_the_model_continues(self):
+        st, body = self.http("POST", "/memory", {"op": "remember",
+                                                 "text": "The zygost scale reads 41.2 after calibration",
+                                                 "scope": "fw"})
+        self.assertEqual(st, 200, body)
+        st, body = self.http("POST", "/v1/chat/completions",
+                             {"model": "m", "max_tokens": 256, "reasoning_effort": "off",
+                              "messages": [{"role": "user",
+                                            "content": "what does memory say about the zygost scale?"}]},
+                             headers=[("X-Strata-Memory-Scope", "fw")])
+        self.assertEqual(st, 200, body)
+        ch = body["choices"][0]
+        self.assertEqual(ch["message"]["content"], "the mock answer after recall",
+                         "the round-2 answer is the reply; the tool round stays internal")
+        self.assertEqual(ch["finish_reason"], "stop")
+        trace = ch["message"].get("strata_mcp") or []
+        ran = [e for e in trace if e.get("event") == "call" and e.get("name") == "memory_search"]
+        res = [e for e in trace if e.get("event") == "result" and e.get("ok")]
+        self.assertTrue(ran and res, "the server ran the search itself (trace carries the round)")
+        self.assertIn("zygost", res[0]["text"])
+        self.assertIn("41.2", res[0]["text"], "the fact reached the model as the tool result")
+
+    def test_muted_request_gets_no_tool(self):
+        # X-Strata-Memory: off kills injection AND the tool: no mem_ctx, no gate, no trace
+        st, body = self.http("POST", "/v1/chat/completions",
+                             {"model": "m", "max_tokens": 64, "reasoning_effort": "off",
+                              "messages": [{"role": "user", "content": "muted: no browsing today"}]},
+                             headers=[("X-Strata-Memory", "off")])
+        self.assertEqual(st, 200, body)
+        self.assertNotIn("strata_mcp", body["choices"][0]["message"])
+
+    def test_tool_result_shape(self):
+        self.svc.memory.remember("The zygost scale reads 41.2 after calibration", scope="fw")
+        r = tool_result(self.svc.memory, {"q": "zygost scale"}, scope="fw")
+        self.assertTrue(r["ok"])
+        d = json.loads(r["text"])
+        self.assertEqual(d["found"], 1)
+        self.assertIn("41.2", d["facts"][0]["text"])
+        bad = tool_result(self.svc.memory, {"q": "zygost", "since": "last tuesday"}, scope="fw")
+        self.assertFalse(bad["ok"], "a junk date is an honest tool error, not a widened window")
+        empty = tool_result(self.svc.memory, {}, scope="fw")
+        self.assertFalse(empty["ok"], "q is required")
 
 
 class MemoryOff(unittest.TestCase):

@@ -120,6 +120,64 @@ def memory_dir(value: str, base: str | None = None) -> str:
     return path
 
 
+MEMORY_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "memory_search",
+        "description": ("Search this machine's long-term memory store - facts the user stated, decisions taken, "
+                        "and ingested documents, all kept on shelves by subject. Use it whenever the memory block "
+                        "already in context is not enough, or you are unsure a fact is really there: ask with the "
+                        "words of the question. Narrow with class (a shelf prefix like POL, TECH, USR, or MEM/CRG) "
+                        "and/or since/until dates (YYYY-MM-DD) for when-said questions. Call it directly, do not "
+                        "narrate first. Answer from the facts it returns; if it finds nothing, say so plainly."),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "q": {"type": "string", "description": "the words to recall (a question or key phrase)"},
+                "class": {"type": "string", "description": "optional comma-separated shelf prefixes to filter by"},
+                "since": {"type": "string", "description": "optional lower date bound: YYYY-MM-DD or epoch seconds"},
+                "until": {"type": "string", "description": "optional upper date bound: YYYY-MM-DD or epoch seconds"},
+                "limit": {"type": "integer", "description": "max facts to return, 1-20 (default 8)"},
+            },
+            "required": ["q"],
+        },
+    },
+}
+
+
+def _tool_done(t0: float, ok: bool, text: str) -> dict:
+    return {"ok": ok, "text": text, "chars": len(text), "truncated": False,
+            "ms": int((time.perf_counter() - t0) * 1000)}
+
+
+def tool_result(mem: "MemoryService", arguments, scope: str = "default",
+                classes: list[str] | None = None) -> dict:
+    """Run one memory_search call from the model (C, agentic recall 2026-10-12). Returns the same
+    dict shape the MCP tool loop produces (ok/text/chars/truncated/ms) so run_with_mcp treats both
+    executors alike. The search is scoped like the request that enabled the tool: same project plus
+    the user scope. The shelf filter differs on purpose: a call that names classes browses to those
+    shelves even when the conversation's header filter rides different ones - the header decides
+    what every turn carries passively, the tool is the model reaching for another shelf on purpose,
+    which is exactly the browsing this feature exists to give it. A call naming no classes inherits
+    the conversation's filter, so a filtered conversation never silently widens."""
+    t0 = time.perf_counter()
+    args = dict(arguments or {})
+    q = str(args.get("q") or "").strip()
+    if not q:
+        return _tool_done(t0, False, '{"error": "q (the words to recall) is required"}')
+    try:
+        limit = max(1, min(20, int(args.get("limit") or 8)))
+        cls = [c for c in (class_name(x, quiet=True) for x in str(args.get("class") or "").split(","))
+               if c] or classes
+        since, until = time_bound(args.get("since")), time_bound(args.get("until"))
+    except (TypeError, ValueError) as e:
+        return _tool_done(t0, False, json.dumps({"error": f"bad argument: {e}"}))
+    hits = mem.search(q, scope=scope, limit=limit, classes=cls, since=since, until=until)
+    facts = [{"id": h["id"], "class": h.get("class") or "", "text": h["text"],
+              "confidence": h.get("confidence"), "hits": h.get("hits")} for h in hits]
+    return _tool_done(t0, True, json.dumps({"found": len(facts), "facts": facts}, ensure_ascii=False))
+
+
 def time_bound(value) -> float | None:
     """A /memory date-index bound (?since= / ?until=, 2026-10-12): epoch seconds, an ISO date
     (2026-10-12, read as UTC midnight), or an ISO datetime. None for empty/None - the default
@@ -149,7 +207,8 @@ class MemoryService:
                  cache_entries: int = 64, inject: bool = True, per_turn: bool = True,
                  turn_recall_limit: int = 8, turn_block_chars: int = 2000,
                  max_memories: int = 0, dedup_recall: bool = True,
-                 encrypt: bool = False, key_file: str = "", passphrase_env: str = ""):
+                 encrypt: bool = False, key_file: str = "", passphrase_env: str = "",
+                 tool: bool = False):
         self.directory = memory_dir(directory)      # absolute, created 0700 - same rules as slot_save_path
         self.db_path = os.path.join(self.directory, "memory.db")
         self.max_block_chars = max(200, int(max_block_chars))
@@ -158,6 +217,10 @@ class MemoryService:
         self.turn_recall_limit = max(1, min(50, int(turn_recall_limit)))
         self.turn_block_chars = max(200, int(turn_block_chars))
         self.inject = bool(inject)
+        # agentic recall (C, 2026-10-12): memory_search offered as a tool the MODEL calls mid-answer,
+        # executed by the SERVER (run_with_mcp) - every harness gets browsing with zero client wiring.
+        # Off by default: no tool joins the request's list, the prompt bytes stay as they were.
+        self.tool = bool(tool)
         # near-dupe suppression at recall (measured on the live store 2026-10-12: the web venue watched
         # one Qwen3.8 fact take two of its eight slots; the store held FIVE phrasings of it). Off with
         # dedup_recall=False; the search() ranking itself is untouched - this only stops the same fact
@@ -851,10 +914,10 @@ def request_state(mem: "MemoryService | None", messages: list[dict], headers, re
         if not last_user.strip():
             return messages, None
         return messages, {"scope": scope, "user": last_user, "model": req.get("model"), "query": query,
-                          "hits": []}
+                          "classes": classes, "hits": []}
     tblock, thits = mem.turn_block_for(messages, scope, [h["id"] for h in hits], classes)
     ctx = {"scope": scope, "user": last_user, "model": req.get("model"), "query": query,
-           "hits": [h["id"] for h in hits] + [h["id"] for h in thits]}
+           "classes": classes, "hits": [h["id"] for h in hits] + [h["id"] for h in thits]}
     # The Qwen chat template allows ONE system message, at index 0 ("System message must be at the
     # beginning"), and openai_to_messages has already folded "developer" into system and turned late
     # systems into user - so the block cannot ride as a second system turn. When the client sent its

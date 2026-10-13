@@ -4351,7 +4351,7 @@ def _debug_req(api, req, messages, tools, max_new, thinking, prompt_tokens):
 
 # ------------------------------------------------------------------------------------------------ MCP tool loop
 def run_with_mcp(svc: Service, hub, messages, tools, kw, ids, thinking, max_new, max_req, sampling, cancel,
-                 mcp_names):
+                 mcp_names, memory_name=None, memory_ctx=None):
     """Service.run with the MCP tools executed here: the model writes a call to an MCP tool, the server runs it, adds
     the call and its result to the conversation and lets the model continue - up to `max_rounds` times.  Yields what
     Service.run yields (text, thinking, the request's own tool calls) plus ("mcp", {...}) for the tool activity, and
@@ -4359,8 +4359,14 @@ def run_with_mcp(svc: Service, hub, messages, tools, kw, ids, thinking, max_new,
 
     `mcp_names`: the MCP tools this request offered; any other call is one of the request's own tools and ends the
     turn as always (the client answers it).  MCP calls written in the same answer are then not run (their results
-    could not reach the model before the client's)."""
-    max_rounds = int(hub.settings["max_rounds"])
+    could not reach the model before the client's).
+
+    `memory_name`/`memory_ctx` (C, agentic recall 2026-10-12): when set, the memory_search tool is served HERE too -
+    the same loop, the same client-visible trace, but the executor is the local store (no hub, no thread: an FTS
+    search is milliseconds).  `hub` may be None when only the memory tool runs."""
+    max_rounds = int(hub.settings["max_rounds"]) if hub is not None else 3
+    if memory_name:
+        mcp_names = set(mcp_names) | {memory_name}
     total, rounds, done = 0, 0, None
     messages = list(messages)
     while True:
@@ -4397,6 +4403,19 @@ def run_with_mcp(svc: Service, hub, messages, tools, kw, ids, thinking, max_new,
         rounds += 1
         results = []
         for c in calls:
+            if memory_name and c.name == memory_name:
+                # the local store answers in milliseconds: no worker thread, no heartbeats - the same
+                # events in the same order, so the client's trace and the loop below never fork
+                yield "mcp", {"event": "call", "id": c.id, "name": c.name, "server": "memory",
+                              "tool": "search", "arguments": c.arguments, "round": rounds}
+                r = memory_api.tool_result(svc.memory, c.arguments,
+                                           (memory_ctx or {}).get("scope") or "default",
+                                           (memory_ctx or {}).get("classes"))
+                print(f"[strata] tool {c.name}: {'ok' if r['ok'] else 'error'}, {r['chars']:,} characters in "
+                      f"{r['ms']} ms", flush=True)
+                results.append(r["text"])
+                yield "mcp", {"event": "result", "id": c.id, **{k: r[k] for k in ("ok", "text", "chars", "truncated", "ms")}}
+                continue
             s, tool = hub.routes().get(c.name, (None, c.name))
             yield "mcp", {"event": "call", "id": c.id, "name": c.name, "server": s.name if s else None,
                           "tool": tool, "arguments": c.arguments, "round": rounds}
@@ -5602,7 +5621,8 @@ def make_handler(svc: Service):
             # hidden system block of recalled facts is prepended and mem_ctx says what to journal after.
             # With memory off or nothing recalled, messages comes back the exact list it was - upstream path.
             messages, mem_ctx = memory_api.request_state(svc.memory, messages, self.headers, req)
-            if tool_choice_of(req.get("tool_choice"))[0] == "none":   # as the Responses route: no tools are offered
+            no_tools = tool_choice_of(req.get("tool_choice"))[0] == "none"   # as the Responses route: none offered
+            if no_tools:
                 tools = None
             force = forced_call(req.get("tool_choice"), tools)      # a bad value is a 400 before anything is sent
             messages, validator = prepare_format(req.get("response_format"), messages)
@@ -5620,6 +5640,16 @@ def make_handler(svc: Service):
                 extra = svc.mcp.template_tools(exclude=own)       # the request's own tools win a name clash
                 use_mcp = bool(extra)
                 tools = (tools or []) + extra or None
+            # memory-core C (agentic recall, 2026-10-12): memory_search as a tool the MODEL calls and the SERVER
+            # runs - config "tool": true for every conversation, or the X-Strata-Memory-Tool header for this one.
+            # Off (the default): no tool joins the list, run stays None unless MCP runs, the prompt bytes as before.
+            memory_name = None
+            if svc.memory is not None and mem_ctx is not None and not no_tools and (
+                    svc.memory.tool or (self.headers.get("X-Strata-Memory-Tool") or "").strip().lower()
+                    in ("1", "on", "true")):
+                if "memory_search" not in own:                    # the request's own tool wins the name (MCP rule)
+                    tools = (tools or []) + [memory_api.MEMORY_TOOL]
+                    memory_name = "memory_search"
             if force and use_mcp:
                 raise ValueError("a forced tool_choice with MCP tools is not supported")
             svc.reasoning_budget(req)                         # a bad value is a 400 before anything is sent
@@ -5630,7 +5660,9 @@ def make_handler(svc: Service):
             ids, thinking, max_new = svc.prepare(messages, tools, kw, max_new, force=force, req=req, cancel=cancel)
             _debug_req("openai", req, messages, tools, max_new, thinking, len(ids))
             run = run_with_mcp(svc, svc.mcp, messages, tools, kw, ids, thinking, max_new, max_req, req, cancel,
-                               {t["name"] for t in extra}) if use_mcp else None
+                               {t["name"] for t in extra} if use_mcp else set(),
+                               memory_name=memory_name, memory_ctx=mem_ctx) \
+                if (use_mcp or memory_name) else None
             chunks = openai_chunks(svc, req, ids, thinking, tools, max_new, cancel, run=run, force=force)
             if mem_ctx is not None:                       # memory-core: journal this exchange when it completes
                 chunks = memory_api.journal_chunks(chunks, svc.memory, mem_ctx)
@@ -6664,7 +6696,8 @@ def main() -> int:
                 encrypt=mcfg.get("encrypt") not in (None, False, 0, "", "off"),
                 key_file=str(mcfg.get("key_file") or ""),
                 passphrase_env=str(mcfg.get("passphrase_env") or ""),
-                inject=mcfg.get("inject") is not False)
+                inject=mcfg.get("inject") is not False,
+                tool=mcfg.get("tool") is True or str(mcfg.get("tool") or "").lower() in ("1", "on", "true"))
         except (ValueError, OSError, TypeError) as e:
             raise SystemExit(f"[strata] memory: {e}")
         print(f"[strata] memory core on: {svc.memory.db_path} "
@@ -6672,7 +6705,8 @@ def main() -> int:
               f"<= {svc.memory.max_block_chars} chars; per-turn {'on ' if svc.memory.per_turn else 'off'}"
               f"{svc.memory.turn_recall_limit} notes <= {svc.memory.turn_block_chars} chars; "
               f"budget {svc.memory.max_memories or 'unlimited'}; "
-              f"at-rest {svc.memory.encrypt and 'key-file' or 'off'}; GET /memory to inspect)", flush=True)
+              f"at-rest {svc.memory.encrypt and 'key-file' or 'off'}; "
+              f"tool {svc.memory.tool and 'on' or 'off'} (X-Strata-Memory-Tool: 1 per request); GET /memory to inspect)", flush=True)
     mode = str(cfg.get("anthropic_thinking") or "model")   # #278: "on_request" = only when the request asks
     if mode not in ("model", "on_request"):
         raise SystemExit(f"[strata] config anthropic_thinking must be \"model\" or \"on_request\", not {mode!r}")
