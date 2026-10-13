@@ -325,7 +325,10 @@ because from inside a retrieval budget "I recall" and "I plausibly generated" fe
 honest number per header turns sample blindness into a stated limit the model can speak around.
 
 **Encryption at rest, stated honestly** (M2 job 6, `memory.encrypt: 1`, live in the dev config
-2026-10-12). A 32-byte key sits beside the db (`memory.key`, 0600, auto-created). The cipher is
+2026-10-12). A 32-byte key sits beside the db (`memory.key`, 0600, auto-created; `memory.key_file`
+moves it elsewhere - e.g. outside a synced folder). `memory.passphrase_env` names an env var whose
+value is scrypt-stretched and XORed into the master: with it set, the key file AND the passphrase
+are both needed to open the seal. The cipher is
 stdlib-only because memory stays a dependency-free feature here: an HMAC-SHA256 keystream in counter
 mode, encrypt-then-MAC — a flipped byte fails the open loudly instead of decrypting to mush. The seal
 (`memory.db.enc`) is written atomically at every 50th write (measured: 22 ms over the 0.8 MB dev
@@ -343,11 +346,14 @@ recovery key because a lost passkey must not be a lost memory).
 
 **The model browses its own store while thinking (item C).** `memory_search(q, class, since/until,
 limit)` is offered as a tool and the **server** runs it: the model calls, the store answers in
-milliseconds, the model continues - all inside one request, so every harness (OpenCode, Claude
-Code, the web app, curl) gets browsing with no client tool wiring. The machinery is the MCP tool
-loop (`run_with_mcp`), production-tested since the web app shipped: the memory call is a second
-executor - no hub, no worker thread, same events in the same order, same client-visible trace
-(`strata_mcp`), so the web app shows memory rounds for free. Opt-in twice over: config
+milliseconds, the model continues - all inside one request, so no client tool wiring exists on the
+route that offers it. The machinery is the MCP tool loop (`run_with_mcp`), production-tested since
+the web app shipped: the memory call is a second executor - no hub, no worker thread, same events
+in the same order, same client-visible trace (`strata_mcp`), so the web app shows memory rounds for
+free. v1 scope, stated precisely: the loop rides the **OpenAI chat route** today (OpenCode, the web
+app, curl, OpenAI-SDK clients); the Anthropic and Responses routes carry the recall block and the
+cartridge but not the tool - wiring the loop to those dialects is the next small wire, so "any
+harness" is the design, "chat route" is today's fact. Opt-in twice over: config
 `"tool": true` for every conversation, or the `X-Strata-Memory-Tool: 1` header for one. Off (the
 default): no tool joins the request's list and the prompt bytes are as before. A muted request
 gets no tool - memory off means off. Scoping: the call searches the request's scope pair; a call
@@ -377,7 +383,13 @@ left-for-block, file, bytes, state); `POST {"op": "cartridge"}` re-seeds now, 40
 
 **Honest scope, stated before the venue proves it:** a cartridge is a prefix, not telepathy - the
 standing text still rides the prompt, and what the venue will measure is the time: ~0.1 s restore
-against ~0.5 s prefill per 2k tokens, every conversation, every restart. MAM's state-without-text
+against ~0.5 s prefill per 2k tokens, every conversation, every restart. One known upstream
+limitation belongs in the beta matrix: session SAVE fails ("invalid K/V extent") on engines that
+load **no MTP drafter** - upstream issue #1444, root cause diagnosed (the save passes the unloaded
+drafter with `max_cells == 0`), fix in PR #1492, open and unmerged as of 2026-10-12, verified on an
+RTX 4090 D. A server that loads MTP (this dev box, engine 0.1.43.1) is unaffected - save and
+restore measured working - and where save is refused the cartridge degrades to no-cartridge
+requests, never a broken conversation. MAM's state-without-text
 recall (answer with the fact text nowhere in the prompt) needs engine grafting - Spike B - and is
 not claimed here. A muted conversation replaces the slot's state, so the next standing request
 pays one restore back (0.1 s, tracked by a flag, not a guess). And a session file is an access
