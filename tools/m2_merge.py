@@ -82,7 +82,13 @@ def groups(rows, df, bar):
         if a == b:
             return True
         inter = len(a & b)
-        return inter >= 4 or (inter >= 2 and inter >= 0.7 * min(len(a), len(b)))
+        if inter >= 4:
+            return True
+        # the 70% path only counts when the SMALLER payload has real content (>= 4 tokens):
+        # on 2026-10-13 (round 3, 2,424 rows) two shared mid-frequency words (projects, directory)
+        # bridged the project-LOCATION fact to six TEST-SUITE rows - 2/2 = 100% of a 2-token
+        # payload is a grammar bridge, not content
+        return inter >= 2 and min(len(a), len(b)) >= 4 and inter >= 0.7 * min(len(a), len(b))
 
     for i in range(len(rows)):
         if not pays[i]:
@@ -131,10 +137,17 @@ def main():
     docs = [set(norm_text(r["text"]).split()) for r in rows]
     df = Counter(t for d in docs for t in d)
     bar = max(3, len(rows) // 50)          # the RELATIVE rare-token bar (see groups())
+    # rare-name SUBJECTS: a token with df<=3 is a name (one township, one person, one callsign).
+    # Round-2's 44% veto rate and round-3's 94 data-losses all had the same shape: two rows whose
+    # grammar rhymed because shared mid-frequency words (minnesota, located, county) cleared the
+    # relative bar, while each named a subject the other never mentioned. The subject rule below
+    # retires a loser only when the winner can carry everything the loser uniquely says.
+    uniq = [{t for t in d if df[t] <= 3} for d in docs]
+    pays = [payload_of(d, df, bar) for d in docs]   # same payload the grouping matched on
 
     gr, skipped = groups(rows, df, bar)
     exclude = {int(x) for x in a.exclude.split(",") if x.strip()}
-    drop, keep_ids = [], []
+    drop, keep_ids, subject_vetoed, content_vetoed = [], [], 0, 0
     for key, idx in sorted(gr, key=lambda kv: (kv[0][0], min(kv[1]))):
         # survivor: NOT meta (a conversation about a fact never outlives the fact - not even when
         # the commentary is declarative and the fact rides in a question-with-answer: measured,
@@ -145,15 +158,37 @@ def main():
         keep_ids.append(rows[best]["id"])
         for i in idx:
             if i != best:
+                # v3 subject rule: a loser that names a rare subject the winner never mentions is
+                # a DIFFERENT fact (Paddock vs Zippel, Edgeley vs Casselton) - retire it and recall
+                # loses data, which is exactly what the 94 round-3 restorations proved.
+                if uniq[i] - docs[best]:
+                    subject_vetoed += 1
+                    continue
+                # v3 containment rule (same day, round 3 aftermath): shared SUBJECT is not shared
+                # CONTENT - six "the project's test suite has 780 tests" rows grouped with the
+                # project-LOCATION row (the slug strata-mam-cartrige-mod is itself 4 rare tokens)
+                # and nearly retired by a winner that says nothing about tests. A loser drops only
+                # when the winner's payload CONTAINS the loser's: the winner must say everything
+                # the loser says. Similar-but-different facts all veto here; true paraphrases
+                # (equal or subset payloads) still merge.
+                if not pays[i] <= pays[best]:
+                    content_vetoed += 1
+                    continue
                 drop.append((rows[i]["id"], rows[best]["id"], rows[i]["text"], rows[best]["text"]))
 
     kept_drop = [d for d in drop if d[0] not in exclude]
     print(f"memories: {len(rows)}  rare-token bar df<={bar}  payload groups: {len(gr)}  "
           f"mergeable: {len(kept_drop)}"
-          f"  negation-skipped: {skipped}  excluded: {len(drop) - len(kept_drop)}")
-    for loser_id, winner_id, loser, winner in kept_drop[:a.show]:
+          f"  negation-skipped: {skipped}  subject-vetoed: {subject_vetoed}"
+          f"  content-vetoed: {content_vetoed}  excluded: {len(drop) - len(kept_drop)}")
+    # --apply prints EVERY retired pair: a sample is not a review, and round 3 applied 239
+    # on 6 shown lines (94 of them retired facts whose data was gone - restored by source tag)
+    shown = kept_drop if a.apply else kept_drop[:a.show]
+    for loser_id, winner_id, loser, winner in shown:
         print(f"  drop [{loser_id}] {loser[:64]!r}\n    by [{winner_id}] {winner[:64]!r}")
     if not a.apply:
+        if len(kept_drop) > a.show:
+            print(f"  ... {len(kept_drop) - a.show} more (--apply prints the full list)")
         print("dry run - add --apply to retire the redundant rows (or --hard to delete them)")
         return
 
@@ -169,7 +204,7 @@ def main():
         r = json.load(urllib.request.urlopen(req, timeout=30))
         n += 1 if r.get(okkey) else 0
     stats = json.load(urllib.request.urlopen(a.url.rstrip("/") + "/memory", timeout=30))["stats"]
-    print(f"applied: {n} forgotten, store now {stats['memories']} (server stats, not a direct db read)")
+    print(f"applied: {n} {okkey}, store now {stats['memories']} (server stats, not a direct db read)")
 
 
 if __name__ == "__main__":
