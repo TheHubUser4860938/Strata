@@ -415,7 +415,8 @@ repeats - not prefill skipped for strangers. The measured cost of the current bl
 lever, with its own behavior venue before it moves. One known upstream limitation belongs in
 the beta matrix: session SAVE fails ("invalid K/V extent") on engines that load **no MTP drafter** -
 upstream issue #1444, root cause diagnosed (the save passes the unloaded drafter with
-`max_cells == 0`), fix in PR #1492, open and unmerged as of 2026-10-12, verified on an RTX 4090 D.
+`max_cells == 0`), fix in PR #1492, still open and unmerged as of 2026-10-13 (re-checked the day
+upstream 0.1.44 shipped - that release does not carry it), verified on an RTX 4090 D.
 A server that loads MTP (this dev box, engine 0.1.43.1) is unaffected - save and restore measured
 working - and where save is refused the cartridge degrades to no-cartridge requests, never a
 broken conversation. MAM's state-without-text
