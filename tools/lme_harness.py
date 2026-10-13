@@ -96,10 +96,23 @@ def ingest(url: str, q: dict, scope: str) -> dict[int, tuple[bool, str]]:
             lead = f"[{day}] " if day else ""
             if turn.get("role") != "user":
                 lead += "The assistant told the user: "
-            r = post(url, "/memory", {"op": "remember", "text": lead + text, "scope": scope})
-            rid = r.get("id")
-            if rid is not None:
-                where[rid] = (bool(turn.get("has_answer")), sid)
+            # the store takes one fact up to 4,000 chars; LongMemEval haystack turns - mostly
+            # assistant answers - run longer than that, so a long turn is chunked at word
+            # boundaries and EVERY chunk carries the turn's gold: an answer that lands in chunk
+            # 3 of a turn must still count as a hit, and the session-level score is unchanged
+            full = lead + text
+            pieces, start = [], 0
+            while start < len(full):
+                cut = min(len(full), start + 3900)
+                if cut < len(full):
+                    cut = max(full.rfind(" ", start, cut), start + 1)   # never mid-word
+                pieces.append(full[start:cut])
+                start = cut
+            for piece in pieces:
+                r = post(url, "/memory", {"op": "remember", "text": piece, "scope": scope})
+                rid = r.get("id")
+                if rid is not None:
+                    where[rid] = (bool(turn.get("has_answer")), sid)
     return where
 
 
