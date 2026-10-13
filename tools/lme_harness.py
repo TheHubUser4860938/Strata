@@ -22,9 +22,11 @@ Design decisions, recorded where they bite:
 - ANSWERS ride the live engine: fresh conversation per ask, temp 0.8 (never 0), >=3
   repeats per question with a majority verdict, probe max_tokens 500. Muted vs unmuted is
   the A/B: --muted-control runs the same question with memory off for the cold baseline.
-- JUDGE: the official script wants gpt-4o; this box has no key, so the judge is LOCAL -
-  the same model, memory MUTED, asked yes/no against the gold - and the metrics file says
-  so out loud (disclosure is part of the claim).
+- JUDGE: the OFFICIAL checker prompt (type-specific templates, verbatim from the repo's
+  evaluate_qa.py) with the official decoding (temp 0, 10 tokens - the no-zero discipline
+  governs the answer under measurement, not the scorer), but the judge MODEL is this server
+  with memory MUTED, since the box has no OpenAI key. The metrics line says exactly that:
+  paper-comparable prompt and params, non-paper model (disclosure is part of the claim).
 - Scrub at the choke: every string written out passes the pipe-splitter (the serving
   template's delimiter must never re-enter any file a later prompt reads back).
 
@@ -140,23 +142,71 @@ def ask(url: str, q: dict, scope: str, muted: bool, style: str = "direct") -> st
     return (r["choices"][0]["message"].get("content") or "").strip()
 
 
+def anscheck_prompt(qtype: str, question: str, answer: str, response: str, abstain: bool) -> str:
+    """The benchmark's own checker prompt, VERBATIM from LongMemEval src/evaluation/
+    evaluate_qa.py::get_anscheck_prompt (MIT, xiaowu0162) - type-specific templates: temporal
+    questions tolerate off-by-one day counts, knowledge-update accepts stale info beside the
+    updated answer, preference questions are judged as a rubric, abstention asks only whether
+    the model spotted the question as unanswerable. Using theirs verbatim is what lets F's
+    accuracy line sit beside the paper's tables; only the judge MODEL is local (disclosed)."""
+    if abstain:
+        return ("I will give you an unanswerable question, an explanation, and a response from a "
+                "model. Please answer yes if the model correctly identifies the question as "
+                f"unanswerable. The model could say that the information is incomplete, or some "
+                f"other information is given but the asked information is not.\n\nQuestion: {question}"
+                f"\n\nExplanation: {answer}\n\nModel Response: {response}\n\nDoes the model correctly "
+                "identify the question as unanswerable? Answer yes or no only.")
+    if qtype in ("single-session-user", "single-session-assistant", "multi-session"):
+        core = ("I will give you a question, a correct answer, and a response from a model. Please "
+                "answer yes if the response contains the correct answer. Otherwise, answer no. If the "
+                "response is equivalent to the correct answer or contains all the intermediate steps "
+                "to get the correct answer, you should also answer yes. If the response only contains "
+                "a subset of the information required by the answer, answer no.")
+    elif qtype == "temporal-reasoning":
+        core = ("I will give you a question, a correct answer, and a response from a model. Please "
+                "answer yes if the response contains the correct answer. Otherwise, answer no. If the "
+                "response is equivalent to the correct answer or contains all the intermediate steps "
+                "to get the correct answer, you should also answer yes. If the response only contains "
+                "a subset of the information required by the answer, answer no. In addition, do not "
+                "penalize off-by-one errors for the number of days. If the question asks for the "
+                "number of days/weeks/months, etc., and the model makes off-by-one errors (e.g., "
+                "predicting 19 days when the answer is 18), the model's response is still correct.")
+    elif qtype == "knowledge-update":
+        core = ("I will give you a question, a correct answer, and a response from a model. Please "
+                "answer yes if the response contains the correct answer. Otherwise, answer no. If the "
+                "response contains some previous information along with an updated answer, the "
+                "response should be considered as correct as long as the updated answer is the "
+                "required answer.")
+    elif qtype == "single-session-preference":
+        core = ("I will give you a question, a rubric for desired personalized response, and a "
+                "response from a model. Please answer yes if the response satisfies the desired "
+                "response. The model does not need to reflect all the points in the rubric. The "
+                "response is correct as long as it recalls and utilizes the user's personal "
+                "information correctly.")
+    else:
+        raise ValueError(f"no official checker template for question_type {qtype!r}")
+    tail = ("\n\nQuestion: " + question + "\n\nCorrect Answer: " + answer +
+            "\n\nModel Response: " + response +
+            "\n\nIs the model response correct? Answer yes or no only.")
+    return core + tail
+
+
 def judge(url: str, q: dict, hypothesis: str) -> bool:
-    """Local self-judge, disclosed as such: the same model with memory MUTED (the judge must
-    see only the three texts) decides semantic correctness. Temp 0.8 per the standing
-    discipline; a hangup or junk counts as incorrect, never as a free pass."""
-    prompt = (f"Question: {q['question']}\nGold answer: {q['answer']}\n"
-              f"Model answer: {hypothesis or '(empty)'}\n"
-              "Treat the model answer's LAST line as its answer; earlier lines may be quoted "
-              "evidence. Is that answer semantically correct for the gold? Reply exactly yes or no.")
+    """The official checker, run locally: same prompt and decoding as the paper's gpt-4o judge
+    (temp 0, 10 max tokens - the no-zero discipline governs the answer UNDER measurement, not
+    the scorer), but the judge model is this server with memory MUTED (it sees only the three
+    texts), which the metrics file discards no ambiguity about. A failed call counts incorrect."""
+    prompt = anscheck_prompt(q["question_type"], q["question"], q["answer"],
+                             hypothesis or "(empty)", q["question_id"].endswith("_abs"))
     try:
         r = post(url, "/v1/chat/completions",
                  {"model": "", "messages": [{"role": "user", "content": prompt}],
-                  "max_tokens": 500, "temperature": 0.8, "reasoning_effort": "off"},
+                  "max_tokens": 10, "temperature": 0, "reasoning_effort": "off"},
                  headers={"X-Strata-Memory": "off"})
         out = (r["choices"][0]["message"].get("content") or "").strip().lower()
     except Exception:                                       # noqa: BLE001 - a failed judge says no
         return False
-    return out.startswith("yes")
+    return "yes" in out                                    # the official eval's own rule
 
 
 def load_map(map_path: str) -> dict[str, dict[int, tuple[bool, str]]]:
@@ -222,7 +272,8 @@ def run(url: str, data: list[dict], out_path: str, repeats: int, k: int, types: 
                 obj = {"question_id": qid, "type": qtype, "repeat": rep,
                        "hypothesis": hyp, "gold": scrub(q["answer"]), "correct": ok,
                        "cold_hypothesis": cold, "judge": None if ok is None else
-                       "local self-judge (same model, memory muted, temp 0.8)",
+                       "official LongMemEval checker prompt; local judge (same model, memory "
+                       "muted, temp 0, 10 tokens - paper-comparable decoding, non-paper model)",
                        **{kk: rec[kk] for kk in ("turn_top1", "turn_top3", "session_top1",
                                                  "session_top3")}, "recall_ids": rec["ids"]}
                 out.write(json.dumps(obj, ensure_ascii=False) + "\n")

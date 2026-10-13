@@ -104,6 +104,18 @@ class Harness(unittest.TestCase):
         self.assertEqual(sum(1 for r in rows if r["question_id"] == "q2_abs"), 2)
         self.assertEqual(len(H.load_map(self.out + ".map")), maps_n + 1, "q1 ingested once")
 
+    def test_official_checker_templates(self):
+        # the judge must be the benchmark's own checker, chosen by question type
+        p = H.anscheck_prompt("temporal-reasoning", "Q", "A", "R", False)
+        self.assertIn("off-by-one", p)
+        self.assertTrue(p.endswith("Answer yes or no only."))
+        self.assertIn("off-by-one", p)
+        self.assertIn("rubric", H.anscheck_prompt("single-session-preference", "Q", "A", "R", False))
+        self.assertIn("previous information", H.anscheck_prompt("knowledge-update", "Q", "A", "R", False))
+        self.assertIn("unanswerable", H.anscheck_prompt("single-session-user", "Q", "A", "R", True))
+        with self.assertRaises(ValueError):
+            H.anscheck_prompt("made-up-type", "Q", "A", "R", False)
+
     def test_skip_ingest_without_map_is_an_error(self):
         with self.assertRaises(SystemExit):
             H.main(self.argv("--skip-ingest"))
