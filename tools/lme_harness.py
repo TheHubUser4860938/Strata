@@ -165,7 +165,12 @@ def anscheck_prompt(qtype: str, question: str, answer: str, response: str, absta
     questions tolerate off-by-one day counts, knowledge-update accepts stale info beside the
     updated answer, preference questions are judged as a rubric, abstention asks only whether
     the model spotted the question as unanswerable. Using theirs verbatim is what lets F's
-    accuracy line sit beside the paper's tables; only the judge MODEL is local (disclosed)."""
+    accuracy line sit beside the paper's tables; only the judge MODEL is local (disclosed).
+    The 32 counting questions in longmemeval_oracle carry answer as an int - the official code
+    formats it into an f-string; we concatenate, so coerce at the entry (crash of the second
+    full run, 2026-10-13, question ~60: TypeError mid-judge after the answer was already
+    generated)."""
+    question, answer = str(question), str(answer)
     if abstain:
         return ("I will give you an unanswerable question, an explanation, and a response from a "
                 "model. Please answer yes if the model correctly identifies the question as "

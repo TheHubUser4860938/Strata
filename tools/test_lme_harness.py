@@ -113,6 +113,9 @@ class Harness(unittest.TestCase):
         self.assertIn("rubric", H.anscheck_prompt("single-session-preference", "Q", "A", "R", False))
         self.assertIn("previous information", H.anscheck_prompt("knowledge-update", "Q", "A", "R", False))
         self.assertIn("unanswerable", H.anscheck_prompt("single-session-user", "Q", "A", "R", True))
+        # the oracle's 32 counting questions carry answer as an int (crash of the second run)
+        self.assertIn("Correct Answer: 42",
+                      H.anscheck_prompt("single-session-user", "Q", 42, "There are 42", False))
         with self.assertRaises(ValueError):
             H.anscheck_prompt("made-up-type", "Q", "A", "R", False)
 
