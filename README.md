@@ -1,23 +1,39 @@
 # Strata — MAM Cartridge Fork
 
 **What this fork is for: building memory into Strata — a persistent, harness-independent long-term memory
-that lives at the inference server.** Every client (OpenCode, Odysseus AI, the web app) shares one memory,
-and no harness ever resends memory text into the context window.
+that lives at the inference server.** Every client (OpenCode, Claude Code, Codex, the web app) shares one
+store, and no harness ever re-sends conversation history — the server remembers, and it remembers the same
+way no matter which app is knocking.
 
-- **Phase 1 — memory service:** curated store + automatic server-side recall injected as a stable hidden
-  system block, riding on Strata's existing checkpoint / parked-conversation / session save-restore machinery.
-- **Phase 2 — numerical memory (cartridges):** feasibility experiments porting the *AKBASCORE MAM / NIRVANA
-  cognitive cartridge* idea — source knowledge stored as model-produced K/V + hidden-state representations,
-  read back by the frozen model without the source text ever re-entering the prompt.
+Status, October 2026 — the text tier is live on the dev server and the K/V tier is in code:
+
+- **Tier 3, curated text memory (running):** ~2,300 facts on subject shelves, recalled server-side and
+  injected as one hidden system block that rides all three dialects (OpenAI, Anthropic, Responses). A
+  journal feeds itself from conversations; a curation loop classifies, dedups, and consolidates with
+  human-gated merge review; a budget speaks before it's full; `?since=`/`?until=` date windows answer
+  when-said questions; encryption at rest seals atomically and shreds plaintext on clean shutdown
+  (round-trip proven); and, opt-in, the model browses its own store mid-answer with a `memory_search`
+  tool the server runs itself — no client tool wiring on the route that offers it.
+- **Tier 2, KV cartridges (built, verification at next boot):** the store's standing shelves are seeded
+  once as an engine session file and restored ahead of every conversation — measured on this engine:
+  save 1,973 tokens → 260 MB (132 KB/token, the slot's whole state), restore 105 ms, against ~0.5 s of
+  prefill per 2k tokens per conversation. The prefix law is measured, not assumed: reuse holds only
+  while prompt bytes match from token 0, so standing text rides ahead of the volatile recall block.
+  The restored text still rides the prompt — the win so far is time; the venue will say more or less.
+- **Phase 2, state-without-text (open research):** porting the *AKBASCORE MAM / NIRVANA cognitive
+  cartridge* idea — knowledge stored as model-produced K/V (v1.3.0 "CUT3": 56 tensors per fact, one
+  file each, SHA-256 manifested) and read back with no source text in the prompt, which on this
+  hybrid-attention engine needs engine-level grafting.
   Upstream research: [ceceli33/titan-cognitive-core-v2](https://github.com/ceceli33/titan-cognitive-core-v2)
   (technical disclosures: [10.5281/zenodo.23127434](https://doi.org/10.5281/zenodo.23127434),
   [10.5281/zenodo.23143605](https://doi.org/10.5281/zenodo.23143605),
-  [10.5281/zenodo.23146475](https://doi.org/10.5281/zenodo.23146475)).
+  [10.5281/zenodo.23146475](https://doi.org/10.5281/zenodo.23146475),
+  [10.5281/zenodo.23311350](https://doi.org/10.5281/zenodo.23311350)).
 
 On this fork's target model (Qwen3.8-Flash-Next: 36 Gated DeltaNet layers + 12 Qwen Sparse Attention layers,
-quantized KV) the cartridge port is **open research, not an established result**: MAM's published evidence covers
-dense full-attention BF16 models and seals a scaling ceiling (22/80 at 80 cartridges). This fork documents
-positive *and* negative results as they land, in `docs/MEMORY_CORE.md`.
+quantized KV) the state-without-text port is **open research, not an established result**: MAM's published
+evidence covers dense full-attention BF16 models and seals a scaling ceiling (22/80 at 80 cartridges). This
+fork documents positive *and* negative results as they land, in `docs/MEMORY_CORE.md`.
 
 Engine and server changes live on the `memory-core` branch; `main` stays a near-mirror of
 [upstream Strata](https://github.com/Niko1221/Strata) (MIT, by Niko1221). MAM-derived code carries the
