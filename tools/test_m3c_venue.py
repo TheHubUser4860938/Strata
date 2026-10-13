@@ -31,10 +31,16 @@ class Venue(unittest.TestCase):
                                                     "max_chars": 400})
         self.restores = []
         orig = self.engine.session_file
+        from serve.server import SessionRefused
 
         def counted(action, path):
             if action == "restore":
                 self.restores.append(os.path.basename(path))
+                if os.path.basename(path) == "c5_comp.bin":
+                    # the mock grows the real engine's pin law: a file from another
+                    # engine configuration is refused (400) - the venue's M1b except-arm
+                    # must have offline coverage, or it ships untested (it did once)
+                    raise SessionRefused("invalid", "saved with another engine configuration")
             return orig(action, path)
         self.engine.session_file = counted
         open(os.path.join(self.slots.name, "c5_comp.bin"), "wb").write(b"OLDSESSION")
@@ -80,6 +86,7 @@ class Venue(unittest.TestCase):
         mfile = json.load(open(self.out + ".metrics.json"))
         met = mfile["metrics"]
         self.assertEqual(met["restore_ms_median"], 1)                # the mock's honest 1 ms
+        self.assertEqual(met["pin"]["refused"], 1)                   # the pin law, exercised offline
         self.assertEqual(met["control"]["leaks"], 0)
         self.assertEqual(met["warm"]["gold_hits"], 0)                # mock answers are not gold
         self.assertIsNone(met["warm"]["prompt_ms_median"])           # no timings from the mock: None, not invented

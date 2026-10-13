@@ -44,7 +44,7 @@ scrubbed JSONL lines + a metrics json, in the repo's venue-record shape.
 """
 from __future__ import annotations
 
-import argparse, datetime, json, re, sys, time, urllib.parse, urllib.request as U
+import argparse, datetime, json, re, sys, time, urllib.error, urllib.parse, urllib.request as U
 
 
 def scrub(s: str) -> str:
@@ -123,7 +123,7 @@ def main(argv=None) -> int:
         r = call(a.url, "/slots/0?action=restore", {"filename": a.control_file})
         rec({"m": "M1b_pin", "file": a.control_file, "refused": False,
              "note": "expected a pin refusal; this engine ACCEPTED a foreign file - investigate"})
-    except U.error.HTTPError as e:
+    except urllib.error.HTTPError as e:
         body = e.read().decode()[:200]
         rec({"m": "M1b_pin", "file": a.control_file, "refused": e.code == 400, "code": e.code, "body": body})
 
