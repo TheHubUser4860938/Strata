@@ -116,6 +116,11 @@ class Harness(unittest.TestCase):
         # the oracle's 32 counting questions carry answer as an int (crash of the second run)
         self.assertIn("Correct Answer: 42",
                       H.anscheck_prompt("single-session-user", "Q", 42, "There are 42", False))
+        # ... and scrub met the same ints at the line-write (crash of the third run); an answer
+        # of 0 must survive too - the old (s or "") would have stored it as empty
+        self.assertEqual(H.scrub(42), "42")
+        self.assertEqual(H.scrub(0), "0")
+        self.assertEqual(H.scrub("a<|b|>c"), "a< |b| >c")
         with self.assertRaises(ValueError):
             H.anscheck_prompt("made-up-type", "Q", "A", "R", False)
 

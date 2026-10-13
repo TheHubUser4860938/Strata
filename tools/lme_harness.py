@@ -56,10 +56,14 @@ ANSWER_RULES = {
 }
 
 
-def scrub(s: str) -> str:
+def scrub(s) -> str:
     """The standing rule for anything that leaves into a file a prompt may read back: the
-    chat template's delimiter can never travel intact through venue output."""
-    return (s or "").replace("<|", "< |").replace("|>", "| >")
+    chat template's delimiter can never travel intact through venue output. Coerces non-str
+    (crash of the third run: the oracle's int answers reached scrub at the line-write, after
+    the answer and judge calls were already paid; and note (s or "") would have silently
+    dropped a legitimate answer of 0)."""
+    s = "" if s is None else str(s)
+    return s.replace("<|", "< |").replace("|>", "| >")
 
 
 def post(url: str, path: str, body: dict, headers: dict | None = None, timeout: float = 240.0):
@@ -354,6 +358,12 @@ def main(argv=None) -> int:
                     help="gold-map sidecar (default: OUT.map) - point at an earlier run's map to --skip-ingest")
     a = ap.parse_args(argv)
     data = json.load(open(a.data))
+    # 32 of the 500 oracle questions carry answer as an int (the counting questions). Both the
+    # judge-template crash and the scrub crash were this; normalize ONCE at load so no site -
+    # judge, record line, recall scoring, future ones - ever meets an int answer again. The
+    # per-site coercions stay as defense in depth, each pinned by a test.
+    for q in data:
+        q["answer"] = str(q["answer"])
     st = get(a.url, "/memory", {"limit": 1}).get("stats", {})
     cap = st.get("max_memories") or 0
     if cap:
