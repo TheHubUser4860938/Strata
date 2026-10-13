@@ -127,7 +127,7 @@ turn), scope isolation, mute, and journal deltas, all measured at :8005 on 2026-
   `?class=` shelf prefixes, and since 2026-10-12 `?since=` / `?until=` date bounds - epoch seconds,
   ISO date or datetime, junk is a 400: the date index for episodic questions, adopted from the
   Primnox "memory like a book" design) and
-  `POST /memory` `{"op": "remember|forget|search|turn|turns", ...}` - for the web app, for operators, and
+  `POST /memory` `{"op": "remember|forget|search|turn|turns|cartridge", ...}` - for the web app, for operators, and
   for the eval harness (hand-posted turns). Gated by the API key like `/props` and `/slots`.
 - **Tests:** `python -m unittest serve.test_memory` (44 tests, no GPU): store/dedup/scope/stickiness units,
   a mock-engine HTTP end-to-end (inject → journal → mute → forget), memory-off 404 + byte-identical chat,
@@ -338,6 +338,52 @@ boot loudly: an "empty" store that quietly forgot yesterday is the failure mode 
 prevent. The planned next stage is a FIDO2 passkey seal (the `hmac-secret` extension wraps the
 key-file itself — touch-to-open on the physical device; opt-in, needs python-fido2, and a printed
 recovery key because a lost passkey must not be a lost memory).
+
+## Agentic recall and the standing cartridge (added 2026-10-12, live at the next dev-up)
+
+**The model browses its own store while thinking (item C).** `memory_search(q, class, since/until,
+limit)` is offered as a tool and the **server** runs it: the model calls, the store answers in
+milliseconds, the model continues - all inside one request, so every harness (OpenCode, Claude
+Code, the web app, curl) gets browsing with no client tool wiring. The machinery is the MCP tool
+loop (`run_with_mcp`), production-tested since the web app shipped: the memory call is a second
+executor - no hub, no worker thread, same events in the same order, same client-visible trace
+(`strata_mcp`), so the web app shows memory rounds for free. Opt-in twice over: config
+`"tool": true` for every conversation, or the `X-Strata-Memory-Tool: 1` header for one. Off (the
+default): no tool joins the request's list and the prompt bytes are as before. A muted request
+gets no tool - memory off means off. Scoping: the call searches the request's scope pair; a call
+naming `class` browses to those shelves **on purpose** (the header filter says what rides every
+turn, the tool is the model reaching for another shelf), a call naming none inherits the
+conversation's filter, and a junk date comes back as an honest tool error rather than a silently
+widened window. The request's own `memory_search` tool wins the name clash, as on MCP.
+
+**The tier-2 standing cartridge (M3b): the store's K/V, once.** The spike measured the facts the
+design rests on (engine 0.1.43.1, k8v4, RTX 4090): save 1,973 tokens -> 260,614,468 bytes in
+0.19 s (**132 KB/token** - the file is the whole slot state: QSA KV plus a ~240 MB fixed
+per-sequence cost of GDN recurrent state and MTP, which is why there is **one cartridge, not one
+per shelf**); the first live restore on this engine: **105 ms** for 260 MB. A restored session
+file acts as a **prefix**: a fresh conversation whose prompt matches it byte for byte from token 0
+inherits its K/V and answers with that text in place (and one that does not match resets -
+knowledge never leaks from a loaded file alone). Hence the ordering law: the standing text rides
+FIRST, ahead of the volatile recall block - measured the hard way, reuse died at token ~250 when
+the block led. The standing set is the store's own graduation: rows of the configured shelves
+(`class_prefixes`, default USR + DEC), confidence descending then id ascending - never by hits,
+because hits drift and the file is only valid for its exact bytes. The content hash is the
+filename (`MEM-CRG-<sha8>.bin`, one per standing set, the rest GC'd); the engine validates the
+pin inside the file (model, engine version, rope, geometry), so an upgrade costs one re-seed,
+never a stale read. Facts beyond `max_chars` keep riding the tier-3 block: a small budget costs
+standing status, never knowledge. Every failure path leaves the request completely normal - the
+cartridge adds speed and never risk. `GET /memory` grows a `cartridges` view (shelves, facts,
+left-for-block, file, bytes, state); `POST {"op": "cartridge"}` re-seeds now, 400 when off.
+
+**Honest scope, stated before the venue proves it:** a cartridge is a prefix, not telepathy - the
+standing text still rides the prompt, and what the venue will measure is the time: ~0.1 s restore
+against ~0.5 s prefill per 2k tokens, every conversation, every restart. MAM's state-without-text
+recall (answer with the fact text nowhere in the prompt) needs engine grafting - Spike B - and is
+not claimed here. A muted conversation replaces the slot's state, so the next standing request
+pays one restore back (0.1 s, tracked by a flag, not a guess). And a session file is an access
+credential to its KV content (upstream llama.cpp says so in #29678): the cartridge file holds
+personal facts in bytes the model can re-read, so treat the `slot_save_path` directory with the
+same care as `memory.db.enc`.
 
 ## Licensing and attribution
 
