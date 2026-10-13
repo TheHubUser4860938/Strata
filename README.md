@@ -5,9 +5,11 @@ that lives at the inference server.** Every client (OpenCode, Claude Code, Codex
 store, and no harness ever re-sends conversation history — the server remembers, and it remembers the same
 way no matter which app is knocking.
 
-Status, October 2026 — the text tier is live on the dev server and the K/V tier is in code:
+Status, October 2026 — **beta-1 (Linux)**: the claim list, with what each measurement was run on
+and what beta-1 refuses to claim, is [`docs/BETA1.md`](docs/BETA1.md). The text tier is live on
+the dev server and the K/V tier is in code:
 
-- **Tier 3, curated text memory (running):** ~2,300 facts on subject shelves, recalled server-side and
+- **Tier 3, curated text memory (running):** ~2,400 facts on subject shelves, recalled server-side and
   injected as one hidden system block that rides all three dialects (OpenAI, Anthropic, Responses). A
   journal feeds itself from conversations; a curation loop classifies, dedups, and consolidates with
   human-gated merge review; a budget speaks before it's full; `?since=`/`?until=` date windows answer
