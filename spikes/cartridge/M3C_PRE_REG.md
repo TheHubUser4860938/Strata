@@ -58,7 +58,7 @@ plus three lines the earlier runs could not have produced:
 | M2 warm, first rep | 2,054 ms, cache_n 0 | a never-seen conversation still pays full prefill |
 | M2 warm, reps 2-3 + M2d fresh | **72-77 ms, cache_n 2,719** | the SAME question returns from the parked copy - the cache's parking, earned |
 | M3 right-file warm, 3 reps | 2,719, then **0, 0** (1,945/1,941 ms) | the park is OPPORTUNISTIC: the M3 control's foreign conversations and save churn evicted it (engine: evictions=83) - reuse returns only while parked |
-| M2d continuation | 2,085 ms, **cache_n 0** | unmuted continuation reuse is CONDITIONAL on a byte-identical recall block - see below |
+| M2d continuation | 2,085 ms, **cache_n 0** | first read as block instability; the CORRECTION below shows it was slot-replacement (interleaved harness) - a clean probe gives 100% reuse |
 
 (The venue asks the same gold prompt 7 times unmuted; the record shows park hits while the
 park holds and full prefills after eviction, in the same run - both halves in one jsonl.)
@@ -76,6 +76,33 @@ placement, not the engine, decides.** The named lever - moving the volatile bloc
 prompt tail so the prefix never depends on recall luck - is promoted from the boot-15 demotion
 with this measured cost (~1.5 s per follow-up turn when the block moves) and still needs its
 own behavior venue before it moves.
+
+**CORRECTION (same evening, after reading the code and running the probe it implied).** The
+paragraph above is wrong on both counts, and the clean adjacent probe (session idle, zero other
+clients - `m2d_clean_probe.py`, filed beside this record) proves it:
+
+    FRESH  ptok 2,622  cache_n 0     prompt_ms 2,010.7
+    CONT   ptok 3,082  cache_n 2,629 prompt_ms   681.5   -> 100% of the parent prompt reused
+
+(1) **The block law does not exist.** The head block is PINNED per conversation - keyed
+`h + sha1(first user message | shelf)` (serve/memory.py block_for) - so it is byte-identical
+across every turn of a conversation by construction, and the per-turn block already rides the
+TAIL (merged into the newest user message, whose bytes are new anyway). Block-to-tail is not a
+lever to build; it is the shipped design. (2) **The delta arithmetic proved nothing.** cont -
+fresh = the assistant answer + the follow-up + the per-turn tail block, and the tail block's
+size legitimately varies (0-500 tokens) with zero head movement - today's delta was 460 WITH
+full reuse. Run 5's 763 was a big tail block, not a moved head. (3) **Run 5's cont line was
+invalidated the same way run 4's was:** an interleaved request from this assistant's own
+harness replaced the slot between the adjacent pair, and the parked copy was unavailable under
+RAM churn (evictions=83 that run) - the runbook's own documented failure mode. Run 3's 2,871
+was not luck; it was the same working mechanism, measured while nothing interleaved.
+
+Honest law after the correction: **continuation reuse works whenever the slot OR the parked
+copy survives**; it fails when an interloper takes the slot AND RAM admission refuses the park
+- and the venue's fragility is exactly that pair, not placement. The earned claims stand
+(restore, pin, delta, parked repeats); the "block-to-tail next lever" entry is WITHDRAWN, and
+the injection-budget scaling - cheap under a pinned head, since the head is prefilled once per
+conversation, not per turn - becomes the next timing experiment instead.
 
 **Machine:** dev box, engine 0.1.43.1, RTX 4090, cartridge `MEM-CRG-3af0d3bd.bin`
 (21 standing facts, 247 MB, USR+DEC shelves). Sweep timer stopped for the runs and

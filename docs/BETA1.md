@@ -30,10 +30,14 @@ engine logs.
    inside the venue record itself); the park is opportunistic (eviction under RAM pressure returns
    full prefills - both halves in one run). Cross-conversation prefix inheritance: absent (three
    fresh conversations reused nothing).
-5. **The block law, measured (venue run 5).** Continuation reuse works only when the per-turn recall
-   block is byte-identical; one changed note invalidates the whole prefix (3,543 tokens re-read,
-   cache_n 0). Block-to-tail placement is the named next lever with its own behavior venue - not
-   shipped, not claimed.
+5. **Continuation reuse, measured** (clean adjacent probe, session idle, `spikes/cartridge/
+   m2d_clean_probe.py`): **100% of the parent prompt given back** (2,629 of 2,622 tokens),
+   prefill 2,011 -> 681 ms. The head block is pinned per conversation (keyed by the first user
+   message) and the per-turn block rides the prompt tail by design - a multi-turn conversation
+   pays its head prefill once at conversation start, not every turn. The venue's cache_n 0
+   lines (runs 4-5) are slot replacement by an interleaved client plus park eviction under RAM
+   pressure - the runbook's documented failure modes; a "block law" reading was filed and
+   withdrawn the same day it was measured.
 6. **Memory UI (D).** `/memory-ui` + `/web/memory.js` served live (200s verified, boot 14): stats,
    search, forget, re-seed.
 7. **Benchmark (F).** LongMemEval-V1 oracle, all 500 official questions x 3 repeats, the benchmark's

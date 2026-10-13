@@ -399,20 +399,28 @@ wrong-cartridge control 3/3 no leak). The fresh-conversation time win did NOT me
 conversation right after a restore re-reads its whole prompt - engine resume is strict
 extension of the last prompt the slot saw, checkpointed at message boundaries. What the
 cache-enabled re-run (run 5, quiet port) did measure: the SAME question asked again returns
-from the parked copy (2,719 tokens reused, 2,054 ms -> 77 ms), while an unmuted CONTINUATION
-re-read everything (3,543 tokens, 0 reused, 2,085 ms) - because the recall block rides inside
-the system message and changes with the follow-up's query, which invalidates every checkpoint
-above it. The earlier continuation reuse (2,871 tokens, 1,837 ms -> 599 ms) needed a
-byte-identical block and got one by luck. The named cache experiment ran the same day
+from the parked copy (2,719 tokens reused, 2,054 ms -> 77 ms); the same run's CONTINUATION
+line (3,543 tokens, 0 reused, 2,085 ms) first read as block instability and was proven, the
+same evening, to be the runbook's slot-replacement failure - an interleaved request from this
+assistant's own harness sat between the adjacent pair, and the parked copy was gone under RAM
+churn (evictions 83). The clean adjacent probe (session idle, `spikes/cartridge/
+m2d_clean_probe.py`) measured continuation reuse WORKING: 100% of the parent prompt given
+back (2,629 of 2,622 tokens), 2,011 ms -> 681 ms. The mechanism is in the code by
+construction: the head block is PINNED per conversation (key `h + sha1(first user message |
+shelf)`, byte-stable across turns) and the per-turn recall block rides the newest user
+message - new bytes anyway - at the tail. Reuse works whenever the slot OR the parked copy
+survives; it fails when an interloper takes the slot AND RAM admission refuses the park.
+The earlier continuation reuse (2,871 tokens, 1,837 ms -> 599 ms) was the same working
+mechanism, measured while nothing interleaved. The named cache experiment ran the same day
 (`spikes/cartridge/M3D_CACHE_EXP.md`, boot 15): the RAM-side conversation cache
 (`--conversation-cache-mib`) **delivers conversation parking** - a conversation displaced from
 the slot returns from RAM in ~13 ms instead of re-prefilling (1,989 ms -> 705 ms measured) -
 but it is keyed **per conversation**: three brand-new conversations after four parked ones
 reused nothing (cache_n 0 x3). Cross-conversation prefix inheritance is therefore still open,
 and the cartridge's earned value stays: fast slot reload, pin-verified provenance, parked
-repeats - not prefill skipped for strangers. The measured cost of the current block placement
-(one full prefill per unmuted follow-up turn, ~1.5 s) makes block placement the next named
-lever, with its own behavior venue before it moves. One known upstream limitation belongs in
+repeats - not prefill skipped for strangers. The block-placement lever is WITHDRAWN (it is the
+shipped design); with the head pinned once per conversation, the next timing experiment is
+injection-budget scaling, not placement. One known upstream limitation belongs in
 the beta matrix: session SAVE fails ("invalid K/V extent") on engines that load **no MTP drafter** -
 upstream issue #1444, root cause diagnosed (the save passes the unloaded drafter with
 `max_cells == 0`), fix in PR #1492, still open and unmerged as of 2026-10-13 (re-checked the day

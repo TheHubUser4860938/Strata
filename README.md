@@ -26,14 +26,16 @@ the dev server and the K/V tier is in code:
   engine resume extends only the same conversation (one adjacent probe gave back 2,871 tokens,
   1,837 ms → 599 ms); the RAM-side conversation cache was then measured doing its own version of
   that trick per conversation (~13 ms parked-state returns, 1,989 ms → 705 ms) but not across
-  conversations. And the same quiet venue showed continuation reuse is **conditional on the
-  recall block**: when an unmuted follow-up recalled a different byte-identical block the pair
-  resumed; when it recalled a different one (a store reshuffle between boots was enough), the
-  conversation re-read all 3,543 tokens - the block rides in the system message, so one changed
-  note invalidates the whole prefix. Block placement - moving the volatile text to the prompt
-  tail so the prefix stops depending on recall luck - is the named next lever, with its own
-  behavior venue. The earned claims today are fast slot reload, pin-verified provenance, and
-  parked repeats; nothing here claims prefill skipped per conversation.
+  conversations. And continuation reuse measures **working** on a clean adjacent probe (session
+  idle, zero other clients): 100% of the parent prompt given back (2,629 of 2,622 tokens),
+  prefill 2,011 ms -> 681 ms - the head block is pinned per conversation (keyed by the first
+  user message) and the per-turn recall block rides the prompt tail by design. The venue's
+  fragile lines (runs 4-5, cache_n 0) are the runbook's slot-replacement failure - an
+  interleaving client took the slot while RAM churn evicted the parked copy - not placement
+  bugs; a first reading that blamed block instability was withdrawn the same day it was
+  filed. The earned claims today are fast slot reload, pin-verified provenance, parked
+  repeats, and a stable pinned head (a multi-turn conversation pays its head prefill once at
+  conversation start, not every turn); nothing here claims prefill skipped for strangers.
   Protocol and raw records: `spikes/cartridge/M3C_PRE_REG.md`.
 - **Benchmark, measured (2026-10-13):** on **LongMemEval-V1 oracle** — all 500 official questions,
   3 repeats, one fresh conversation per ask, the benchmark's own checker prompt verbatim — the
