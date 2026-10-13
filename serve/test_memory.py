@@ -855,7 +855,7 @@ class EncryptionAtRest(unittest.TestCase):
 
     def test_roundtrip_key_and_shred(self):
         m = self._reopen()
-        m.remember("Eugene is the user's middle name, not their first", scope="user")
+        m.remember("Quillon is the user's middle name, not their first", scope="user")
         m.close()
         self.assertFalse(os.path.exists(os.path.join(self.dir, "memory.db")),
                          "a clean stop of an encrypted store leaves NO plaintext behind")
@@ -865,7 +865,7 @@ class EncryptionAtRest(unittest.TestCase):
         self.assertEqual(len(open(key, "rb").read()), 32)
         m = self._reopen()
         try:
-            hits = m.search("which name is eugene", scope="user")
+            hits = m.search("which name is quillon", scope="user")
             self.assertTrue(hits, "the store came back through the seal intact")
             self.assertIn("middle name", hits[0]["text"])
         finally:

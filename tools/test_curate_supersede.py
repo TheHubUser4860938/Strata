@@ -83,7 +83,7 @@ class ProbeShape(unittest.TestCase):
             "What is the identifier?",
             "It is D64, assigned by the FAA to the small municipal airport in North Dakota near "
             "the Canadian border, and the runway is changing."))
-        self.assertFalse(_probe_shape("My middle name is Eugene", "Noted and stored."))
+        self.assertFalse(_probe_shape("My middle name is Quillon", "Noted and stored."))
         self.assertFalse(_probe_shape("", ""))
 
 

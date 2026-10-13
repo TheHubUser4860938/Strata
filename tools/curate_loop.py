@@ -42,7 +42,7 @@ answers) - deliberately UNTRACKED by git (personal-hygiene policy); the evidence
 git is the aggregate counts + the verdict block, never raw personal text.
 """
 from __future__ import annotations
-import argparse, collections, datetime, json, re, sqlite3, sys, time
+import argparse, collections, datetime, json, os, re, sqlite3, sys, time
 import urllib.error, urllib.parse, urllib.request as U
 from pathlib import Path
 
@@ -278,13 +278,21 @@ CLASS_MAP = {
     # it would score 1 everywhere, quietly stealing the margin from real shelves. Scope already
     # says a fact is the user's; the USR SHELF is for facts that are personal by content. Same
     # reason "name" stays out: "the name of the township" is a quiz question, not a name fact.
-    "USR": {"eugene", "prefers", "preference", "preferences", "personal", "privately", "adult",
+    "USR": {"prefers", "preference", "preferences", "personal", "privately", "adult",
             "family", "middle", "username", "daily", "likes", "loves", "hates",
             "wants", "hobbies", "birthday", "daughter", "son", "wife", "husband", "learning",
             "language", "lives", "friend", "kids", "email", "personalization", "goal"},
-            # "home" stays out too: /home/eugene/ appears in every project path - paths are not
+            # "home" stays out too: /home/<name>/ appears in every project path - paths are not
             # the personal lane
 }
+
+# A person's own name is the strongest USR signal there is ("<name> prefers X" is personal whatever
+# the words), but a real name does not belong in git - the store holds it, the repo must not print
+# it.  So the machine supplies it: STRATA_USER_NAME (the systemd sweep unit sets it; a manual run
+# without it degrades gracefully, the other hints still classify).  Names split on spaces and commas.
+USR_NAMES = {w for w in re.split(r"[,\s]+", os.environ.get("STRATA_USER_NAME", "").lower()) if w}
+if USR_NAMES:
+    CLASS_MAP["USR"] = CLASS_MAP["USR"] | USR_NAMES
 
 
 # The first real SUBCLASSES and CUTTERS, and what proved them: preferences are personal taste

@@ -12,12 +12,13 @@
 #
 # Install on THIS dev box (no cron daemon - systemd user timer, every 30 min):
 #   units at ~/.config/systemd/user/strata-sweep.{service,timer} - INSTALLED + ENABLED
-#   2026-10-12 (first tick drained 11 pending turns -> 13 FILL, queue 0).  Check:
-#   systemctl --user list-timers strata-sweep.timer ; force: systemctl --user start strata-sweep.service ;
+#   2026-10-12 (first tick drained 11 pending turns -> 13 FILL, queue 0).  The unit also sets
+#   Environment=STRATA_USER_NAME=<name>: a real name classifies USR best and does not belong in git.
+#   Check: systemctl --user list-timers strata-sweep.timer ; force: systemctl --user start strata-sweep.service ;
 #   remove: systemctl --user disable --now strata-sweep.timer
 # Install where cron DOES exist (every 30 min, mail-quiet):
 #   (crontab -l 2>/dev/null | grep -v sweep_cron.sh; \
-#    echo '*/30 * * * * /home/eugene/Projects/Strata-MAM-cartrige-mod/tools/sweep_cron.sh >> /home/eugene/Projects/Strata-MAM-cartrige-mod/tools/state/cron.log 2>&1') | crontab -
+#    echo '*/30 * * * * ~/Projects/Strata-MAM-cartrige-mod/tools/sweep_cron.sh >> ~/Projects/Strata-MAM-cartrige-mod/tools/state/cron.log 2>&1') | crontab -
 # Remove: crontab -l | grep -v sweep_cron.sh | crontab -
 set -u
 cd "$(dirname "$0")/.."

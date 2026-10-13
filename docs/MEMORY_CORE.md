@@ -289,7 +289,7 @@ match, so `STR` pulls `STR/GEN` with it. Corrections inherit the shelf they repl
 re-shelves; `op=classify` plus `tools/m2_class.py` backfill with a conservative keyword map (argmax
 with a two-token margin, or stay wild — a wrong shelf hides a fact from the conversations that need
 it, a missing shelf only leaves it out of filtered ones). The personal lane fills on personal *signal*,
-not on scope: "/home/eugene" in a project path and "the name of the township" in a quiz question both
+not on scope: "/home/<user>" in a project path and "the name of the township" in a quiz question both
 tried to move into it during the first dry run and both got thrown out. Measured end to end the same
 day: one question asked three ways — unfiltered 1,617 prompt tokens and the right answer; `class=USR`
 292 tokens and the right answer; `class=EVAL` and an honest "I do not know" — the shelf decides what
