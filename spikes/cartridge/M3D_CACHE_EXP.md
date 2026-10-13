@@ -2,9 +2,14 @@
 
 **Setup:** one variable - `--conversation-cache-mib 8192` added to the engine args
 (`strata-dev.json`, gitignored; `engine_args` passes config `args` through raw, no code).
-Engine accepted it; the server's `/props` view shows nulls (its INFO parse never sees the
-field - cosmetic gap, filed), while the engine's own log tells the truth: park, restore,
-evict, admit.
+Engine accepted it. First probe read `/props` and saw nulls - wrong endpoint, my error: the
+card lives in `/metrics`, and it tells the whole truth: `enabled: true, budget_mib: 8192,
+slots: 4`, and since-boot `parks: 37, restores: 9, requests_reused: 69 of 104,
+reused_tokens: 6,481,342 of 9,000,975 prompt tokens` - 72% of prompt tokens served from
+cache (that share includes same-conversation slot resume, which predates the cache; the
+cache's INCREMENT is the cross-conversation returns measured below). The engine's own log
+adds the rest: park, restore, evict, admit. No INFO-parse gap existed - filed against
+myself, and the engine 0.1.43.1 reports the budget fine.
 
 **Experiment: alternating conversations, timed, one script, nothing else scripted.**
 
