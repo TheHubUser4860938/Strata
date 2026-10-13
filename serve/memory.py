@@ -233,7 +233,12 @@ class MemoryService:
         self.directory = memory_dir(directory)      # absolute, created 0700 - same rules as slot_save_path
         self.db_path = os.path.join(self.directory, "memory.db")
         self.max_block_chars = max(200, int(max_block_chars))
-        self.recall_limit = max(1, min(50, int(recall_limit)))
+        # the 50-note ceiling was sized to the 6k/12k char budgets: ~250 chars per note means 50
+        # notes IS ~12.5k chars, so a config that raises max_block_chars past that could never
+        # fill. Raised to 120 for the injection-budget venue (24k chars / 96 notes); the guard
+        # still stops a runaway config, and the shipped default (48 notes / 12k) is untouched -
+        # byte-identical, the clamp only binds above 50.
+        self.recall_limit = max(1, min(120, int(recall_limit)))
         self.per_turn = bool(per_turn)
         self.turn_recall_limit = max(1, min(50, int(turn_recall_limit)))
         self.turn_block_chars = max(200, int(turn_block_chars))
@@ -595,7 +600,7 @@ class MemoryService:
         "When did we decide X" and "what did we know last month" are episodic questions, and every row
         already carries its stamp - filtering on it is the date index. Both None (every request today)
         keeps the ranking byte-identical to before."""
-        limit = self.recall_limit if limit is None else max(1, min(50, int(limit)))
+        limit = self.recall_limit if limit is None else max(1, min(120, int(limit)))
         words = WORD_RE.findall(query.lower())[:MAX_QUERY_WORDS]
         if not words:
             return []
