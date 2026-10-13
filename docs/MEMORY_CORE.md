@@ -398,10 +398,14 @@ another engine configuration is refused with "config fingerprint differs"); the 
 did NOT measure: the fresh-conversation time win. A new conversation right after a restore re-reads
 its whole prompt (reused 0, full prompt_ms) - engine resume is strict extension of the last prompt
 the slot saw, and one clean adjacent probe confirmed the mechanism is real for continuations
-(2,871 tokens given back, 1,837 ms -> 599 ms). Cross-conversation prefix inheritance is therefore
-an open experiment with a name - the RAM-side conversation cache (`--conversation-cache-mib`,
-upstream: faster, does not survive restarts) - and until it lands, the cartridge's earned value is
-fast slot reload, not prefill skipped per conversation. One known upstream limitation belongs in
+(2,871 tokens given back, 1,837 ms -> 599 ms). The named experiment ran the same day
+(`spikes/cartridge/M3D_CACHE_EXP.md`, boot 15): the RAM-side conversation cache
+(`--conversation-cache-mib`) **delivers conversation parking** - a conversation displaced from
+the slot returns from RAM in ~13 ms instead of re-prefilling (1,989 ms -> 705 ms measured) -
+but it is keyed **per conversation**: three brand-new conversations after four parked ones
+reused nothing (cache_n 0 x3). Cross-conversation prefix inheritance is therefore still open,
+and the cartridge's earned value stays: fast slot reload, pin-verified provenance, standing
+text ahead of the block - not prefill skipped per conversation. One known upstream limitation belongs in
 the beta matrix: session SAVE fails ("invalid K/V extent") on engines that load **no MTP drafter** -
 upstream issue #1444, root cause diagnosed (the save passes the unloaded drafter with
 `max_cells == 0`), fix in PR #1492, open and unmerged as of 2026-10-12, verified on an RTX 4090 D.

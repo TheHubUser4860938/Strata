@@ -22,8 +22,9 @@ Status, October 2026 — the text tier is live on the dev server and the K/V tie
   fingerprint; the knowledge delta is **real** - warm 3/3 correct, cold 3/3 `idk`,
   wrong-cartridge control 0 leaks. What did not measure yet: the fresh-conversation prefill win -
   engine resume extends only the same conversation (one adjacent probe gave back 2,871 tokens,
-  1,837 ms → 599 ms), so cross-conversation inheritance waits on the RAM-side conversation-cache
-  experiment. The earned claims are fast slot reload, pin-verified provenance, and standing text
+  1,837 ms → 599 ms); the RAM-side conversation cache was then measured doing its own version of
+  that trick per conversation (~13 ms parked-state returns, 1,989 ms → 705 ms) but not across
+  conversations. The earned claims are fast slot reload, pin-verified provenance, and standing text
   ahead of the volatile recall block; nothing here claims prefill skipped per conversation.
   Protocol and raw records: `spikes/cartridge/M3C_PRE_REG.md`.
 - **Phase 2, state-without-text (open research):** porting the *AKBASCORE MAM / NIRVANA cognitive
