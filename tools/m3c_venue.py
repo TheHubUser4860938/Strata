@@ -60,12 +60,23 @@ def call(url: str, path: str, body: dict | None = None, headers: dict | None = N
         return json.loads(r.read().decode())
 
 
+ANSWER_RULE = ("Answer in a few words from what you know. If you do not know, reply exactly: idk")
+
+
+def final_line(h: str) -> str:
+    """Few-word answers are one line; verbose ones end with the answer. Scoring the whole
+    text was fooled live (2026-10-13) by an EXAMPLE inside a clarification - 'Custom PC with
+    an NVIDIA RTX 4090' while the model admitted it did not know the machine - a false leak
+    that correctly stopped the venue and correctly demanded a better criterion."""
+    return (h or "").strip().split("\n")[-1].lower()
+
+
 def ask(url: str, model: str, prompt: str, muted: bool) -> dict:
     """One fresh conversation, one answer; the response's own timings (engine view: prompt_ms,
     cache_n = tokens not re-read) ride back with it - the measurement never touches a log."""
     hdrs = {"X-Strata-Memory": "off"} if muted else {}
     r = call(url, "/v1/chat/completions",
-             {"model": model, "messages": [{"role": "user", "content": prompt}],
+             {"model": model, "messages": [{"role": "user", "content": f"{prompt}\n\n{ANSWER_RULE}"}],
               "max_tokens": 500, "temperature": 0.8, "reasoning_effort": "off"}, headers=hdrs)
     t = r.get("timings") or {}
     return {"hypothesis": scrub((r["choices"][0]["message"].get("content") or "").strip()),
@@ -132,7 +143,7 @@ def main(argv=None) -> int:
         for muted in (False, True):
             r = ask(a.url, a.model, a.ask, muted)
             rec({"m": "M2_warm" if not muted else "M2_cold", "rep": rep, "gold_hit":
-                 a.gold.lower() in r["hypothesis"].lower(), **r})
+                 a.gold.lower() in final_line(r["hypothesis"]), **r})
 
     # M2d: the continuation control, run as an ADJACENT pair so nothing else touches the slot
     # between the two asks - engine resume is strict extension of the last prompt the slot saw,
@@ -170,14 +181,14 @@ def main(argv=None) -> int:
         call(a.url, "/slots/0?action=save", {"filename": ctrl})
         call(a.url, "/slots/0?action=restore", {"filename": ctrl})
         r = ask(a.url, a.model, a.ask, muted=True)
-        leaked = a.gold.lower() in r["hypothesis"].lower()
+        leaked = a.gold.lower() in final_line(r["hypothesis"])
         rec({"m": "M3_wrongcartridge_muted", "rep": rep, "file": ctrl, "leaked": leaked,
-             "says_unknown": a.unknown.lower() in r["hypothesis"].lower(), **r})
+             "says_unknown": a.unknown.lower() in final_line(r["hypothesis"]), **r})
     for rep in range(a.repeats):
         call(a.url, "/slots/0?action=restore", {"filename": cart["file"]})
         r = ask(a.url, a.model, a.ask, muted=False)
         rec({"m": "M3_rightfile_warm", "rep": rep, "gold_hit":
-             a.gold.lower() in r["hypothesis"].lower(), **r})
+             a.gold.lower() in final_line(r["hypothesis"]), **r})
     out.close()
 
     rows = [json.loads(l) for l in open(a.out)]
