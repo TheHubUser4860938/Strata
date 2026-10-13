@@ -71,7 +71,7 @@ class Venue(unittest.TestCase):
         for r in rows:
             by[r["m"]] = by.get(r["m"], 0) + 1
         self.assertEqual(by, {"M1_restore": 2, "M1b_pin": 1, "M2_warm": 2, "M2_cold": 2,
-                              "M2d_continuation": 1, "M3_wrongcartridge_muted": 2,
+                              "M2d_fresh": 1, "M2d_cont": 1, "M3_wrongcartridge_muted": 2,
                               "M3_rightfile_warm": 2})
         cart_file = [f for f in os.listdir(self.slots.name) if f.startswith("MEM-CRG-")][0]
         # 7 restores of the right file, and the count is the state machine made visible:

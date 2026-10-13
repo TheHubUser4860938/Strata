@@ -128,31 +128,33 @@ def main(argv=None) -> int:
         rec({"m": "M1b_pin", "file": a.control_file, "refused": e.code == 400, "code": e.code, "body": body})
 
     # M2: warm vs cold, interleaved so drift hits both sides equally.
-    warm_hyp = ""
     for rep in range(a.repeats):
         for muted in (False, True):
             r = ask(a.url, a.model, a.ask, muted)
-            if not muted and not warm_hyp:
-                warm_hyp = r["hypothesis"]
             rec({"m": "M2_warm" if not muted else "M2_cold", "rep": rep, "gold_hit":
                  a.gold.lower() in r["hypothesis"].lower(), **r})
 
-    # M2d: the continuation control - the SAME conversation, follow-up turn appended. The engine's
-    # resume mechanism re-reads only the new tail when a conversation continues; M2 showed a FRESH
-    # conversation after restore reads the whole prompt (0 reused, full prompt_ms). Together the
-    # two lines locate the mechanism: reuse is same-conversation, and cross-conversation prefix
-    # inheritance is the engine's conversation cache (--conversation-cache-mib, RAM-side) - the
-    # next experiment, not tonight's claim.
-    cont = {"model": a.model, "messages": [{"role": "user", "content": a.ask},
-                                           {"role": "assistant", "content": warm_hyp},
-                                           {"role": "user", "content": "Name one color. One word only."}],
-            "max_tokens": 500, "temperature": 0.8, "reasoning_effort": "off"}
-    rc = call(a.url, "/v1/chat/completions", cont)
-    t = rc.get("timings") or {}
-    rec({"m": "M2d_continuation", "rep": 0,
-         "prompt_tokens": (rc.get("usage") or {}).get("prompt_tokens"), "cache_n": t.get("cache_n"),
-         "prompt_ms": t.get("prompt_ms"), "hypothesis": scrub(
-             (rc["choices"][0]["message"].get("content") or "").strip())})
+    # M2d: the continuation control, run as an ADJACENT pair so nothing else touches the slot
+    # between the two asks - engine resume is strict extension of the last prompt the slot saw,
+    # and a cold ask in between would silently invalidate the whole probe (it did: the first
+    # venue's non-adjacent M2d measured full prefill and looked, wrongly, like resume failing).
+    # Fresh ask -> full prompt_ms; the same conversation + one follow-up -> resume re-reads only
+    # the tail. The pair locates the mechanism in the record: reuse today is same-conversation;
+    # cross-conversation prefix inheritance is the conversation-cache experiment (M3e, boot 14+).
+    d0 = ask(a.url, a.model, a.ask, muted=False)
+    d1 = None
+    if d0["hypothesis"]:
+        cont = {"model": a.model, "messages": [{"role": "user", "content": a.ask},
+                                               {"role": "assistant", "content": d0["hypothesis"]},
+                                               {"role": "user", "content": "Name one color. One word only."}],
+                "max_tokens": 500, "temperature": 0.8, "reasoning_effort": "off"}
+        rc = call(a.url, "/v1/chat/completions", cont)
+        t = rc.get("timings") or {}
+        d1 = {"prompt_tokens": (rc.get("usage") or {}).get("prompt_tokens"), "cache_n": t.get("cache_n"),
+              "prompt_ms": t.get("prompt_ms"),
+              "hypothesis": scrub((rc["choices"][0]["message"].get("content") or "").strip())}
+    rec({"m": "M2d_fresh", **d0})
+    rec({"m": "M2d_cont", **d1} if d1 else {"m": "M2d_cont", "note": "empty fresh answer"})
 
     # M3: the wrong cartridge, made live: a foreign conversation (muted, so it carries no
     # standing text) is run and SAVED - same pin, different knowledge - then restored, and the
@@ -195,9 +197,9 @@ def main(argv=None) -> int:
         "cold": {"prompt_ms_median": med("M2_cold", "prompt_ms"),
                  "cache_n_median": med("M2_cold", "cache_n"),
                  "gold_hits": sum(1 for x in rows if x["m"] == "M2_cold" and x["gold_hit"])},
-        "continuation": next(({"prompt_ms": x["prompt_ms"], "cache_n": x["cache_n"],
-                               "prompt_tokens": x["prompt_tokens"]}
-                              for x in rows if x["m"] == "M2d_continuation"), None),
+        "continuation": {"fresh_prompt_ms": med("M2d_fresh", "prompt_ms"),
+                         "cont_prompt_ms": med("M2d_cont", "prompt_ms"),
+                         "cont_cache_n": med("M2d_cont", "cache_n")},
         "control": {"leaks": sum(1 for x in rows if x["m"] == "M3_wrongcartridge_muted" and x["leaked"]),
                     "unknowns": sum(1 for x in rows if x["m"] == "M3_wrongcartridge_muted"
                                     and x["says_unknown"])},
