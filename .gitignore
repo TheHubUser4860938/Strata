@@ -66,6 +66,7 @@ build-vision-cuda12.bat
 /Strata-data
 /dev-server.out
 /dev-cycle-server.out
+/venue-server.out
 strata-dev.json.stockbak
 spikes/window/state/telemetry_*.json
 tools/state/curate_*.jsonl
