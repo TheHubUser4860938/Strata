@@ -48,6 +48,35 @@ faster, does not survive restarts) - boot 14, one variable per boot. Until that 
 the cartridge's earned claims are: 80 ms slot reload, pin-verified provenance, and the
 standing text riding every conversation - never "prefill skipped per conversation".
 
+**Run 5 (same day, boot 16, the venue the cache experiment armed):** quiet port (sweep timer
+stopped), `--conversation-cache-mib 8192` live, cart rebuilt to 16 facts after the merge round.
+PASS shape again - restore 84.0 ms median, pin refused 1, warm 3/3, cold 0/3, control 0 leaks -
+plus three lines the earlier runs could not have produced:
+
+| measure | result | verdict |
+|---|---|---|
+| M2 warm, first rep | 2,054 ms, cache_n 0 | a never-seen conversation still pays full prefill |
+| M2 warm, reps 2-3 + M2d fresh | **72-77 ms, cache_n 2,719** | the SAME question returns from the parked copy - the cache's parking, earned |
+| M3 right-file warm, 3 reps | 2,719, then **0, 0** (1,945/1,941 ms) | the park is OPPORTUNISTIC: the M3 control's foreign conversations and save churn evicted it (engine: evictions=83) - reuse returns only while parked |
+| M2d continuation | 2,085 ms, **cache_n 0** | unmuted continuation reuse is CONDITIONAL on a byte-identical recall block - see below |
+
+(The venue asks the same gold prompt 7 times unmuted; the record shows park hits while the
+park holds and full prefills after eviction, in the same run - both halves in one jsonl.)
+
+The continuation line flipped run 3's (2,871 back) because the mechanism was always gated on
+the block, and the block is inside the system message: the follow-up ("Name one color") recalls
+its own 8 notes, and when that set differs from the gold question's set, the shared prefix dies
+at the system message and everything re-reads. The venue's own token arithmetic proves the
+block changed: cont - fresh = 3,543 - 2,726 = 763 tokens, ~720 more than the two turns alone
+account for; boot 15's identical-shape probe (A2 - A1 = 490 = turn tokens exactly) had
+byte-identical blocks and gave back 2,820. A store reshuffle between boots (the merge round:
+94 restores, 145 retirements) was enough to flip the outcome. So run 3's 2,871 was real but
+lucky, and the honest claim is: **continuation reuse works when the block holds; the block
+placement, not the engine, decides.** The named lever - moving the volatile block to the
+prompt tail so the prefix never depends on recall luck - is promoted from the boot-15 demotion
+with this measured cost (~1.5 s per follow-up turn when the block moves) and still needs its
+own behavior venue before it moves.
+
 **Machine:** dev box, engine 0.1.43.1, RTX 4090, cartridge `MEM-CRG-3af0d3bd.bin`
 (21 standing facts, 247 MB, USR+DEC shelves). Sweep timer stopped for the runs and
 restored after. Raw records: `venue-20261013-run3.jsonl[.metrics.json]` and

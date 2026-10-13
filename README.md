@@ -24,8 +24,14 @@ Status, October 2026 — the text tier is live on the dev server and the K/V tie
   engine resume extends only the same conversation (one adjacent probe gave back 2,871 tokens,
   1,837 ms → 599 ms); the RAM-side conversation cache was then measured doing its own version of
   that trick per conversation (~13 ms parked-state returns, 1,989 ms → 705 ms) but not across
-  conversations. The earned claims are fast slot reload, pin-verified provenance, and standing text
-  ahead of the volatile recall block; nothing here claims prefill skipped per conversation.
+  conversations. And the same quiet venue showed continuation reuse is **conditional on the
+  recall block**: when an unmuted follow-up recalled a different byte-identical block the pair
+  resumed; when it recalled a different one (a store reshuffle between boots was enough), the
+  conversation re-read all 3,543 tokens - the block rides in the system message, so one changed
+  note invalidates the whole prefix. Block placement - moving the volatile text to the prompt
+  tail so the prefix stops depending on recall luck - is the named next lever, with its own
+  behavior venue. The earned claims today are fast slot reload, pin-verified provenance, and
+  parked repeats; nothing here claims prefill skipped per conversation.
   Protocol and raw records: `spikes/cartridge/M3C_PRE_REG.md`.
 - **Phase 2, state-without-text (open research):** porting the *AKBASCORE MAM / NIRVANA cognitive
   cartridge* idea — knowledge stored as model-produced K/V (v1.3.0 "CUT3": 56 tensors per fact, one
