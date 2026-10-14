@@ -41,6 +41,10 @@ production up only ~5 GiB is free — so **exactly one engine runs at a time**:
   src=1e0c97588848ea0f` at v0.1.42 — this checkout's source recompiled for the RTX 4090. `build/` is not
   copied (CMake caches are path-baked); first C++ work regenerates it (nvcc wants production down: ~1-2 GiB
   per parallel job against ~5 GiB spare).
+- **`.venv` was copied too, and a copied venv keeps the ORIGINAL interpreter shebang**: `.venv/bin/pip` runs
+  production's pip and installs into `~/Strata/.venv` (this bit the PHASE 4 install on 2026-10-14; the two
+  stray packages were uninstalled from production the same day, it runs the pinned release set again). Use
+  `.venv/bin/python -m pip install …` — `-m` resolves against the venv that owns the interpreter.
 - Engine config: `strata-dev.json` (git-ignored per upstream convention), port **8005**, same tuning args as
   production plus the config key `"slot_save_path": "Strata-data/sessions-dev"`. Note: `--slot-save-path` is a
   **server** flag / config key — the *engine* binary rejects it (`unknown argument`, found on the first dev
@@ -518,6 +522,67 @@ completed question-repeats exactly, and no line was lost beyond the crashed repe
 Records: `spikes/lme/oracle-20261013-full.jsonl` (+ `.map`, `.metrics.json`); rerun with
 `python3 tools/lme_harness.py --data <oracle.json> --repeats 3 --style con --muted-control
 --out <out.jsonl>` and aggregate with `python3 tools/lme_report.py <out.jsonl>`.
+
+## Semantic recall — the bge-small hybrid layer (added 2026-10-14, PHASE 4; opt-in)
+
+**Why.** The temporal diagnostic (`spikes/lme/TEMPORAL_DIAG.md`) split the 0.433 row by cause: 61 of 127
+temporal questions are persistently wrong, 25 always refuse, and 20 of those refused **with an answer row in
+the block**. The mechanism is evidence COVERAGE — an ordering question needs three dated events and lexical
+recall proposes the one that shares the question's rare words. This layer is the retrieval half of the fix;
+the budget half is arm C.
+
+**What ships.** `serve/embedder.py`: BAAI/bge-small-en-v1.5 (MIT, 33M params, 384 dims) through ONNX Runtime
+on **CPU only** — the GPU belongs to the engine. `memory.search()` keeps FTS5 bm25 as the candidate generator
+and UNIONs the cosine top over every embedded active row. At this store's size a full cosine scan is the
+honest design: 2,521 rows scan in ~1 ms, so an ANN index would be more machinery than math.
+
+```
+"memory": { "embedder": {"dir": "Strata-data/embeddings/bge-small-en-v1.5", "threads": 4} }
+```
+
+plus `python3 tools/m4_embed.py --dir <store-dir>` once, to backfill rows written before it. Absent means
+lexical-only and **byte-identical to every earlier release**: the module is imported lazily and
+`onnxruntime`/`tokenizers` are deliberately NOT in `requirements.txt` — they live in
+`requirements-embedder.txt` (pinned, opt-in), so a checkout that never sets `embedder` installs exactly what
+it installed last release.
+
+- **Model files are pinned by SHA-256** (`SHA256SUMS` beside them: `model.onnx 828e1496…`, `tokenizer.json
+  d241a60d…`). A mismatch **raises at startup** rather than warning — a silently swapped embedder silently
+  changes every ranking in the store. Any other load failure DEGRADES instead: the banner and `stats()` say
+  `embedder FAILED - lexical only: <error>` and bm25 keeps answering, because a missing model file must never
+  take the memory down.
+- **Vectors ride the store**: `embeddings(id, vec)` inside `memory.db`, so the existing at-rest seal covers
+  them with no new key handling. `remember()` embeds at write (measured 3 ms per note, outside the lock);
+  `forget()` and budget eviction delete the vector with the row; `correct()` inherits coverage because it
+  writes through `remember()`.
+- **A running server notices a backfill** with no restart: `_vec_matrix` rebuilds when a write dirties it OR
+  when the embedded-row count moves.
+- **Fusion is by rank, not by score.** The first version blended raw cosine into the bm25 blend
+  (0.55 cos / 0.20 rank / 0.25 recency / 0.10 confidence) and the reach probe (`tools/m4_reach.py`, live
+  2,521-row store) caught what that does: a rank-1 exact-lexical answer fell to **14th**, because a store
+  that size holds dozens of rows at cos 0.5–0.6 on any topical query. Reciprocal-rank fusion (k=60) on the
+  same probes: rank 1 stays **1**, two probes improve (17→4, 7→3), and a row lexical recall never proposed
+  at all now lands at 37 — inside a 96-note block, where before it did not exist. Recency and confidence
+  survive as tie-breakers only: their terms total ≤ 1.1e-5, under the 3.1e-5 RRF step at rank 120, so inside
+  the window that decides the block they break ties and never cross a rank step.
+
+**Cost, measured 2026-10-14 on the 2,521-row dev store (CPU, limit 96, warm):** lexical recall 52 ms, hybrid
+137 ms, embed-at-write 3 ms, first recall after a write 75 ms / 169 ms (the caches legitimately rebuild). The
+embedder's ~85 ms delta is almost entirely the near-dupe pass reading a wider candidate list — the cosine math
+is ~1 ms. Against a 12k-token first turn (~8.5 s at the measured 1,400 tok/s) that is ~1.6%.
+
+**Found on the way (shipped, both modes).** `_dedupe` rebuilt the whole-store token table, document
+frequencies and the rare-token bar on EVERY recall, and recomputed payloads per PAIR inside its loop (profiled:
+2.5M generator calls, 0.9 s of tottime across five recalls). It now caches that table keyed by
+`(count, max rowid, max updated_at)` of the active rows — every write path in this project bumps one of the
+three — and memoizes payloads per row. Output is unchanged row for row: a 10-query × 2-mode snapshot of 1,920
+ordered rows diffed clean before/after. The shipped lexical path went 126 ms → 52 ms warm.
+
+**Venue law.** The embedder is its own axis, so the venue measures it separately: **C1** = 192 notes / 48k
+chars, lexical (directly comparable to arm B's 0.721), **C2** = the same budget with the embedder ON. C1 − B
+is the budget delta, C2 − C1 is the retrieval delta. The venue store needs `tools/m4_embed.py` over its ~13k
+rows before C2 (~90 s at the measured 151 rows/s). The reach probe is mechanism evidence on real rows, **not**
+a benchmark claim; the accuracy claim comes from the venue record, at temp 0.8/1.0 over ≥3 repeats.
 
 ## Licensing and attribution
 

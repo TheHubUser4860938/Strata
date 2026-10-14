@@ -1,0 +1,17 @@
+# Optional packages for the memory store's semantic recall (memory.embedder, PHASE 4). setup.py
+# does NOT install this file: the feature is opt-in and serve/embedder.py is imported lazily, so a
+# checkout that never sets "embedder" keeps the base install exactly its pinned size. To turn it on:
+#   .venv/bin/python -m pip install -r requirements-embedder.txt
+# then add  "embedder": {"dir": "Strata-data/embeddings/bge-small-en-v1.5"}  to the config's memory
+# block and run tools/m4_embed.py once to backfill rows written before it (docs/MEMORY_CORE.md).
+# CPU-only ONNX Runtime on purpose - the GPU belongs to the engine. The model files are a separate
+# download (133 MB) pinned by SHA-256 beside them; a swapped file raises at startup, it does not warn.
+# Pinned 2026-10-14 on Python 3.14 / Linux x86-64, the versions the reach probe was measured with.
+onnxruntime==1.31.0
+tokenizers==0.23.3
+
+# their dependencies (numpy is already in requirements.txt)
+flatbuffers==25.12.19
+packaging==26.3
+protobuf==7.36.2
+huggingface-hub==2.2.0

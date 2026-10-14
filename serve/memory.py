@@ -229,7 +229,7 @@ class MemoryService:
                  turn_recall_limit: int = 8, turn_block_chars: int = 2000,
                  max_memories: int = 0, dedup_recall: bool = True,
                  encrypt: bool = False, key_file: str = "", passphrase_env: str = "",
-                 tool: bool = False):
+                 tool: bool = False, embedder=None):
         self.directory = memory_dir(directory)      # absolute, created 0700 - same rules as slot_save_path
         self.db_path = os.path.join(self.directory, "memory.db")
         self.max_block_chars = max(200, int(max_block_chars))
@@ -247,6 +247,26 @@ class MemoryService:
         # executed by the SERVER (run_with_mcp) - every harness gets browsing with zero client wiring.
         # Off by default: no tool joins the request's list, the prompt bytes stay as they were.
         self.tool = bool(tool)
+        # PHASE 4 semantic layer (opt-in, 2026-10-14): an embedder INSTANCE (duck-typed on
+        # embed_query/embed_docs - tests inject stubs) or a config object {"dir": ..., "threads": ...}
+        # that builds serve.embedder.Embedder here. Absent = lexical-only recall, byte-identical to
+        # every earlier release. A failed load DEGRADES loudly - bm25 keeps answering, stats() carries
+        # the error - because a broken model file must never take the memory down.
+        self.embedder_error: str | None = None
+        if isinstance(embedder, dict) and embedder:
+            try:
+                from .embedder import Embedder
+                embedder = Embedder(embedder.get("dir") or "", threads=int(embedder.get("threads") or 4))
+            except Exception as exc:                        # missing file, pin mismatch, bad onnx...
+                self.embedder_error = f"{type(exc).__name__}: {str(exc)[:160]}"
+                embedder = None
+        self.embedder = embedder if embedder is not None else None
+        self._vmeta = None                                  # cached (ids, mat, scope, class, ...) or None
+        self._vdirty = True
+        self._ecount = -1
+        self._qc: "OrderedDict[str, object]" = OrderedDict()  # normalized query -> vector, capped at 128
+        self._dcache: dict | None = None                    # _dedupe's (toks, df, bar, payload memo)
+        self._dkey: tuple | None = None                     # active-row stamp the table was built at
         # near-dupe suppression at recall (measured on the live store 2026-10-12: the web venue watched
         # one Qwen3.8 fact take two of its eight slots; the store held FIVE phrasings of it). Off with
         # dedup_recall=False; the search() ranking itself is untouched - this only stops the same fact
@@ -321,6 +341,8 @@ class MemoryService:
                   INSERT INTO mem_fts(mem_fts, rowid, text) VALUES('delete', old.id, old.text);
                   INSERT INTO mem_fts(rowid, text) VALUES (new.id, new.text);
                 END;
+                CREATE TABLE IF NOT EXISTS embeddings(
+                  id INTEGER PRIMARY KEY, vec BLOB NOT NULL);
                 """)
             self.conn.commit()
             row = self.conn.execute("select value from meta where key='version'").fetchone()
@@ -369,6 +391,10 @@ class MemoryService:
         klass = class_name(klass) if klass else ""
         conf = 0.8 if confidence is None else max(0.0, min(1.0, float(confidence)))
         now = time.time()
+        # PHASE 4: embed OUTSIDE the lock (~5 ms CPU per note) so writes never serialize on the
+        # model; the blob rides the same commit as the row, so a crash leaves a row without a
+        # vector (honest: it stays recallable by bm25) - tools/m4_embed.py closes those gaps.
+        vec = self.embedder.embed_docs([text])[0] if self.embedder is not None else None
         with self.lock:
             same = self.conn.execute(
                 "select id, text, class from memories where scope=? and invalid_at is null", (scope,)).fetchall()
@@ -377,14 +403,21 @@ class MemoryService:
                 self.conn.execute(
                     "update memories set updated_at=?, confidence=max(confidence,?), class=? where id=?",
                     (now, conf, hit[2] or klass, hit[0]))
+                if vec is not None:   # text unchanged, but the row may predate the embedder
+                    self.conn.execute("insert or ignore into embeddings values(?,?)",
+                                      (hit[0], vec.tobytes()))
                 self.conn.commit()
                 self._touched()
+                self._vdirty = True
                 return {"id": hit[0], "deduped": True}
             cur = self.conn.execute(
                 "insert into memories(scope,text,source,provenance,confidence,created_at,updated_at,class)"
                 " values(?,?,?,?,?,?,?,?)",
                 (scope, text, str(source)[:40], json.dumps(provenance, ensure_ascii=False) if provenance else None,
                  conf, now, now, klass))
+            if vec is not None:
+                self.conn.execute("insert or replace into embeddings values(?,?)",
+                                  (cur.lastrowid, vec.tobytes()))
             evicted: list[int] = []
             if self.max_memories:
                 # the budget line: over cap, the worst NEVER-RECALLED rows go first (lowest confidence,
@@ -398,10 +431,12 @@ class MemoryService:
                         " order by confidence asc, created_at asc limit ?", (cur.lastrowid, over)).fetchall()
                     if gone:
                         self.conn.executemany("delete from memories where id=?", [(g[0],) for g in gone])
+                        self.conn.executemany("delete from embeddings where id=?", [(g[0],) for g in gone])
                         evicted = [g[0] for g in gone]
             self._bump()
             self.conn.commit()
             self._touched()
+            self._vdirty = True
             out = {"id": cur.lastrowid, "deduped": False}
             if evicted:
                 out["evicted"] = evicted
@@ -410,9 +445,11 @@ class MemoryService:
     def forget(self, memory_id: int) -> bool:
         with self.lock:
             gone = self.conn.execute("delete from memories where id=?", (int(memory_id),))
+            self.conn.execute("delete from embeddings where id=?", (int(memory_id),))
             self._bump()
             self.conn.commit()
             self._touched()
+            self._vdirty = True
             return gone.rowcount > 0
 
     def invalidate(self, memory_id: int, by_id: int | None = None) -> bool:
@@ -502,6 +539,43 @@ class MemoryService:
                              "is", "are", "was", "were", "do", "does", "did", "can", "could", "in",
                              "on", "at", "from", "name", "identify", "list", "state", "tell", "given")
 
+    def _dedupe_tables(self) -> dict:
+        """The whole-store token table, its document frequencies and the rare-token bar that
+        _dedupe reads. They depend on nothing but the ACTIVE row set, so they are cached and
+        rebuilt only when that set moves. The key is (count, max rowid, max updated_at) of the
+        active rows, which catches every write this server makes: an insert or an eviction moves
+        the count, an edit bumps updated_at, an invalidation moves the count. Measured at build
+        (2026-10-14, the 2,521-row dev store, RTX 4090 box, CPU, limit 96): rebuilding the table
+        per recall cost most of the 126 ms a lexical recall took; cached, the same recall measures
+        52 ms warm (75 ms right after a write, when the table legitimately rebuilds) and the output
+        is unchanged row for row - a 10-query x 2-mode snapshot of 1,920 ordered rows diffed clean.
+        An outside editor that rewrote a row's text WITHOUT bumping updated_at would keep the
+        older table a while - the effect is the rare-token bar for one pair, not correctness, and
+        every writer in this project (the API, the sweep, tools/m2_merge) bumps the stamp.
+
+        The bar cap is the 2026-10-12 airport lesson: at 2,384 rows the uncapped relative bar hit
+        47, which made a 6-row sub-corpus's OWN connectives (faa/location/identifier/municipal,
+        df 6) look rare, and recall collapsed Westhope/Pruetz/Arthur into one slot. The read path
+        caps at 5 - a missed merge costs one slot, a false collapse HIDES a fact with no human to
+        spot it; the merge tool (tools/m2_merge) keeps the uncapped relative bar because there a
+        human vetoes every group before anything retires."""
+        with self.lock:
+            key = tuple(self.conn.execute(
+                "select count(*), coalesce(max(rowid),0), coalesce(max(updated_at),0.0)"
+                " from memories where invalid_at is null").fetchone())
+            if self._dcache is not None and self._dkey == key:
+                return self._dcache
+            rows = self.conn.execute(
+                "select id, text from memories where invalid_at is null").fetchall()
+        toks = {r[0]: set(norm_text(r[1]).split()) for r in rows}
+        df: dict[str, int] = {}
+        for s in toks.values():
+            for t in s:
+                df[t] = df.get(t, 0) + 1
+        tab = {"toks": toks, "df": df, "bar": max(3, min(len(toks) // 50, 5)), "pay": {}}
+        self._dcache, self._dkey = tab, key
+        return tab
+
     def _dedupe(self, hits: list[dict]) -> list[dict]:
         """Near-dupe suppression for the ranked candidates (measured 2026-10-12: five rows phrased the
         same Qwen3.8 fact; the web venue watched two of its eight slots go to it in one block). Three
@@ -518,35 +592,34 @@ class MemoryService:
         (the 2026-10-12 airport cascade at 2,384 rows). The read path caps; the merge tool does not.
         A question and its answer collide under these rules; the declarative always wins the slot,
         whoever ranked higher."""
-        with self.lock:
-            rows = self.conn.execute(
-                "select id, text from memories where invalid_at is null").fetchall()
-        toks = {r[0]: set(norm_text(r[1]).split()) for r in rows}
-        df: dict[str, int] = {}
-        for s in toks.values():
-            for t in s:
-                df[t] = df.get(t, 0) + 1
-        bar = max(3, min(len(toks) // 50, 5))
-        # the cap is the 2026-10-12 airport lesson: at 2,384 rows the uncapped relative bar hit 47,
-        # which made a 6-row sub-corpus's OWN connectives (faa/location/identifier/municipal, df 6)
-        # look rare, and recall collapsed Westhope/Pruetz/Arthur into one slot. The read path caps
-        # at 5 - a missed merge costs one slot, a false collapse HIDES a fact with no human to spot
-        # it; the merge tool (tools/m2_merge) keeps the uncapped relative bar because there a human
-        # vetoes every group before anything retires.
-        def payload(ts):
-            return frozenset(t for t in ts if t not in STOP and df.get(t, 0) <= bar) if ts else frozenset()
+        tab = self._dedupe_tables()
+        toks, pays = tab["toks"], tab["pay"]
+
+        def payload(row_id: int) -> frozenset:
+            """The rare-token payload of a ROW, memoized for the life of the table. The first
+            version recomputed it for every PAIR inside the loop below (profiled 2026-10-14:
+            2.5M genexpr calls and 0.9 s of tottime per five recalls) - the answer depends only
+            on the row's tokens and the table's df, so once per row is the same answer."""
+            p = pays.get(row_id)
+            if p is None:
+                ts = toks.get(row_id)
+                p = frozenset(t for t in ts if t not in STOP and tab["df"].get(t, 0) <= tab["bar"]) \
+                    if ts else frozenset()
+                pays[row_id] = p
+            return p
+
         kept: list[dict] = []
         for h in hits:
             ts = toks.get(h["id"])
             if ts is None:                                  # row vanished mid-search: keep it, harmless
                 kept.append(h)
                 continue
-            pay = payload(ts)
+            pay = payload(h["id"])
             clash = None
             for k in kept:
                 kts = toks.get(k["id"], set())
                 union = ts | kts
-                kpay = payload(kts)
+                kpay = payload(k["id"])
                 if (union and len(ts & kts) >= 0.75 * len(union)) or (pay and pay == kpay) or (
                         pay and kpay and len(pay & kpay) >= 4):
                     clash = k
@@ -599,12 +672,14 @@ class MemoryService:
         since/until (2026-10-12, the Primnox date-index lesson): epoch-seconds bounds on created_at.
         "When did we decide X" and "what did we know last month" are episodic questions, and every row
         already carries its stamp - filtering on it is the date index. Both None (every request today)
-        keeps the ranking byte-identical to before."""
+        keeps the ranking byte-identical to before. With an embedder configured (PHASE 4) the bm25 set
+        is UNIONed with a cosine pass over every embedded active row - see _semantic."""
         limit = self.recall_limit if limit is None else max(1, min(120, int(limit)))
+        # PHASE 4: with an embedder configured, a query bm25 CANNOT serve is exactly the case the
+        # cosine pass exists for (spikes/lme/TEMPORAL_DIAG.md: multi-evidence rows that share no rare
+        # word with the question). Embedder OFF keeps both early returns untouched - byte-identical.
         words = WORD_RE.findall(query.lower())[:MAX_QUERY_WORDS]
-        if not words:
-            return []
-        match = " OR ".join(f'"{w}"' for w in words)
+        match = " OR ".join(f'"{w}"' for w in words) if words else None
         scopes = [USER_SCOPE]
         s = scope_name(scope)
         if s != USER_SCOPE:
@@ -623,14 +698,16 @@ class MemoryService:
             if v is not None:
                 bounds += f" and m.created_at {cmp_op} ?"
                 bparams.append(float(v))
-        with self.lock:
-            rows = self.conn.execute(
-                f"select m.id, m.scope, m.text, m.confidence, m.updated_at, m.class, bm25(mem_fts) as r"
-                " from mem_fts join memories m on m.id = mem_fts.rowid"
-                " where mem_fts match ? and m.invalid_at is null and m.scope in ("
-                + ",".join("?" * len(scopes)) + ")" + shelf + bounds
-                + " order by r limit ?", [match] + scopes + prefixes + bparams + [limit * 3]).fetchall()
-        if not rows:
+        rows: list = []
+        if match:
+            with self.lock:
+                rows = self.conn.execute(
+                    f"select m.id, m.scope, m.text, m.confidence, m.updated_at, m.class, bm25(mem_fts) as r"
+                    " from mem_fts join memories m on m.id = mem_fts.rowid"
+                    " where mem_fts match ? and m.invalid_at is null and m.scope in ("
+                    + ",".join("?" * len(scopes)) + ")" + shelf + bounds
+                    + " order by r limit ?", [match] + scopes + prefixes + bparams + [limit * 3]).fetchall()
+        if not rows and self.embedder is None:
             return []
         k = len(rows)
         now = time.time()
@@ -640,12 +717,144 @@ class MemoryService:
             score = 0.75 * ((k - pos) / k) + 0.25 * fresh + 0.10 * r[3]
             out.append(dict(id=r[0], scope=r[1], text=r[2], score=round(score, 4), **{"class": r[5]}))
         out.sort(key=lambda x: -x["score"])
+        if self.embedder is not None:
+            out = self._semantic(out, query, scopes, classes, since, until, limit)
+            out.sort(key=lambda x: -x["score"])
         if self.dedup_recall:
             out = self._dedupe(out)
         hits = out[:limit]
         if hits:
             self._seen([h["id"] for h in hits])
         return hits
+
+    def _vec_matrix(self):
+        """(ids, mat, scope, class, created, updated, conf) for every ACTIVE row that carries a
+        vector, cached; rebuilt when a write dirtied it OR the embedded-count moved (a backfill ran
+        beside a live server - the count check is what notices without a restart). At this store's
+        scale a full cosine scan is the honest design: ~1 ms per 2.5k rows measured at build, so an
+        ANN index would be more machinery than math; a 100k-row store is the point to revisit, and
+        stats() will have said so long before."""
+        import numpy as np
+        with self.lock:
+            n = self.conn.execute("select count(*) from embeddings").fetchone()[0]
+            if self._vmeta is not None and not self._vdirty and n == self._ecount:
+                return self._vmeta
+            rows = self.conn.execute(
+                "select m.id, e.vec, m.scope, coalesce(m.class,''), m.created_at, m.updated_at, m.confidence"
+                " from embeddings e join memories m on m.id = e.id where m.invalid_at is null"
+                " order by m.id").fetchall()
+        if not rows:
+            self._vmeta, self._vdirty, self._ecount = None, False, n
+            return None
+        mat = np.stack([np.frombuffer(r[1], dtype=np.float32) for r in rows])
+        meta = {"ids": np.array([r[0] for r in rows]), "mat": mat,
+                "ix": {int(r[0]): n for n, r in enumerate(rows)},   # id -> row, for the fusion pass
+                "scope": np.array([r[2] for r in rows], dtype="U24"),
+                "class": np.array([r[3] for r in rows], dtype="U24"),
+                "created": np.array([r[4] for r in rows], dtype=np.float64),
+                "updated": np.array([r[5] for r in rows], dtype=np.float64),
+                "conf": np.array([r[6] for r in rows], dtype=np.float32)}
+        self._vmeta, self._vdirty, self._ecount = meta, False, n
+        return meta
+
+    def _embed_query_cached(self, query: str):
+        key = norm_text(query)
+        hit = self._qc.get(key)
+        if hit is not None:
+            self._qc.move_to_end(key)
+            return hit
+        try:
+            vec = self.embedder.embed_query(query)
+        except Exception:
+            return None                                   # a broken query embed degrades to lexical
+        self._qc[key] = vec
+        while len(self._qc) > 128:
+            self._qc.popitem(last=False)
+        return vec
+
+    def _semantic(self, cands: list[dict], query: str, scopes, classes,
+                  since, until, limit: int) -> list[dict]:
+        """PHASE 4 hybrid pass: bm25 candidates UNION the cosine top over every embedded active row.
+        The UNION is the point - the temporal diagnostic (spikes/lme/TEMPORAL_DIAG.md) showed
+        multi-evidence questions whose remaining events FTS never proposes because they share no
+        rare word with the question; cosine finds them. The two lists merge by reciprocal-rank
+        fusion, NOT by mixing their score scales - the live-store reach probe (tools/m4_reach.py)
+        is the measurement behind that choice, spelled out where the fusion runs. Embedder OFF
+        never reaches this line: the shipped ranking stays byte-identical by construction."""
+        import numpy as np
+        meta = self._vec_matrix()
+        if meta is None:
+            return cands
+        qv = self._embed_query_cached(query)
+        if qv is None or qv.shape != meta["mat"].shape[1:]:
+            return cands
+        mask = np.isin(meta["scope"], list(scopes))
+        if classes:
+            shelf = np.zeros(len(meta["ids"]), dtype=bool)
+            for c in classes:
+                shelf |= np.char.startswith(meta["class"], c)
+            mask &= shelf
+        if since is not None:
+            mask &= meta["created"] >= float(since)
+        if until is not None:
+            mask &= meta["created"] <= float(until)
+        if not mask.any():
+            return cands
+        cos = meta["mat"] @ qv
+        order = np.argsort(-np.where(mask, cos, np.float32(-2.0)))[:limit * 3]
+        # RANK fusion (RRF, k=60, the standard constant): each list votes by POSITION, never by its
+        # own score scale. The first version of this pass blended raw cosine into the bm25 blend at
+        # 0.55/0.20, and the reach probe on the live store (tools/m4_reach.py, 2,520 rows, 2026-10-14)
+        # caught what that does: a rank-1 exact-lexical answer fell to 14th, because a store that size
+        # holds dozens of rows at cos 0.5-0.6 on any topical query. Fusing ranks keeps a lexical first
+        # place first and still lifts what BOTH lists want - the coverage the temporal diagnostic
+        # asked for, without paying for it in precision. Recency and confidence survive as
+        # TIE-BREAKERS only: their terms total at most 1.1e-5, under the RRF gap between adjacent
+        # ranks through the region where the cut actually lands (at rank 120 the step is
+        # 1/(180*181) = 3.1e-5), so inside the window that decides the block they can break a tie
+        # but never cross a rank step. Deeper than ~rank 150 the epsilon can outvote one step -
+        # rows that far down are never shown, and there the difference is noise either way. Rows
+        # without vectors (a store that never ran tools/m4_embed.py) get the lexical term alone with
+        # neutral tie-breakers - recallable, just never promoted by a vote it cannot cast.
+        rrf_k = 60.0
+        lex_rank = {c["id"]: i + 1 for i, c in enumerate(cands)}
+        by_id = {c["id"]: c for c in cands}
+        now = time.time()
+        cos_rank: dict[int, int] = {}
+        picked: list[int] = []
+        for cr, j in enumerate(order, start=1):
+            if not mask[j]:
+                continue
+            rid = int(meta["ids"][j])
+            cos_rank[rid] = cr
+            if rid not in by_id:
+                picked.append(rid)
+
+        def fused(lr: int | None, cr: int | None, upd: float, conf: float) -> float:
+            v = (1.0 / (rrf_k + lr) if lr else 0.0) + (1.0 / (rrf_k + cr) if cr else 0.0)
+            fresh = math.exp(-max(0.0, now - float(upd)) / 86400.0 / AGE_SCALE_DAYS)
+            return round(v + 1e-5 * fresh + 1e-6 * float(conf), 6)
+
+        for c in cands:
+            j = meta["ix"].get(c["id"])
+            lr, cr = lex_rank[c["id"]], cos_rank.get(c["id"])
+            upd, conf = (now, 0.8) if j is None else (float(meta["updated"][j]), float(meta["conf"][j]))
+            c["score"] = fused(lr, cr, upd, conf)
+        if picked:
+            with self.lock:
+                got = {r[0]: r for r in self.conn.execute(
+                    "select id, scope, text, coalesce(class,'') from memories where id in ("
+                    + ",".join("?" * len(picked)) + ")", picked)}
+            for rid in picked:
+                r = got.get(rid)
+                if r is None:
+                    continue                            # the row went away between scan and fetch
+                j = meta["ix"][rid]                     # picked rows came from the cosine list: they have vectors
+                cands.append(dict(id=rid, scope=r[1], text=r[2],
+                                  score=fused(None, cos_rank.get(rid),
+                                              float(meta["updated"][j]), float(meta["conf"][j])),
+                                  **{"class": r[3]}))
+        return cands
 
     def _seen(self, ids: list[int]) -> None:
         now = time.time()
@@ -813,7 +1022,14 @@ class MemoryService:
                 "recall_limit": self.recall_limit, "max_block_chars": self.max_block_chars,
                 "per_turn": self.per_turn, "turn_recall_limit": self.turn_recall_limit,
                 "turn_block_chars": self.turn_block_chars,
-                "pinned_blocks": len(self._blocks), "db": self.db_path}
+                "pinned_blocks": len(self._blocks),
+                "embedder": ({"on": True, "loaded": True,
+                              "model": getattr(self.embedder, "model_name", type(self.embedder).__name__),
+                              "vectors": len(self._vmeta["ids"]) if self._vmeta else 0}
+                             if self.embedder is not None else
+                             ({"on": True, "loaded": False, "error": self.embedder_error}
+                              if self.embedder_error else {"on": False})),
+                "db": self.db_path}
 
     def close(self) -> None:
         with self.lock:

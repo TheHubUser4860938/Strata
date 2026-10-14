@@ -986,5 +986,135 @@ class EncryptionAtRest(unittest.TestCase):
             plain.close()
 
 
+class DedupeCache(unittest.TestCase):
+    """The near-dupe table (store tokens, document frequencies, the rare-token bar) is cached
+    across recalls and rebuilt when the ACTIVE row set moves. A cache that never refreshed would
+    quietly freeze the bar; rebuilding every time is what the recall path used to cost - measured
+    2026-10-14 on the 2,521-row store: 126 ms -> 52 ms warm, output identical row for row."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.mem = MemoryService(self.tmp.name)
+
+    def tearDown(self):
+        self.mem.close()
+        self.tmp.cleanup()
+
+    def test_table_rebuilds_when_the_store_moves(self):
+        self.mem.remember("the flibber gauge reads torque at the works")
+        self.mem.search("flibber gauge torque")
+        first = self.mem._dkey
+        self.assertIsNotNone(first, "the first recall must have built the table")
+        self.mem.search("flibber gauge torque")
+        self.assertEqual(self.mem._dkey, first, "an unbroken read path reuses the table")
+        self.mem.remember("a second fact about the airport cascade")
+        self.mem.search("flibber gauge torque")
+        self.assertNotEqual(self.mem._dkey, first, "a write must move the stamp and rebuild")
+
+    def test_near_dupe_pair_collapses_after_the_second_write(self):
+        # the collapse needs the table to know BOTH rows; a stale table would hand the pair two slots
+        self.mem.remember("the flibber gauge reads torque at the works")
+        self.mem.search("flibber gauge")
+        self.mem.remember("the flibber gauge reads torque at the works every morning")
+        hits = self.mem.search("flibber gauge")
+        both = [h for h in hits if "flibber gauge" in h["text"]]
+        self.assertEqual(len(both), 1,
+                         "the second phrasing must collapse into one slot, not take a second")
+
+    def test_the_memo_dies_with_the_table(self):
+        # payloads are memoized per row for the life of the table; a rebuild must not inherit them
+        # (a fresh table can carry a different df, and the payload is defined by that df)
+        self.mem.remember("the flibber gauge reads torque at the works")
+        self.mem.search("flibber gauge")
+        tab = self.mem._dcache
+        self.assertTrue(tab["pay"], "the recall should have memoized payloads")
+        self.mem.remember("totally unrelated trivia about Itasca county")
+        self.mem.search("flibber gauge")
+        self.assertIsNot(tab, self.mem._dcache, "the rebuild returns a NEW table")
+        self.assertTrue(self.mem._dcache["pay"], "the new table memoizes afresh")
+
+
+class StubEmbedder:
+    """Duck-typed embedder with hand-built vectors per exact text (zeros for anything else):
+    tests the hybrid PLUMBING - union, filters, lifecycle, stats - with no onnxruntime and no
+    model file. The model itself is pinned and smoked in serve/test_embedder.py."""
+
+    def __init__(self, pairs):
+        import numpy as np
+        self.map = {t: np.array(v, dtype=np.float32) for t, v in pairs.items()}
+        self.dim = len(next(iter(self.map.values())))
+        self.model_name = "stub"
+
+    def embed_docs(self, texts):
+        import numpy as np
+        return np.stack([self.map.get(t, np.zeros(self.dim, np.float32)) for t in texts])
+
+    def embed_query(self, q):
+        import numpy as np
+        return self.map.get(q, np.zeros(self.dim, np.float32))
+
+
+class SemanticRerank(unittest.TestCase):
+    """PHASE 4 hybrid recall (spikes/lme/TEMPORAL_DIAG.md is the failure study): cosine UNIONs
+    candidates bm25 never proposes; embedder OFF stays byte-identical by never entering the pass."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        v = [1.0, 0.0, 0.0, 0.0]
+        self.stub = StubEmbedder({"glimmery": v, "zebra flibberquant gauge": v,
+                                  "unrelated town trivia": [0.0, 0.0, 1.0, 0.0]})
+        self.mem = MemoryService(self.tmp.name, embedder=self.stub)
+
+    def tearDown(self):
+        self.mem.close()
+        self.tmp.cleanup()
+
+    def test_semantic_finds_what_fts_never_proposes(self):
+        self.mem.remember("zebra flibberquant gauge")           # shares NO word with the query
+        hits = self.mem.search("glimmery")
+        self.assertTrue(hits, "the cosine pass must UNION a row bm25 cannot match")
+        self.assertEqual(hits[0]["text"], "zebra flibberquant gauge")
+        self.assertEqual(self.mem.stats()["embedder"]["vectors"], 1)
+
+    def test_without_embedder_the_same_store_misses(self):
+        plain = MemoryService(self.tmp.name + "2")
+        try:
+            plain.remember("zebra flibberquant gauge")
+            self.assertEqual(plain.search("glimmery"), [])      # the old behavior, preserved
+            self.assertFalse(plain.stats()["embedder"]["on"])
+        finally:
+            plain.close()
+
+    def test_forget_takes_the_vector_with_it(self):
+        r = self.mem.remember("zebra flibberquant gauge")
+        self.assertTrue(self.mem.search("glimmery"))
+        self.mem.forget(r["id"])
+        self.assertEqual(self.mem.search("glimmery"), [])
+
+    def test_scope_filter_holds_for_the_semantic_pass_too(self):
+        self.mem.remember("zebra flibberquant gauge", scope="otherproject")
+        self.assertEqual(self.mem.search("glimmery", scope="default"), [],
+                        "a semantic hit outside the request's scopes must not leak in")
+
+    def test_class_filter_holds_for_the_semantic_pass_too(self):
+        self.mem.remember("zebra flibberquant gauge", klass="TECH")
+        self.assertTrue(self.mem.search("glimmery", classes=["TECH"]), "shelved row answers its shelf")
+        self.assertEqual(self.mem.search("glimmery", classes=["USR"]), [],
+                        "a shelf query must not borrow from another shelf just because cosine agrees")
+
+    def test_failed_embedder_load_degrades_loudly_not_fatal(self):
+        tmp = tempfile.TemporaryDirectory()
+        try:
+            m = MemoryService(tmp.name, embedder={"dir": tmp.name + "/missing-model"})
+            self.assertIsNone(m.embedder)
+            self.assertTrue(m.embedder_error)                   # stats() says so out loud
+            m.remember("a plain fact")
+            self.assertEqual(m.search("plain")[0]["text"], "a plain fact")  # bm25 keeps serving
+            self.assertFalse(m.stats()["embedder"]["loaded"])
+            m.close()
+        finally:
+            tmp.cleanup()
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
