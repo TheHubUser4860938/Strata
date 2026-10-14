@@ -490,6 +490,25 @@ sessions); the scoped design makes session-level recall trivially high; and the 
 The claim is precise: on the official questions, with the official checker, this memory answers
 0.68-0.69 correctly and is honest about not knowing 98% of the time it cannot see the fact.
 
+**Budget A/B (same store, same questions, same protocol - only the head budget moves).** The
+first run injected 48 notes / 12,000 chars; the second arm injected **96 notes / 24,000 chars**
+(~6k-token head). Result: **accuracy 0.683 -> 0.721 per line, 0.694 -> 0.732 by majority** -
++3.8 points, far beyond the per-repeat noise band (arm B's repeats: 363/364/355 of 500, arm A's
+342/336/347). Where it came from: **multi-session 0.639 -> 0.744** and **abstention 0.667 ->
+0.778** - more of the haystack visible per ask means more cross-session links found AND more
+"the fact is genuinely not here" recognized; assistant +4.7, preference +2.2, knowledge-update
++1.8. The one regression is single-session-user 0.953 -> 0.911 (net -8 of 192 - plausible
+distractor cost of a bigger block on the easiest questions; flagged, not yet explained).
+Temporal-reasoning moved 0.425 -> 0.433: budget does not touch the day-arithmetic weakness.
+The honesty controls are identical (98.7% idk, same 2/1,500 leaks), the recall lines are
+unchanged by construction (retrieval is scored independently of the injection budget - the
+built-in sanity check passed), and the cost is conversation-start only: with the head pinned,
+the doubled block adds ~2.3 s to the FIRST turn of a conversation (~1,400 tok/s measured) and
+zero to every follow-up (continuation reuse measured 100%, same evening). The dev config now
+ships 96/24k; the code defaults (8 notes / 6k chars) are untouched - this is opt-in, measured.
+Records: `spikes/lme/budget24k-20261014-full.jsonl` (the map sidecar is shared with the first
+run - same questions, `--skip-ingest` answers-only arm).
+
 Venue incidents, filed because the class matters: the run crashed three times - the store's
 4,000-char single-fact cap met long haystack turns (`535d247b` chunking, every chunk carries the
 turn's gold), and 32 of the 500 questions carry **int** answers, which bit the judge template and

@@ -41,11 +41,17 @@ engine logs.
 6. **Memory UI (D).** `/memory-ui` + `/web/memory.js` served live (200s verified, boot 14): stats,
    search, forget, re-seed.
 7. **Benchmark (F).** LongMemEval-V1 oracle, all 500 official questions x 3 repeats, the benchmark's
-   own checker prompt verbatim, judge model local (disclosed): **accuracy 0.683 per line, 0.694 by
-   question majority**, per-repeat 342/336/347. Muted control: **98.4% `idk`, gold leaks 2/1,500
-   (0.13%)**. By type: single-session-user 0.953, single-session-assistant 0.905, preference 0.878,
-   knowledge-update 0.727, abstention 0.667, multi-session 0.639, temporal-reasoning 0.425 (the
-   known weak spot: day arithmetic over injected dates). Records: `spikes/lme/oracle-20261013-full.*`.
+   own checker prompt verbatim, judge model local (disclosed). Two arms, same store and protocol,
+   one axis (head injection budget): at 48 notes / 12k chars accuracy is **0.683 per line, 0.694 by
+   majority**; at the now-shipped **96 notes / 24k chars** it is **0.721 / 0.732** (per-repeat
+   363/364/355) - the +3.8 is far outside the noise band and comes from multi-session (0.639 ->
+   0.744) and abstention (0.667 -> 0.778). Muted control at both budgets: **98.4-98.7% `idk`, gold
+   leaks 2/1,500 (0.13%)**. By type (24k arm): assistant 0.952, user 0.911, preference 0.900,
+   abstention 0.778, knowledge-update 0.745, multi-session 0.744, temporal-reasoning 0.433 (the
+   known weak spot: day arithmetic over injected dates - budget does not move it). The one
+   regression, user 0.953 -> 0.911, is flagged in `docs/MEMORY_CORE.md`. Cost is first-turn only
+   (pinned head): ~2.3 s at conversation start, zero per follow-up. Records:
+   `spikes/lme/oracle-20261013-full.*` (12k) and `spikes/lme/budget24k-20261014-full.*` (24k).
 
 ## What beta-1 does NOT claim
 

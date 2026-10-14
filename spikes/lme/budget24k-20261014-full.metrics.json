@@ -1,0 +1,80 @@
+{
+ "data": "/tmp/opencode/longmemeval/data/longmemeval_oracle.json",
+ "url": "http://127.0.0.1:8005",
+ "repeats": 3,
+ "recall_k": 10,
+ "muted_control": true,
+ "style": "con",
+ "questions": 500,
+ "lines": 1500,
+ "metrics": {
+  "lines": 1500,
+  "judge": "official LongMemEval checker prompt; local judge (same model, memory muted, temp 0, 10 tokens - paper-comparable decoding, non-paper model)",
+  "overall": {
+   "turn_top1": 0.504,
+   "turn_top3": 0.749,
+   "session_top1": 1.0,
+   "session_top3": 1.0,
+   "accuracy": 0.721,
+   "idk_rate": 0.186
+  },
+  "by_type": {
+   "abstention": {
+    "turn_top1": null,
+    "turn_top3": null,
+    "session_top1": null,
+    "session_top3": null,
+    "accuracy": 0.778,
+    "idk_rate": 0.789
+   },
+   "knowledge-update": {
+    "turn_top1": 0.625,
+    "turn_top3": 0.861,
+    "session_top1": 1.0,
+    "session_top3": 1.0,
+    "accuracy": 0.745,
+    "idk_rate": 0.111
+   },
+   "multi-session": {
+    "turn_top1": 0.421,
+    "turn_top3": 0.711,
+    "session_top1": 1.0,
+    "session_top3": 1.0,
+    "accuracy": 0.744,
+    "idk_rate": 0.061
+   },
+   "single-session-assistant": {
+    "turn_top1": 0.304,
+    "turn_top3": 0.589,
+    "session_top1": 1.0,
+    "session_top3": 1.0,
+    "accuracy": 0.952,
+    "idk_rate": 0.054
+   },
+   "single-session-preference": {
+    "turn_top1": 0.4,
+    "turn_top3": 0.667,
+    "session_top1": 1.0,
+    "session_top3": 1.0,
+    "accuracy": 0.9,
+    "idk_rate": 0.111
+   },
+   "single-session-user": {
+    "turn_top1": 0.672,
+    "turn_top3": 0.859,
+    "session_top1": 1.0,
+    "session_top3": 1.0,
+    "accuracy": 0.911,
+    "idk_rate": 0.073
+   },
+   "temporal-reasoning": {
+    "turn_top1": 0.543,
+    "turn_top3": 0.756,
+    "session_top1": 1.0,
+    "session_top3": 1.0,
+    "accuracy": 0.433,
+    "idk_rate": 0.339
+   }
+  }
+ }
+}
