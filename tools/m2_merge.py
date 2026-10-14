@@ -126,6 +126,10 @@ def main():
     ap.add_argument("--exclude", default="", help="comma-separated loser ids to skip (the hand-"
                                                   "review veto: value-mismatch collisions like B390 "
                                                   "vs G3 share a predicate but are different facts)")
+    ap.add_argument("--only", default="", help="comma-separated row ids: run the law over THIS set "
+                                               "only (the shelf-cluster review in "
+                                               "tools/m4_shelves.py). Rarity and the rare-token bar "
+                                               "stay store-wide; only these rows may group.")
     a = ap.parse_args()
 
     conn = sqlite3.connect(a.db)
@@ -145,6 +149,17 @@ def main():
     uniq = [{t for t in d if df[t] <= 3} for d in docs]
     pays = [payload_of(d, df, bar) for d in docs]   # same payload the grouping matched on
 
+    if a.only:
+        # A targeted pass. The merge law runs UNCHANGED - grouping, survivor rule, subject and
+        # containment vetoes - but only the named rows are allowed to form a group. Rarity stays
+        # measured over the WHOLE store, because a payload's rare tokens are rare because of
+        # everything in the store, not because of the handful of phrasings under review.
+        allow = {int(x) for x in a.only.split(",") if x.strip()}
+        ix = [i for i, r in enumerate(rows) if r["id"] in allow]
+        if len(ix) != len(allow):
+            print(f"note: {len(allow) - len(ix)} of the {len(allow)} named ids are not active rows")
+        rows, docs, uniq, pays = ([rows[i] for i in ix], [docs[i] for i in ix],
+                                  [uniq[i] for i in ix], [pays[i] for i in ix])
     gr, skipped = groups(rows, df, bar)
     exclude = {int(x) for x in a.exclude.split(",") if x.strip()}
     drop, keep_ids, subject_vetoed, content_vetoed = [], [], 0, 0

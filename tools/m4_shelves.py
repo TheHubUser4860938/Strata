@@ -123,6 +123,9 @@ def main() -> int:
     ap.add_argument("--class", dest="klass", default=None,
                     help="cluster only this shelf ('wild' = unclassified)")
     ap.add_argument("--limit", type=int, default=12, help="clusters to print")
+    ap.add_argument("--full-ids", action="store_true",
+                    help="print EVERY id in a cluster - the --apply handoff needs the whole list, "
+                         "and six exemplar ids are not it")
     ap.add_argument("--apply", default=None, help="class to post with --ids instead of proposing")
     ap.add_argument("--ids", default="", help="comma-separated row ids for --apply")
     ap.add_argument("--url", default="http://127.0.0.1:8005")
@@ -171,7 +174,9 @@ def main() -> int:
         shelves = Counter(k for k in klasses if k)
         suggest = (f"{shelves.most_common(1)[0][0]}/<new>" if shelves
                    else "<new top class>")
-        print(f"\n  {len(ids):3d} rows  ids {ids[:6]}{'...' if len(ids) > 6 else ''}  "
+        id_txt = ",".join(str(i) for i in ids) if a.full_ids else \
+            f"{ids[:6]}{'...' if len(ids) > 6 else ''}"
+        print(f"\n  {len(ids):3d} rows  ids {id_txt}  "
               f"shelves here: {dict(Counter(klasses)) or 'all wild'}")
         terms = shared_terms(texts, df, a.min)
         term_txt = ", ".join(terms) if terms else (

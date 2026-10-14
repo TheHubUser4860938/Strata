@@ -614,6 +614,53 @@ is the budget delta, C2 − C1 is the retrieval delta. The venue store needs `to
 rows before C2 (~90 s at the measured 151 rows/s). The reach probe is mechanism evidence on real rows, **not**
 a benchmark claim; the accuracy claim comes from the venue record, at temp 0.8/1.0 over ≥3 repeats.
 
+**Write-time near-dupe guard (2026-10-14, embedder ON only — with the embedder off the write path is
+byte-identical).** One username policy became **57 rows in two days**: every sweep re-derives the same
+fact in new words and exact-text dedup sees none of them. So `remember()` now asks the store before it
+inserts, and the answer comes from the merge tool's law, not from the distance:
+
+- **Cosine only proposes.** Measured on the store that had just grown the family: a duplicate family's
+  own self-similarity runs **0.59–0.92 (median 0.889)**, while *different* facts wearing shared
+  boilerplate run **0.95–1.00** ("KCMI is licensed to Terrytown" beside "KZKX is licensed to Seward"
+  — identical vectors, cos 1.00). Any single cosine bar therefore either merges distinct facts or
+  misses real duplicates.
+- **The decision, in order.** (1) A rare-token **subject** the carrier never mentions vetoes the fold
+  — the round-3 rule, checked first, above every bar; the pair can still *supersede* if the new row
+  carries the old one's payload. (2) Rare-token **containment**: the carrier already says everything
+  this text says → the insert is skipped and the row refreshed. (3) **Drifted wording**: the read
+  path's own near-dupe bar, token Jaccard ≥ 0.75 on **content** words (the control scores 4/8 = 0.50,
+  0.64 with connectives) → a row the block would collapse into its neighbour anyway never lands.
+  (4) The new text carries everything the old one says plus its own detail → the richer row lands and
+  the older retires into the version chain (`op=invalidate` semantics, nothing deleted).
+- Candidates are the **writing scope** only (the exact-dedup law's own boundary), the floor is 0.85
+  (the family's 25th percentile), at most the best 8 are tested, and stop words are excluded from the
+  subject rule — the first live run vetoed a true duplicate over the word *"with"* (df 1 in a 209-row
+  test store); a connective is not a subject.
+- Cost: 7 ms for a suppressed write, ~76 ms for an insert that rebuilds both caches afterwards (the
+  caches rebuild on the first read after a write — the same measured O(store) cost as the recall path,
+  ~13 µs/row for the vector matrix and ~29 µs/row for the dupe table; a 20k-row store pays ~0.9 s
+  once per write burst, not per row).
+
+**Store budget: unlimited on the dev box (2026-10-14).** `max_memories` went 3,000 → 0 (the code
+default; the eviction law stays armed for any config that names a number). The cap was never the
+constraint — it was masking re-derivation: 380 of 2,538 rows had a ≥ 0.90 partner. With the guard above
+the store grows on new facts instead of new phrasings. The two walls to revisit before ~100k rows,
+stated as extrapolation from the measured per-row costs rather than pretended away: the vector matrix
+(150 MB) and the per-burst cache rebuilds (~2–4 s).
+
+**A plaintext husk never outranks a real ciphertext (2026-10-14, learned the hard way).** The crash
+rule — *a surviving plaintext db is newer truth than the last seal* — is right about a db the server was
+writing into and dead wrong about a **husk**: a restart raced a seal-and-shred, a 45 KB plaintext sat
+over a 9.6 MB ciphertext, the store opened with **one row** and said nothing, and its next close sealed
+that emptiness back over the real store. `__init__` now asks the plaintext directly (read-only: does it
+hold any facts?) and reveals the ciphertext when it does not; `stats()["at_rest"]["revealed_at_open"]`
+and the boot banner say which kind of open happened. Recovery from the shell was possible only because
+a scratch reveal had decrypted the full store minutes earlier — the 2,550-row state came back from
+`/tmp`, not from the store dir. **The lesson about restarts is procedural and it is a rule now:** the
+dev server answers the agent's *own* inference, so the agent does not restart it — it asks the user to,
+and it waits on the **port** (`ss -ltn | grep :8005`), not on `pgrep -f`, whose pattern also matches the
+invoking shell.
+
 ## Licensing and attribution
 
 - Strata (upstream) is MIT © Niko1221 and contributors; this fork's independent code keeps MIT.

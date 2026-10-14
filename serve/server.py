@@ -6907,12 +6907,15 @@ def main() -> int:
                             else mcfg.get("embedder")) or None))
         except (ValueError, OSError, TypeError) as e:
             raise SystemExit(f"[strata] memory: {e}")
+        at_rest_line = (svc.memory.encrypt and "key-file") or "off"
+        if getattr(svc.memory, "_revealed", False):
+            at_rest_line += " (revealed from ciphertext at open)"   # the husk guard, visible at boot
         print(f"[strata] memory core on: {svc.memory.db_path} "
               f"(inject {'on' if svc.memory.inject else 'off'}, recall {svc.memory.recall_limit} notes "
               f"<= {svc.memory.max_block_chars} chars; per-turn {'on ' if svc.memory.per_turn else 'off'}"
               f"{svc.memory.turn_recall_limit} notes <= {svc.memory.turn_block_chars} chars; "
               f"budget {svc.memory.max_memories or 'unlimited'}; "
-              f"at-rest {svc.memory.encrypt and 'key-file' or 'off'}; "
+              f"at-rest {at_rest_line}; "
               f"tool {svc.memory.tool and 'on' or 'off'} (X-Strata-Memory-Tool: 1 per request); "
               f"embedder {svc.memory.embedder and 'on: ' + getattr(svc.memory.embedder, 'model_name', '?') + ' (CPU, hybrid rerank)' or (svc.memory.embedder_error and 'FAILED - lexical only: ' + svc.memory.embedder_error or 'off')}; "
               f"GET /memory to inspect)", flush=True)

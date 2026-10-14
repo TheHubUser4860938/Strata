@@ -286,19 +286,31 @@ class MemoryService:
         self.passphrase_env = passphrase_env or ""
         self._writes = 0
         self._sealed_at: float | None = None
+        self._revealed = False        # this open started from ciphertext (fresh boot OR a husk fix)
         # budget (M2 job 5, opt-in: 0 = no cap, the path stays byte-identical to every earlier release).
         # Over-cap writes evict the WORST never-recalled rows first (lowest confidence, then oldest) and
         # NEVER touch a fact the recall has actually served (hits>0) - those retire only by human review
         # or the curation loop.  stats() reports "pressure" at 80% of the cap (the MemGPT watermark idea:
         # say so before the wall, so the sweep consolidates instead of the store silently overflowing).
         self.max_memories = max(0, int(max_memories))
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()   # re-entrant: the write path now reads its own caches
+                                        # (_vec_matrix / _dedupe_tables) from inside remember(), and
+                                        # a plain Lock would deadlock the first near-dupe check.
+                                        # Single-owner semantics are unchanged - other threads still
+                                        # wait for the whole write, commit included.
         self._blocks: OrderedDict[tuple[str, str], tuple[str, list[int]]] = OrderedDict()  # (scope, key) -> pinned (block, shown ids)
         self._cache_entries = max(1, int(cache_entries))
         if self.encrypt:
             self._key_bytes()                                   # create the 0600 key-file when missing
             if not os.path.exists(self.db_path) and os.path.exists(self.db_path + ".enc"):
                 self._reveal()                                  # ciphertext -> fresh plaintext db
+            elif os.path.exists(self.db_path + ".enc") and self._plaintext_is_shell():
+                # 2026-10-14, the day it bit: a restart raced a seal-and-shred, a 45 KB plaintext
+                # husk sat over a 9.6 MB ciphertext, the crash rule below trusted the husk, the
+                # store opened with ONE row and said nothing about it - and sealed that emptiness
+                # back on its next close. A plaintext that holds no facts is not "the newer truth",
+                # it is a husk: the ciphertext wins, and stats() says it was revealed at open.
+                self._reveal()
             # if BOTH the plaintext db and a .enc exist, a crash left the plaintext: it is the newer
             # truth (the .enc is only as fresh as the last seal), so it wins and the next seal renews.
         self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
@@ -412,6 +424,26 @@ class MemoryService:
                 self._touched()
                 self._vdirty = True
                 return {"id": hit[0], "deduped": True}
+            # PHASE 4 write-time near-dupe guard (embedder ON only; embedder OFF never gets here,
+            # so the shipped write path is byte-identical). The curation loop re-derives the same
+            # fact in new words every sweep - one username policy landed as 57 rows in two days, and
+            # exact-text dedup cannot see any of them. Cosine FINDS the candidates; the DECISION is
+            # the merge tool's v3 law, unchanged (see _semantic_dupe).
+            supersede: int | None = None
+            if vec is not None:
+                verdict = self._semantic_dupe(text, same, vec)
+                if verdict and verdict[0] == "suppress":
+                    self.conn.execute(
+                        "update memories set updated_at=?, confidence=max(confidence,?), class=coalesce(nullif(class,''),?)"
+                        " where id=?", (now, conf, klass, verdict[1]))
+                    self.conn.execute("insert or ignore into embeddings values(?,?)",
+                                      (verdict[1], vec.tobytes()))
+                    self.conn.commit()
+                    self._touched()
+                    self._vdirty = True
+                    return {"id": verdict[1], "deduped": "semantic"}
+                if verdict and verdict[0] == "supersede":
+                    supersede = verdict[1]
             cur = self.conn.execute(
                 "insert into memories(scope,text,source,provenance,confidence,created_at,updated_at,class)"
                 " values(?,?,?,?,?,?,?,?)",
@@ -420,6 +452,11 @@ class MemoryService:
             if vec is not None:
                 self.conn.execute("insert or replace into embeddings values(?,?)",
                                   (cur.lastrowid, vec.tobytes()))
+                if supersede:      # the richer phrasing wins: the older row retires pointing at it,
+                    self.conn.execute(       # the Zep chain stays intact - nothing is deleted (invalidate
+                        "update memories set invalid_at=?, superseded_by=?, updated_at=?"   # is the same op)
+                        " where id=? and invalid_at is null",
+                        (now, cur.lastrowid, now, supersede))
             evicted: list[int] = []
             if self.max_memories:
                 # the budget line: over cap, the worst NEVER-RECALLED rows go first (lowest confidence,
@@ -440,9 +477,93 @@ class MemoryService:
             self._touched()
             self._vdirty = True
             out = {"id": cur.lastrowid, "deduped": False}
+            if supersede:
+                out["superseded"] = supersede
             if evicted:
                 out["evicted"] = evicted
             return out
+
+    def _semantic_dupe(self, text: str, same, vec) -> tuple | None:
+        """The write-time near-dupe DECISION, only reached when an embedder is configured. Cosine
+        PROPOSES and nothing more: measured 2026-10-14 on the store that had just grown 57 rows of
+        one username policy over two sweeps, a duplicate family's own self-similarity runs 0.59 to
+        0.92 (median 0.889), while DIFFERENT facts wearing shared boilerplate sit at 0.95-1.00
+        ("KCMI is licensed to Terrytown" beside "KZKX is licensed to Seward"). Any single cosine bar
+        therefore either merges distinct facts or misses real duplicates - so the verdict is the
+        merge tool's v3 law, the one that survived the round-3 data loss: a rare-token SUBJECT one
+        side names and the other never mentions vetoes the merge, and the carrier's rare-token
+        PAYLOAD must contain the other side's.
+
+        Three verdicts. 'suppress' when an active row already says everything this text says
+        (rare-token containment), OR when the two are one fact with drifted wording - decided by the
+        READ path's own near-dupe bar, token Jaccard >= 0.75 (measured on this store 2026-10-12),
+        because a row the block would collapse into its neighbour anyway costs nothing to skip, and
+        skipping is what stopped one policy becoming 57 rows; 'supersede' when this text says
+        everything an active row says plus its own detail (the richer row lands, the older retires
+        into the version chain - never deleted); otherwise two different facts, both keeping their
+        slot. The subject rule is checked FIRST, above every bar: it is what keeps "KCMI is licensed
+        to Terrytown" from folding into "KZKX is licensed to Seward" (Jaccard 7/11 = 0.64, and the
+        distinct-facts control both laws are measured against). Candidates are limited to the
+        WRITING SCOPE, exactly as the exact-text dedup does; the floor is 0.85 (the family's measured
+        25th percentile) and at most the best 8 are
+        tested, so a write costs one cached matrix read plus a handful of payload computations - it
+        never scans every text in the store. The bar is the merge tool's UNCAPPED relative one
+        (stricter than the read path's capped 5, and stricter is the safe direction: a missed merge
+        costs one slot, a false one hides a fact)."""
+        meta = self._vec_matrix()
+        if meta is None:
+            return None
+        tab = self._dedupe_tables()
+        df = tab["df"]
+        bar = max(3, len(tab["toks"]) // 50)
+        cand = []
+        for rid, rtext, _rclass in same:
+            j = meta["ix"].get(rid)
+            if j is None:
+                continue                                # a row predating the embedder: no vector to compare
+            c = float(meta["mat"][j] @ vec)
+            if c >= 0.85:
+                cand.append((c, rid, rtext))
+        if not cand:
+            return None
+        cand.sort(reverse=True)
+        t_new = {t for t in norm_text(text).split() if t not in STOP}
+        p_new = frozenset(t for t in t_new if df.get(t, 0) <= bar)
+        u_new = {t for t in t_new if df.get(t, 0) <= 3}   # the tool's subject rule: df<=3 is a name
+        # STOP-excluded on both sides, which the merge tool does NOT do and this guard does: the
+        # first live run vetoed a true duplicate over the word "with" (df 1 in a 209-row test store),
+        # and a connective is not a subject. Content words only - the veto exists to protect NAMES.
+        for _c, rid, rtext in cand[:8]:
+            t_ex = {t for t in norm_text(rtext).split() if t not in STOP}
+            p_ex = frozenset(t for t in t_ex if df.get(t, 0) <= bar)
+            u_ex = {t for t in t_ex if df.get(t, 0) <= 3}
+            # 1. the round-3 rule, first: a rare SUBJECT the carrier never mentions is a different
+            #    fact, whatever the distance says. The new row may still SUPERSEDE the old one (it
+            #    carries everything the old one says, plus its own subject) - that is the survivor
+            #    law - but it never folds into it.
+            if u_new - t_ex:
+                if not (u_ex - t_new) and p_ex <= p_new:
+                    return ("supersede", rid)
+                continue
+            # 2. the carrier already says everything this text says (rare-token containment): the
+            #    insert would be a second copy of one fact, so the row is refreshed instead.
+            if p_new <= p_ex:
+                return ("suppress", rid)
+            # 3. same fact, drifted wording: the READ path's near-dupe bar (token Jaccard >= 0.75,
+            #    measured on this store 2026-10-12) decides here too - a row the block would
+            #    collapse into its neighbour anyway costs nothing to skip, and skipping is what
+            #    stopped one policy becoming 57 rows. The bar runs on CONTENT tokens (stop words
+            #    out), and the distinct-facts control clears it either way: "KCMI is licensed to
+            #    Terrytown" beside "KZKX is licensed to Seward" scores 4/8 = 0.50 here, 0.64 with
+            #    the connectives left in - both far under 0.75, exactly as at recall.
+            union = t_new | t_ex
+            if union and len(t_new & t_ex) >= 0.75 * len(union):
+                return ("suppress", rid)
+            # 4. this text says everything the carrier says (and adds its own detail): the richer
+            #    row wins, the older one retires into the version chain.
+            if p_ex <= p_new:
+                return ("supersede", rid)
+        return None
 
     def forget(self, memory_id: int) -> bool:
         with self.lock:
@@ -1008,6 +1129,12 @@ class MemoryService:
             by_class = {(r[0] or "unclassified"): r[1] for r in self.conn.execute(
                 "select class, count(*) from memories where invalid_at is null group by class").fetchall()}
             invalid = self.conn.execute("select count(*) from memories where invalid_at is not null").fetchone()[0]
+            # counted live, not from the cached vector matrix: that is only as fresh as the last
+            # recall, which is how stats() briefly reported 2,594 vectors over a 2,538-row store
+            # right after a merge.
+            embedded = self.conn.execute(
+                "select count(*) from embeddings e join memories m on m.id = e.id"
+                " where m.invalid_at is null").fetchone()[0]
             pending = self.conn.execute("select count(*) from turns where processed=0").fetchone()[0]
             turns = self.conn.execute("select count(*) from turns").fetchone()[0]
         return {"version": self.version(), "memories": memories, "by_scope": by_scope,
@@ -1019,6 +1146,10 @@ class MemoryService:
                     "mode": "key-file" + ("+passphrase-env" if self.passphrase_env else ""),
                     "key_file": self.key_path,
                     "sealed_at": round(self._sealed_at, 1) if self._sealed_at else None,
+                    # the diagnostic missing on 2026-10-14: this open began from the ciphertext (a
+                    # fresh boot, or a plaintext husk the reveal rule overrode). A store that opens
+                    # WITHOUT revealing while its .enc is large is exactly the failure mode.
+                    "revealed_at_open": self._revealed,
                     "plaintext_while_running": True}),   # the honest state of a RUNNING encrypted store
                 "pressure": bool(self.max_memories) and memories >= 0.8 * self.max_memories,
                 "recall_limit": self.recall_limit, "max_block_chars": self.max_block_chars,
@@ -1027,7 +1158,8 @@ class MemoryService:
                 "pinned_blocks": len(self._blocks),
                 "embedder": ({"on": True, "loaded": True,
                               "model": getattr(self.embedder, "model_name", type(self.embedder).__name__),
-                              "vectors": len(self._vmeta["ids"]) if self._vmeta else 0}
+                              "vectors": embedded, "active": memories,
+                              "unembedded": max(0, memories - embedded)}   # tools/m4_embed.py closes the gap
                              if self.embedder is not None else
                              ({"on": True, "loaded": False, "error": self.embedder_error}
                               if self.embedder_error else {"on": False})),
@@ -1126,6 +1258,24 @@ class MemoryService:
         except OSError:
             return False
 
+    def _plaintext_is_shell(self) -> bool:
+        """True when memory.db exists but holds no facts while a sealed .enc sits beside it. The
+        crash rule ("a surviving plaintext is the newer truth") is right about a db the server was
+        WRITING into and dead wrong about a husk left by a restart that raced a seal-and-shred:
+        measured 2026-10-14, a 45 KB husk over a 9.6 MB ciphertext opened as a one-row store, and
+        the next close sealed that emptiness back over the real thing. A db with no memories table
+        counts as a husk too - a file that never held the schema cannot be anybody's truth.
+        Read-only open, never a write, so a live server is never disturbed by the question."""
+        try:
+            con = sqlite3.connect(f"file:{self.db_path}?mode=ro", uri=True)
+            try:
+                n = con.execute("select count(*) from memories").fetchone()[0]
+            finally:
+                con.close()
+        except sqlite3.Error:                 # no table, locked, not a database: it is a husk
+            return True
+        return n == 0
+
     def _reveal(self) -> None:
         """memory.db.enc -> fresh plaintext db, before the connection opens. A bad tag is FATAL on
         purpose: starting an 'empty' store because the key changed or the file was tampered with
@@ -1151,6 +1301,7 @@ class MemoryService:
                 os.remove(self.db_path + suffix)
             except FileNotFoundError:
                 pass
+        self._revealed = True             # the banner and stats() say the store came from ciphertext
         self._sealed_at = time.time()
 
 

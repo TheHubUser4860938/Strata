@@ -9,6 +9,7 @@ injected block is byte-stable for a conversation while the store changes underne
 import http.client
 import json
 import os
+import sqlite3
 import tempfile
 import time
 import unittest
@@ -905,6 +906,39 @@ class EncryptionAtRest(unittest.TestCase):
     def _reopen(self, **kw):
         return MemoryService(self.dir, encrypt=True, **kw)
 
+    def test_a_plaintext_husk_never_outranks_a_real_ciphertext(self):
+        """2026-10-14, learned the hard way on the dev box: a restart raced a seal-and-shred, a 45 KB
+        plaintext husk ended up over a 9.6 MB ciphertext, and the crash rule trusted the husk - the
+        store opened with ONE fact, said nothing about it, and sealed that emptiness back over the
+        real store on its next close."""
+        m = self._reopen()
+        for i in range(3):
+            m.remember(f"the fact number {i} about the cascade fix", scope="user")
+        m.close()                                     # seal + shred: no plaintext behind
+        sqlite3.connect(os.path.join(self.dir, "memory.db")).close()   # the husk a raced start leaves
+        back = self._reopen()
+        try:
+            self.assertEqual(back.stats()["memories"], 3,
+                             "a husk is not newer truth - the ciphertext wins")
+            self.assertTrue(back.stats()["at_rest"]["revealed_at_open"],
+                            "and the open says so, in stats as well as on the banner")
+        finally:
+            back.close()
+
+    def test_a_plaintext_with_facts_still_outranks_an_older_seal(self):
+        """The crash rule, untouched: the db the server was WRITING into beats the last seal."""
+        m = self._reopen()
+        m.remember("the fact the last seal never saw", scope="user")
+        m._seal()                                     # a mid-run seal (the sweep): plaintext stays
+        m.remember("a second fact written after that seal", scope="user")
+        m.conn.close()                                # crash: plaintext survives, no close() ran
+        back = self._reopen()
+        try:
+            self.assertEqual(back.stats()["memories"], 2, "the surviving plaintext keeps the lead")
+            self.assertFalse(back.stats()["at_rest"]["revealed_at_open"])
+        finally:
+            back.close()
+
     def test_roundtrip_key_and_shred(self):
         m = self._reopen()
         m.remember("Quillon is the user's middle name, not their first", scope="user")
@@ -1050,6 +1084,127 @@ class RecallClamp(unittest.TestCase):
                 m.close()
             finally:
                 tmp.cleanup()
+
+
+class WriteTimeDedupe(unittest.TestCase):
+    """The write-time near-dupe guard (PHASE 4, embedder only). The measured reason it exists: one
+    username policy landed as 57 rows over two sweeps, and exact-text dedup saw none of them. The
+    measured reason cosine alone is NOT the decision: a duplicate family's self-similarity runs
+    0.59-0.92 while DIFFERENT facts in shared boilerplate run 0.95-1.00. So every test below drives
+    the stub at cos 1.0 - the merge has to be won or refused by the payload law, never by the
+    distance."""
+
+    V = [1.0, 0.0, 0.0, 0.0]
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def mem_with(self, *texts):
+        stub = StubEmbedder({t: self.V for t in texts})
+        m = MemoryService(self.tmp.name + str(len(texts)) + str(hash(texts)), embedder=stub)
+        return m
+
+    def test_a_lesser_phrasing_never_lands(self):
+        m = self.mem_with("the flibber gauge reads torque at the works",
+                          "the flibber gauge reads torque")
+        try:
+            a = m.remember("the flibber gauge reads torque at the works")
+            b = m.remember("the flibber gauge reads torque")        # says strictly less
+            self.assertEqual(b["id"], a["id"], "the weaker phrasing must fold into the row that "
+                                              "already carries it, not take a second slot")
+            self.assertEqual(b["deduped"], "semantic")
+            self.assertEqual(m.stats()["memories"], 1)
+        finally:
+            m.close()
+
+    def test_a_richer_phrasing_supersedes_and_keeps_the_history(self):
+        m = self.mem_with("the flibber gauge reads torque",
+                          "the flibber gauge reads torque at the works every morning")
+        try:
+            a = m.remember("the flibber gauge reads torque")
+            b = m.remember("the flibber gauge reads torque at the works every morning")
+            self.assertNotEqual(b["id"], a["id"])
+            self.assertEqual(b.get("superseded"), a["id"], "the survivor rule keeps the richer row "
+                                                           "and retires the poorer one")
+            self.assertEqual(m.stats()["memories"], 1, "one active fact")
+            self.assertEqual(m.stats()["invalid"], 1, "the poorer row is retired, not deleted - "
+                                                      "the version chain stays walkable")
+            self.assertFalse(any("every morning" not in h["text"] for h in m.search("flibber gauge")),
+                             "recall must show the richer phrasing")
+        finally:
+            m.close()
+
+    def test_two_different_facts_at_cosine_one_both_keep_their_slots(self):
+        # the whole point of the law: distance says "same", content says "different"
+        m = self.mem_with("the flibber gauge reads torque at the works",
+                          "the zzzzquux valve reads torque at the works")
+        try:
+            a = m.remember("the flibber gauge reads torque at the works")
+            b = m.remember("the zzzzquux valve reads torque at the works")
+            self.assertNotEqual(a["id"], b["id"], "each names a rare subject the other never "
+                                                  "mentions: a merge here is the round-3 data loss")
+            self.assertEqual(m.stats()["memories"], 2)
+        finally:
+            m.close()
+
+    def test_without_the_embedder_the_write_path_is_unchanged(self):
+        plain = MemoryService(self.tmp.name + "-plain")
+        try:
+            plain.remember("the flibber gauge reads torque at the works")
+            r = plain.remember("the flibber gauge reads torque")
+            self.assertFalse(r["deduped"], "lexical-only mode keeps its old behavior byte-identical")
+            self.assertEqual(plain.stats()["memories"], 2)
+        finally:
+            plain.close()
+
+
+    def test_same_fact_with_drifted_wording_folds_at_the_read_laws_own_bar(self):
+        """Rule 3, the case that actually grew the store: neither side strictly contains the other,
+        so containment says nothing - and the decision falls to the READ path's own near-dupe bar
+        (Jaccard 0.75), which is what the block would have collapsed them under anyway. Needs a
+        store over 200 rows so the payload bar (df<=n//50=4) sits above the subject bar (df<=3):
+        only then can a token be payload-rare without being a subject, which is exactly the shape
+        that would otherwise smuggle a 43rd copy in."""
+        stub = StubEmbedder({"the flibber gauge reads torque at the works every day": self.V,
+                             "the flibber gauge reads torque at the works every day with quuxmark":
+                                 self.V})
+        m = MemoryService(self.tmp.name + "-drift", embedder=stub)
+        try:
+            for i in range(204):
+                m.remember(f"the sample town number {i} reports {i} canals")
+            for i in range(4):
+                m.remember(f"the quuxmark report number {i} was filed")   # df(quuxmark)=4: payload-rare, not a subject
+            base = m.remember("the flibber gauge reads torque at the works every day")
+            got = m.remember("the flibber gauge reads torque at the works every day with quuxmark")
+            self.assertEqual(got["id"], base["id"],
+                             "one fact with an extra word is still one fact - the block would have "
+                             "collapsed the pair anyway (Jaccard 9/10), so the copy never lands")
+            self.assertEqual(got["deduped"], "semantic")
+        finally:
+            m.close()
+
+    def test_a_new_subject_at_the_same_distance_still_lands(self):
+        """The control on rule 3: the same overlap, but the extra token is a NAME (df<=3), which is
+        the round-3 signature - a merge here is data loss, not dedup."""
+        stub = StubEmbedder({"the flibber gauge reads torque at the works": self.V,
+                             "the flibber gauge reads torque at the works with zzzzquux": self.V})
+        m = MemoryService(self.tmp.name + "-subj", embedder=stub)
+        try:
+            a = m.remember("the flibber gauge reads torque at the works")
+            b = m.remember("the flibber gauge reads torque at the works with zzzzquux")
+            self.assertNotEqual(b["id"], a["id"], "zzzzquux is a subject the carrier never mentions, "
+                                                  "so the pair can never fold into the old row")
+            self.assertEqual(b.get("superseded"), a["id"], "but the new row carries everything the "
+                                                           "old one says PLUS its own subject, so by "
+                                                           "the survivor rule the richer row wins and "
+                                                           "the old one retires into the chain")
+            self.assertEqual(m.stats()["memories"], 1)
+            self.assertEqual(m.stats()["invalid"], 1)
+        finally:
+            m.close()
 
 
 class StubEmbedder:
