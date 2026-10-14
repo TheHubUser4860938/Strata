@@ -302,7 +302,21 @@ as the user framed it: **shelves are how the model's knowledge grows without ret
 a classified corpus is knowledge addressed by call number, importable a conversation at a time,
 retrieved by the exact request that needs it. The honest limits ride with it: retrieval buys recall,
 not reasoning; the context budget still caps what any ask can carry; and a shelf's search quality
-gets a step change when the Phase 4 embedder gives every shelf a centroid to rank against.
+got its step change when the Phase 4 embedder arrived (2026-10-14, above) — ranking no longer stops
+at the words a question happens to share with a fact.
+
+**Taxonomy growth by evidence (`tools/m4_shelves.py`, 2026-10-14).** The keyword map names what it
+can and leaves the rest wild, so the wild rows ARE the evidence of what the taxonomy is missing. The
+tool clusters active rows by cosine over the vectors the store already carries (leader clustering,
+centroid normalized by its running norm, order-stable so two runs print the same clusters — verified)
+and prints the groups big enough to be a subject, with the rarest words every member shares and three
+exemplars. It PROPOSES: `--apply CLASS --ids …` posts `op=classify` through the API, and the
+eyeball-before-you-shelve law from the 50-group merge audit still applies, because a false shelf hides
+a fact from every filtered request that stops asking for it. What the first run on the dev store
+showed is exactly why a human stays in the loop: at bar 0.70 the largest wild cluster was 28 rows
+sharing *variable, environment, name, strata, user* — one fact in twenty-eight phrasings, which is a
+MERGE candidate for `tools/m2_merge.py`, not a new shelf. Cosine cannot tell "one subject, many facts"
+from "one fact, many copies"; a human reading three exemplars can.
 
 **Recall stops paying twice for one fact** (`dedup_recall`, on by default). Measured first: the web
 venue watched one Qwen3.8 fact take two of its eight slots while the store held five phrasings of it.
