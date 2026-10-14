@@ -616,6 +616,35 @@ types and the accuracy run should follow it materially above 0.433; if coverage 
 not, the residual is a reasoning limit — quant/model territory, stated plainly, and the row stops being
 a memory-project target.
 
+**Arm C ran (2026-10-14, `spikes/lme/armc2-20261014-full.*`): 0.761 per line / 0.766 by majority, against
+arm B's 0.721 / 0.732 — +4.0 points, per-repeat 381/378/383, so the delta is ~7x the noise band.** The
+pre-registration held in both of its halves:
+
+- **The reranker earned the gain; the budget did nothing.** Rendering the *real* block offline at both
+  budgets gives **14.6 notes / 18,735 chars at 96/24k AND at 192/48k** — with venue rows running
+  ~1,300 chars the CHAR cap binds at ~15 notes long before the note cap, so the doubled budget never
+  reached the prompt. The reranker raised the gold rows actually pasted from **0.895 → 0.943** (+0.048)
+  and `turn_top3` from 0.749 → 0.823; accuracy followed with +0.040. **C1 was skipped on that evidence**,
+  exactly as agreed: the axis it would measure is provably empty at the block level, so 1.8 h of owned
+  port would have bought a split of a zero.
+- **Coverage rose, and temporal moved only 0.433 → 0.465.** At 0.852 session coverage the evidence is in
+  the prompt; of 346 wrong lines, **244 had every gold session present (reasoning)** vs 102 missing one
+  (retrieval). Per the pre-registration, that makes the row a reasoning ceiling for this model class
+  rather than a memory target.
+- **Accuracy is not running on rank order here.** knowledge-update lost 0.139 of retrieval rank-1 to the
+  reranker and its accuracy moved **+0.005**. That is why the speaker-aware re-order (the assistant-echo
+  fix, worth +0.10 retrieval rank-1 offline) is **parked**: it optimizes something the answer did not
+  use, and the venue showed that directly rather than in a hunch.
+- **Control: 1478/1500 `idk` (98.5%).** The single "gold leak" is the substring rule meeting a
+  three-character gold (`100`) guessed by a muted model — arm B logged two of the same. So the gate is
+  stated honestly as **a noise floor of 1–2 substring coincidences per 1,500**, not zero; and the
+  harness *counts and reports* them rather than exiting 2, which corrects the paragraph above this one
+  (it promised an exit that was never implemented).
+- **The offline instrument is validated, not trusted:** its lexical arm reproduces arm B's filed
+  `turn_top1/turn_top3` (0.504 / 0.749) to three decimals from a different process, a different code
+  path and a copy of a sealed store. That is what licenses the A/B's per-type numbers as predictions
+  about the live venue — and it cost ~45 s instead of 2 h, with the port never released.
+
 ## Semantic recall — the bge-small hybrid layer (added 2026-10-14, PHASE 4; opt-in)
 
 **Why.** The temporal diagnostic (`spikes/lme/TEMPORAL_DIAG.md`) split the 0.433 row by cause: 61 of 127

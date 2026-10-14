@@ -48,10 +48,35 @@ engine logs.
    0.744) and abstention (0.667 -> 0.778). Muted control at both budgets: **98.4-98.7% `idk`, gold
    leaks 2/1,500 (0.13%)**. By type (24k arm): assistant 0.952, user 0.911, preference 0.900,
    abstention 0.778, knowledge-update 0.745, multi-session 0.744, temporal-reasoning 0.433 (the
-   known weak spot: day arithmetic over injected dates - budget does not move it). The one
+   known weak spot - and the first diagnosis of it was wrong: `spikes/lme/TEMPORAL_DIAG.md` shows the
+   0.433 row is evidence COVERAGE on multi-evidence questions, not day arithmetic; off-by-N is 12 of
+   57 misses, and 20 questions refused with an answer row already in the block). The one
    regression, user 0.953 -> 0.911, is flagged in `docs/MEMORY_CORE.md`. Cost is first-turn only
    (pinned head): ~2.3 s at conversation start, zero per follow-up. Records:
    `spikes/lme/oracle-20261013-full.*` (12k) and `spikes/lme/budget24k-20261014-full.*` (24k).
+8. **Hybrid semantic rerank (opt-in) - the biggest accuracy lever measured on F.** A pinned
+   `bge-small-en-v1.5` ONNX embedder, **CPU-only** (the GPU belongs to the engine), verified by SHA-256
+   at open: a checksum mismatch RAISES, any other load failure degrades to bm25 **loudly** (banner and
+   `stats()` both say "lexical only"), because a missing model file must never take the memory down.
+   Fusion is **by rank (RRF k=60), never by mixed score scales** - the first weighted blend demoted a
+   rank-1 exact-lexical answer to **14th** on a live 2,521-row store, which is the failure mode this
+   design exists to avoid. Vectors live inside `memory.db`, so the existing at-rest seal covers them
+   with no new key handling; `remember()` embeds at write (3 ms); `tools/m4_embed.py` backfills old
+   rows and opens a sealed store.
+   **Arm C, same store, same protocol, third arm: 192 notes / 48k chars WITH the reranker = 0.761 per
+   line, 0.766 by majority** (per-repeat 381/378/383) against arm B's 0.721 / 0.732 - **+4.0 points,
+   about 7x the repeat-to-repeat band**. Muted control: 1478/1500 `idk` (98.5%); the single "gold leak"
+   is a substring coincidence on a three-character gold (`100` guessed by a muted model), i.e. the same
+   noise floor arm B showed at 2/1,500. Retrieval moved exactly as a **free offline A/B predicted**
+   (turn_top3 0.749 -> 0.823; the gold rows actually pasted into the block 0.895 -> 0.943 - and the
+   offline instrument reproduces the live venue's filed numbers to three decimals). By type:
+   multi-session 0.744 -> **0.840**, abstention 0.778 -> 0.867, temporal 0.433 -> 0.465, assistant
+   0.952 -> 0.970, preference 0.900 -> 0.911, user 0.911 -> 0.911, knowledge-update 0.745 -> 0.750.
+   Cost, measured on the 2,521-row store: recall 52 ms lexical -> 137 ms hybrid (the ~85 ms delta is the
+   near-dupe candidate pass, the cosine math is ~1 ms), against a ~8.5 s first turn: ~1.6%. Fixing the
+   write path (two whole-store caches were rebuilt per write, which made ingest **quadratic**: 7 ms per
+   write at 2,589 rows, 180 ms at ~10k) took a guarded write 107 ms -> 11 ms and a venue-shaped ingest
+   from ~40 min to ~40 s. Record: `spikes/lme/armc2-20261014-full.*`.
 
 ## What beta-1 does NOT claim
 
@@ -63,8 +88,23 @@ engine logs.
 - **Session save without an MTP drafter**: upstream #1444, fix PR #1492 still open as of 2026-10-13
   (0.1.44 does not carry it); engines without MTP degrade to no-cartridge requests, never a broken
   conversation.
-- **Full-history oracle parity** on F: retrieval rides FTS5 (no embedding model) and answers read
-  recalled notes, not raw sessions; session-level recall 1.000 is a property of the scoped design.
+- **Full-history oracle parity** on F: answers read recalled notes, not raw sessions, and
+  session-level recall 1.000 is a property of the scoped design (each question's haystack is its own
+  scope). Retrieval rides FTS5 bm25, and - since arm C - an **opt-in** hybrid reranker; a store with no
+  `memory.embedder` in its config never imports the module and ranks byte-identically to the last
+  release.
+- **"More injection budget" is not a lever by itself.** Arm C doubled it (96 notes / 24k chars -> 192 /
+  48k) and the rendered block did not change size at all on this corpus: 14.6 notes, 18,735 chars at
+  both settings, because venue rows run ~1,300 chars and the CHAR cap binds long before the note cap.
+  The +4.0 came from the reranker, which raised the gold rows actually pasted from 0.895 to 0.943.
+  Measured on long rows; a store of ~250-char personal facts is note-bound instead, which is why the
+  dev config stays at 96/24k until that case is measured rather than assumed.
+- **The rest of the failures are mostly not memory's.** Of arm C's 346 wrong lines, **244 had every gold
+  session present in the block** (reasoning) and 102 were missing one (retrieval). temporal-reasoning
+  sits at 0.465 with 0.852 session coverage: the evidence is in the prompt and this 24 GB-class model
+  still cannot order it. Retrieval-level rank-1 damage corroborates it - knowledge-update lost 0.139 of
+  rank-1 to the reranker and its accuracy moved +0.005, so at this block size the model is not using
+  rank order, which is also why a speaker-aware re-order was measured offline and then parked.
 
 ## Reproducing
 

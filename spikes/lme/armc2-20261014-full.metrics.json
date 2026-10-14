@@ -1,0 +1,98 @@
+{
+ "data": "/tmp/opencode/longmemeval/data/longmemeval_oracle.json",
+ "url": "http://127.0.0.1:8005",
+ "repeats": 3,
+ "recall_k": 10,
+ "muted_control": true,
+ "style": "con",
+ "no_embedder": false,
+ "arm": "hybrid",
+ "questions": 500,
+ "lines": 1500,
+ "metrics": {
+  "lines": 1500,
+  "judge": "official LongMemEval checker prompt; local judge (same model, memory muted, temp 0, 10 tokens - paper-comparable decoding, non-paper model)",
+  "overall": {
+   "turn_top1": 0.504,
+   "turn_top3": 0.823,
+   "session_top1": 1.0,
+   "session_top3": 1.0,
+   "row_coverage": 0.885,
+   "session_coverage": 0.893,
+   "accuracy": 0.761,
+   "idk_rate": 0.189
+  },
+  "by_type": {
+   "abstention": {
+    "turn_top1": null,
+    "turn_top3": null,
+    "session_top1": null,
+    "session_top3": null,
+    "row_coverage": null,
+    "session_coverage": null,
+    "accuracy": 0.867,
+    "idk_rate": 0.844
+   },
+   "knowledge-update": {
+    "turn_top1": 0.486,
+    "turn_top3": 0.861,
+    "session_top1": 1.0,
+    "session_top3": 1.0,
+    "row_coverage": 0.951,
+    "session_coverage": 0.951,
+    "accuracy": 0.75,
+    "idk_rate": 0.093
+   },
+   "multi-session": {
+    "turn_top1": 0.488,
+    "turn_top3": 0.818,
+    "session_top1": 1.0,
+    "session_top3": 1.0,
+    "row_coverage": 0.811,
+    "session_coverage": 0.825,
+    "accuracy": 0.84,
+    "idk_rate": 0.047
+   },
+   "single-session-assistant": {
+    "turn_top1": 0.393,
+    "turn_top3": 0.768,
+    "session_top1": 1.0,
+    "session_top3": 1.0,
+    "row_coverage": 0.946,
+    "session_coverage": 0.964,
+    "accuracy": 0.97,
+    "idk_rate": 0.036
+   },
+   "single-session-preference": {
+    "turn_top1": 0.467,
+    "turn_top3": 0.8,
+    "session_top1": 1.0,
+    "session_top3": 1.0,
+    "row_coverage": 0.922,
+    "session_coverage": 0.933,
+    "accuracy": 0.911,
+    "idk_rate": 0.122
+   },
+   "single-session-user": {
+    "turn_top1": 0.656,
+    "turn_top3": 0.859,
+    "session_top1": 1.0,
+    "session_top3": 1.0,
+    "row_coverage": 0.953,
+    "session_coverage": 0.953,
+    "accuracy": 0.911,
+    "idk_rate": 0.078
+   },
+   "temporal-reasoning": {
+    "turn_top1": 0.512,
+    "turn_top3": 0.819,
+    "session_top1": 1.0,
+    "session_top3": 1.0,
+    "row_coverage": 0.847,
+    "session_coverage": 0.852,
+    "accuracy": 0.465,
+    "idk_rate": 0.365
+   }
+  }
+ }
+}
