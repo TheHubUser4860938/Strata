@@ -553,6 +553,30 @@ limit, the same list `block_for` draws from, so a char budget that trims the tai
 upper bound on what the model read. Records written before this change lack the keys and report
 `n/a` — never a false zero.
 
+**Arm C protocol (built 2026-10-14; one boot, both arms).** Config `strata-venue-armc.json`
+(git-ignored): the venue store at **192 notes / 48,000 chars with the embedder loaded**. The arms are
+run against that one process, so nothing but the reranker differs between them:
+
+```
+systemctl --user stop strata-sweep.timer            # the window owns :8005; restore it after
+# C1 - the lexical arm (comparable to arm B's 0.721: same store, same protocol, budget is the axis)
+python3 tools/lme_harness.py --data <oracle.json> --skip-ingest --map <shared.map> \
+        --repeats 3 --style con --muted-control --no-embedder --out armc1.jsonl
+# C2 - the same boot, embedder on (backfill first: ~13k rows, ~90 s at 151 rows/s)
+python3 tools/m4_embed.py --dir Strata-data/memory-venue
+python3 tools/lme_harness.py --data <oracle.json> --skip-ingest --map <shared.map> \
+        --repeats 3 --style con --muted-control --out armc2.jsonl
+python3 tools/lme_report.py armc1.jsonl ; python3 tools/lme_report.py armc2.jsonl
+```
+
+Read as: **C1 − B = the budget delta, C2 − C1 = the retrieval delta**, both at temp 0.8 with the
+official checker and the muted control in the same run. The venue law applies unchanged — nothing else
+touches :8005 during a timed run, including the agent's own harness, so the run is backgrounded and the
+turn ends; the control must show 0 leaks or the venue exits 2. Expected shape from the temporal
+diagnostic: temporal-reasoning should move materially above 0.433 if it is coverage-limited (the
+coverage fields now separate that from a reasoning limit without hand-reading), and C2 should raise
+`session_coverage` on multi-evidence types.
+
 ## Semantic recall — the bge-small hybrid layer (added 2026-10-14, PHASE 4; opt-in)
 
 **Why.** The temporal diagnostic (`spikes/lme/TEMPORAL_DIAG.md`) split the 0.433 row by cause: 61 of 127
@@ -595,6 +619,26 @@ it installed last release.
   at all now lands at 37 — inside a 96-note block, where before it did not exist. Recency and confidence
   survive as tie-breakers only: their terms total ≤ 1.1e-5, under the 3.1e-5 RRF step at rank 120, so inside
   the window that decides the block they break ties and never cross a rank step.
+
+**Per-request mute — `X-Strata-Memory-Embedder: off` (2026-10-14).** The header skips the cosine pass
+for that one request: recall, the pinned head block, the per-turn tail and the API search all rank
+exactly as the lexical store does. It exists so the two arms of one experiment run against **one
+process, one store and one vector set** — the only difference between the records is the reranker, with
+no restart and no second seeded store between them. Two details make it safe:
+
+- **The arm rides the pin key.** The head block is pinned per conversation, so the same question asked
+  by the lexical arm would otherwise be answered from the hybrid arm's pinned block (or the reverse)
+  and the A/B would compare one set of bytes against itself. The key gains an arm marker — only when
+  an embedder is configured, so stores without one keep their exact previous keys. Same rule the shelf
+  already follows: *a block pinned for one kind of request must never answer another.*
+- **The response says which arm served it** (`"embedder": true|false` on `GET /memory?q=`), and
+  `tools/lme_harness.py` copies that value into every record line, so an arm assignment is audited from
+  the replies rather than from the flags the run hoped it had set.
+
+Proven offline at the HTTP level (mock engine, stub embedder, real server): the two arms return
+different hit lists, the muted arm returns exactly the lexical result, POST `op=search` honors the same
+header, and `request_state` injects nothing when the arm is muted while still journaling the turn.
+Harness flag: `--no-embedder` (the lexical arm).
 
 **Cost, measured 2026-10-14 on the 2,521-row dev store (CPU, limit 96, warm):** lexical recall 52 ms, hybrid
 137 ms, embed-at-write 3 ms, first recall after a write 75 ms / 169 ms (the caches legitimately rebuild). The

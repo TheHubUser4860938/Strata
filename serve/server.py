@@ -5487,9 +5487,12 @@ def make_handler(svc: Service):
                 self._json(400, {"error": {"message": str(e)}})
                 return
             if q:
-                self._json(200, {"query": q, "scope": memory_api.scope_name(scope),
+                # the per-request embedder mute (arm-C A/B), echoed in the response so a harness can
+                # prove from the REPLY which arm served it - the venue law reads responses, not logs.
+                sem = (self.headers.get("X-Strata-Memory-Embedder") or "").strip().lower() not in ("off", "mute", "0")
+                self._json(200, {"query": q, "scope": memory_api.scope_name(scope), "embedder": sem,
                                  "hits": svc.memory.search(q, scope=scope, limit=limit, classes=prefixes,
-                                                           since=since, until=until)})
+                                                           since=since, until=until, semantic=sem)})
                 return
             inv = (qs.get("include_invalid") or [""])[0]   # ?include_invalid=1 walks the version history too
             stats = svc.memory.stats()
@@ -5550,7 +5553,9 @@ def make_handler(svc: Service):
                 r = {"hits": svc.memory.search(str(req.get("q") or ""), scope=str(req.get("scope") or "default"),
                                                limit=lim, classes=classes,
                                                since=memory_api.time_bound(req.get("since")),
-                                               until=memory_api.time_bound(req.get("until")))}
+                                               until=memory_api.time_bound(req.get("until")),
+                                               semantic=(self.headers.get("X-Strata-Memory-Embedder")
+                                                         or "").strip().lower() not in ("off", "mute", "0"))}
             elif op == "cartridge":                               # M3b: rebuild the standing text and re-seed now
                 if svc.cartridges is None:
                     raise ValueError("cartridges are off (memory.cartridges.enabled in the config)")

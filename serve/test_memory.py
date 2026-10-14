@@ -280,6 +280,64 @@ class PerTurnRecall(unittest.TestCase):
         self.assertEqual(last[1], m[2]["content"][0])
 
 
+class EmbedderMuteOverHttp(unittest.TestCase):
+    """The arm-C A/B surface, proven offline (mock engine, stub embedder, real HTTP): one server,
+    one store, one vector set - and the per-request header decides which arm answers. The response
+    echoes the arm, so a venue record can be audited from its own lines rather than from the flags
+    the run hoped it had set."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = tempfile.TemporaryDirectory()
+        tok = ByteTokenizer()
+        cls.engine = MockEngine(tok, "the mock answer", max_context=131072)
+        cls.svc = Service(cls.engine, tok, ChatTemplate(ROOT / "serve/chat_template.jinja"))
+        v = [1.0, 0.0, 0.0, 0.0]
+        cls.svc.memory = MemoryService(cls.tmp.name,
+                                       embedder=StubEmbedder({"glimmery": v,
+                                                              "zebra flibberquant gauge": v}))
+        cls.svc.memory.remember("zebra flibberquant gauge")     # shares no word with the probe query
+        cls.httpd = serve(cls.svc, port=0)
+        cls.port = cls.httpd.server_address[1]
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.httpd.shutdown()
+        cls.svc.memory.close()
+        cls.tmp.cleanup()
+
+    def _get(self, qs, mute=False):
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=30)
+        hdrs = {"Accept": "application/json"}
+        if mute:
+            hdrs["X-Strata-Memory-Embedder"] = "off"
+        conn.request("GET", "/memory?" + qs, headers=hdrs)
+        return json.loads(conn.getresponse().read().decode())
+
+    def test_get_search_answers_differ_by_arm_and_say_which_one(self):
+        on = self._get("q=glimmery&limit=10")
+        off = self._get("q=glimmery&limit=10", mute=True)
+        self.assertTrue(on["hits"], "the hybrid arm finds the row only cosine can reach")
+        self.assertEqual(off["hits"], [], "the lexical arm must reproduce the old store exactly")
+        self.assertIs(on["embedder"], True, "the reply states which arm served it")
+        self.assertIs(off["embedder"], False)
+
+    def test_post_search_honours_the_same_header(self):
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=30)
+        conn.request("POST", "/memory", json.dumps({"op": "search", "q": "glimmery", "limit": 10}),
+                     {"Content-Type": "application/json", "X-Strata-Memory-Embedder": "off"})
+        self.assertEqual(json.loads(conn.getresponse().read().decode())["hits"], [])
+
+    def test_the_injection_path_respects_the_mute(self):
+        msgs = [{"role": "user", "content": "glimmery?"}]
+        _m, ctx_on = request_state(self.svc.memory, msgs, {"X-Strata-Memory-Scope": "default"}, {})
+        _m, ctx_off = request_state(self.svc.memory, msgs, {"X-Strata-Memory-Scope": "default",
+                                                           "X-Strata-Memory-Embedder": "off"}, {})
+        self.assertTrue(ctx_on and ctx_on["hits"], "the hybrid arm injects the fact")
+        self.assertTrue(ctx_off and not ctx_off["hits"], "the lexical arm injects nothing - and the "
+                                                         "request still journals normally")
+
+
 class ServerMemory(unittest.TestCase):
     """The whole path: real HTTP server, mock engine, memory on."""
 
@@ -1274,6 +1332,25 @@ class SemanticRerank(unittest.TestCase):
         self.assertTrue(self.mem.search("glimmery", classes=["TECH"]), "shelved row answers its shelf")
         self.assertEqual(self.mem.search("glimmery", classes=["USR"]), [],
                         "a shelf query must not borrow from another shelf just because cosine agrees")
+
+    def test_the_per_request_mute_reproduces_the_lexical_store(self):
+        self.mem.remember("zebra flibberquant gauge")            # shares NO word with the query
+        self.assertTrue(self.mem.search("glimmery"), "the cosine pass surfaces it")
+        self.assertEqual(self.mem.search("glimmery", semantic=False), [],
+                         "the mute must reproduce the lexical store exactly, not merely reorder it")
+
+    def test_a_pinned_block_never_crosses_between_the_two_arms(self):
+        """The arm-C trap, designed out before the run: the head block is pinned per conversation, so
+        the same question asked by the LEXICAL arm would otherwise be answered from the embedder
+        arm's pinned block (or vice versa) - and the A/B would compare one set of bytes against
+        itself and report a difference that was never there."""
+        self.mem.remember("zebra flibberquant gauge")
+        msgs = [{"role": "user", "content": "glimmery?"}]
+        b_lex, h_lex, _q = self.mem.block_for(msgs, "default", semantic=False)
+        b_sem, h_sem, _q = self.mem.block_for(msgs, "default", semantic=True)
+        self.assertIsNone(b_lex, "the lexical arm sees nothing to show")
+        self.assertIsNotNone(b_sem, "the embedder arm has a block, and must get it")
+        self.assertNotEqual(b_lex, b_sem)
 
     def test_failed_embedder_load_degrades_loudly_not_fatal(self):
         tmp = tempfile.TemporaryDirectory()

@@ -785,7 +785,7 @@ class MemoryService:
 
     def search(self, query: str, scope: str = DEFAULT_PROJECT, limit: int | None = None,
                classes: list[str] | None = None, since: float | None = None,
-               until: float | None = None) -> list[dict]:
+               until: float | None = None, semantic: bool = True) -> list[dict]:
         """FTS5 bm25 candidates over the user scope plus this request's project scope, then re-ordered by a
         blend: 0.75 rank + 0.25 recency + 0.10 confidence, all in [0,1]-ish. Returns at most `limit`.
         classes (PHASE 4.5) filters to shelf subtrees by prefix - a conversation about the engine asks
@@ -796,7 +796,9 @@ class MemoryService:
         "When did we decide X" and "what did we know last month" are episodic questions, and every row
         already carries its stamp - filtering on it is the date index. Both None (every request today)
         keeps the ranking byte-identical to before. With an embedder configured (PHASE 4) the bm25 set
-        is UNIONed with a cosine pass over every embedded active row - see _semantic."""
+        is UNIONed with a cosine pass over every embedded active row - see _semantic. `semantic=False`
+        (the per-request embedder mute, X-Strata-Memory-Embedder: off) skips that pass and ranks exactly
+        as the lexical store does - the A/B within one boot, on one store and one vector set."""
         limit = self.recall_limit if limit is None else max(1, min(240, int(limit)))
         # PHASE 4: with an embedder configured, a query bm25 CANNOT serve is exactly the case the
         # cosine pass exists for (spikes/lme/TEMPORAL_DIAG.md: multi-evidence rows that share no rare
@@ -840,7 +842,7 @@ class MemoryService:
             score = 0.75 * ((k - pos) / k) + 0.25 * fresh + 0.10 * r[3]
             out.append(dict(id=r[0], scope=r[1], text=r[2], score=round(score, 4), **{"class": r[5]}))
         out.sort(key=lambda x: -x["score"])
-        if self.embedder is not None:
+        if semantic and self.embedder is not None:
             out = self._semantic(out, query, scopes, classes, since, until, limit)
             out.sort(key=lambda x: -x["score"])
         if self.dedup_recall:
@@ -1017,7 +1019,8 @@ class MemoryService:
         return "\n".join([head(len(shown)), instruction] + trimmed + [lines[-1]]), shown
 
     def block_for(self, messages: list[dict], scope: str,
-                  classes: list[str] | None = None) -> tuple[str | None, list[dict], str]:
+                  classes: list[str] | None = None,
+                  semantic: bool = True) -> tuple[str | None, list[dict], str]:
         """The hidden system block for this conversation - or (None, [], "") when there is no user text to
         recall with. Pinned per (scope, classes, first user message): byte-stable while cached, fresh
         bytes for a new conversation or a different shelf request - a block pinned for a ["STR"]
@@ -1031,15 +1034,21 @@ class MemoryService:
             return None, [], ""
         scope = scope_name(scope)
         shelf = ",".join(sorted(set(class_name(c, quiet=True) for c in classes or ()))) if classes else ""
+        # The ARM rides the pin key, exactly as the shelf does: a block built by the LEXICAL arm must
+        # never answer the embedder arm's identical question (and vice versa), or the arm-C A/B would
+        # measure the same bytes twice and report a difference that is not there. Stores with no
+        # embedder configured keep the old key byte-for-byte - the marker only exists where the choice
+        # exists.
+        arm = "" if self.embedder is None else ("|s" if semantic else "|l")
         key = (scope, "h" + hashlib.sha1(
-            (norm_text(users[0]) + "|" + shelf).encode("utf-8", "replace")).hexdigest()[:16])
+            (norm_text(users[0]) + "|" + shelf + arm).encode("utf-8", "replace")).hexdigest()[:16])
         query = users[-1][:400] if len(users[-1].strip()) > 3 else users[0][:400]
         pinned = self._blocks.get(key)
         if pinned is not None:
             self._blocks.move_to_end(key)
             block, ids = pinned
             return block, [{"id": i} for i in ids], query
-        hits = self.search(query, scope=scope, classes=classes)
+        hits = self.search(query, scope=scope, classes=classes, semantic=semantic)
         if not hits:
             return None, [], query
         block, shown = self._render_block(hits, self.max_block_chars, scope)
@@ -1050,7 +1059,7 @@ class MemoryService:
 
     def turn_block_for(self, messages: list[dict], scope: str,
                        exclude_ids: list[int] | tuple[int, ...] = (),
-                       classes: list[str] | None = None):
+                       classes: list[str] | None = None, semantic: bool = True):
         """Fresh recall for the conversation's NEWEST user message, minus the facts the pinned head
         block already carries -> (block | None, shown hits). It is merged into that message rather than
         the system head (see request_state): a 184k-token agent session reuses ~99.9% of its prompt
@@ -1069,14 +1078,15 @@ class MemoryService:
         scope = scope_name(scope)
         seen = sorted(set(int(i) for i in exclude_ids or ()))
         shelf = ",".join(sorted(set(class_name(c, quiet=True) for c in classes or ()))) if classes else ""
-        material = f"{norm_text(users[-1][:400])}|{','.join(map(str, seen))}|{shelf}"
+        arm = "" if self.embedder is None else ("|s" if semantic else "|l")   # see block_for: the arm
+        material = f"{norm_text(users[-1][:400])}|{','.join(map(str, seen))}|{shelf}" + arm
         key = (scope, "t" + hashlib.sha1(material.encode("utf-8", "replace")).hexdigest()[:16])
         pinned = self._blocks.get(key)
         if pinned is not None:
             self._blocks.move_to_end(key)
             block, ids = pinned
             return (block or None), [{"id": i} for i in ids]
-        hits = [h for h in self.search(users[-1][:400], scope=scope, classes=classes)
+        hits = [h for h in self.search(users[-1][:400], scope=scope, classes=classes, semantic=semantic)
                 if h["id"] not in set(seen)]
         hits = hits[:self.turn_recall_limit]
         if not hits:
@@ -1328,7 +1338,10 @@ def request_state(mem: "MemoryService | None", messages: list[dict], headers, re
     # pre-class store - the filter only ever narrows what a request that asks for a shelf sees.
     classes = [c for c in (class_name(x, quiet=True)
                            for x in (headers.get("X-Strata-Memory-Class") or "").split(",")) if c] or None
-    block, hits, query = mem.block_for(messages, scope, classes)
+    # The per-request embedder mute (arm-C A/B): the SAME store, the SAME vector set, one boot - only
+    # the ranking differs. Absent header, absent embedder: nothing changes anywhere.
+    semantic = (headers.get("X-Strata-Memory-Embedder") or "").strip().lower() not in ("off", "mute", "0")
+    block, hits, query = mem.block_for(messages, scope, classes, semantic=semantic)
     users = [text_of(m.get("content")) for m in messages if isinstance(m, dict) and m.get("role") == "user"]
     last_user = next((u for u in reversed(users) if u.strip()), "")
     if block is None:
@@ -1340,7 +1353,8 @@ def request_state(mem: "MemoryService | None", messages: list[dict], headers, re
             return messages, None
         return messages, {"scope": scope, "user": last_user, "model": req.get("model"), "query": query,
                           "classes": classes, "hits": []}
-    tblock, thits = mem.turn_block_for(messages, scope, [h["id"] for h in hits], classes)
+    tblock, thits = mem.turn_block_for(messages, scope, [h["id"] for h in hits], classes,
+                                       semantic=semantic)
     ctx = {"scope": scope, "user": last_user, "model": req.get("model"), "query": query,
            "classes": classes, "hits": [h["id"] for h in hits] + [h["id"] for h in thits]}
     # The Qwen chat template allows ONE system message, at index 0 ("System message must be at the

@@ -38,6 +38,7 @@ Usage:
   python3 tools/lme_harness.py --data longmemeval_oracle.json --out lme_oracle.jsonl \
       [--url http://127.0.0.1:8005] [--limit N] [--repeats 3] [--recall-k 10] \
       [--types single-session-user,...] [--skip-ingest] [--no-judge] [--muted-control]
+      [--no-embedder]
 """
 from __future__ import annotations
 
@@ -124,15 +125,19 @@ def ingest(url: str, q: dict, scope: str) -> dict[int, tuple[bool, str]]:
     return where
 
 
-def recall(url: str, q: dict, scope: str, where: dict, k: int) -> dict:
+def recall(url: str, q: dict, scope: str, where: dict, k: int, no_embedder: bool = False) -> dict:
     """The Primnox metric on the server's own search: top-1/top-3 at turn level (the first
     / first-three hits carrying a has_answer turn) and at session level (hits from an
     answer_session). Abstention questions have no gold location and report null, as the
     official retrieval eval skips them."""
     # GET /memory?q= answers under "hits" (the list endpoint uses "memories") - reading the
     # wrong key would score a quiet zero instead of an honest miss.
-    hits = get(url, "/memory", {"q": q["question"], "scope": scope, "limit": k},
-               headers={"Accept": "application/json"}).get("hits", [])
+    hdrs = {"Accept": "application/json"}
+    if no_embedder:                       # the LEXICAL arm (C1): the store's per-request mute
+        hdrs["X-Strata-Memory-Embedder"] = "off"
+    resp = get(url, "/memory", {"q": q["question"], "scope": scope, "limit": k}, headers=hdrs)
+    hits = resp.get("hits", [])
+    arm = resp.get("embedder")            # the server echoes which arm served it: proof from the reply
     ids = [h["id"] for h in hits]
     abstain = q["question_id"].endswith("_abs")
     gold_sids = set(q.get("answer_session_ids") or [])
@@ -167,7 +172,7 @@ def recall(url: str, q: dict, scope: str, where: dict, k: int) -> dict:
             out["session_coverage"] = round(len(shown_s & gold_s) / len(gold_s), 3)
         return out
 
-    return {"ids": ids,
+    return {"ids": ids, "arm": arm,
             "turn_top1": flag(lambda v: v and v[0][0]),
             "turn_top3": flag(lambda v: any(x[0] for x in v[:3])),
             "session_top1": flag(lambda v: v and v[0][1] in gold_sids),
@@ -175,12 +180,14 @@ def recall(url: str, q: dict, scope: str, where: dict, k: int) -> dict:
             **coverage()}
 
 
-def ask(url: str, q: dict, scope: str, muted: bool, style: str = "direct") -> str:
+def ask(url: str, q: dict, scope: str, muted: bool, style: str = "direct",
+        no_embedder: bool = False) -> str:
     """One fresh conversation, one answer. The server injects from the question's own scope
     (that IS the product path); a muted control request carries the header that turns
     memory off, and the cold baseline gets no scope at all."""
     hdrs = ({"X-Strata-Memory": "off"} if muted
-            else {"X-Strata-Memory-Scope": scope})
+            else {"X-Strata-Memory-Scope": scope}
+                 | ({"X-Strata-Memory-Embedder": "off"} if no_embedder else {}))
     body = {"model": "", "messages": [{"role": "user",
                                        "content": f"{q['question']}\n\n{ANSWER_RULES[style]}"}],
             "max_tokens": 500, "temperature": 0.8, "reasoning_effort": "off"}
@@ -276,7 +283,8 @@ def load_map(map_path: str) -> dict[str, dict[int, tuple[bool, str]]]:
 
 def run(url: str, data: list[dict], out_path: str, repeats: int, k: int, types: set,
         skip_ingest: bool, use_judge: bool, muted_control: bool, limit: int,
-        style: str = "direct", map_path: str | None = None, log=print) -> dict:
+        style: str = "direct", map_path: str | None = None, no_embedder: bool = False,
+        log=print) -> dict:
     done, map_path = {}, map_path or out_path + ".map"
     try:
         for line in open(out_path):
@@ -310,17 +318,20 @@ def run(url: str, data: list[dict], out_path: str, repeats: int, k: int, types: 
                                        "where": {str(i): list(v) for i, v in where.items()}}) + "\n")
                 mapf.flush()
                 log(f"{qid} ({qtype}): ingested {len(where)} turns")
-            rec = recall(url, q, scope, where, k)
+            rec = recall(url, q, scope, where, k, no_embedder=no_embedder)
             correct_votes = []
             for rep in range(repeats):
                 if rep in done.get(qid, ()):
                     continue
-                hyp = scrub(ask(url, q, scope, muted=False, style=style))
+                hyp = scrub(ask(url, q, scope, muted=False, style=style, no_embedder=no_embedder))
                 cold = scrub(ask(url, q, scope, muted=True)) if muted_control else None
                 ok = judge(url, q, hyp) if use_judge else None
                 if ok is not None:
                     correct_votes.append(ok)
                 obj = {"question_id": qid, "type": qtype, "repeat": rep,
+                       # which arm served it, read back from the server's own reply - not from a flag
+                       # the run hoped it had set
+                       "arm": rec.get("arm"),
                        "hypothesis": hyp, "gold": scrub(q["answer"]), "correct": ok,
                        "cold_hypothesis": cold, "judge": None if ok is None else
                        "official LongMemEval checker prompt; local judge (same model, memory "
@@ -388,6 +399,10 @@ def main(argv=None) -> int:
     ap.add_argument("--skip-ingest", action="store_true", help="rows already in the store")
     ap.add_argument("--no-judge", action="store_true")
     ap.add_argument("--muted-control", action="store_true", help="also ask each question cold")
+    ap.add_argument("--no-embedder", action="store_true",
+                    help="the LEXICAL arm (arm C1): sends X-Strata-Memory-Embedder: off on every "
+                         "recall and ask, so both arms run against ONE store, ONE vector set and "
+                         "ONE boot - the only difference between the two records is the reranker")
     ap.add_argument("--style", choices=("direct", "con"), default="direct",
                     help="answer instruction: direct, or the authors' recommended extract-then-answer")
     ap.add_argument("--map", dest="map_path", default=None,
@@ -406,10 +421,12 @@ def main(argv=None) -> int:
         print(f"[lme] store cap {cap} (rows {st.get('memories')}): a full run wants max_memories 0 "
               "on a dedicated venue store - the oracle set alone is ~6k rows", file=sys.stderr)
     got = run(a.url, data, a.out, a.repeats, a.recall_k, {t.strip() for t in a.types.split(",")
-            if t.strip()}, a.skip_ingest, not a.no_judge, a.muted_control, a.limit, a.style, a.map_path)
+            if t.strip()}, a.skip_ingest, not a.no_judge, a.muted_control, a.limit, a.style, a.map_path,
+                   no_embedder=a.no_embedder)
     with open(a.out + ".metrics.json", "w") as f:                  # the venue record
         json.dump({"data": a.data, "url": a.url, "repeats": a.repeats, "recall_k": a.recall_k,
-                   "muted_control": a.muted_control, "style": a.style, **got}, f, indent=1)
+                   "muted_control": a.muted_control, "style": a.style,
+                   "no_embedder": a.no_embedder, "arm": "lexical" if a.no_embedder else "hybrid", **got}, f, indent=1)
     return 0
 
 
