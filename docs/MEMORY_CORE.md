@@ -761,6 +761,16 @@ rows, 500 questions, both arms, scored by the venue's own `recall_metrics`; the 
 questions (10 identical lists). `turn_top1` / `turn_top3` are the same at both k values (the list prefix
 does not change), coverage differs because coverage is measured over the whole candidate window:
 
+**The offline path reproduces the live venue exactly, which is what makes it usable as an instrument.** The
+lexical arm of this offline pass measured `turn_top1 0.504 / turn_top3 0.749` at k=10; arm B's live venue
+record — 1,500 lines, three repeats, the server's own search during a real accuracy run — filed
+`turn_top1 0.504 / turn_top3 0.749`. Two independent paths (an in-process search over a copy of a sealed
+store today, versus the running server's search during the venue) agreeing to three decimals. So the
+hybrid arm's `+0.074` top-3 is a retrieval *prediction* about the live venue, not just about the copy —
+and it is still only a retrieval statement: no answer was generated and no judge ran, so it is not an
+accuracy claim and does not satisfy the venue protocol (temp 0.8/1.0, ≥3 repeats, one fresh conversation
+per ask, 0-leak muted control). The accuracy half stays the venue's job.
+
 ```
 k=10                             n    turn_top1    turn_top3      row_cov     sess_cov
   OVERALL                      500   .504→.504 +.000  .749→.823 +.074  .830→.885 +.055  .838→.893 +.055
