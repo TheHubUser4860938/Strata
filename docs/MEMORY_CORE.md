@@ -675,11 +675,31 @@ frequencies and the rare-token bar on EVERY recall, and recomputed payloads per 
 three — and memoizes payloads per row. Output is unchanged row for row: a 10-query × 2-mode snapshot of 1,920
 ordered rows diffed clean before/after. The shipped lexical path went 126 ms → 52 ms warm.
 
-**Venue law.** The embedder is its own axis, so the venue measures it separately: **C1** = 192 notes / 48k
-chars, lexical (directly comparable to arm B's 0.721), **C2** = the same budget with the embedder ON. C1 − B
-is the budget delta, C2 − C1 is the retrieval delta. The venue store needs `tools/m4_embed.py` over its ~13k
-rows before C2 (~90 s at the measured 151 rows/s). The reach probe is mechanism evidence on real rows, **not**
-a benchmark claim; the accuracy claim comes from the venue record, at temp 0.8/1.0 over ≥3 repeats.
+**Venue law.** The venue measures the full stack (192 notes / 48k chars, embedder ON) against arm B's 0.721,
+because that combination is the thing being shipped; the retrieval-only A/B (`tools/lme_retrieval_ab.py`,
+~2 min, no generation) attributes the result per type for free, and the lexical *accuracy* arm runs only if
+the outcome comes back flat. The venue store needs `tools/m4_embed.py` over its ~13k rows first (~90 s at the
+measured 151 rows/s). Reach probes are mechanism evidence on real rows, **not** a benchmark claim; the
+accuracy claim comes from the venue record, at temp 0.8/1.0 over ≥3 repeats.
+
+**Reach probe, automated (`--auto N`, 2026-10-14).** 200 degraded self-queries built from the live 2,589-row
+store: sample every Mth active row, delete its rare tokens (df ≤ 3 — the callsigns and township names that
+are a lexical ranker's entire handle) and ask with what is left. The gold answer is the row itself, so rank
+is unambiguous, nothing is hand-picked, and no engine is involved.
+
+```
+window 48 notes   top1    top3    top10   in window   median
+  lexical         0.885   0.905   0.910   0.930       1
+  hybrid          0.885   0.915   0.925   0.935       1
+FLIPPED IN 1   FLIPPED OUT 0   moved within window 8   net +1/200
+```
+
+Read as, honestly: the reranker cost nothing here (zero facts buried that the words used to find) and moved
+eight ranks around, but it also **could not** show much, because the lexical store already returns the right
+row at rank 1 on 88.5% of these probes. A near-saturated baseline cannot demonstrate a lever. The venue is
+where the headroom is — arm B's filed `turn_top1` is ~0.51 there — and that is the difference between "no
+harm measured" and "improvement measured". The probe reports FLIPPED IN / FLIPPED OUT separately on purpose:
+a mean-rank move alone hides both directions.
 
 **Write-time near-dupe guard (2026-10-14, embedder ON only — with the embedder off the write path is
 byte-identical).** One username policy became **57 rows in two days**: every sweep re-derives the same
