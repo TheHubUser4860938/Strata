@@ -199,6 +199,24 @@ class CoverageMetric(unittest.TestCase):
         self.assertIsNone(r["turn_top1"], "abstention keeps the nulls, as the official eval does")
         self.assertNotIn("session_coverage", r, "no gold location means no coverage number")
 
+    def test_the_two_instruments_share_one_scorer(self):
+        """The accuracy venue and the retrieval A/B must not disagree about what the SAME hit list
+        meant - the only difference between them is who fetched the ids."""
+        r = self.recall_with([10, 12])
+        direct = H.recall_metrics([10, 12], dict(self.WHERE), {"s1", "s2"}, False, 8)
+        self.assertEqual({k: v for k, v in r.items() if k in direct}, direct,
+                         "a mechanism number and an outcome number scored by different code would "
+                         "be two experiments wearing one protocol")
+
+    def test_the_ab_aggregator_skips_abstentions_instead_of_averaging_them_in(self):
+        import lme_retrieval_ab as AB
+        a = AB.agg([{"turn_top1": True, "session_coverage": 1.0},
+                    {"turn_top1": None, "session_coverage": None},     # abstention: skipped, not a 0
+                    {"turn_top1": False, "session_coverage": 0.5}])
+        self.assertEqual(a["turn_top1"], 0.5, "the mean is over the two scorable questions")
+        self.assertEqual(a["session_coverage"], 0.75)
+        self.assertIsNone(AB.agg([{"turn_top1": None}])["turn_top1"], "nothing scorable is n/a")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -125,59 +125,59 @@ def ingest(url: str, q: dict, scope: str) -> dict[int, tuple[bool, str]]:
     return where
 
 
+def recall_metrics(ids: list, where: dict, gold_sids: set, abstain: bool, k: int) -> dict:
+    """Score ONE hit list against the gold map: the Primnox top-1/top-3 flags (turn level = the
+    first / first-three hits carrying a has_answer turn; session level = hits from an
+    answer_session) plus the multi-evidence COVERAGE fields.
+
+    Coverage (spikes/lme/TEMPORAL_DIAG.md is why it exists): top-1/top-3 say AN answer row is
+    present, but an ordering question needs SEVERAL, and the old flags could not tell partial
+    coverage from full - which is how 20 temporal questions came to refuse with a gold row already
+    in the block. These report the FRACTION of a question's gold rows and gold SESSIONS the recall
+    carries, so a coverage failure separates from a reasoning failure without hand-reading one
+    question at a time. Measured on the recall candidate list at the request's own limit - the same
+    list block_for draws from - so a char budget that trims the tail makes this a mild UPPER bound
+    on what the model read. Abstention questions have no gold location: the flags report null and
+    coverage reports nothing, as the official retrieval eval skips them.
+
+    ONE source of truth on purpose: the accuracy run scores through here, and so does the
+    retrieval-only arm A/B (tools/lme_retrieval_ab.py). A mechanism number and an outcome number can
+    then never disagree about what the same hit list meant."""
+    out: dict = {"turn_top1": None, "turn_top3": None, "session_top1": None, "session_top3": None}
+    if abstain or not ids:
+        return out
+    vals = [where.get(i, (False, "")) for i in ids[:k]]
+    out.update({
+        "turn_top1": bool(vals and vals[0][0]),
+        "turn_top3": any(x[0] for x in vals[:3]),
+        "session_top1": bool(vals and vals[0][1] in gold_sids),
+        "session_top3": any(x[1] in gold_sids for x in vals[:3])})
+    gold_r = [r for r, (ha, _) in where.items() if ha]
+    gold_s = {where[r][1] for r in gold_r} or gold_sids
+    shown_r = [i for i in ids if where.get(i, (False, ""))[0]]
+    shown_s = {where[i][1] for i in shown_r}
+    out.update({"gold_rows": len(gold_r), "shown_rows": len(shown_r),
+                "gold_sessions": len(gold_s), "shown_sessions": len(shown_s & gold_s)})
+    if gold_r:
+        out["row_coverage"] = round(len(shown_r) / len(gold_r), 3)
+    if gold_s:
+        out["session_coverage"] = round(len(shown_s & gold_s) / len(gold_s), 3)
+    return out
+
+
 def recall(url: str, q: dict, scope: str, where: dict, k: int, no_embedder: bool = False) -> dict:
-    """The Primnox metric on the server's own search: top-1/top-3 at turn level (the first
-    / first-three hits carrying a has_answer turn) and at session level (hits from an
-    answer_session). Abstention questions have no gold location and report null, as the
-    official retrieval eval skips them."""
+    """One recall, scored by recall_metrics. `no_embedder` asks the server's per-request mute, and
+    the server's own reply says which arm served it - the record carries that echo, not our intent."""
     # GET /memory?q= answers under "hits" (the list endpoint uses "memories") - reading the
     # wrong key would score a quiet zero instead of an honest miss.
     hdrs = {"Accept": "application/json"}
-    if no_embedder:                       # the LEXICAL arm (C1): the store's per-request mute
+    if no_embedder:                       # the LEXICAL arm: the store's per-request reranker mute
         hdrs["X-Strata-Memory-Embedder"] = "off"
     resp = get(url, "/memory", {"q": q["question"], "scope": scope, "limit": k}, headers=hdrs)
-    hits = resp.get("hits", [])
-    arm = resp.get("embedder")            # the server echoes which arm served it: proof from the reply
-    ids = [h["id"] for h in hits]
-    abstain = q["question_id"].endswith("_abs")
-    gold_sids = set(q.get("answer_session_ids") or [])
-
-    def flag(fn):
-        if abstain or not ids:
-            return None
-        vals = [where.get(i, (False, "")) for i in ids[:k]]
-        return fn(vals)
-
-    def coverage() -> dict:
-        """Multi-evidence COVERAGE (spikes/lme/TEMPORAL_DIAG.md is why this exists): top-1/top-3
-        say AN answer row is present, but an ordering question needs SEVERAL, and the old flags
-        could not tell partial coverage from full - which is exactly how 20 temporal questions
-        came to refuse with a gold row already in the block. These report the FRACTION of the
-        question's gold rows and gold SESSIONS the recall carries, so a coverage failure separates
-        from a reasoning failure without hand-reading one question at a time. Measured on the
-        recall candidate list at the request's own limit - the same list block_for draws from -
-        so a char budget that trims the tail makes this a mild UPPER bound on what the model read.
-        Abstention questions have no gold location and report nothing, like the flags above."""
-        if abstain or not ids:
-            return {}
-        gold_r = [r for r, (ha, _) in where.items() if ha]
-        gold_s = {where[r][1] for r in gold_r} or gold_sids
-        shown_r = [i for i in ids if where.get(i, (False, ""))[0]]
-        shown_s = {where[i][1] for i in shown_r}
-        out = {"gold_rows": len(gold_r), "shown_rows": len(shown_r),
-               "gold_sessions": len(gold_s), "shown_sessions": len(shown_s & gold_s)}
-        if gold_r:
-            out["row_coverage"] = round(len(shown_r) / len(gold_r), 3)
-        if gold_s:
-            out["session_coverage"] = round(len(shown_s & gold_s) / len(gold_s), 3)
-        return out
-
-    return {"ids": ids, "arm": arm,
-            "turn_top1": flag(lambda v: v and v[0][0]),
-            "turn_top3": flag(lambda v: any(x[0] for x in v[:3])),
-            "session_top1": flag(lambda v: v and v[0][1] in gold_sids),
-            "session_top3": flag(lambda v: any(x[1] in gold_sids for x in v[:3])),
-            **coverage()}
+    ids = [h["id"] for h in resp.get("hits", [])]
+    return {"ids": ids, "arm": resp.get("embedder"),
+            **recall_metrics(ids, where, set(q.get("answer_session_ids") or []),
+                             q["question_id"].endswith("_abs"), k)}
 
 
 def ask(url: str, q: dict, scope: str, muted: bool, style: str = "direct",

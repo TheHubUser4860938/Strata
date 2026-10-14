@@ -563,22 +563,42 @@ python3 tools/m4_embed.py --dir Strata-data/memory-venue   # once, up front: ~13
                                                   # 151 rows/s. C1 ignores the vectors (its arm mutes
                                                   # the rerank), so doing it before the first run
                                                   # keeps every timed minute free of store writes.
-# C1 - the lexical arm (comparable to arm B's 0.721: same store, same protocol, budget is the axis)
+# 0. the mechanism A/B: both arms, 500 questions, NO generation - ~2 min of store time
+python3 tools/lme_retrieval_ab.py --data <oracle.json> --map <shared.map> --wide-k 192
+# 1. the outcome: the full stack (budget + embedder), the number the project is asking for
 python3 tools/lme_harness.py --data <oracle.json> --skip-ingest --map <shared.map> \
-        --repeats 3 --style con --muted-control --no-embedder --out armc1.jsonl
-# C2 - the same boot, embedder on
+        --repeats 3 --style con --muted-control --out armc.jsonl
+# 2. only if step 1 is flat or mixed: the lexical arm, same boot, ~1.5-2 h
 python3 tools/lme_harness.py --data <oracle.json> --skip-ingest --map <shared.map> \
-        --repeats 3 --style con --muted-control --out armc2.jsonl
-python3 tools/lme_report.py armc1.jsonl ; python3 tools/lme_report.py armc2.jsonl
+        --repeats 3 --style con --muted-control --no-embedder --out armc-lexical.jsonl
+python3 tools/lme_report.py armc.jsonl
 ```
 
-Read as: **C1 − B = the budget delta, C2 − C1 = the retrieval delta**, both at temp 0.8 with the
-official checker and the muted control in the same run. The venue law applies unchanged — nothing else
-touches :8005 during a timed run, including the agent's own harness, so the run is backgrounded and the
-turn ends; the control must show 0 leaks or the venue exits 2. Expected shape from the temporal
-diagnostic: temporal-reasoning should move materially above 0.433 if it is coverage-limited (the
-coverage fields now separate that from a reasoning limit without hand-reading), and C2 should raise
-`session_coverage` on multi-evidence types.
+**Why the A/B is step 0 and the lexical arm is step 2.** The retrieval metrics — top-1/top-3 and the
+coverage fields — need only the store's own search, so both arms score in ~2 minutes with no prefill and
+no judge: same questions, same scopes, same gold map, and the same `recall_metrics()` the accuracy run
+uses, so a mechanism number and an outcome number can never disagree about what one hit list meant.
+That answers "did the reranker move the evidence, per type" before a single token is generated, and it
+is what makes a flat accuracy result interpretable instead of merely disappointing. The full stack runs
+first because it is the number being asked for; the lexical *accuracy* arm is only worth its 1.5–2 h if
+the outcome is ambiguous. Two guards decide for themselves whether the A/B happened at all: every
+reply's echoed `"embedder"` field must match the request that produced it, and the arms must return
+different hit lists for at least one question — identical lists everywhere means the reranker never
+moved, and the tool exits 2 rather than reporting a null comparison as a result (smoked on the dev
+store, whose scopes are not `lme_*`: it refused, correctly).
+
+Read as: **arm C (full stack) − arm B (0.721) = the combined effect of budget + reranker**, which is
+the question being asked; the A/B's per-type retrieval and coverage deltas say *which part* of the
+system did the work, for free; and if the combined result comes back flat, the lexical accuracy arm
+turns one ambiguous number into two clean ones (**budget delta** and **reranker delta**) instead of a
+retirement decision made on a coin flip. Both accuracy arms run at temp 0.8 with the official checker
+and the muted control in the same pass. The venue law applies unchanged — nothing else touches :8005
+during a timed run, including the agent's own harness, so the run is backgrounded and the turn ends;
+the control must show 0 leaks or the venue exits 2. Expected shape from the temporal diagnostic: if
+temporal-reasoning is coverage-limited, the A/B shows `session_coverage` rising on the multi-evidence
+types and the accuracy run should follow it materially above 0.433; if coverage rises and accuracy does
+not, the residual is a reasoning limit — quant/model territory, stated plainly, and the row stops being
+a memory-project target.
 
 ## Semantic recall — the bge-small hybrid layer (added 2026-10-14, PHASE 4; opt-in)
 
