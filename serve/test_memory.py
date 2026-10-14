@@ -295,7 +295,10 @@ class EmbedderMuteOverHttp(unittest.TestCase):
         v = [1.0, 0.0, 0.0, 0.0]
         cls.svc.memory = MemoryService(cls.tmp.name,
                                        embedder=StubEmbedder({"glimmery": v,
-                                                              "zebra flibberquant gauge": v}))
+                                                              "zebra flibberquant gauge": v,
+                                                              # a content-word SUBSET of the stored row:
+                                                              # the guard folds this one away by default
+                                                              "zebra flibberquant": v}))
         cls.svc.memory.remember("zebra flibberquant gauge")     # shares no word with the probe query
         cls.httpd = serve(cls.svc, port=0)
         cls.port = cls.httpd.server_address[1]
@@ -327,6 +330,25 @@ class EmbedderMuteOverHttp(unittest.TestCase):
         conn.request("POST", "/memory", json.dumps({"op": "search", "q": "glimmery", "limit": 10}),
                      {"Content-Type": "application/json", "X-Strata-Memory-Embedder": "off"})
         self.assertEqual(json.loads(conn.getresponse().read().decode())["hits"], [])
+
+    def _post(self, body):
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=30)
+        conn.request("POST", "/memory", json.dumps(body), {"Content-Type": "application/json"})
+        return json.loads(conn.getresponse().read().decode())
+
+    def test_remember_guard_false_lands_the_write_the_guard_would_fold(self):
+        """The venue's ingest needs this over HTTP, so it is proven over HTTP. "zebra flibberquant"
+        is a content-word subset of the row already in the store, so the default path folds it into
+        that row and returns the OLD id - which is exactly what shuffles a benchmark's gold map when
+        the turns being written are evidence rather than proposals."""
+        folded = self._post({"op": "remember", "text": "zebra flibberquant"})
+        self.assertEqual(folded["deduped"], "semantic", "the guard is ON by default - the shipped path")
+        landed = self._post({"op": "remember", "text": "zebra flibberquant", "guard": False})
+        self.assertNotEqual(landed["id"], folded["id"], "guard=false must write the row, not fold it")
+        self.assertFalse(landed.get("deduped"), "and report a fresh write, so the caller can tell")
+        again = self._post({"op": "remember", "text": "zebra flibberquant", "guard": "off"})
+        self.assertEqual(again["id"], landed["id"], "the string form means off too, and exact-text "
+                                                    "dedup still applies - guard=false is not a bypass")
 
     def test_the_injection_path_respects_the_mute(self):
         msgs = [{"role": "user", "content": "glimmery?"}]
@@ -1164,6 +1186,31 @@ class WriteTimeDedupe(unittest.TestCase):
         stub = StubEmbedder({t: self.V for t in texts})
         m = MemoryService(self.tmp.name + str(len(texts)) + str(hash(texts)), embedder=stub)
         return m
+
+    def test_guard_off_lands_both_rows_because_a_haystack_is_evidence(self):
+        """The measured reason this exists: an ingest with the embedder ON superseded 317 LongMemEval
+        rows inside lme_ scopes, and a SUPPRESSED write returns the EXISTING row's id - so one turn's
+        gold label gets written onto another turn's row, and a retired gold row leaves the map
+        pointing somewhere recall can never reach. The guard is right for curation and wrong for an
+        ingest, so the caller must be able to stand it aside - and only for that caller."""
+        m = self.mem_with("the flibber gauge reads torque at the works",
+                          "the flibber gauge reads torque")
+        try:
+            a = m.remember("the flibber gauge reads torque at the works")
+            b = m.remember("the flibber gauge reads torque", guard=False)
+            self.assertNotEqual(b["id"], a["id"], "the weaker phrasing still lands when the guard is off")
+            self.assertFalse(b.get("deduped"), "and the reply says it is a fresh write, so the "
+                                               "benchmark caller can tell a landing from a fold")
+            self.assertEqual(m.stats()["memories"], 2)
+            with m.lock:
+                vecs = m.conn.execute("select count(*) from embeddings").fetchone()[0]
+            self.assertEqual(vecs, 2, "guard=False skips the VERDICT, not the embedding - the "
+                                      "reranker must still see the whole haystack")
+            c = m.remember("the flibber gauge reads torque")     # exact text of row b: pre-existing law
+            self.assertEqual(c["deduped"], True, "not a bypass: identical text still updates in place")
+            self.assertEqual(c["id"], b["id"])
+        finally:
+            m.close()
 
     def test_a_lesser_phrasing_never_lands(self):
         m = self.mem_with("the flibber gauge reads torque at the works",

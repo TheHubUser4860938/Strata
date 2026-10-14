@@ -164,6 +164,54 @@ class Harness(unittest.TestCase):
         self.assertTrue(any("77.3" in m["text"] for m in rows), "the evidence tail vanished")
 
 
+class IngestLaw(unittest.TestCase):
+    """The harness's own ingest rules, HTTP stubbed. The gold map IS the benchmark's ground truth, so
+    both what gets written and what it gets labelled are under test - the store's consolidation is a
+    correct behaviour in the wrong place, and it silently moves gold labels."""
+    Q = {"question_id": "q1", "question": "?", "question_type": "temporal-reasoning",
+         "answer_session_ids": ["sA"],
+         "haystack_session_ids": ["sA", "sB"],
+         "haystack_dates": ["2026-01-05 10:00", "2026-01-06 10:00"],
+         "haystack_sessions": [[{"role": "user", "content": "alpha", "has_answer": True}],
+                               [{"role": "user", "content": "beta", "has_answer": False}]]}
+
+    def setUp(self):
+        self._real, H.post = H.post, None
+        self.bodies = []
+
+    def tearDown(self):
+        H.post = self._real
+
+    def test_haystack_writes_go_in_with_the_near_dupe_guard_standing_aside(self):
+        def fake(url, path, body, headers=None, timeout=240.0):
+            self.bodies.append(body)
+            return {"id": len(self.bodies), "deduped": False}
+        H.post = fake
+        where = H.ingest("u", self.Q, "lme_q1")
+        self.assertTrue(all(b.get("guard") is False for b in self.bodies),
+                        "a haystack turn must not be consolidated away from its own gold label")
+        self.assertEqual((where[1][0], where[1][1]), (True, "sA"))
+        self.assertEqual((where[2][0], where[2][1]), (False, "sB"))
+
+    def test_a_folded_write_aborts_the_run_rather_than_scoring_a_shuffled_map(self):
+        """The flag is only an assumption until the reply proves it - the same rule the arm mute
+        follows: an experiment that quietly stops being an experiment has to fail loudly."""
+        def fake(url, path, body, headers=None, timeout=240.0):
+            return {"id": 7, "deduped": "semantic"}          # the server ignored guard=false
+        H.post = fake
+        with self.assertRaises(RuntimeError) as cm:
+            H.ingest("u", self.Q, "lme_q1")
+        self.assertIn("guard=false", str(cm.exception))
+
+    def test_two_turns_sharing_a_row_keep_the_first_session_and_the_or_of_the_gold(self):
+        def fake(url, path, body, headers=None, timeout=240.0):
+            return {"id": 3, "deduped": False}               # identical text: both turns share a row
+        H.post = fake
+        where = H.ingest("u", self.Q, "lme_q1")
+        self.assertEqual(where[3], (True, "sA"), "a later non-gold duplicate must not erase the "
+                                                 "gold label that was already on the row")
+
+
 class CoverageMetric(unittest.TestCase):
     """The metric spikes/lme/TEMPORAL_DIAG.md asked for. turn_top1/top3 are satisfied by ANY one
     gold turn - which is precisely what hid the ordering failures - so coverage must report the

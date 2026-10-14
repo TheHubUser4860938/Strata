@@ -86,10 +86,38 @@ def day_of(date_str: str) -> str:
     return m.group(1) if m else ""
 
 
+def chunk_turn(full: str, cap: int = 3900) -> list[str]:
+    """Split one turn at word boundaries into pieces the store accepts (cap 3,900 chars, under the
+    hard 4,000 the store enforces). EVERY piece keeps the turn's gold label - an answer that lands
+    in piece 3 of a turn must still count as a hit - and the boundary space is consumed rather than
+    carried, because the store strips leading whitespace. Shared with the scale probe, which ingests
+    the same bytes into a store copy offline, so an ingest-cost measurement cannot drift from what
+    the venue actually writes."""
+    pieces, start = [], 0
+    while start < len(full):
+        cut = min(len(full), start + cap)
+        if cut < len(full):
+            cut = max(full.rfind(" ", start, cut), start + 1)   # never mid-word
+            pieces.append(full[start:cut])
+            start = cut + 1        # the boundary space is consumed: the store strips
+                                   # leading whitespace, so it must not ride the next piece
+        else:
+            pieces.append(full[start:cut])
+            start = cut
+    return pieces
+
+
 def ingest(url: str, q: dict, scope: str) -> dict[int, tuple[bool, str]]:
     """Remember every turn of every haystack session, date-prefixed, into the question's own
-    scope. Returns row-id -> (has_answer, session_id) so recall hits score turn- AND
-    session-level."""
+    scope. Returns row-id -> (has_answer, session_id) so recall hits score turn- AND session-level.
+
+    Writes go in with the semantic near-dupe guard standing aside (`guard: false`), because the
+    haystack is EVIDENCE, not a set of proposals: measured on a store copy, the guard superseded 317
+    oracle rows in lme_ scopes during one ingest with the embedder on, and a suppressed write returns
+    the EXISTING row's id - so the gold label of a different turn would be written onto a row that
+    never carried it, and a superseded gold row would leave the map pointing at a row recall can
+    never return. A benchmark whose consolidation moves the gold around measures something else.
+    If the server ever ignores the flag, the run aborts rather than scoring a shuffled map."""
     where: dict[int, tuple[bool, str]] = {}
     for si, session in enumerate(q["haystack_sessions"]):
         sid = q["haystack_session_ids"][si]
@@ -105,23 +133,21 @@ def ingest(url: str, q: dict, scope: str) -> dict[int, tuple[bool, str]]:
             # assistant answers - run longer than that, so a long turn is chunked at word
             # boundaries and EVERY chunk carries the turn's gold: an answer that lands in chunk
             # 3 of a turn must still count as a hit, and the session-level score is unchanged
-            full = lead + text
-            pieces, start = [], 0
-            while start < len(full):
-                cut = min(len(full), start + 3900)
-                if cut < len(full):
-                    cut = max(full.rfind(" ", start, cut), start + 1)   # never mid-word
-                    pieces.append(full[start:cut])
-                    start = cut + 1        # the boundary space is consumed: the store strips
-                                           # leading whitespace, so it must not ride the next piece
-                else:
-                    pieces.append(full[start:cut])
-                    start = cut
-            for piece in pieces:
-                r = post(url, "/memory", {"op": "remember", "text": piece, "scope": scope})
+            for piece in chunk_turn(lead + text):
+                r = post(url, "/memory", {"op": "remember", "text": piece, "scope": scope,
+                                          "guard": False})
+                if r.get("deduped") == "semantic":
+                    raise RuntimeError(
+                        f"{q['question_id']}: the server folded an ingest write into row {r.get('id')} "
+                        "despite guard=false - the gold map would be shuffled, so the run stops here")
                 rid = r.get("id")
                 if rid is not None:
-                    where[rid] = (bool(turn.get("has_answer")), sid)
+                    # two turns can share one row (identical text, exact-text dedupe): the row keeps
+                    # the FIRST turn's session and the OR of the gold flags, so a gold label is never
+                    # overwritten by a later non-gold duplicate
+                    prev = where.get(rid)
+                    gold = bool(turn.get("has_answer")) or bool(prev and prev[0])
+                    where[rid] = (gold, prev[1] if prev else sid)
     return where
 
 

@@ -391,11 +391,15 @@ class MemoryService:
 
     def remember(self, text: str, scope: str = USER_SCOPE, source: str = "manual",
                  confidence: float | None = None, provenance: dict | None = None,
-                 klass: str | None = None) -> dict:
+                 klass: str | None = None, guard: bool = True) -> dict:
         """Store one durable fact. An active row with the same normalized text and scope is updated instead
         of duplicated: the curation loop may propose the same thing many times. klass is the call number
         (class axis, PHASE 4.5): a re-learned fact never RE-SHELVES a row that already has one - the
-        shelf is a decision, not a guess to be overwritten - but fills a shelf that is still empty."""
+        shelf is a decision, not a guess to be overwritten - but fills a shelf that is still empty.
+        guard=False stands the SEMANTIC near-dupe verdict aside (the row is still embedded, and exact-text
+        dedup still applies) for writes that must land complete: a benchmark haystack is evidence, not a
+        set of proposals, and consolidation retires rows the gold map still points at - measured, 317
+        oracle rows in lme_ scopes were superseded by the guard during one ingest with the embedder on."""
         text = " ".join(str(text).split())
         if not text:
             raise ValueError("memory text is empty")
@@ -428,9 +432,10 @@ class MemoryService:
             # so the shipped write path is byte-identical). The curation loop re-derives the same
             # fact in new words every sweep - one username policy landed as 57 rows in two days, and
             # exact-text dedup cannot see any of them. Cosine FINDS the candidates; the DECISION is
-            # the merge tool's v3 law, unchanged (see _semantic_dupe).
+            # the merge tool's v3 law, unchanged (see _semantic_dupe). guard=False: the write must
+            # land as written (benchmark ingest) - the vector is still stored, only the verdict stands aside.
             supersede: int | None = None
-            if vec is not None:
+            if vec is not None and guard:
                 verdict = self._semantic_dupe(text, same, vec)
                 if verdict and verdict[0] == "suppress":
                     self.conn.execute(

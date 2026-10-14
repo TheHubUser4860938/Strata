@@ -5521,11 +5521,15 @@ def make_handler(svc: Service):
                 return
             op = str(req.get("op") or "").lower()
             if op == "remember":
+                guard = req.get("guard", True)
+                if isinstance(guard, str):      # tolerant on the wire, same style as the mute header
+                    guard = guard.strip().lower() not in ("0", "false", "off", "no")
                 r = svc.memory.remember(str(req.get("text") or ""), scope=str(req.get("scope") or "user"),
                                         source=str(req.get("source") or "manual"),
                                         confidence=req.get("confidence"),
                                         provenance=req.get("provenance"),
-                                        klass=req.get("class"))      # memory-core PHASE 4.5: the call number
+                                        klass=req.get("class"),      # memory-core PHASE 4.5: the call number
+                                        guard=guard)      # false = land the write as given (benchmark ingest)
                 # the curation loop passes provenance {turn_id, probe, gold, cls, passes} so every
                 # stored fact can be audited back to its evidence; absent -> byte-identical to before
             elif op == "forget":
