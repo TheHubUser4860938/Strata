@@ -559,11 +559,14 @@ run against that one process, so nothing but the reranker differs between them:
 
 ```
 systemctl --user stop strata-sweep.timer            # the window owns :8005; restore it after
+python3 tools/m4_embed.py --dir Strata-data/memory-venue   # once, up front: ~13k rows, ~90 s at
+                                                  # 151 rows/s. C1 ignores the vectors (its arm mutes
+                                                  # the rerank), so doing it before the first run
+                                                  # keeps every timed minute free of store writes.
 # C1 - the lexical arm (comparable to arm B's 0.721: same store, same protocol, budget is the axis)
 python3 tools/lme_harness.py --data <oracle.json> --skip-ingest --map <shared.map> \
         --repeats 3 --style con --muted-control --no-embedder --out armc1.jsonl
-# C2 - the same boot, embedder on (backfill first: ~13k rows, ~90 s at 151 rows/s)
-python3 tools/m4_embed.py --dir Strata-data/memory-venue
+# C2 - the same boot, embedder on
 python3 tools/lme_harness.py --data <oracle.json> --skip-ingest --map <shared.map> \
         --repeats 3 --style con --muted-control --out armc2.jsonl
 python3 tools/lme_report.py armc1.jsonl ; python3 tools/lme_report.py armc2.jsonl
