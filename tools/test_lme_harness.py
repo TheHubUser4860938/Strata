@@ -164,5 +164,41 @@ class Harness(unittest.TestCase):
         self.assertTrue(any("77.3" in m["text"] for m in rows), "the evidence tail vanished")
 
 
+class CoverageMetric(unittest.TestCase):
+    """The metric spikes/lme/TEMPORAL_DIAG.md asked for. turn_top1/top3 are satisfied by ANY one
+    gold turn - which is precisely what hid the ordering failures - so coverage must report the
+    FRACTION of a question's gold rows and gold SESSIONS that reached the recall, and abstention
+    must report nothing rather than a fake zero."""
+
+    WHERE = {10: (True, "s1"), 11: (True, "s2"), 12: (False, "s3")}
+
+    def recall_with(self, hit_ids, qid="q9"):
+        q = {"question_id": qid, "question": "which two events happened first",
+             "answer_session_ids": ["s1", "s2"]}
+        orig = H.get
+        try:
+            H.get = lambda url, path, params, headers=None: {"hits": [{"id": i} for i in hit_ids]}
+            return H.recall("http://x", q, "lme_q9", dict(self.WHERE), 8)
+        finally:
+            H.get = orig
+
+    def test_partial_evidence_reports_a_fraction_not_a_pass(self):
+        r = self.recall_with([10, 12])                     # one of TWO gold sessions arrived
+        self.assertTrue(r["turn_top1"], "the old flag is happy: a gold turn is first")
+        self.assertEqual(r["session_coverage"], 0.5, "but only one of two events reached the block")
+        self.assertEqual(r["row_coverage"], 0.5)
+        self.assertEqual((r["gold_sessions"], r["shown_sessions"]), (2, 1))
+
+    def test_full_coverage_is_one(self):
+        r = self.recall_with([10, 11, 12])
+        self.assertEqual((r["session_coverage"], r["row_coverage"]), (1.0, 1.0))
+        self.assertEqual((r["gold_sessions"], r["shown_sessions"]), (2, 2))
+
+    def test_abstention_reports_no_coverage_at_all(self):
+        r = self.recall_with([12], qid="q9_abs")
+        self.assertIsNone(r["turn_top1"], "abstention keeps the nulls, as the official eval does")
+        self.assertNotIn("session_coverage", r, "no gold location means no coverage number")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -503,7 +503,12 @@ first run injected 48 notes / 12,000 chars; the second arm injected **96 notes /
 "the fact is genuinely not here" recognized; assistant +4.7, preference +2.2, knowledge-update
 +1.8. The one regression is single-session-user 0.953 -> 0.911 (net -8 of 192 - plausible
 distractor cost of a bigger block on the easiest questions; flagged, not yet explained).
-Temporal-reasoning moved 0.425 -> 0.433: budget does not touch the day-arithmetic weakness.
+Temporal-reasoning moved 0.425 -> 0.433: the one type the bigger block did not move, and the
+framing written here at the time ("the day-arithmetic weakness") was wrong - the diagnostic that
+followed (`spikes/lme/TEMPORAL_DIAG.md`, 2026-10-14) found off-by-N arithmetic in only 12 of 57
+reading failures, and the real mechanism in evidence COVERAGE on multi-event questions. That is
+what arm C's bigger budget and the new embedder both target, and the record now carries coverage
+fields that tell the two causes apart without hand-reading.
 The honesty controls are identical (98.7% idk, same 2/1,500 leaks), the recall lines are
 unchanged by construction (retrieval is scored independently of the injection budget - the
 built-in sanity check passed), and the cost is conversation-start only: with the head pinned,
@@ -522,6 +527,17 @@ completed question-repeats exactly, and no line was lost beyond the crashed repe
 Records: `spikes/lme/oracle-20261013-full.jsonl` (+ `.map`, `.metrics.json`); rerun with
 `python3 tools/lme_harness.py --data <oracle.json> --repeats 3 --style con --muted-control
 --out <out.jsonl>` and aggregate with `python3 tools/lme_report.py <out.jsonl>`.
+
+**Coverage fields (2026-10-14, from `spikes/lme/TEMPORAL_DIAG.md`).** Each scored line now also
+carries `row_coverage` / `session_coverage` and `gold_rows`/`shown_rows`/`gold_sessions`/
+`shown_sessions`: the FRACTION of a question's gold rows and gold sessions the recall carried.
+`turn_top1/top3` are satisfied by any ONE gold turn, which is what hid the temporal failure — an
+ordering question needs three events and got one. `lme_report.py` prints coverage per type and
+splits wrong lines automatically into "every gold session present" (reasoning) versus "at least
+one missing" (retrieval). Coverage is measured on the recall candidate list at the request's own
+limit, the same list `block_for` draws from, so a char budget that trims the tail makes it a mild
+upper bound on what the model read. Records written before this change lack the keys and report
+`n/a` — never a false zero.
 
 ## Semantic recall — the bge-small hybrid layer (added 2026-10-14, PHASE 4; opt-in)
 

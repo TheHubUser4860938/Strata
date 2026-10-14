@@ -235,10 +235,12 @@ class MemoryService:
         self.max_block_chars = max(200, int(max_block_chars))
         # the 50-note ceiling was sized to the 6k/12k char budgets: ~250 chars per note means 50
         # notes IS ~12.5k chars, so a config that raises max_block_chars past that could never
-        # fill. Raised to 120 for the injection-budget venue (24k chars / 96 notes); the guard
-        # still stops a runaway config, and the shipped default (48 notes / 12k) is untouched -
-        # byte-identical, the clamp only binds above 50.
-        self.recall_limit = max(1, min(120, int(recall_limit)))
+        # fill. Raised to 120 for the injection-budget venue (24k chars / 96 notes), and to 240 for
+        # its third arm (48k chars / 192 notes) - the same wall, found before the run this time
+        # because the banner check caught the first one as a silent no-op. The guard still stops a
+        # runaway config, and the shipped default (48 notes / 12k) is untouched: the clamp only
+        # binds above 50, so every earlier release reads byte-identically through it.
+        self.recall_limit = max(1, min(240, int(recall_limit)))
         self.per_turn = bool(per_turn)
         self.turn_recall_limit = max(1, min(50, int(turn_recall_limit)))
         self.turn_block_chars = max(200, int(turn_block_chars))
@@ -674,7 +676,7 @@ class MemoryService:
         already carries its stamp - filtering on it is the date index. Both None (every request today)
         keeps the ranking byte-identical to before. With an embedder configured (PHASE 4) the bm25 set
         is UNIONed with a cosine pass over every embedded active row - see _semantic."""
-        limit = self.recall_limit if limit is None else max(1, min(120, int(limit)))
+        limit = self.recall_limit if limit is None else max(1, min(240, int(limit)))
         # PHASE 4: with an embedder configured, a query bm25 CANNOT serve is exactly the case the
         # cosine pass exists for (spikes/lme/TEMPORAL_DIAG.md: multi-evidence rows that share no rare
         # word with the question). Embedder OFF keeps both early returns untouched - byte-identical.
@@ -809,11 +811,11 @@ class MemoryService:
         # holds dozens of rows at cos 0.5-0.6 on any topical query. Fusing ranks keeps a lexical first
         # place first and still lifts what BOTH lists want - the coverage the temporal diagnostic
         # asked for, without paying for it in precision. Recency and confidence survive as
-        # TIE-BREAKERS only: their terms total at most 1.1e-5, under the RRF gap between adjacent
-        # ranks through the region where the cut actually lands (at rank 120 the step is
-        # 1/(180*181) = 3.1e-5), so inside the window that decides the block they can break a tie
-        # but never cross a rank step. Deeper than ~rank 150 the epsilon can outvote one step -
-        # rows that far down are never shown, and there the difference is noise either way. Rows
+        # TIE-BREAKERS only: their terms total at most 1.1e-5, and the RRF gap between adjacent
+        # ranks stays above that through rank 241 (at rank 120 the step is 1/(180*181) = 3.1e-5),
+        # so across every limit the clamp allows (<= 240) they break ties but never cross a rank
+        # step. Deeper than that the epsilon can outvote one step - rows that far down are never
+        # shown, and there the difference is noise either way. Rows
         # without vectors (a store that never ran tools/m4_embed.py) get the lexical term alone with
         # neutral tie-breakers - recallable, just never promoted by a vote it cannot cast.
         rrf_k = 60.0

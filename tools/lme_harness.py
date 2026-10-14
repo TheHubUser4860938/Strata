@@ -143,11 +143,36 @@ def recall(url: str, q: dict, scope: str, where: dict, k: int) -> dict:
         vals = [where.get(i, (False, "")) for i in ids[:k]]
         return fn(vals)
 
+    def coverage() -> dict:
+        """Multi-evidence COVERAGE (spikes/lme/TEMPORAL_DIAG.md is why this exists): top-1/top-3
+        say AN answer row is present, but an ordering question needs SEVERAL, and the old flags
+        could not tell partial coverage from full - which is exactly how 20 temporal questions
+        came to refuse with a gold row already in the block. These report the FRACTION of the
+        question's gold rows and gold SESSIONS the recall carries, so a coverage failure separates
+        from a reasoning failure without hand-reading one question at a time. Measured on the
+        recall candidate list at the request's own limit - the same list block_for draws from -
+        so a char budget that trims the tail makes this a mild UPPER bound on what the model read.
+        Abstention questions have no gold location and report nothing, like the flags above."""
+        if abstain or not ids:
+            return {}
+        gold_r = [r for r, (ha, _) in where.items() if ha]
+        gold_s = {where[r][1] for r in gold_r} or gold_sids
+        shown_r = [i for i in ids if where.get(i, (False, ""))[0]]
+        shown_s = {where[i][1] for i in shown_r}
+        out = {"gold_rows": len(gold_r), "shown_rows": len(shown_r),
+               "gold_sessions": len(gold_s), "shown_sessions": len(shown_s & gold_s)}
+        if gold_r:
+            out["row_coverage"] = round(len(shown_r) / len(gold_r), 3)
+        if gold_s:
+            out["session_coverage"] = round(len(shown_s & gold_s) / len(gold_s), 3)
+        return out
+
     return {"ids": ids,
             "turn_top1": flag(lambda v: v and v[0][0]),
             "turn_top3": flag(lambda v: any(x[0] for x in v[:3])),
             "session_top1": flag(lambda v: v and v[0][1] in gold_sids),
-            "session_top3": flag(lambda v: any(x[1] in gold_sids for x in v[:3]))}
+            "session_top3": flag(lambda v: any(x[1] in gold_sids for x in v[:3])),
+            **coverage()}
 
 
 def ask(url: str, q: dict, scope: str, muted: bool, style: str = "direct") -> str:
@@ -300,8 +325,11 @@ def run(url: str, data: list[dict], out_path: str, repeats: int, k: int, types: 
                        "cold_hypothesis": cold, "judge": None if ok is None else
                        "official LongMemEval checker prompt; local judge (same model, memory "
                        "muted, temp 0, 10 tokens - paper-comparable decoding, non-paper model)",
-                       **{kk: rec[kk] for kk in ("turn_top1", "turn_top3", "session_top1",
-                                                 "session_top3")}, "recall_ids": rec["ids"]}
+                       **{kk: rec.get(kk) for kk in ("turn_top1", "turn_top3", "session_top1",
+                                                     "session_top3", "row_coverage",
+                                                     "session_coverage", "gold_sessions",
+                                                     "shown_sessions")},
+                       "recall_ids": rec["ids"]}
                 out.write(json.dumps(obj, ensure_ascii=False) + "\n")
                 out.flush()
                 stats["lines"] += 1
@@ -315,9 +343,9 @@ def run(url: str, data: list[dict], out_path: str, repeats: int, k: int, types: 
 
 
 def metrics(out_path: str) -> dict:
-    """Aggregate what the run wrote: recall top-1/top-3 (turn and session) and judge accuracy,
-    overall and per type. Abstention questions keep recall nulls (skipped in the means, as the
-    official retrieval eval does); the judge line says the judge was local."""
+    """Aggregate what the run wrote: recall top-1/top-3 (turn and session), multi-evidence coverage,
+    and judge accuracy, overall and per type. Abstention questions keep recall nulls (skipped in the
+    means, as the official retrieval eval does); the judge line says the judge was local."""
     rows = [json.loads(l) for l in open(out_path)]
     out = {"lines": len(rows), "judge": rows[0]["judge"] or "none (--no-judge)"}
 
@@ -325,6 +353,14 @@ def metrics(out_path: str) -> dict:
         r = {}
         for key in ("turn_top1", "turn_top3", "session_top1", "session_top3"):
             vals = [x[key] for x in sub if x[key] is not None]
+            r[key] = round(sum(vals) / len(vals), 3) if vals else None
+        # multi-evidence coverage (spikes/lme/TEMPORAL_DIAG.md): the fraction of a question's gold
+        # rows / gold SESSIONS the recall carries. top-1/top-3 only ever prove ONE answer row
+        # arrived, which is what hid the temporal failure; these two say how much of a multi-event
+        # question actually reached the block. Records written before the metric existed omit the
+        # keys and report None rather than a false zero.
+        for key in ("row_coverage", "session_coverage"):
+            vals = [x[key] for x in sub if x.get(key) is not None]
             r[key] = round(sum(vals) / len(vals), 3) if vals else None
         cor = [x["correct"] for x in sub if x["correct"] is not None]
         r["accuracy"] = round(sum(cor) / len(cor), 3) if cor else None

@@ -1034,6 +1034,24 @@ class DedupeCache(unittest.TestCase):
         self.assertTrue(self.mem._dcache["pay"], "the new table memoizes afresh")
 
 
+class RecallClamp(unittest.TestCase):
+    """The note-count clamp is a runaway-config guard, NOT a budget: it has to bind only above the
+    biggest arm any venue runs. Two arms were nearly no-oped by it - a 24k-char config behind the
+    old 50-note wall (caught by the banner check, commit 4dedd96b) and the 48k / 192-note arm C
+    behind the 120 one - so the numbers are pinned in code instead of rediscovered at a boot."""
+
+    def test_config_clamp_binds_only_above_240(self):
+        for want, got in ((8, 8), (48, 48), (96, 96), (192, 192), (240, 240),
+                          (241, 240), (900, 240), (0, 1)):
+            tmp = tempfile.TemporaryDirectory()
+            try:
+                m = MemoryService(tmp.name, recall_limit=want)
+                self.assertEqual(m.recall_limit, got, f"recall_limit {want} should land on {got}")
+                m.close()
+            finally:
+                tmp.cleanup()
+
+
 class StubEmbedder:
     """Duck-typed embedder with hand-built vectors per exact text (zeros for anything else):
     tests the hybrid PLUMBING - union, filters, lifecycle, stats - with no onnxruntime and no
