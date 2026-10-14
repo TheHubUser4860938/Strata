@@ -647,6 +647,51 @@ pre-registration held in both of its halves:
 
 ## Semantic recall — the bge-small hybrid layer (added 2026-10-14, PHASE 4; opt-in)
 
+**Everyday budget, measured on the live store (2026-10-14, offline copies, no engine, no port).** The
+arm-C result says 192/48k was a no-op *on the venue corpus* (long rows, char cap binds at ~15 notes).
+Personal facts run ~160 chars, so there the **note** cap is what binds — which is a different regime, and
+"does the bigger block help everyday?" was asked by the user and answered with measurements, not scope:
+
+```
+WHAT THE BLOCK LOOKS LIKE (300 real queries from the journal, 2,655 rows)
+   notes shown        96/24k:  96.0   192/48k: 192.0    (+96.0)   <- the NOTE cap binds, not the char cap
+   chars shown        96/24k: 15,248 192/48k: 31,900    (+16,652, +109%)
+IS THE RIGHT FACT IN THE BLOCK (209 labeled probes built from the store's own rows)
+   own-words  lexical  0.938 -> 0.938   hybrid  0.938 -> 0.938
+   degraded   lexical  0.932 -> 0.932   hybrid  0.932 -> 0.932      <- doubling the block adds ZERO facts
+AS THE STORE GROWS (same probes, store size cut by real deletions)
+   600 rows   n= 44   0.977 (96)  /  0.977 (192)
+  1300 rows   n=102   0.951       /  0.951
+  2655 rows   n=209   0.919       /  0.914     <- the bigger block is not even neutral: it is slightly worse
+```
+
+Three conclusions, in order of importance:
+
+1. **The budget is not the everyday lever either.** Doubling the block doubles the prompt (15.2k → 31.9k
+   chars, so ~2 s → ~4 s at conversation start by linear extrapolation of the measured 2.3 s) and buys
+   **+0.000** relevant facts at both query shapes and both arms. The right fact is already inside the
+   first 96 notes 92-94% of the time; the extra 96 notes are the weak tail.
+2. **Growth is a ranking problem, and the curve is visible.** The right-fact-in-block rate falls
+   0.977 → 0.951 → 0.919 as the store goes 600 → 1,300 → 2,655 rows (~3 points per doubling). A bigger
+   block does not arrest that — it *slightly loses* at the largest size, because read-path near-dupe
+   suppression is window-dependent: with 192 candidates, a neighbour arriving in slots 97-192 can
+   collapse the gold row that survived in a 96-wide window. A bigger block is not a strictly better
+   block; the shown set is not a superset.
+3. **So the shelf is the lever the LCC design is betting on, and the measurement supports exactly that
+   half of the bet.** The failure mode as the store grows is the candidate set getting harder to rank,
+   which is fixed by *narrowing the candidates before ranking* (class/scope filters), not by widening the
+   block. The untested piece is the query→shelf step: `search(classes=...)` exists but the caller must
+   choose the shelf, so a two-stage retrieval (cheap lexical pass → infer shelf → re-search inside it) is
+   the experiment that would show the shelves earning their keep — offline, no engine, at several store
+   sizes. Parked as the next measurement, not asserted as a result.
+
+Probe hygiene worth keeping: the head block is **pinned by (scope, first user message, shelf, arm)** and
+the *budget is not in the key*, so a probe that flips budgets inside one process re-measures the same
+pinned bytes (the first run of this probe reported an impossible "identical block at both budgets" for
+exactly that reason). `m._blocks.clear()` between budgets is mandatory in any offline budget comparison —
+and if a per-request budget override is ever added, the pin key must gain the budget, the same way it
+gained the arm.
+
 **Why.** The temporal diagnostic (`spikes/lme/TEMPORAL_DIAG.md`) split the 0.433 row by cause: 61 of 127
 temporal questions are persistently wrong, 25 always refuse, and 20 of those refused **with an answer row in
 the block**. The mechanism is evidence COVERAGE — an ordering question needs three dated events and lexical
