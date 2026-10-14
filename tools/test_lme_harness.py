@@ -212,6 +212,130 @@ class IngestLaw(unittest.TestCase):
                                                  "gold label that was already on the row")
 
 
+class OfflineArmAB(unittest.TestCase):
+    """tools/lme_retrieval_ab.py --offline: the mechanism measurement with NO server, no engine and no
+    port, run against a copy. The toy embedder below collapses a synonym pair onto one dimension, so
+    the hybrid arm reaches a row the words alone cannot - which is exactly the claim under test - and
+    the two guards (the arm must be the arm it claims; identical hit lists everywhere mean the lever
+    never moved) are exercised on the real code path rather than by hand."""
+
+    class ToyEmbedder:
+        """Bag-of-words vectors over a fixed vocab, with "glimmery" and "gauge" deliberately sharing
+        one dimension: a query that shares NO surface token with the answer row still scores cosine
+        1.0 against it. Deterministic, no onnxruntime, no model file."""
+
+        DIM = 8
+        VOCAB = {"glimmery": 3, "gauge": 3, "zebra": 1, "flibberquant": 2, "torque": 4,
+                 "works": 5, "station": 6, "licensed": 7}
+
+        def __init__(self, model_dir=None, threads=4, **kw):
+            import numpy as np
+            self.np, self.dim, self.model_name = np, self.DIM, "toy"
+
+        def _v(self, text):
+            v = self.np.zeros(self.dim, self.np.float32)
+            for w in str(text).lower().split():
+                if w in self.VOCAB:
+                    v[self.VOCAB[w]] = 1.0
+            n = float(self.np.linalg.norm(v))
+            return v / n if n else v
+
+        def embed_docs(self, texts):
+            return self.np.stack([self._v(t) for t in texts])
+
+        def embed_query(self, q):
+            return self._v(q)
+
+    def setUp(self):
+        import types
+        self.tmp = tempfile.TemporaryDirectory()
+        self._saved = sys.modules.get("serve.embedder")
+        sys.modules["serve.embedder"] = types.SimpleNamespace(Embedder=self.ToyEmbedder)
+
+    def tearDown(self):
+        if self._saved is not None:
+            sys.modules["serve.embedder"] = self._saved
+        else:
+            sys.modules.pop("serve.embedder", None)
+        self.tmp.cleanup()
+
+    def build(self):
+        """A two-question store: q1's answer row shares no WORD with the question (only the toy's
+        synonym collapse reaches it), q2's answer row is lexically obvious."""
+        from serve.memory import MemoryService
+        d = Path(self.tmp.name) / "store"
+        m = MemoryService(str(d))
+        try:
+            g1 = m.remember("the zebra flibberquant gauge reads torque at the works",
+                            scope="lme_q1")["id"]
+            m.remember("station kzq1 is licensed to Terrytown", scope="lme_q1")
+            g2 = m.remember("station kzq2 is licensed to Seward", scope="lme_q2")["id"]
+        finally:
+            m.close()
+        mp = Path(self.tmp.name) / "map.jsonl"
+        with open(mp, "w") as fh:
+            fh.write(json.dumps({"question_id": "q1", "where": {str(g1): [True, "s1"]}}) + "\n")
+            fh.write(json.dumps({"question_id": "q2", "where": {str(g2): [True, "s2"]}}) + "\n")
+        return d, mp
+
+    def data(self, questions, name):
+        p = Path(self.tmp.name) / name
+        with open(p, "w") as fh:
+            json.dump(questions, fh)
+        return str(p)
+
+    def test_the_offline_arms_differ_where_paraphrase_is_the_only_route(self):
+        import lme_retrieval_ab as AB
+        store, mp = self.build()
+        data = self.data([{"question_id": "q1", "question": "glimmery?",     # shares NO word with the
+                           "question_type": "temporal-reasoning", "answer_session_ids": ["s1"]},
+                          {"question_id": "q2", "question": "which station is licensed to Seward",
+                           "question_type": "single-session-user", "answer_session_ids": ["s2"]}],
+                         "d1.json")
+        dump = str(Path(self.tmp.name) / "dump.jsonl")
+        rc = AB.main(["--data", data, "--map", str(mp), "--offline", str(store),
+                      "--work", str(Path(self.tmp.name) / "work"), "--dump", dump, "--recall-k", "5"])
+        self.assertEqual(rc, 0, "the lever moved on q1, so this IS a comparison")
+        lines = [json.loads(l) for l in open(dump)]
+        self.assertEqual(len(lines), 4, "two questions x two arms")
+        q1 = {r["label"]: r for r in lines if r["question_id"] == "q1"}
+        self.assertFalse(q1["lexical"]["turn_top1"],
+                         "the question shares no word with the answer: bm25 cannot reach it")
+        self.assertTrue(q1["hybrid"]["turn_top1"], "the reranker's job, measured not assumed")
+        self.assertIs(q1["hybrid"]["arm"], True, "the arm is read back from the service, not hoped for")
+        self.assertIs(q1["lexical"]["arm"], False, "and every line carries what the run asked AND what "
+                                                   "actually served it, so a mis-set lever stays visible")
+
+    def test_identical_arms_refuse_rather_than_report_a_null_comparison(self):
+        """Both arms reach q2 the same way, so with only q2 in the set the lever never moved - and an
+        A/B that never happened must exit 2 instead of printing zeros as a result."""
+        import lme_retrieval_ab as AB
+        store, mp = self.build()
+        data = self.data([{"question_id": "q2", "question": "station kzq2 licensed Seward",
+                           "question_type": "single-session-user", "answer_session_ids": ["s2"]}],
+                         "d2.json")
+        rc = AB.main(["--data", data, "--map", str(mp), "--offline", str(store),
+                      "--work", str(Path(self.tmp.name) / "work2"), "--recall-k", "5"])
+        self.assertEqual(rc, 2)
+
+    def test_the_copy_is_reused_and_the_reveal_is_not_run_twice(self):
+        """--work exists so an analysis loop does not re-embed 11k rows per pass; the second pass must
+        find the vectors already there (the plaintext copy outranks the stale .enc - the husk rule is
+        what tells them apart) and must still score the same numbers."""
+        import lme_retrieval_ab as AB
+        store, mp = self.build()
+        data = self.data([{"question_id": "q1", "question": "glimmery torque?",
+                           "question_type": "temporal-reasoning", "answer_session_ids": ["s1"]}],
+                         "d3.json")
+        work = str(Path(self.tmp.name) / "work3")
+        args = ["--data", data, "--map", str(mp), "--offline", str(store), "--work", work,
+                "--recall-k", "5"]
+        first, second = AB.main(args), AB.main(args)
+        self.assertEqual((first, second), (0, 0), "a reused copy is not a fresh embed, but it scores "
+                                                  "the same: the arm result must not depend on which "
+                                                  "pass produced the vectors")
+
+
 class CoverageMetric(unittest.TestCase):
     """The metric spikes/lme/TEMPORAL_DIAG.md asked for. turn_top1/top3 are satisfied by ANY one
     gold turn - which is precisely what hid the ordering failures - so coverage must report the

@@ -559,10 +559,11 @@ run against that one process, so nothing but the reranker differs between them:
 
 ```
 systemctl --user stop strata-sweep.timer            # the window owns :8005; restore it after
-python3 tools/m4_embed.py --dir Strata-data/memory-venue   # once, up front: ~13k rows, ~90 s at
-                                                  # 151 rows/s. C1 ignores the vectors (its arm mutes
-                                                  # the rerank), so doing it before the first run
-                                                  # keeps every timed minute free of store writes.
+python3 tools/m4_embed.py --dir Strata-data/memory-venue   # once, up front. **~11 min, not 90 s**:
+                                                  # measured 2026-10-14 on the venue store's 10,973 rows
+                                                  # (16 rows/s), because its rows run to 3,900 chars and
+                                                  # each pays a full 512-token pass. The 151 rows/s figure
+                                                  # was measured on the dev store's ~250-char facts.
 # 0. the mechanism A/B: both arms, 500 questions, NO generation - ~2 min of store time
 python3 tools/lme_retrieval_ab.py --data <oracle.json> --map <shared.map> --wide-k 192
 # 1. the outcome: the full stack (budget + embedder), the number the project is asking for
@@ -573,6 +574,16 @@ python3 tools/lme_harness.py --data <oracle.json> --skip-ingest --map <shared.ma
         --repeats 3 --style con --muted-control --no-embedder --out armc-lexical.jsonl
 python3 tools/lme_report.py armc.jsonl
 ```
+
+**Step 0 does not need the venue boot at all.** `--offline <dir>` copies the store dir (whole dir: the
+`.enc` AND the key, or a sealed store arrives as an empty one), opens the copy with `encrypt=True` so a
+ciphertext-only store reveals itself to that process, embeds what the hybrid arm needs, splits into two
+copies, and answers every question twice through the store's own `search()` — one service with the
+reranker, one without — scored by the same `recall_metrics` the venue uses. Measured on the sealed venue
+store: 10,973 rows embedded in ~11 min, then 500 questions x 2 arms x 2 k values in ~45 s, with the
+server never touched. `--work <dir>` keeps the embedded copy (it re-seals on close, vectors and all) so a
+ranking idea can be re-scored in ~45 s instead of re-embedding every pass, and `--dump <file.jsonl>`
+writes both arms' hit lists per question so a per-type regression is readable case by case.
 
 **Why the A/B is step 0 and the lexical arm is step 2.** The retrieval metrics — top-1/top-3 and the
 coverage fields — need only the store's own search, so both arms score in ~2 minutes with no prefill and
@@ -739,6 +750,51 @@ row at rank 1 on 88.5% of these probes. A near-saturated baseline cannot demonst
 where the headroom is — arm B's filed `turn_top1` is ~0.51 there — and that is the difference between "no
 harm measured" and "improvement measured". The probe reports FLIPPED IN / FLIPPED OUT separately on purpose:
 a mean-rank move alone hides both directions.
+
+**The mechanism A/B, run on the venue store itself (2026-10-14, `--offline`, no boot, no engine).** 10,973
+rows, 500 questions, both arms, scored by the venue's own `recall_metrics`; the lever moved on 490 of 500
+questions (10 identical lists). `turn_top1` / `turn_top3` are the same at both k values (the list prefix
+does not change), coverage differs because coverage is measured over the whole candidate window:
+
+```
+k=10                             n    turn_top1    turn_top3      row_cov     sess_cov
+  OVERALL                      500   .504→.504 +.000  .749→.823 +.074  .830→.885 +.055  .838→.893 +.055
+  knowledge-update              78   .625→.486 −.139  .861→.861 +.000  .905→.951 +.046  .910→.951 +.041
+  multi-session                133   .421→.488 +.067  .711→.818 +.107  .714→.811 +.097  .724→.825 +.101
+  single-session-assistant      56   .304→.393 +.089  .589→.768 +.179  .929→.946 +.017  .946→.964 +.018
+  single-session-preference     30   .400→.467 +.067  .667→.800 +.133  .889→.922 +.033  .900→.933 +.033
+  single-session-user           70   .672→.656 −.016  .859→.859 +.000  .969→.953 −.016  .969→.953 −.016
+  temporal-reasoning           133   .543→.512 −.031  .756→.819 +.063  .770→.847 +.077  .776→.852 +.076
+k=192 (the block's own budget)   OVERALL  .504→.504 +.000  .749→.823 +.074  .950→.970 +.020  .954→.975 +.021
+```
+
+**"The embedder is always a positive" is not what the store says.** It is a positive on **coverage** (every
+type up except a −0.016 on single-session-user) and on **top-3** (+0.074 overall, +0.179 on
+single-session-assistant) — which is precisely what the temporal diagnostic asked for: multi-evidence
+questions get more of their evidence in the block. It is **not** a positive at rank 1: overall top-1 is
+exactly flat (.504→.504), and `knowledge-update` loses **0.139** (45/72 → 35/72 rank-1 hits).
+
+The 11 lost rank-1 slots were read case by case (`--dump` + the gold map), and they are **not** the failure
+I predicted. Zero of the 11 displacing rows was a near-dupe of the answer (max Jaccard 0.38, most under
+0.15) — this is not the guard's duplicate family problem. Every one is the **topically nearest row in the
+conversation, and most are the assistant's own reply**: asked what the user later decided about
+Carcassonne, the reranker put the assistant's "Ticket to Ride is an excellent game! here are some
+recommendations…" at rank 1 and pushed the user's "I'm interested in trying out Carcassonne…" to rank 2.
+A chat corpus is full of these — the assistant echoes the user's entities at greater length, so cosine
+prefers the echo. The lexical arm is not smarter; bm25's rare-token handle happens to sit on the user's own
+wording more often.
+
+Two consequences for arm C, stated before the run rather than after it:
+
+- **At the block's own budget the evidence is already there.** At k=192 the LEXICAL arm carries
+  `session_coverage` 0.954 and `row_coverage` 0.950. The reranker adds +0.021. So the 192/48k arm cannot
+  win by *finding* evidence the 96/24k arm missed — it can only win by *ordering* it, and ordering is
+  exactly where the mixed result lives. The temporal diagnostic's coverage story is true at small k and
+  nearly spent at the block's real size.
+- **The expected shape of the accuracy run is a wash with structure**: 189 questions on three types gain
+  top-3 evidence, 78 knowledge-update questions lose rank-1, and whether that nets positive is what the
+  venue measures — not what I get to assume. If it comes back flat, the next lever is not "more budget":
+  it is the assistant-echo ordering, and it can now be iterated at ~45 s a try offline.
 
 **Write-time near-dupe guard (2026-10-14, embedder ON only — with the embedder off the write path is
 byte-identical).** One username policy became **57 rows in two days**: every sweep re-derives the same
