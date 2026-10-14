@@ -28,20 +28,43 @@ def main() -> int:
     ap.add_argument("--limit", type=int, default=0, help="cap rows this pass (0 = all)")
     a = ap.parse_args()
 
-    db = Path(a.dir) / "memory.db"
-    if not db.exists():
-        print(f"no store at {db}")
+    src = Path(a.dir)
+    holder = None
+    if (src / "memory.db").exists():
+        conn = sqlite3.connect(str(src / "memory.db"))          # the ordinary case, unchanged
+    elif (src / "memory.db.enc").exists():
+        # A SEALED store has no plaintext to open - plaintext exists only while a service holds it.
+        # The venue runbook tells you to backfill exactly this store before the accuracy arm, so
+        # refusing to open it was a runbook/tool contradiction, not a safety property. MemoryService
+        # reveals it from the key-file beside it; the vectors then go into the revealed db, and the
+        # store re-seals at the next open/close - vectors included, because embeddings live inside
+        # memory.db, which is the whole reason they were put there.
+        from serve.memory import MemoryService
+        holder = MemoryService(str(src), encrypt=True, key_file=str(src / "memory.key"))
+        conn = holder.conn
+        print(f"sealed store revealed for this pass ({holder.stats().get('memories', '?')} active rows);"
+              " it re-seals when this tool exits")
+    else:
+        print(f"no store in {src}")
         return 2
-    conn = sqlite3.connect(str(db))
     conn.execute("PRAGMA busy_timeout=10000")
+    def done_close():
+        # closing the holder is what re-seals the store; the plain path just closes its connection
+        if holder is not None:
+            holder.close()
+        else:
+            conn.close()
+
     if not conn.execute("select count(*) from sqlite_master where name='embeddings'").fetchone()[0]:
         print("store has no embeddings table - start the server once with memory.embedder set")
+        done_close()
         return 2
     q = ("select id, text from memories where invalid_at is null and id not in"
          " (select id from embeddings) order by id")
     rows = conn.execute(q + (" limit ?" if a.limit else ""), [a.limit] if a.limit else ()).fetchall()
     print(f"unembedded active rows: {len(rows)}")
     if not rows:
+        done_close()
         return 0
     emb = Embedder(a.model, threads=a.threads)
     t0, done = time.time(), 0
@@ -54,7 +77,7 @@ def main() -> int:
         done += len(chunk)
         rate = done / max(time.time() - t0, 1e-6)
         print(f"  {done}/{len(rows)} ({rate:.0f} rows/s)")
-    conn.close()
+    done_close()
     print(f"backfilled {done} rows in {time.time() - t0:.1f} s - a live server picks them up"
           " by embedded-count on its next search")
     return 0

@@ -564,6 +564,11 @@ python3 tools/m4_embed.py --dir Strata-data/memory-venue   # once, up front. **~
                                                   # (16 rows/s), because its rows run to 3,900 chars and
                                                   # each pays a full 512-token pass. The 151 rows/s figure
                                                   # was measured on the dev store's ~250-char facts.
+                                                  # This one runs BEFORE the boot: a sealed store has no
+                                                  # plaintext, so m4_embed now reveals it (key-file beside
+                                                  # it) and re-seals on exit - vectors included, because
+                                                  # they live inside memory.db. Verified by read-back:
+                                                  # 64 rows embedded, reopened the sealed store, 64 there.
 # 0. the mechanism A/B: both arms, 500 questions, NO generation - ~2 min of store time
 python3 tools/lme_retrieval_ab.py --data <oracle.json> --map <shared.map> --wide-k 192
 # 1. the outcome: the full stack (budget + embedder), the number the project is asking for
