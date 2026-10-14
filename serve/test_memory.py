@@ -1143,9 +1143,12 @@ class DedupeCache(unittest.TestCase):
         tab = self.mem._dcache
         self.assertTrue(tab["pay"], "the recall should have memoized payloads")
         self.mem.remember("totally unrelated trivia about Itasca county")
+        self.assertFalse(self.mem._dcache["pay"],
+                         "the write now folds into the cached table instead of rebuilding it, so the "
+                         "memo has to be dropped EXPLICITLY: a new row moves the rare-token bar, and "
+                         "every payload is defined by that bar")
         self.mem.search("flibber gauge")
-        self.assertIsNot(tab, self.mem._dcache, "the rebuild returns a NEW table")
-        self.assertTrue(self.mem._dcache["pay"], "the new table memoizes afresh")
+        self.assertTrue(self.mem._dcache["pay"], "the next recall memoizes afresh")
 
 
 class RecallClamp(unittest.TestCase):
@@ -1164,6 +1167,125 @@ class RecallClamp(unittest.TestCase):
                 m.close()
             finally:
                 tmp.cleanup()
+
+
+class WriteCacheFastPaths(unittest.TestCase):
+    """Two write-path fast paths: the token table FOLDS IN each write instead of rebuilding, and the
+    near-dupe guard reads its OWN scope's vectors instead of the whole-store matrix. Both are
+    optimizations of a verdict, so the test is what keeps them honest - after every write the amended
+    cache must equal a cache built from scratch out of the db, token for token and vector for vector.
+    The reason it exists: rebuilding both caches per write was 86% + 5% of write time and grew with
+    the store, which is what made ingest run quadratic (7 ms/write at 2,589 rows, 180 ms at ~10k)."""
+
+    V = [1.0, 0.0, 0.0, 0.0]
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def mem_with(self, *texts, **kw):
+        stub = StubEmbedder({t: self.V for t in texts})
+        return MemoryService(self.tmp.name + "/s" + str(len(texts)) + str(hash(texts)),
+                             embedder=stub, **kw)
+
+    def assert_cache_equals_rebuild(self, m, scopes=("default",)):
+        tab = m._dedupe_tables()
+        m._dcache, m._dkey = None, None            # force the long way, straight from the db
+        fresh = m._dedupe_tables()
+        self.assertEqual(tab["toks"], fresh["toks"], "the amended table must equal a rebuild")
+        self.assertEqual(tab["df"], fresh["df"], "document frequencies are what the rare-token bar "
+                                                 "and every payload are computed from")
+        for sc in scopes:
+            got = m._scope_vecs(sc)
+            m._svec.clear()
+            want = m._scope_vecs(sc)
+            self.assertEqual(set(got), set(want), f"scope {sc}: same rows")
+            for rid in want:
+                self.assertTrue((got[rid] == want[rid]).all(), f"scope {sc} row {rid} vector")
+
+    def test_the_table_survives_a_write_and_stays_equal_to_a_rebuild(self):
+        m = self.mem_with("station kzq1 is licensed to Terrytown",
+                          "station kzq2 is licensed to Seward",
+                          "station kzq1 is licensed")
+        try:
+            m.remember("station kzq1 is licensed to Terrytown")
+            tab = m._dedupe_tables()
+            m.remember("station kzq2 is licensed to Seward")           # a distinct fact: it lands
+            self.assertIs(m._dcache, tab, "the write folded into the cache - no whole-store rebuild")
+            self.assertEqual(m.stats()["memories"], 2)
+            self.assert_cache_equals_rebuild(m)
+        finally:
+            m.close()
+
+    def test_suppress_update_in_place_supersede_and_eviction_all_stay_equal(self):
+        """Every exit of remember() is a different change to the active row set, so each one gets
+        checked against the rebuild: fold-in (no new row), in-place update (text unchanged),
+        supersede (the older row RETIRES - its tokens leave df) and budget eviction (a DELETE)."""
+        m = self.mem_with("station kzq1 is licensed to Terrytown",
+                          "station kzq1 is licensed",
+                          "station kzq1 is licensed to Terrytown every morning",
+                          "station kzq3 is licensed to Seward",
+                          "station kzq4 is licensed to Itasca",
+                          "station kzq5 is licensed to Wilton",
+                          max_memories=3)
+        try:
+            a = m.remember("station kzq1 is licensed to Terrytown")
+            b = m.remember("station kzq1 is licensed")                 # lesser: suppressed into a
+            self.assertEqual((b["id"], b["deduped"]), (a["id"], "semantic"))
+            self.assert_cache_equals_rebuild(m)
+            c = m.remember("station kzq1 is licensed to Terrytown")    # exact text: updated in place
+            self.assertTrue(c["deduped"])
+            self.assert_cache_equals_rebuild(m)
+            d = m.remember("station kzq1 is licensed to Terrytown every morning")
+            self.assertEqual(d.get("superseded"), a["id"], "the richer row lands, the older retires")
+            self.assert_cache_equals_rebuild(m)
+            for t in ("station kzq3 is licensed to Seward", "station kzq4 is licensed to Itasca",
+                      "station kzq5 is licensed to Wilton"):
+                m.remember(t)          # cap is 3: the third of these forces an eviction
+            self.assert_cache_equals_rebuild(m)     # the eviction path DELETES rows - df must follow
+            with m.lock:
+                active = {r[0] for r in m.conn.execute(
+                    "select id from memories where invalid_at is null")}
+            self.assertEqual(set(m._dedupe_tables()["toks"]), active,
+                             "and the table holds exactly the active set")
+        finally:
+            m.close()
+
+    def test_an_outside_writer_still_forces_a_rebuild(self):
+        """The amendment is the fast path, the stamp check is the safety net: a writer that is not
+        remember() (a tool run, a restore, a hand edit) moves the stamp in a way no amendment
+        predicted, and the next caller must build the table the long way."""
+        m = self.mem_with("station kzq1 is licensed to Terrytown")
+        try:
+            m.remember("station kzq1 is licensed to Terrytown")
+            tab = m._dedupe_tables()
+            with m.lock:
+                m.conn.execute("insert into memories(scope,text,source,confidence,created_at,updated_at)"
+                               " values('default','station kzq9 is licensed to Pruetz','manual',1,0,99)")
+                m.conn.commit()
+            self.assertIsNot(m._dedupe_tables(), tab, "a foreign insert must not inherit the amended table")
+            self.assert_cache_equals_rebuild(m)
+        finally:
+            m.close()
+
+    def test_the_guard_still_sees_every_row_of_its_own_scope(self):
+        """Scope-local vectors must not narrow the guard: a row in the SAME scope is a candidate even
+        when the store holds other scopes, and a row in ANOTHER scope never is."""
+        m = self.mem_with("station kzq1 is licensed to Terrytown",
+                          "station kzq1 is licensed",
+                          "station kzq7 is licensed to Terrytown")
+        try:
+            m.remember("station kzq1 is licensed to Terrytown", scope="alpha")
+            m.remember("station kzq7 is licensed to Terrytown", scope="beta")
+            got = m.remember("station kzq1 is licensed", scope="alpha")
+            self.assertEqual(got["deduped"], "semantic", "same scope: the guard still fires")
+            other = m.remember("station kzq1 is licensed", scope="beta")
+            self.assertFalse(other["deduped"], "the other scope's row is not this scope's business")
+            self.assert_cache_equals_rebuild(m, scopes=("alpha", "beta"))
+        finally:
+            m.close()
 
 
 class WriteTimeDedupe(unittest.TestCase):

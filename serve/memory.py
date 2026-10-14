@@ -267,6 +267,11 @@ class MemoryService:
         self._vdirty = True
         self._ecount = -1
         self._qc: "OrderedDict[str, object]" = OrderedDict()  # normalized query -> vector, capped at 128
+        self._svec: "OrderedDict[str, tuple]" = OrderedDict()  # scope -> (stamp, {row id: vector}), capped at 32
+        #   ^ the write guard's candidate set is ONE scope (the same boundary exact-text dedup uses), so
+        #   it reads its scope's vectors instead of the whole-store matrix: rebuilding the matrix per
+        #   write is what made ingest quadratic - measured 2026-10-14, 7 ms per write at 2,589 rows and
+        #   ~180 ms at ~10k. Search still uses the whole-store matrix: a query spans every scope.
         self._dcache: dict | None = None                    # _dedupe's (toks, df, bar, payload memo)
         self._dkey: tuple | None = None                     # active-row stamp the table was built at
         # near-dupe suppression at recall (measured on the live store 2026-10-12: the web venue watched
@@ -427,6 +432,7 @@ class MemoryService:
                 self.conn.commit()
                 self._touched()
                 self._vdirty = True
+                self._dedupe_amend()        # the text is unchanged: only the stamp moves
                 return {"id": hit[0], "deduped": True}
             # PHASE 4 write-time near-dupe guard (embedder ON only; embedder OFF never gets here,
             # so the shipped write path is byte-identical). The curation loop re-derives the same
@@ -436,7 +442,7 @@ class MemoryService:
             # land as written (benchmark ingest) - the vector is still stored, only the verdict stands aside.
             supersede: int | None = None
             if vec is not None and guard:
-                verdict = self._semantic_dupe(text, same, vec)
+                verdict = self._semantic_dupe(text, same, vec, scope)
                 if verdict and verdict[0] == "suppress":
                     self.conn.execute(
                         "update memories set updated_at=?, confidence=max(confidence,?), class=coalesce(nullif(class,''),?)"
@@ -446,6 +452,7 @@ class MemoryService:
                     self.conn.commit()
                     self._touched()
                     self._vdirty = True
+                    self._dedupe_amend()    # the carrier's text is unchanged: only the stamp moves
                     return {"id": verdict[1], "deduped": "semantic"}
                 if verdict and verdict[0] == "supersede":
                     supersede = verdict[1]
@@ -481,6 +488,10 @@ class MemoryService:
             self.conn.commit()
             self._touched()
             self._vdirty = True
+            # the token table folds this write in instead of rebuilding (see _dedupe_amend): a
+            # superseded row leaves the active set, an eviction deletes one, and the new row joins it.
+            self._dedupe_amend(added=[(cur.lastrowid, set(norm_text(text).split()))],
+                               retired=([supersede] if supersede else []) + evicted)
             out = {"id": cur.lastrowid, "deduped": False}
             if supersede:
                 out["superseded"] = supersede
@@ -488,7 +499,7 @@ class MemoryService:
                 out["evicted"] = evicted
             return out
 
-    def _semantic_dupe(self, text: str, same, vec) -> tuple | None:
+    def _semantic_dupe(self, text: str, same, vec, scope: str) -> tuple | None:
         """The write-time near-dupe DECISION, only reached when an embedder is configured. Cosine
         PROPOSES and nothing more: measured 2026-10-14 on the store that had just grown 57 rows of
         one username policy over two sweeps, a duplicate family's own self-similarity runs 0.59 to
@@ -515,18 +526,18 @@ class MemoryService:
         never scans every text in the store. The bar is the merge tool's UNCAPPED relative one
         (stricter than the read path's capped 5, and stricter is the safe direction: a missed merge
         costs one slot, a false one hides a fact)."""
-        meta = self._vec_matrix()
-        if meta is None:
-            return None
+        vecs = self._scope_vecs(scope)     # the candidate set is THIS scope, so the vectors are too -
+        if not vecs:                        # a store-wide matrix rebuild per write is what made
+            return None                     # ingest quadratic (see _scope_vecs)
         tab = self._dedupe_tables()
         df = tab["df"]
         bar = max(3, len(tab["toks"]) // 50)
         cand = []
         for rid, rtext, _rclass in same:
-            j = meta["ix"].get(rid)
-            if j is None:
+            v = vecs.get(rid)
+            if v is None:
                 continue                                # a row predating the embedder: no vector to compare
-            c = float(meta["mat"][j] @ vec)
+            c = float(v @ vec)
             if c >= 0.85:
                 cand.append((c, rid, rtext))
         if not cand:
@@ -703,6 +714,60 @@ class MemoryService:
         tab = {"toks": toks, "df": df, "bar": max(3, min(len(toks) // 50, 5)), "pay": {}}
         self._dcache, self._dkey = tab, key
         return tab
+
+    def _dedupe_stamp(self) -> tuple:
+        with self.lock:
+            return tuple(self.conn.execute(
+                "select count(*), coalesce(max(rowid),0), coalesce(max(updated_at),0.0)"
+                " from memories where invalid_at is null").fetchone())
+
+    def _dedupe_amend(self, added=(), retired=()) -> None:
+        """Fold the write that just happened into the cached token table instead of rebuilding it.
+
+        df depends on nothing but the ACTIVE row set, and every write path in remember() knows
+        exactly how it changed that set: which rows appeared, which retired. Rows whose TEXT changed
+        do not exist - an in-place update edits updated_at/confidence/class and leaves the text, so
+        the token sets and df are untouched and only the stamp needs moving. Without this, a burst of
+        writes rebuilt the table once per write: profiled 2026-10-14 on the live store, 119,023
+        norm_text calls for 40 writes, 86% of all write time.
+
+        The stamp is then re-read from the db, so the cache is stamped with the true post-write
+        state and the NEXT caller still rebuilds on any change this server did not make itself -
+        an outside editor, a tool run, a restore. The amendment is the fast path, the stamp check
+        stays the safety net. Payloads are dropped on any amendment, which is exactly what a rebuild
+        did before: a new row can move a token across the rare-token bar and change what counts as
+        another row's payload.
+        """
+        tab = self._dcache
+        self._dkey = self._dedupe_stamp()
+        if tab is None:
+            return                                    # nothing cached: the next caller builds it
+        for rid in retired:
+            s = tab["toks"].pop(int(rid), None)
+            tab["pay"].pop(int(rid), None)
+            for t in s or ():
+                n = tab["df"].get(t, 0) - 1
+                if n > 0:
+                    tab["df"][t] = n
+                else:
+                    tab["df"].pop(t, None)
+        for rid, toks in added:
+            rid = int(rid)
+            old = tab["toks"].get(rid)
+            if old == toks:
+                continue
+            for t in (old or set()) - toks:
+                n = tab["df"].get(t, 0) - 1
+                if n > 0:
+                    tab["df"][t] = n
+                else:
+                    tab["df"].pop(t, None)
+            for t in toks - (old or set()):
+                tab["df"][t] = tab["df"].get(t, 0) + 1
+            tab["toks"][rid] = toks
+            tab["pay"].pop(rid, None)
+        if added or retired:
+            tab["pay"].clear()                        # bar and rarity just moved; see the docstring
 
     def _dedupe(self, hits: list[dict]) -> list[dict]:
         """Near-dupe suppression for the ranked candidates (measured 2026-10-12: five rows phrased the
@@ -886,6 +951,35 @@ class MemoryService:
                 "conf": np.array([r[6] for r in rows], dtype=np.float32)}
         self._vmeta, self._vdirty, self._ecount = meta, False, n
         return meta
+
+    def _scope_vecs(self, scope: str) -> dict:
+        """{row id: vector} for the ACTIVE rows of ONE scope, cached against that scope's own stamp
+        (count, max rowid, max updated_at). The write-time near-dupe guard compares a new fact only
+        with its own scope - the same boundary exact-text dedup uses - so that is all it needs, and
+        taking the whole-store matrix for the job made every write pay a store-sized rebuild:
+        measured 2026-10-14, ingest ran 5.5 rows/s at ~10k rows (180 ms per write) against 7 ms at
+        2,589, and the profile said the matrix was ~5% of that while the token table was 86% - both
+        rebuilt once per write, both linear in the store, so the pair was quadratic. The read path
+        keeps the whole-store matrix, because a query really does span every scope. Entries are kept
+        for the 32 most recently written scopes: a venue ingests 500 of them and the cache must not
+        grow with the benchmark."""
+        import numpy as np
+        with self.lock:
+            key = self.conn.execute(
+                "select count(*), coalesce(max(rowid),0), coalesce(max(updated_at),0.0)"
+                " from memories where scope=? and invalid_at is null", (scope,)).fetchone()
+            hit = self._svec.get(scope)
+            if hit is not None and hit[0] == tuple(key):
+                return hit[1]
+            rows = self.conn.execute(
+                "select m.id, e.vec from embeddings e join memories m on m.id = e.id"
+                " where m.scope = ? and m.invalid_at is null", (scope,)).fetchall()
+        vecs = {int(rid): np.frombuffer(blob, dtype=np.float32) for rid, blob in rows}
+        self._svec[scope] = (tuple(key), vecs)
+        self._svec.move_to_end(scope)
+        while len(self._svec) > 32:
+            self._svec.popitem(last=False)
+        return vecs
 
     def _embed_query_cached(self, query: str):
         key = norm_text(query)

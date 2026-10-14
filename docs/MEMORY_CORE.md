@@ -668,6 +668,45 @@ Harness flag: `--no-embedder` (the lexical arm).
 embedder's ~85 ms delta is almost entirely the near-dupe pass reading a wider candidate list — the cosine math
 is ~1 ms. Against a 12k-token first turn (~8.5 s at the measured 1,400 tok/s) that is ~1.6%.
 
+**Write cost, measured and then fixed the same day (2026-10-14).** A scale probe ingested the 13k-row oracle
+into a copy of the live store, offline, and the writes got slower as the store grew: **7 ms per write at
+2,589 rows → 180 ms at ~10k, 5.5 rows/s, ~40 min for the ingest.** Both caches the write path touches were
+being rebuilt per write, because every write dirties them and the next write reads them — the pair is
+quadratic in the store. Profiling 40 guarded writes said where the time actually went: `_dedupe_tables` 86%
+(119,023 `norm_text` calls: the whole-store token table re-tokenizes every row), `_vec_matrix` 5%.
+
+Two changes, both fast paths over a verdict, neither allowed to change one:
+
+- **The token table folds the write in instead of rebuilding** (`_dedupe_amend`). Every exit of `remember()`
+  knows how it changed the active row set — row added, row retired by supersede, row deleted by eviction, or
+  nothing (a fold or an in-place update leaves the text, so df does not move) — so it applies that delta and
+  re-reads the stamp. Payloads are dropped on any amendment, which is exactly what a rebuild used to do.
+  A writer that is *not* `remember()` (a tool, a restore, a hand edit) moves the stamp in a way no amendment
+  predicted, and the next caller rebuilds: **the stamp check stays the safety net, the amendment is only the
+  fast path** — and a test pins that.
+- **The near-dupe guard reads its own scope's vectors** (`_scope_vecs`, cached per scope, LRU 32) instead of
+  the whole-store matrix. Its candidate set has always been one scope — the same boundary exact-text dedup
+  uses — so it was rebuilding a store-wide matrix for a handful of lookups. The read path keeps the
+  store-wide matrix, because a query really does span every scope.
+
+Measured after: **guarded write 107 ms → 11 ms** (same script, same store, same background load). **A
+venue-shaped write — one fresh small scope per row, the shape of an ingest — runs 2.8 ms, 360 rows/s, flat
+in store size**, so the oracle ingest that measured ~40 min is now ~40 s, and the S-split with it. A
+curation-shaped write (every row into the user scope) is 11–21 ms and still grows with that scope, because
+exact-text dedup scans the scope's rows — the wall that is left, untouched, and the one to take on if the
+store ever reaches ~50k. The first recall after a write loses its rebuild penalty: 75 ms → 49 ms lexical.
+
+Proven by construction, not by hope: after every write path (insert, fold, in-place update, supersede,
+eviction, foreign insert) the amended table is compared **token for token and document-frequency for
+document-frequency** against a table built from scratch out of the db, and the scope vectors against a
+cold read (`WriteCacheFastPaths`). One shipped test had to be rewritten: it asserted a write returns a NEW
+table object, which was the old behaviour; what it actually cares about is that the payload memo dies when
+the rare-token bar moves, and it still does.
+
+**The venue law for ingest is now explicit: haystack writes go in with the near-dupe guard off**
+(`guard: false`, see above) — measured, the guard superseded 317 oracle rows inside `lme_` scopes during one
+ingest, which moves gold labels without touching a single answer.
+
 **Found on the way (shipped, both modes).** `_dedupe` rebuilt the whole-store token table, document
 frequencies and the rare-token bar on EVERY recall, and recomputed payloads per PAIR inside its loop (profiled:
 2.5M generator calls, 0.9 s of tottime across five recalls). It now caches that table keyed by
