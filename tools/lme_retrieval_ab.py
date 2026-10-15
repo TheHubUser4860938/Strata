@@ -79,8 +79,14 @@ def sweep_offline(svc, data: list, maps: dict, k: int) -> list[dict]:
         where = maps.get(q["question_id"])
         if where is None:
             continue
-        ids = [h["id"] for h in svc.search(q["question"], scope=f"lme_{q['question_id']}", limit=k)]
-        rows.append(scored(q, where, ids, svc.embedder is not None, k))
+        hits = svc.search(q["question"], scope=f"lme_{q['question_id']}", limit=k)
+        ids = [h["id"] for h in hits]
+        r = scored(q, where, ids, svc.embedder is not None, k)
+        # provenance rides the DUMP, not the metrics table: "the reranker moved rank 1" is a number, but
+        # the -0.139 post-mortem needed to know WHICH ARM landed the winner and where the gold's own row
+        # sat in each list - that was reconstructed by hand here, and it is now a field.
+        r["prov"] = [[h["id"], h.get("lex_rank"), h.get("cos_rank")] for h in hits]
+        rows.append(r)
     return rows
 
 

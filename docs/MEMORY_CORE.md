@@ -685,6 +685,46 @@ number, all of them on the record:
 Tests: 86 + 4 green with the new constant. The default path with the embedder OFF is untouched: this line
 is never reached without an embedder.
 
+**Rank provenance, and the attribution it produced in one run (2026-10-15, `serve/memory.py`,
+`tools/m4_consensus.py`).** Every hit now carries `lex_rank` (its position in the bm25 list, captured
+BEFORE the blend re-sorts it) and `cos_rank` (its position in the cosine scan) — both values were already
+computed inside the fusion and thrown away. Nothing the model reads changed: the block renders scope+text
+only, and the MCP tool whitelists its fields (`serve/memory.py:198`), so the provenance rides the HTTP API
+and the A/B dump. It paid for itself the same night, on the venue copy at n=500:
+
+```
+  what landed the hybrid arm's rank-1 slot          n    that slot was the right row
+  both arms agree at rank 1                       174                0.615
+  bm25 rank 1, cosine demoted it                  201                0.463
+  promoted from bm25 rank 2                        56                0.286
+  promoted from bm25 rank 3+                       27                ~0.40
+  cosine-only (bm25 never proposed it)              0                  -
+```
+
+and all 11 knowledge-update rank-1 flips (the filed −0.139) share one mechanism: **the winner was the
+cosine arm's own rank-1 row, every single time.** Two claims died with the table — "cosine-only rows bury
+the answer" (it happens ZERO times at rank 1 under k=1) and the fix I was about to build on the −0.139.
+`tools/m4_consensus.py` then scored three placement laws from the dump in seconds, no store, no engine:
+
+| law | top1 | top3 | knowledge-update top1 |
+|---|---|---|---|
+| shipped (RRF k=1) | 0.517 | 0.849 | 0.486 |
+| cosine-only out of the top 1 | 0.517 | **0.826** | 0.486 |
+| cosine-only out of the top 3 | 0.517 | 0.843 | 0.486 |
+| weighted RRF, lexical ×2 | 0.506 | 0.830 | **0.611** |
+
+The gates do not move rank-1 at all and cost rank-3, because the rows being pushed down include gold ones.
+The weighted arm recovers most of the −0.139 (0.486 → 0.611 against the lexical arm's 0.625) and pays for
+it in overall top1 and top3. After `lme_posrank.py` showed block order is worth ~nothing to accuracy, all
+three are metric swaps rather than product gains, so **none of them ships** — the reranker's +0.040 came
+from coverage on multi-session and abstention questions, not from rank 1, and this is the second time the
+same regression has resisted a ranking fix (the speaker/echo demotion is parked for the same reason).
+
+Tests: 4 new in `serve/test_embedder.py` (8 green) — ranks agree with what each arm actually returned, a
+bm25 first place keeps its recorded position, the embedder-off path carries no cosine provenance, and the
+fields survive read-path dedupe (the case that needs them most, since that is where duplicate families
+live). The running dev server is still the pre-provenance build: the fields land at the next dev-up.
+
 **Position inside the block, asked twice and answered twice (2026-10-15).** The standing claim "at this
 block size the answer does not ride on rank order" was inferred (the reranker moved retrieval rank-1 by
 0.139 and accuracy by +0.005), so it got measured - and the two ways of measuring it disagreed:

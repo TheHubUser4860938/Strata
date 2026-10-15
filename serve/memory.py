@@ -932,7 +932,9 @@ class MemoryService:
         for pos, r in enumerate(rows):
             fresh = math.exp(-max(0.0, now - r[4]) / 86400.0 / AGE_SCALE_DAYS)
             score = 0.75 * ((k - pos) / k) + 0.25 * fresh + 0.10 * r[3]
-            out.append(dict(id=r[0], scope=r[1], text=r[2], score=round(score, 4), **{"class": r[5]}))
+            out.append(dict(id=r[0], scope=r[1], text=r[2], score=round(score, 4),
+                            lex_rank=pos + 1,          # position in the bm25 list, BEFORE the blend
+                            **{"class": r[5]}))        # re-sorting loses it and the blend is not the ranking
         out.sort(key=lambda x: -x["score"])
         if semantic and self.embedder is not None:
             out = self._semantic(out, query, scopes, classes, since, until, limit)
@@ -1085,6 +1087,7 @@ class MemoryService:
         for c in cands:
             j = meta["ix"].get(c["id"])
             lr, cr = lex_rank[c["id"]], cos_rank.get(c["id"])
+            c["cos_rank"] = cr                    # provenance, not plumbing: which arm put a row where
             upd, conf = (now, 0.8) if j is None else (float(meta["updated"][j]), float(meta["conf"][j]))
             c["score"] = fused(lr, cr, upd, conf)
         if picked:
@@ -1100,6 +1103,8 @@ class MemoryService:
                 cands.append(dict(id=rid, scope=r[1], text=r[2],
                                   score=fused(None, cos_rank.get(rid),
                                               float(meta["updated"][j]), float(meta["conf"][j])),
+                                  cos_rank=cos_rank.get(rid),     # the cosine arm found it, bm25 never did
+                                  lex_rank=None,
                                   **{"class": r[3]}))
         return cands
 
