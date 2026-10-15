@@ -173,9 +173,19 @@ def main(argv=None) -> int:
     ap.add_argument("--threads", type=int, default=4)
     ap.add_argument("--recall-k", type=int, default=10, help="slots to score (the accuracy run's k)")
     ap.add_argument("--wide-k", type=int, default=0, help="optional second pass at the block budget")
+    ap.add_argument("--rrf-k", type=float, default=None,
+                    help="override serve.memory.RRF_K for this run. The shipped value is 60 (the RRF "
+                         "paper's convention); Graphiti and Zep both ship rank_const=1 for the same "
+                         "fusion, so this flag exists to settle it on OUR store instead of on "
+                         "convention. Deterministic: one run is one answer, no sampling.")
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--types", default="")
     a = ap.parse_args(argv)
+
+    if a.rrf_k is not None:           # the fusion constant is a module global precisely so a probe can
+        import serve.memory as _m     # move it without touching the shipped default (serve.memory.RRF_K)
+        _m.RRF_K = float(a.rrf_k)
+        print(f"[ab] RRF_K overridden to {_m.RRF_K} (shipped default 60)")
 
     data = json.load(open(a.data))
     types = {t.strip() for t in a.types.split(",") if t.strip()}

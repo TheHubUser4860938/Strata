@@ -49,6 +49,28 @@ DEFAULT_PROJECT = "default"             # requests that name no scope land in th
 WORD_RE = re.compile(r"\w{2,}", re.UNICODE)
 MAX_QUERY_WORDS = 12                    # a MATCH over more words than these stops being a query and becomes noise
 AGE_SCALE_DAYS = 90.0                   # recency half-life-ish: exp(-age_days / this) feeds the ranking blend
+RRF_K = 1.0                             # reciprocal-rank fusion constant, a module constant so a probe can
+                                        # sweep it (tools/lme_retrieval_ab.py --rrf-k). CHANGED from the
+                                        # conventional 60 on 2026-10-14, measured on the venue copy (10,973
+                                        # rows, 500 questions, deterministic - one run is one answer):
+                                        # hybrid top1 0.504 -> 0.517, top3 0.823 -> 0.849 at k=10, and
+                                        # row coverage at the width a venue-shaped block actually shows
+                                        # (k=16) 0.932 -> 0.936. So the accuracy effect is ~+0.003, inside
+                                        # the repeat band: this is a RANK-ORDER win (it matters to the
+                                        # agentic memory_search tool, which returns a short list), not a
+                                        # block-content one - at k=192 every constant scores identically.
+                                        # Per type it is not free: multi-session +0.033 top1, user +0.016,
+                                        # temporal +0.016, preference top3 +0.067, but single-session-
+                                        # assistant -0.018, and it does NOT repair the knowledge-update
+                                        # -0.139 the reranker costs there. k=1 was chosen over 5/10/20/120
+                                        # because it is >= on every metric at every width; Graphiti and
+                                        # Zep both ship rank_const=1 for the same fusion, which is what
+                                        # prompted the sweep. Sharpening also keeps the property the reach
+                                        # probe (tools/m4_reach.py) exists to defend - a lexical first
+                                        # place still outscores a both-arms fifth place (1/2 > 1/6) - and
+                                        # it widens the adjacent-rank steps the recency/confidence
+                                        # tie-breakers must never cross (1/((1+r)(2+r)) > 1.1e-5 through
+                                        # rank 300, versus rank ~240 at k=60).
 STOP = frozenset(("a an and are as at be by can could did do does for from had has have he her his how i if in "
                   "is it its me my no not of on or our she so than that the their them then there these they this "
                   "to us we what when where which who whom whose why will with would you your").split())
@@ -1026,7 +1048,8 @@ class MemoryService:
             return cands
         cos = meta["mat"] @ qv
         order = np.argsort(-np.where(mask, cos, np.float32(-2.0)))[:limit * 3]
-        # RANK fusion (RRF, k=60, the standard constant): each list votes by POSITION, never by its
+        # RANK fusion (RRF, constant in serve.memory.RRF_K - swept and set by measurement, see that
+        # constant's note): each list votes by POSITION, never by its
         # own score scale. The first version of this pass blended raw cosine into the bm25 blend at
         # 0.55/0.20, and the reach probe on the live store (tools/m4_reach.py, 2,520 rows, 2026-10-14)
         # caught what that does: a rank-1 exact-lexical answer fell to 14th, because a store that size
@@ -1040,7 +1063,7 @@ class MemoryService:
         # shown, and there the difference is noise either way. Rows
         # without vectors (a store that never ran tools/m4_embed.py) get the lexical term alone with
         # neutral tie-breakers - recallable, just never promoted by a vote it cannot cast.
-        rrf_k = 60.0
+        rrf_k = RRF_K   # the shipped default; probes sweep the module constant
         lex_rank = {c["id"]: i + 1 for i, c in enumerate(cands)}
         by_id = {c["id"]: c for c in cands}
         now = time.time()
