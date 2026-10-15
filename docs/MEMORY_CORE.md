@@ -647,6 +647,78 @@ pre-registration held in both of its halves:
 
 ## Semantic recall — the bge-small hybrid layer (added 2026-10-14, PHASE 4; opt-in)
 
+**The RRF fusion constant, swept and reset (2026-10-15, `tools/lme_retrieval_ab.py --rrf-k`, offline
+venue copy: 10,973 rows, 500 questions, no engine, deterministic).** The fusion constant was `k=60`
+because that is the convention from the original RRF paper. Two of the six external systems read for this
+workstream (Graphiti `search_utils.py`, Zep, including its retired Go CE) ship `rank_const=1` for the same
+job, which is reason enough to sweep it on our own store rather than argue from convention:
+
+```
+  RRF_K     top1 (k=10)   top3 (k=10)   row_cov (k=16, the width a venue-shaped   row_cov (k=192)
+                                        block actually shows: ~15 notes)
+      1        0.517          0.849                       0.936                        0.970
+      5        0.506          0.832                       0.934                        0.970
+     10        0.506          0.832                       0.932                        0.970
+     20        0.504          0.828                       —                            0.970
+     60        0.504          0.823                       0.932                        0.970   <- shipped
+    120        0.504          0.823                       —                            0.970      before
+```
+
+`k=1` is at or above every other value at every width, so it is now the shipped constant
+(`serve.memory.RRF_K`, a module constant precisely so this sweep is one flag). Three things about the
+number, all of them on the record:
+
+1. **It is a rank-order win, not a block-content win.** At k=192 every constant scores identically, and at
+   the width the block actually shows the gain is +0.004 row coverage — which by the filed causal chain
+   (coverage +0.048 → accuracy +0.040) is worth ~+0.003 accuracy, inside the repeat band. The place this
+   matters is the **agentic `memory_search` tool**, which returns a short list where top-1 and top-3
+   quality are the whole product.
+2. **It is not free per type.** multi-session top1 +0.033, user +0.016, temporal +0.016, preference top3
+   +0.067 — but single-session-assistant **-0.018**, and it does **not** repair the knowledge-update
+   -0.139 the reranker costs at top-1 (0.625 → 0.486 either way). Sharpening the fusion moves the order;
+   it does not decide which arm's judgement dominates.
+3. **The property that justified rank fusion survives.** The reach probe exists because raw-score blending
+   buried a rank-1 exact-lexical answer at 14th. At `k=1` a lexical first place still outscores a
+   both-arms fifth (1/2 > 1/6), and `tools/m4_reach.py --auto 40` on the live dev store scores **identically
+   at 1 and 60** (hybrid top1 0.850, median rank 1) — no regression where the design was originally tested.
+
+Tests: 86 + 4 green with the new constant. The default path with the embedder OFF is untouched: this line
+is never reached without an embedder.
+
+**Near-duplicate families, and what they actually cost (2026-10-15, `tools/m4_families.py`, live dev
+store copy + 300 real journal blocks).** Prompted by Graphiti's upstream issue #1956 — their invalidation
+pool is capped at 10 candidates, so a subject's dead history fills the pool and the live fact never
+retires. Strata's write guard has the same shape (`serve/memory.py:552`, cosine ≥ 0.85 then `cand[:8]`),
+so the audit asked whether the cap is leaking near-dupes into live rows:
+
+```
+  2,668 active rows | cosine >= 0.85, content-word Jaccard >= 0.75, same scope
+    violating live pairs          90
+    duplicate families            25          rows inside one: 78 (2.9% of the store)
+    wasted slots store-wide       53
+    explained by the top-8 cap    0 of 90     (worst case observed: 7 higher-cosine live neighbours)
+  WHAT IT COSTS IN THE PRODUCT — 300 real journal blocks, hybrid, 96/24k
+    notes per block               96.0
+    DUPLICATE SLOTS PER BLOCK     0.21  (0.2% of what the model is shown)
+    blocks with >= 1 duplicate    14%     worst block: 3 repeated lines
+```
+
+Three lessons, and the middle one is a near-miss worth keeping:
+
+1. **The cap is not the cause.** Every violating row was inside the tested window at write time, so the
+   merge laws SAW the candidate and kept both. The reason is the subject veto firing on rare non-subject
+   tokens — an 11-row family differing only in "GPU"/"machine"/"equipped", a "(6)" list prefix, a quoted
+   "'arm c test'". In a 2,668-row store `df <= 3` is trivially satisfied, so the veto that protects names
+   also protects rewordings. (Same failure shape the guard already fixed once for STOP words.)
+2. **The store-wide number is not the product number.** 53 wasted slots looked like 55% of a 96-note
+   block, and the guard fix was half-scoped on that strength. The real cost is **0.21 slots per block
+   (0.2%)**, because the read path already collapses near-dupes and a family only costs a block when two
+   of its rows land in the SAME block. The fix is a hygiene item (UI clutter, one fact per row), not a
+   retrieval-bandwidth item, and it is parked as such.
+3. **Measure at the consumer before sizing the fix.** This is the second time in two days that a store-
+   level statistic (first the 95%-coarse shelves, now the 53 slots) implied a feature that the block-level
+   measurement did not support.
+
 **Everyday budget, measured on the live store (2026-10-14, offline copies, no engine, no port).** The
 arm-C result says 192/48k was a no-op *on the venue corpus* (long rows, char cap binds at ~15 notes).
 Personal facts run ~160 chars, so there the **note** cap is what binds — which is a different regime, and
@@ -683,7 +755,9 @@ Three conclusions, in order of importance:
    block. The untested piece is the query→shelf step: `search(classes=...)` exists but the caller must
    choose the shelf, so a two-stage retrieval (cheap lexical pass → infer shelf → re-search inside it) is
    the experiment that would show the shelves earning their keep — offline, no engine, at several store
-   sizes. Parked as the next measurement, not asserted as a result.
+   sizes. Parked as the next measurement, not asserted as a result — **and it ran the same day: the
+   navigation half of that bet did not pay (see "Shelf navigation, measured" below). The shelf still
+   matters, for a different, measured reason.**
 
 Probe hygiene worth keeping: the head block is **pinned by (scope, first user message, shelf, arm)** and
 the *budget is not in the key*, so a probe that flips budgets inside one process re-measures the same
@@ -691,6 +765,64 @@ pinned bytes (the first run of this probe reported an impossible "identical bloc
 exactly that reason). `m._blocks.clear()` between budgets is mandatory in any offline budget comparison —
 and if a per-request budget override is ever added, the pin key must gain the budget, the same way it
 gained the arm.
+
+**Shelf navigation, measured (2026-10-14, `tools/m4_shelf_nav.py`, offline copies of the live store, no
+engine, no port).** Conclusion 3 above parked the query→shelf step as "the next measurement, not asserted
+as a result". It is now a result, and it goes the other way. Two taxonomies, three navigation arms, all
+scored the same way — "is the gold fact inside the top-96 the block draws from" (at this store 96 notes
+fit under the char cap, so the list and the rendered block agree):
+
+```
+197 labeled probes | store 2,655 rows, 473 wild (18%)
+taxonomy A: 17 shelves, largest 863 rows; 5 of them bigger than the 96-note block = 77% of the store
+taxonomy B: 45 shelves cut from 18 base classes by cosine clusters capped at 90 rows; NONE bigger
+
+  right fact inside the top-96            (n = probes eligible for that arm)
+  taxonomy       rows      current        same set          oracle          routed
+  A current       600      0.919      1.000 (28)        1.000 (28)      1.000 (28)
+  B dense         600      0.919      0.919 (37)        0.919 (37)      0.919 (37)
+  A current      1300      0.931      0.986 (70)        0.986 (70)      0.986 (70)
+  B dense        1300      0.931      0.931 (87)        0.943 (87)      0.931 (87)
+  A current      2655      0.919      0.950 (161)       0.950 (161)     0.974 (156)
+  B dense        2655      0.919      0.919 (197)       0.934 (197)     0.888 (197)
+```
+
+1. **Perfect shelf navigation buys nothing on the store's own shelves.** The oracle arm — filter to the
+   gold row's OWN shelf, i.e. a router that can never be wrong — scores 1.000 / 0.986 / 0.950, exactly
+   equal to the unfiltered baseline over the same probes, at all three sizes. The unfiltered hybrid
+   already puts the gold in the top 96, so narrowing the candidates first has nowhere to gain.
+2. **Densifying the taxonomy does not change that.** 45 shelves instead of 17, every one of them small
+   enough for the block to navigate, moves the oracle from 0.919 to 0.934 at the biggest size — three
+   probes out of 197. The falsifier set before running ("oracle flat on A, high on B → the taxonomy idea
+   wins") did not fire: the ceiling on dense cutters is itself near the baseline.
+3. **And the router is not free — it is net negative.** The cheap bm25-vote router (arm 3) scores 0.888
+   against a 0.919 unfiltered baseline at 2,655 rows on the dense taxonomy. That is the asymmetry,
+   measured: a right shelf pick gains ~nothing, a wrong one filters the gold out of the candidate pool
+   *entirely*. Navigation's upside here is three probes and its downside is six.
+4. **The real shelf finding is the opposite of the one being chased: the cost is in WILD, not in
+   granularity.** At 2,655 rows the unfiltered arm misses 16 of 197. Split by shelf: 8 misses among the
+   161 shelved probes (5.0%) and 8 among the 36 WILD probes (22.2%) — a wild row is **4.5× more likely to
+   be missed**. So 50% of the misses come from 18% of the rows. The valuable taxonomy work is getting rows
+   OFF WILD (the embedder-centroid route, or a human naming the category, as `m2_ingest --class` already
+   does), not cutting existing shelves finer and not routing into them.
+5. **Two instruments disagree about growth, and the disagreement is the point.** This degraded-query,
+   candidate-list measure is FLAT with store size (0.919 at every size), while the own-words,
+   rendered-block measure above falls 0.977 → 0.919. Ranking quality on a common-words query does not
+   degrade between 600 and 2,655 rows; what degrades is what survives rendering — the char trim and
+   window-dependent read-path near-dupe suppression. Any future "we fixed scaling" claim must say which of
+   the two it moved.
+
+Probe hygiene, because both bugs would have misled quietly: the first version reported an oracle WORSE
+than no filter, purely from mixed denominators (the filtered arms skip WILD rows, so dividing their hits
+by ALL probes understates them — hence the explicit `same set` column), and the dense arm scored exactly
+0.000 because the dense labels lived in a memory-side map while `search(classes=…)` reads the store's
+`class` column. A taxonomy the store cannot see is not a taxonomy. `m4_shelf_nav.py` now writes the dense
+labels into the copy's column, which is also what a real densify migration would have to do.
+
+Scope of the result: it is measured at 600-2,655 rows of ~160-char personal facts. It does NOT extrapolate
+to 10k-100k rows, and the venue store (10,973 rows) is the place to re-run it — the flat curve here says
+"navigation is not the constraint at this size", not "never".
+
 
 **Why.** The temporal diagnostic (`spikes/lme/TEMPORAL_DIAG.md`) split the 0.433 row by cause: 61 of 127
 temporal questions are persistently wrong, 25 always refuse, and 20 of those refused **with an answer row in
