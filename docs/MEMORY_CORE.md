@@ -1582,6 +1582,46 @@ recur across questions and cross-question pair statistics are undefined there. T
 is wrong - it needs the **dev journal** (`turns.injected`, shipped tonight and filling since the reboot),
 where the same facts genuinely recur across conversations.
 
+## The mutation the metric had to pass (measured 2026-10-15, `tools/m4_mutation.py`, 30 temporal lines)
+
+`sem` refuses a claim until something makes it fail. The claim our queue is priced on is that the block
+drives the answer, and the sensitivity probe had left one hole: a within-run correlation is not a mutation.
+So: take 30 temporal-reasoning lines that were **correct at full gold coverage**, render their blocks
+in-process from the embedded venue copy, and answer three times at temperature 0.8 with memory muted -
+block as rendered, block with the **gold rows removed**, and no block at all. No boot, no second instance:
+the current dev server answers, the block is the only variable.
+
+| arm | accuracy | what it says |
+|---|---|---|
+| control (block as rendered) | **0.867** (26/30) | fidelity: reproduces the filed run on 26 of 30 lines that were correct there - the 4 misses are temp-0.8 repeat variance, which is exactly why the protocol asks for ≥3 repeats |
+| drop the gold rows | **0.200** (6/30) | |
+| no block at all | **0.000** (0/30) | the model knows **none** of this from its weights |
+
+**Flip rate: 0.700 of probed lines, 0.808 of the lines the control actually got right (21/26).** The gold
+line is load-bearing. Two sub-results worth their own lines:
+
+- **13 of the 30 drops produced an `idk`, not a wrong guess.** When the evidence is taken away the model
+  mostly *notices* - which is the property the muted control has been measuring all along (0.984 idk), now
+  demonstrated at the level of a single row inside a block rather than the whole memory.
+- **5 of 30 (0.167) survived dropping the gold line but not dropping the block** - a *twin* line carried
+  the answer. That is the third distinct cost of near-duplicate facts measured this project: block slots
+  (0.2%), attributability (EVAL reach 0.550), and now redundancy (the answer survives its own row).
+
+**The result that matters for the queue: 0.808 flip and the flat coverage slope (+0.085) do not
+contradict each other.** Having *more* of the evidence present barely moves temporal accuracy, while the
+evidence that is present is carrying the answer 80% of the time. So the failure is not finding it and not
+ignoring it - it is **using it in the right order**, which is the one thing absolute dates are for. The
+gate passes, and the cost that remains for the grounding arm is the ingest (generation over the temporal
+sessions), not a boot: the arm can be run in-process against a scratch store on the current server.
+
+Method note, because the first attempt was wrong in a way that would have cost an arm: the block was
+initially injected as a **system-only conversation**, which returns an empty completion from this chat
+template. Three lines, three empty answers, and a flip rate that would have read as **0.000** - "the block
+does not matter" - from a harness bug. The fidelity arm is what caught it: a control that cannot reproduce
+the filed run is not measuring the thing. Fixed to the product's own shape (memory in the system head,
+question from the user), and the empty-completion case is now counted as a probe failure, never as a wrong
+answer.
+
 ## Licensing and attribution
 
 - Strata (upstream) is MIT © Niko1221 and contributors; this fork's independent code keeps MIT.
