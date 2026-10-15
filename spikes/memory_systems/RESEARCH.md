@@ -164,7 +164,7 @@ killed-at-this-size rather than forgotten:
 | "more prenamed shelves" (denser cutters) | user proposal + Graphiti subclasses | 45 clusters all smaller than the block lift the oracle by 3 probes of 197 |
 | a bigger injection block | arm C | +0.000 relevant facts at both query shapes and both arms |
 | near-dupe guard fix as a retrieval win | Graphiti #1956 | the product cost is **0.21 slots per block (0.2%)**; the cap explains 0 of 90 violating pairs |
-| rank-order work as an accuracy lever | the reranker's +0.139 rank-1 swing | RRF `k=1` moves rank order (+0.013 top1, +0.026 top3) and block coverage by only +0.004 -> ~+0.003 accuracy, inside the band. **Under revision while `m4_position.py` runs**: its first 7 questions give front 0.94 / middle 0.86 / tail 0.75, i.e. position inside the block moves accuracy by ~19 points, so "coverage unchanged -> accuracy unchanged" is only true if the reader is indifferent to where the fact sits — and it is not. Do not cite this row as settled until n=60 lands. |
+| rank-order work as an accuracy lever | the reranker's +0.139 rank-1 swing | measured twice, and the product path is the one that counts: `tools/lme_posrank.py` on the 1,500 filed arm-C lines shows **no monotone position effect** (rank 1 0.748 vs rank 2 0.835 vs rank 10 0.833; flat inside the easy types), and `k=1`'s +0.013 top1 moves block coverage by only +0.004 -> ~+0.003 accuracy. The synthetic `m4_position.py` pilot DID find ~19 points front-to-tail, but only in blocks with exactly one answer-bearing row — real for reader attention, not for the product. The agentic tool is where rank order pays. |
 | speaker/assistant-echo demotion | the knowledge-update -0.139 | parked; still parked — `k=1` does not repair it either, and the positional probe is the test of whether order can pay at all |
 
 ## Ranked enhancement backlog
@@ -195,12 +195,18 @@ instrumentation that makes everything else attributable.
    column, one table, no LLM. Measure: `lme_retrieval_ab.py --offline` (multi-session and temporal
    coverage are the target columns), then the venue; falsifier: coverage at k=16 does not move, which by
    the filed causal chain means accuracy cannot move.
-4. **Placement, not budget: purpose strings and a tier split inside the block.** Source: Letta's
-   core-vs-deferred tiers with per-unit `description`. Our budget is measured dead; Letta's explanation —
-   placement is the operation — is the surviving hypothesis for the 70% reasoning residual, and
-   `tools/m4_position.py` is currently measuring the order half of it. Cost: prompt shape only. Measure:
-   venue accuracy, 3 repeats, same store; falsifier: positional probe flat AND tiered block flat, which
-   would say presentation cannot pay either and the residual really is the reader model.
+4. **Presentation, not placement: purpose strings and an evidence-then-answer shape — the ordering half of
+   this idea is already dead.** Source: Letta's core-vs-deferred tiers with a per-unit `description` saying
+   what each unit is FOR, plus Cognee's deterministic answer-grounded evidence block (stopword-overlap
+   filter against the generated answer, 160-char snippets, `file #seq` locators, `references.py:277-360`).
+   The budget is measured dead and so is position: `tools/lme_posrank.py` finds no monotone position effect
+   across 1,500 filed lines, so moving a fact earlier buys nothing. What has NOT been tested is what the
+   line SAYS — 96 undifferentiated sentences versus a reader that can tell which kind of statement each one
+   is. Cost: prompt shape only, no retrieval compute. Measure: venue accuracy, 3 repeats, same store, with
+   coverage held flat (so it cannot hide behind evidence arrival); falsifier: a tiered/labelled block moves
+   nothing either, which would say presentation cannot pay at all and the residual really is the reader
+   model — a useful negative, because it ends the presentation line and points the next hour at the
+   extractor instead.
 5. **Empty the WILD bucket — but for the right reason.** Measured: a wild row is **4.5x more likely to be
    missed**, 18% of rows, half the misses. The falsifier written before the mechanism was checked has
    already fired analytically: `class` is not a ranking input anywhere (`serve/memory.py:910-915` uses it

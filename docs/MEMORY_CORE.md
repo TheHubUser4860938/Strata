@@ -685,6 +685,42 @@ number, all of them on the record:
 Tests: 86 + 4 green with the new constant. The default path with the embedder OFF is untouched: this line
 is never reached without an embedder.
 
+**Position inside the block, asked twice and answered twice (2026-10-15).** The standing claim "at this
+block size the answer does not ride on rank order" was inferred (the reranker moved retrieval rank-1 by
+0.139 and accuracy by +0.005), so it got measured - and the two ways of measuring it disagreed:
+
+- `tools/m4_position.py` - synthetic and within-subject: same rows every arm, only the gold's POSITION
+  moves (front / middle / tail), block rendered by `MemoryService._render_block` itself so the bytes cannot
+  drift, official checker, style `con`. First 8 questions x 3 arms x 3 repeats, then stopped:
+  **front 0.946 / middle 0.839 / tail 0.763** - a ~19-point primacy effect. The catch is in the
+  construction: that block holds exactly ONE answer-bearing row, so the reader's only route to the answer
+  is finding that line. It measures the reader's attention, not the product.
+- `tools/lme_posrank.py` - the product path, and it needed no new run at all: the arm-C record stores the
+  ordered hit list per line and the ingest sidecar says which rows carry the gold. n = 1,500 filed lines.
+
+```
+  accuracy by the gold row's position:   1 0.748 | 2 0.835 | 3 0.776 | 4 0.722 | 5 0.622
+                                         6 0.714 | 7 0.889 | 8 0.250 | 9 0.667 | 10 0.833
+                                    gold row ABSENT from the list: 0.778
+  within type, position buckets 1 / 2-3 / 4-6 / 7-10:
+    single-session-assistant   0.97  0.97  1.00  0.93     single-session-user   0.90  0.95  1.00    -
+    multi-session              0.87  0.85  0.69  0.81     preference            0.98  0.90  0.75    -
+    knowledge-update           0.73  0.81  0.75  0.17(n=6)     temporal          0.42  0.62  0.36  0.25
+```
+
+Retrieval is deterministic, so a question's gold position is identical across its three repeats - position
+is perfectly correlated with what kind of question it is, which is why the per-type table sits beside the
+overall one instead of being assumed away. **No type shows a monotone position effect.**
+
+The resolution, stated as one sentence each: the reader does have a strong primacy bias when nothing else
+in the block can help, and in a real corpus something else almost always can. That is also why lines with
+**no gold row in the list at all answer correctly 0.778 of the time - better than rank-1 lines (0.748)**: a
+missing gold ROW is not a missing answer, and anyone quoting "the gold was in the block" owes that
+sentence. Consequence for the RRF change directly above: its win stays a rank-order win - real for the
+agentic `memory_search` tool, worth ~+0.003 through the block - and re-ordering is **not** where arm C's
+remaining 24% lives. The synthetic probe's 72 lines are kept as a pilot of reader attention, not as a
+product result.
+
 **Near-duplicate families, and what they actually cost (2026-10-15, `tools/m4_families.py`, live dev
 store copy + 300 real journal blocks).** Prompted by Graphiti's upstream issue #1956 — their invalidation
 pool is capped at 10 candidates, so a subject's dead history fills the pool and the live fact never
