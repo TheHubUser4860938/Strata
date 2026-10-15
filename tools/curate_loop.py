@@ -56,7 +56,7 @@ from gate1_driver import hit, norm                                    # the stri
 COLD_PREAMBLE = ("Answer the question with the shortest exact answer - a name, number, date, "
                  "or short phrase. If you do not know, answer exactly: idk. No guessing, no "
                  "sentences, no explanation.\n\nQuestion:")
-EXTRACT_PROMPT = (
+_EXTRACT_HEAD = (
     "You are scanning one work conversation for durable facts worth remembering. List up to "
     "{k} facts that a fresh assistant session could NOT already know: personal details about "
     "the user, or project-specific findings and decisions. Skip generic chatter, small talk, "
@@ -64,8 +64,47 @@ EXTRACT_PROMPT = (
     "line exactly in this format:\n"
     "FACT: <one sentence> || PROBE: <a question only this fact answers> || GOLD: <the "
     "shortest exact answer to PROBE> || SCOPE: user|project\n"
-    "No other lines, no numbering, no commentary.\n\nCONVERSATION:\nuser: {user}\n"
-    "assistant: {assistant}")
+    "No other lines, no numbering, no commentary.\n")
+_DATES_RULE = (
+    "DATES: this conversation happened on {observed}. Resolve every relative date against that "
+    "day and write the ABSOLUTE date (YYYY-MM-DD) into the FACT. 'yesterday', 'last week' and "
+    "'on Friday' are unreadable to a session that arrives months later, and the memory block "
+    "cannot order them for the reader either: a rendered note line is `[n] (scope) text` with no "
+    "date in it at all, so a fact that does not name its own day is unorderable even when it is "
+    "present. Never invent a date: if the day is unknown, leave it out.\n")
+_EXTRACT_TAIL = "\nCONVERSATION:\nuser: {user}\nassistant: {assistant}"
+EXTRACT_PROMPT = _EXTRACT_HEAD + _DATES_RULE + _EXTRACT_TAIL       # the shipped shape
+EXTRACT_PROMPT_UNDATED = _EXTRACT_HEAD + _EXTRACT_TAIL             # control arm: byte-identical to
+# the prompt every fact now in the store was written with (sha256 e7c8fa6b64114ee0, pinned by
+# tools/test_curate_grounding.py so the control cannot drift into a second variable)
+#
+# Why the date is in the prompt at all: the venue record's worst question type is temporal
+# reasoning at 0.465, and the diagnostic (spikes/lme/TEMPORAL_DIAG.md) names the mechanism as
+# multi-event ORDERING - "an ordering question needs three dated events and lexical recall proposes
+# the one that shares the question's rare words". The journal has stored created_at for every turn
+# and pending_turns() has always returned it (serve/memory.py:1243); the extract prompt was the one
+# place it went missing, so a turn saying "last week we decided" got written down dateless by
+# design. This costs no extra ask and no retrieval compute - it lengthens one prompt.
+
+
+def observed_on(ts) -> str:
+    """A turn's timestamp in the form a reader can reason with: date plus weekday, local time (the
+    weekday is what makes "Friday" resolvable). A missing stamp says so rather than guessing."""
+    try:
+        if not ts:
+            raise ValueError("no stamp")
+        return time.strftime("%Y-%m-%d %A", time.localtime(float(ts)))
+    except (TypeError, ValueError, OSError):
+        return "an unknown date (write no date rather than a guessed one)"
+
+
+def extract_prompt(t: dict, k: int, dated: bool = True) -> str:
+    """The extract ask for ONE journaled turn. `dated=False` reproduces the pre-grounding prompt
+    byte-for-byte, which is what makes the A/B a single-variable test instead of a rewrite plus a
+    hope."""
+    tpl = EXTRACT_PROMPT if dated else EXTRACT_PROMPT_UNDATED
+    return tpl.format(k=k, user=scrub(t["user"])[:1200], assistant=scrub(t["assistant"])[:1600],
+                      observed=observed_on(t.get("created_at")))
 # the idk set mirrors gate1_driver.hit()'s idk guard (spikes/window/gate1_driver.py) - the
 # SAME predicate that zeroes a cold answer must decide confab-vs-idk, or the two disagree.
 IDK = ("idk", "i don't know", "i do not know", "unknown", "don't know", "no answer", "")
@@ -348,6 +387,13 @@ def main():
     ap.add_argument("--interval", type=int, default=60, help="--sweep: seconds between idle checks")
     ap.add_argument("--batches", type=int, default=0, help="--sweep: stop after N batches (0 = forever)")
     ap.add_argument("--extract-only", action="store_true", help="smoke the extractor, skip cold-score")
+    ap.add_argument("--no-date", action="store_true",
+                    help="the CONTROL arm: extract with the pre-grounding prompt, byte-identical to the "
+                         "one every fact now in the store was written with. Dated is the default; this "
+                         "flag is what keeps the comparison a single-variable test. Why the date "
+                         "matters: temporal reasoning is 0.465, the worst type on the board, and the "
+                         "diagnostic names multi-event ORDERING as the mechanism - while a rendered "
+                         "memory line carries no date at all, so the fact has to name its own day.")
     ap.add_argument("--no-store", action="store_true", help="score but do not remember/mark")
     ap.add_argument("--dry-run", action="store_true", help="render + count, no engine asks")
     ap.add_argument("--tag", default=datetime.date.today().isoformat())
@@ -431,8 +477,7 @@ def main():
             break
         for t in turns:
             try:                                    # a poison turn must not kill the whole drain
-                prompt = EXTRACT_PROMPT.format(k=a.max_facts, user=scrub(t["user"])[:1200],
-                                               assistant=scrub(t["assistant"])[:1600])
+                prompt = extract_prompt(t, a.max_facts, dated=not a.no_date)
                 ids, _ = live_render(tok, tpl, [{"role": "user", "content": prompt}], "off")
             except Exception as e:                  # render assert on unexpected content: record,
                 rec({"kind": "extract", "turn_id": t["id"], "render_error":              # noqa: BLE001
