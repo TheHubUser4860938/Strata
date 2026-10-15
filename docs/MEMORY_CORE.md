@@ -1478,6 +1478,61 @@ experiment found the same shape from the other direction (token-named buckets cu
 and left 46% of the shelf in a `_rest` pile, while cosine buckets raised POL/ARSA to 1.000). The rule both
 support: **the extractor files at chapter level, the store computes the depth.**
 
+## The venue test on the new build (measured 2026-10-15 16:51-17:35, arm C config, 1 repeat)
+
+Booted `strata-venue-armc.json` (venue store **10,973 rows**, 192 notes / 48,000 chars, vectors 10,973,
+unembedded 0, embedder loaded) and ran `tools/lme_harness.py --skip-ingest --repeats 1 --style con
+--muted-control`: **500 questions, 500 lines, 2,675 s (44.6 min), exit 0**. Records:
+`spikes/lme/armc-20261015-1rep.jsonl` (+ `.report.txt`, `.boot.log`).
+
+- **accuracy 0.760** (380/500) against the filed arm C **0.761** (3 repeats, 2026-10-14). The three
+  changes shipped since that record - fail-closed shelf addresses, boundary-exact subtrees in both arms,
+  deep call numbers - **did not move the venue outcome**, which is the design claim: the harness sends no
+  `X-Strata-Memory-Class`, so the LME path takes `classes=None` and is byte-identical. The falsifier was
+  the other direction: had accuracy moved, a class-axis change would have leaked into a path that was
+  supposed not to change. It did not, and this is the first time that claim has been demonstrated
+  end-to-end rather than argued from the header.
+- **The retrieval metrics reproduce the offline A/B exactly**: `turn_top1` 0.517, `turn_top3` 0.849,
+  `row_coverage` 0.887, `session_coverage` 0.895 - identical to the numbers `lme_retrieval_ab.py --offline`
+  printed from the store copy the same day (0.504→0.517, 0.749→0.849, 0.830→0.887). That is the strongest
+  evidence yet that `--offline` is a legitimate mechanism instrument and not a proxy that drifts.
+- **Muted control**: idk 492/500 = **0.984**, gold-substring leaks **0/500 = 0.0000**.
+
+**The failure anatomy, which is the part worth reading** (a wrong line is "retrieval" only if a gold
+session was missing from what the block showed):
+
+| type | n | wrong | reasoning | retrieval | accuracy |
+|---|---|---|---|---|---|
+| temporal-reasoning | 127 | **69** | **50** | 19 | 0.457 |
+| multi-session | 121 | 19 | 3 | **16** | 0.843 |
+| knowledge-update | 72 | 18 | **16** | 2 | 0.750 |
+| single-session-user | 64 | 5 | 5 | 0 | 0.922 |
+| abstention | 30 | 4 | 0 | 4 | 0.867 |
+| single-session-assistant | 56 | 3 | 3 | 0 | 0.946 |
+| single-session-preference | 30 | 2 | 1 | 1 | 0.933 |
+| **overall** | **500** | **120** | **78 (65%)** | **42 (35%)** | **0.760** |
+
+**Temporal reasoning is the store's problem, and it is not a retrieval problem.** 69 of the 120 errors
+(57%) are temporal, and of those 69, **50 had every gold session present** and **49 had row coverage
+≥ 0.999** - the evidence was in front of the model and it still failed, 72% of the time. Its idk rate is
+0.37, more than double any other answer type: the model gives up on ordering questions. That is exactly
+the mechanism the shipped-but-untested **date grounding** targets (observation date + the absolute-date
+rule in the extract prompt, `--no-date` reproducing the old prompt byte-for-byte).
+
+**That reorders the venue queue by pool size, which is the honest way to choose.** The grounding arm
+addresses a pool of 50 questions = **10.0 accuracy points**; arm C1 (the budget axis, lexical at
+192/48k) addresses multi-session's retrieval pool of 16 questions = **3.2 points**. Grounding is the
+bigger prize by 3x, and it does not need a full re-ingest to test: re-ingest **only the 127 temporal
+questions' haystacks** into a scratch store twice - old prompt and dated prompt - embed both, and run one
+repeat over those 127 questions (~12 min of generation) plus the offline coverage comparison. A full
+500-session re-ingest is the arm for the record, not the arm for the decision.
+
+Caveats on the record, stated as the protocol requires: this is **one repeat**, so the 0.760-vs-0.761
+comparison is a no-regression check, not a pass/fail claim (pass/fail wants ≥3 repeats at temp 0.8/1.0);
+the per-type accuracy rates are single-sample and the 0.457-vs-filed-0.465 difference is noise. The
+anatomy - 50 of 69 temporal failures with full session coverage - is a structural count, not a rate, and
+that is what the queue recommendation rests on.
+
 ## Licensing and attribution
 
 - Strata (upstream) is MIT © Niko1221 and contributors; this fork's independent code keeps MIT.

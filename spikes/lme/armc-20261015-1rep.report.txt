@@ -1,0 +1,20 @@
+lines: 500 (500 questions) | types: {'temporal-reasoning': 127, 'abstention': 30, 'multi-session': 121, 'knowledge-update': 72, 'single-session-preference': 30, 'single-session-assistant': 56, 'single-session-user': 64}
+accuracy (per line):        380/500 = 0.760
+accuracy (majority >=2/3):  0/0 = 0.000
+turn_top1                   0.517  (n=470)
+turn_top3                   0.849  (n=470)
+session_top1                1.000  (n=470)
+session_top3                1.000  (n=470)
+row_coverage                0.887  (n=470)
+session_coverage              0.895  (n=470)
+wrong lines with coverage data: 116 | every gold session present (reasoning): 78 | at least one missing (retrieval): 38
+muted control: idk 492/500 = 0.984 | gold-substring leaks 0/500 = 0.0000
+per-repeat correct: {0: '380/500'}
+by type (accuracy | mean session coverage):
+  temporal-reasoning             58/127  = 0.457  | coverage 0.856
+  multi-session                 102/121  = 0.843  | coverage 0.818
+  knowledge-update               54/72   = 0.750  | coverage 0.944
+  single-session-user            59/64   = 0.922  | coverage 0.969
+  single-session-assistant       53/56   = 0.946  | coverage 0.964
+  abstention                     26/30   = 0.867  | coverage n/a
+  single-session-preference      28/30   = 0.933  | coverage 0.967
