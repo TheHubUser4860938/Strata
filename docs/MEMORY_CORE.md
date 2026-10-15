@@ -1533,6 +1533,55 @@ the per-type accuracy rates are single-sample and the 0.457-vs-filed-0.465 diffe
 anatomy - 50 of 69 temporal failures with full session coverage - is a structural count, not a rate, and
 that is what the queue recommendation rests on.
 
+## Sensitivity before spending: does accuracy depend on coverage, and where does it not? (measured 2026-10-15, `tools/m4_sensitivity.py`, zero model calls)
+
+`sem`'s discipline - a claim is not accepted until something makes it fail - applied to our own venue
+records before booking another window. The chain the whole queue is priced on is *rendered-block coverage
+predicts accuracy*, which so far was a correlation **between arms**. This reads it **within** one run
+(500 lines, `spikes/lme/armc-20261015-1rep.jsonl`):
+
+| gold-row coverage of the recall | n | accuracy | | gold-session coverage | n | accuracy |
+|---|---|---|---|---|---|---|
+| 0-0.25 | 17 | 0.588 | | 0-0.25 | 15 | 0.533 |
+| 0.25-0.5 | 9 | 0.222 | | 0.25-0.5 | 10 | 0.300 |
+| 0.5-0.75 | 67 | 0.642 | | 0.5-0.75 | 60 | 0.633 |
+| 0.75-0.999 | 5 | 0.800 | | 0.75-0.999 | 4 | 0.500 |
+| **full (1.000)** | **372** | **0.793** | | **full** | **381** | **0.795** |
+
+Full coverage beats incomplete by **+0.191 on rows and +0.222 on sessions**, so the block is doing real
+work and the premise survives. **The slopes by type are the finding, and they are not uniform:**
+
+| type | n | accuracy at full coverage | at incomplete | slope |
+|---|---|---|---|---|
+| multi-session | 121 | 0.958 | 0.673 | **+0.285** |
+| single-session-preference | 30 | 0.964 | 0.500 | +0.464 |
+| temporal-reasoning | 127 | 0.479 | 0.394 | **+0.085** |
+| knowledge-update | 72 | 0.750 | 0.750 | **+0.000** |
+| single-session-assistant | 56 | 0.942 | 1.000 | -0.058 |
+| single-session-user | 64 | 0.919 | 1.000 | -0.081 |
+
+**Where the evidence is spread, coverage is everything; where it is present but must be *ordered* or
+*disambiguated*, coverage is nothing.** Temporal gains 8.5 points from complete coverage and still sits at
+0.479; knowledge-update gains exactly 0.000. That kills the "retrieve more of it" hope for the two biggest
+failure pools and it sharpens what the grounding arm actually claims: absolute dates have to help the model
+**order** facts, not match them - so the retrieval-level proxy would under-test it, and the test belongs at
+the answer level.
+
+**Replication (the evidence-ledger promotion criterion, tested honestly).** Accuracy by the number of gold
+sessions a question's answer spans: 1 session 0.797 (n=187), 2 0.768 (n=228), 3 0.633, 4 0.562, 5 0.333,
+6 0.000 (n=3) - monotone. But `turn_top1` moves the *other* way at 2 sessions (0.557 vs 0.487): retrieval
+finds a gold row more often while the final answer gets worse, which is the multi-hop signature - **the
+store is not the weak link, composition is.** Stated as a limitation, not a claim: this bucket measures
+question difficulty, not the fact-level promotion rule; the test for "graduate a fact when it survives
+across cases" is store-side (near-dupe family size against `hits`/`confidence`) and has not been run.
+
+**A structural catch, and it cancels an idea I floated an hour ago.** The co-shown-pair mine (the `sem
+history` co-change analogue) returned nothing above the floor, and the reason is not that our blocks are
+undifferentiated: **in the venue store every fact lives in its question's own scope**, so a fact id cannot
+recur across questions and cross-question pair statistics are undefined there. The idea is fine, the corpus
+is wrong - it needs the **dev journal** (`turns.injected`, shipped tonight and filling since the reboot),
+where the same facts genuinely recur across conversations.
+
 ## Licensing and attribution
 
 - Strata (upstream) is MIT © Niko1221 and contributors; this fork's independent code keeps MIT.
