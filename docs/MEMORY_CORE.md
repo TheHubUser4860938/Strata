@@ -1360,6 +1360,32 @@ argument is still `None`, and the everyday path is byte-identical. Four surfaces
 `?class=` / `op=search`. **The running dev server predates the fix** — it changes nothing until the next
 dev-up, and nothing for ordinary conversations at that.
 
+**The notation, after reading the actual schedules (2026-10-15, `spikes/memory_systems/lcc.md`).** The
+Library of Congress ships its schedules as free print-ready PDFs (44 volumes, Preface/Outline/Text, data
+selected May 2024); reading the Text volumes rather than summaries of them turned up two things about our
+own call numbers:
+
+- **A real call number carries a Cutter, and ours could not.** `MEM/CRG.3.431` — the form `class_name`'s
+  docstring advertises and M3's cartridge banks plan to use — was **rejected** by `CLASS_RE`, which allowed
+  one dotted tail. `QA76.9.A23` (LCC's own "Algorithms") likewise. The tail may now repeat, so deep marks
+  store, and the cosine arm's class column went `U24` → `U48` because 24 characters silently truncated a
+  deep mark and would have made the two arms filter different rows.
+- **A dotted prefix over-captures, and only a boundary is a subtree.** In LCC, `QA76.9`, `QA76.95` and
+  `QA76.99` are three topics; `like 'QA76.9%'` returns all three. A child of X is `X.Y` or `X/Y`, never
+  `Xyz`, so `shelf_sql`/`shelf_mask` now spell that out in both arms (the cosine arm used a bare
+  `np.char.startswith`). Verified on the 2,796-row store with a real deep mark: `QA76.9.A43` is found by
+  `QA76.9` and by `QA76.9.A43`, not by `QA76.95`, in both arms. Cost: SQL filter 0.05 ms vs 0.04 ms under
+  the old law, hybrid search 62 ms median — free, as expected for a predicate on a set the scope filter
+  has already shrunk.
+
+What was **not** copied, and why: LCC's discipline-shaped class list (a personal store's facets are
+who/when/why, not disciplines), span notation (`E201-298`, `Z699+` — schedule notation, not addresses), and
+one-place-only shelving. What is worth copying and is queued as experiments: a many-to-many **subjects**
+table (LCC keeps address and access in two systems; we have one column doing both, which is the shape of
+the 20.3%-wild / 41-84%-contamination result above), and **neighbour/adjacency** filling of the block
+(sortable numbers make "what sits next to this" one query — the primitive the books-and-chapters design
+supplies and a `LIKE` prefix never can).
+
 **Probe hygiene, third instance (and the one that nearly wrote the headline).** `block_for` returns full hit
 records on a pin miss and **id-only dicts on a pin hit** (`serve/memory.py`, in its docstring). A probe that
 reads `h["class"]` therefore measures the cache, not the store: EVAL's probes collide constantly (its rows

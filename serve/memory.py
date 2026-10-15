@@ -78,7 +78,12 @@ STOP = frozenset(("a an and are as at be by can could did do does for from had h
                                       # five-row test store "the" has df 2 and looks RARE, but it is never a
                                       # subject - excluding them is what stops two different facts about one
                                       # subject (the flibber-gauge pair, measured) from deduping on grammar
-CLASS_RE = re.compile(r"[A-Z][A-Z0-9]*(?:/[A-Z0-9]+)*(?:\.[A-Za-z0-9]+)?\Z")
+CLASS_RE = re.compile(r"[A-Z][A-Z0-9]*(?:/[A-Z0-9]+)*(?:\.[A-Za-z0-9]+)*\Z")
+                                      # the dotted tail may repeat, because that is how a real call
+                                      # number carries a Cutter and a part: QA76.9.A23 (LCC's
+                                      # "Algorithms"), MEM/CRG.3.431 (M3 cartridge banks). The old
+                                      # single-optional-tail regex rejected both, including the form
+                                      # this file's own docstring advertises.
                                       # a call number, PHASE 4.5: Library-of-Congress style shelf marks -
                                       # STR, MEM/CRG, MEM/CRG.3, MEM/CRG.3.431. The class axis answers
                                       # WHAT a fact is about; scope answers WHO may know it. The two are
@@ -119,6 +124,32 @@ def class_list(classes):
         return None if items else []      # a list of blanks is no filter; an EMPTY list is the sentinel
     ok = [c for c in (class_name(x, quiet=True) for x in raw) if c]
     return ok if ok else []
+
+
+def shelf_sql(col: str, prefixes: list[str]) -> tuple[str, list[str]]:
+    """A shelf subtree in SQL, spelled out instead of assumed. `col like 'X%'` is correct for LETTER
+    segments (POL pulls POL/ARSA, by design) and wrong for DOTTED ones: once decimals are legal call
+    numbers, the prefix QA76.9 also answers for QA76.95 and QA76.99 - three different captions in LCC,
+    three different sets of facts. A child of X is X.Y or X/Y, never Xyz, so the boundary has to live in
+    the predicate. Returns (fragment, params), ready to AND into a WHERE. Measured cost at 2,796 rows:
+    none visible (the class column is indexed by nothing either way; the filter is a scan of a set the
+    scope filter has already shrunk)."""
+    ors, params = [], []
+    for pre in prefixes:
+        ors.append(f"({col} = ? or {col} like ? or {col} like ?)")
+        params += [pre, pre + ".%", pre + "/%"]
+    return "(" + " or ".join(ors) + ")", params
+
+
+def shelf_mask(classes, col) -> "np.ndarray":
+    """The same subtree law for the cosine arm's numpy filter - the two arms must answer for the same
+    rows or an A/B between them measures the filter, not the ranker. numpy is imported lazily here, as it
+    is everywhere in this file, so a store running with the embedder off never pays for it."""
+    import numpy as np
+    out = np.zeros(len(col), dtype=bool)
+    for pre in classes:
+        out |= (col == pre) | np.char.startswith(col, pre + ".") | np.char.startswith(col, pre + "/")
+    return out
 
 
 def shelf_key(classes) -> str:
@@ -715,8 +746,11 @@ class MemoryService:
             conds.append("scope=?")
             params.append(scope)
         if klass:
-            conds.append("class LIKE ?")
-            params.append(class_name(klass, quiet=True) + "%")
+            named = [c for c in (class_name(x, quiet=True) for x in klass.split(",")) if c]
+            if named:
+                frag, args = shelf_sql("class", named)
+                conds.append(frag)
+                params += args
         if not include_invalid:
             conds.append("invalid_at is null")
         params.append(max(1, min(500, int(limit))))
@@ -902,11 +936,11 @@ class MemoryService:
         ok = [c for c in (class_name(p, quiet=True) for p in prefixes) if c]
         if not ok:
             return "", 0, 0
+        frag, args = shelf_sql("class", ok)
         with self.lock:
             rows = self.conn.execute(
-                "select id, class, text, confidence from memories where invalid_at is null and ("
-                + " or ".join("class like ?" for _ in ok) + ") order by confidence desc, id asc",
-                [c + "%" for c in ok]).fetchall()
+                "select id, class, text, confidence from memories where invalid_at is null and "
+                + frag + " order by confidence desc, id asc", args).fetchall()
         header = "STANDING MEMORY - always known; never restate it, never search for it:"
         lines, used, left = [], len(header) + 1, 0
         for i, (_rid, cls, txt, _conf) in enumerate(rows, 1):
@@ -955,8 +989,8 @@ class MemoryService:
             ok = [class_name(c, quiet=True) for c in classes]
             ok = [c for c in ok if c]
             if ok:
-                shelf = " and (" + " or ".join("m.class like ?" for _ in ok) + ")"
-                prefixes = [c + "%" for c in ok]
+                frag, prefixes = shelf_sql("m.class", ok)
+                shelf = " and " + frag
         bounds = ""
         bparams: list[float] = []
         for cmp_op, v in ((">=", since), ("<=", until)):
@@ -1017,7 +1051,7 @@ class MemoryService:
         meta = {"ids": np.array([r[0] for r in rows]), "mat": mat,
                 "ix": {int(r[0]): n for n, r in enumerate(rows)},   # id -> row, for the fusion pass
                 "scope": np.array([r[2] for r in rows], dtype="U24"),
-                "class": np.array([r[3] for r in rows], dtype="U24"),
+                "class": np.array([r[3] for r in rows], dtype="U48"),   # U24 silently truncated deep marks
                 "created": np.array([r[4] for r in rows], dtype=np.float64),
                 "updated": np.array([r[5] for r in rows], dtype=np.float64),
                 "conf": np.array([r[6] for r in rows], dtype=np.float32)}
@@ -1086,10 +1120,7 @@ class MemoryService:
             return cands
         mask = np.isin(meta["scope"], list(scopes))
         if classes:
-            shelf = np.zeros(len(meta["ids"]), dtype=bool)
-            for c in classes:
-                shelf |= np.char.startswith(meta["class"], c)
-            mask &= shelf
+            mask &= shelf_mask(classes, meta["class"])
         if since is not None:
             mask &= meta["created"] >= float(since)
         if until is not None:

@@ -168,6 +168,40 @@ killed-at-this-size rather than forgotten:
 | speaker/assistant-echo demotion | the knowledge-update -0.139 | parked; still parked — `k=1` does not repair it either, and the positional probe is the test of whether order can pay at all. `tools/m4_consensus.py` then showed all 11 flips were the cosine arm's OWN rank-1 row, and that a lexical-weighted fusion recovers knowledge-update (0.486 → 0.611) only by paying overall top1 (0.517 → 0.506) and top3 (0.849 → 0.830) — a metric swap, so it does not ship. |
 | **the subject / entity axis** — gather by subject instead of filtering by category, the strongest idea shared by two of the six systems | Graphiti's entity rollup + mem0's hub-penalised subject index (`main.py:1807-1821`) | `tools/m4_subject.py` on the venue copy: coverage at the block's own width (k=16) 0.936 → 0.933 (lenient) or unchanged (strict), and **only 4 of 470 questions moved at all**. The headroom was real (multi-session 0.893, temporal 0.920) and the gather did not touch it — below ~11k rows the fusion already surfaces what an entity index would go and get. |
 
+## The seventh system: LCC, the one our own taxonomy is named after (2026-10-15)
+
+Six external systems were studied to inform tier-3; the seventh was hiding in our own design vocabulary.
+`lcc.md` in this directory is the study — read from the Library of Congress's own pages and from the
+schedule PDFs (`LCC_Q2024TEXT.pdf`, `LCC_Z2024TEXT.pdf`, the class outlines), with every caption number
+quoted verified out of the text files rather than from a summary.
+
+Five mechanisms in LCC that our store lacks, each with a measurement already on the record next to it:
+
+| LCC mechanism | What we do instead | Measured cost of ours |
+|---|---|---|
+| **Address and access are separate systems** (call number vs index terms + `Cf.`/`see` edges vs LCSH headings) | one `class` column doing both | 20.3% of rows have no address at all; unscoped contamination 41-84% |
+| **Retire, never renumber** (`(667.6-.63)` obsolete numbers kept with a `see` reference) | a re-cut rewrites `class` on 575-863 rows | the tier-2 cartridge is valid only for its exact bytes, so every re-shelve invalidates a pin |
+| **Literary warrant** (a caption exists because material exists, by approved proposal) | a keyword map written before the collection existed | 5 shelves wider than the block = 74% of the store; cosine re-cut beat it on reach (0.947 → 1.000 on POL/ARSA) |
+| **Captions carry scope notes** (`Including …`, `Class here …`, `For X see Y`, `Cf. …`) | bare token lists in `CLASS_MAP` | an extractor's shelf choice is unfalsifiable; 18% of rows land in `wild` |
+| **Sortable numbers, spans, adjacency** (`Z699+`, `E201-298`, `76.9.A-Z` Cutter expansion) | `class LIKE 'POL%'` — subtree only | no way to ask for a fact's neighbours; "more context per hit" is the one lever left at 0.936 coverage |
+
+Two of them landed as code today, because the roadmap needed them anyway: `MEM/CRG.3.431` (M3 cartridge
+banks) was **rejected by our own validator** — the regex allowed one dotted tail, so no Cutter or part
+number could be stored, including the form `class_name`'s docstring advertises. It is legal now, and the
+subtree predicate is boundary-exact in both arms (`QA76.9` no longer answers for `QA76.95`; SQL filter
+measured 0.05 vs 0.04 ms on the 2,796-row store, i.e. free). Details in `docs/MEMORY_CORE.md`, "Shelf
+isolation".
+
+Two more are queued as experiments, not decisions:
+
+- **Subjects table (many-to-many, LCSH-shaped).** Falsifier: route with headings instead of with the
+  single shelf and compare against tonight's routed arm (leak 1.4-36.8%, reach unchanged). Fails if leak
+  does not fall or reach moves.
+- **Adjacency arm.** Fill the block's free slots by call-number neighbours of the top hits rather than by
+  next-best score. Falsifier: rendered-block gold coverage (the metric that predicted accuracy at
+  +0.048 → +0.040). Fails if coverage does not move — and it needs the document spine (backlog item 7) to
+  mean anything, which is where the books-and-chapters design and LCC meet.
+
 ## Ranked enhancement backlog
 
 Ranked by (measured or documented payoff) / cost, with the falsifier stated before the run. Items 1-4

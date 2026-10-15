@@ -872,6 +872,14 @@ class ClassAxis(unittest.TestCase):
             self.mem.remember("junk shelf", klass="engine internals")
         self.assertEqual(class_name("engine internals", quiet=True), "",
                          "headers may carry anything: junk drops, never raises")
+        # the forms this file's own docstring and the M3 roadmap advertise were REJECTED until 2026-10-15:
+        # the regex allowed one dotted tail, so a Cutter or a part number could not be stored at all.
+        for callno in ("MEM/CRG.3.431", "QA76.9.A23", "QA325.73", "TK7885", "Z699"):
+            self.assertEqual(class_name(callno), callno,
+                             "a call number may carry a Cutter/part extension - that is how LCC does it")
+        for junk in ("QA76.9-A23", "QA76.9_A23", "E201-298", "Z699+"):
+            self.assertEqual(class_name(junk, quiet=True), "",
+                             f"{junk!r} is schedule notation (a span, a plus), not an address")
 
     def test_correct_inherits_the_shelf(self):
         a = self.mem.remember("the widget greemak works at Acme Foundry", scope="user", klass="STR")
@@ -1539,6 +1547,26 @@ class SemanticRerank(unittest.TestCase):
         self.assertTrue(self.mem.search("glimmery", classes=["TECH"]), "shelved row answers its shelf")
         self.assertEqual(self.mem.search("glimmery", classes=["USR"]), [],
                         "a shelf query must not borrow from another shelf just because cosine agrees")
+
+    def test_a_dotted_prefix_does_not_over_capture(self):
+        """LCC caption numbers are DENSE: QA76.9 (Algorithms is QA76.9.A43), QA76.95, QA76.99 are three
+        different topics, so a prefix match on 'QA76.9' that also returns QA76.95 is not a subtree, it is
+        three shelves. A child of X is X.Y or X/Y, never Xyz - so shelf_sql/shelf_mask spell the boundary
+        out, in both arms (the cosine arm used to do a bare np.startswith, which would have made the two
+        arms answer for different rows and turned an A/B into a measurement of the filter)."""
+        self.mem.remember("flibberquant algorithm cost is quadratic", klass="QA76.9.A43")
+        self.mem.remember("flibberquant processor node count", klass="QA76.95")
+        for sem in (True, False):
+            hits = self.mem.search("flibberquant", classes=["QA76.9"], semantic=sem)
+            self.assertEqual({h["class"] for h in hits}, {"QA76.9.A43"},
+                             f"QA76.9 must not answer for QA76.95 (semantic={sem})")
+            self.assertIn("processor node count",
+                          " ".join(h["text"] for h in self.mem.search("flibberquant", classes=["QA76.95"],
+                                                                      semantic=sem)),
+                          "the caption itself is still addressable")
+            self.assertEqual({h["class"] for h in self.mem.search("flibberquant", classes=["QA76"],
+                                                                  semantic=sem)},
+                             {"QA76.9.A43", "QA76.95"}, "the parent subtree holds both children")
 
     def test_an_address_that_is_not_a_call_number_holds_nothing(self):
         """The direction of a failed address, measured on the live 2,796-row store on 2026-10-15: asking
