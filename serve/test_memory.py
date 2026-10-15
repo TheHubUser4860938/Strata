@@ -997,8 +997,16 @@ class ClassAxis(unittest.TestCase):
         out2, _ = request_state(self.mem, msgs,
                                 {"X-Strata-Memory-Scope": "ops", "X-Strata-Memory-Class": "junk shelf!"},
                                 {"model": "m"})
-        self.assertIn("Itasca", out2[0]["content"],
-                      "junk in the class header drops the filter - never breaks the request")
+        self.assertNotIn("Itasca", out2[0]["content"],
+                         "an all-junk class header used to mean 'no filter' and show the whole store;")
+        self.assertNotIn("newton meters", out2[0]["content"],
+                         "since 2026-10-15 it means 'an address that names no shelf' and shows nothing")
+        out3, _ = request_state(self.mem, msgs,
+                                {"X-Strata-Memory-Scope": "ops",
+                                 "X-Strata-Memory-Class": "junk shelf!, HW"},
+                                {"model": "m"})
+        self.assertIn("newton meters", out3[0]["content"], "a HALF-valid header still filters, as it did")
+        self.assertNotIn("Itasca", out3[0]["content"], "junk in the header never breaks the request")
 
 
 class EncryptionAtRest(unittest.TestCase):
@@ -1531,6 +1539,23 @@ class SemanticRerank(unittest.TestCase):
         self.assertTrue(self.mem.search("glimmery", classes=["TECH"]), "shelved row answers its shelf")
         self.assertEqual(self.mem.search("glimmery", classes=["USR"]), [],
                         "a shelf query must not borrow from another shelf just because cosine agrees")
+
+    def test_an_address_that_is_not_a_call_number_holds_nothing(self):
+        """The direction of a failed address, measured on the live 2,796-row store on 2026-10-15: asking
+        for ["TECH/strata-mam"] - a name CLASS_RE rejects for its hyphen - returned 96 hits and ALL 96 of
+        them came from OTHER shelves, because an all-rejected list fell through as "no filter at all".
+        A filter whose entire job is "only the wanted memories" must fail closed. Half-valid lists keep
+        filtering as they always did, and no classes at all is untouched."""
+        self.mem.remember("zebra flibberquant gauge", klass="TECH")
+        self.assertTrue(self.mem.search("glimmery", classes=["TECH"]), "the control: a real address works")
+        for bad in ("strata-mam", "TECH/c++", "junk shelf!", "engine internals"):
+            self.assertEqual(self.mem.search("glimmery", classes=[bad]), [],
+                             f"{bad!r} is not a call number: it addresses nothing, not everything")
+            self.assertEqual(self.mem.search("glimmery", classes=[bad], semantic=False), [],
+                             "the lexical arm holds the same law as the cosine arm")
+        self.assertEqual([h["class"] for h in self.mem.search("glimmery", classes=["TECH", "junk shelf!"])],
+                         ["TECH"], "a half-valid list still filters, exactly as it always did")
+        self.assertTrue(self.mem.search("glimmery"), "no classes at all stays byte-identical")
 
     def test_the_per_request_mute_reproduces_the_lexical_store(self):
         self.mem.remember("zebra flibberquant gauge")            # shares NO word with the query

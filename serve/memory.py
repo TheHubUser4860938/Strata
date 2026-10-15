@@ -98,6 +98,39 @@ def class_name(value, *, quiet: bool = False) -> str:
     raise ValueError('class must look like a call number: STR, MEM/CRG, MEM/CRG.3.431')
 
 
+def class_list(classes):
+    """Shelf addresses as a caller means them, and IDEMPOTENT (block_for hands the value straight to
+    search, so a sentinel that lost its meaning on the second pass would silently widen again - the way
+    the first version of this did, caught by test_request_state_class_header).
+      None or [] of blanks -> None      no filter, byte-identical to the pre-class store
+      a list, >=1 name survives -> the survivors (a half-valid header still filters, as it always has)
+      [] (the sentinel) or a list where NONE survives -> [] "an address that names no shelf"
+    The last case used to fall through as NO FILTER AT ALL, which is the wrong direction for a filter:
+    measured on the live 2,796-row store on 2026-10-15, `classes=["TECH/strata-mam"]` - a name CLASS_RE
+    rejects for its hyphen - came back with 96 hits, and all 96 of them were rows from OTHER shelves. A
+    caller that asked for the narrowest address in the store was shown the whole store. Fail closed: a bad
+    address holds nothing, and the request still works (no exception, no dropped turn), which is what the
+    old test actually cared about."""
+    if classes is None:
+        return None
+    items = list(classes)
+    raw = [str(x).strip() for x in items if str(x).strip()]
+    if not raw:
+        return None if items else []      # a list of blanks is no filter; an EMPTY list is the sentinel
+    ok = [c for c in (class_name(x, quiet=True) for x in raw) if c]
+    return ok if ok else []
+
+
+def shelf_key(classes) -> str:
+    """The shelf part of a block-pin key. Valid lists hash exactly as they always did; the sentinel gets
+    its own marker so a call that addressed a nonexistent shelf can never answer a genuinely unscoped
+    question with an empty block."""
+    ok = class_list(classes)
+    if ok is None:
+        return ""
+    return ",".join(sorted(set(ok))) if ok else "-"
+
+
 def scope_name(value, fallback: str = DEFAULT_PROJECT) -> str:
     """A scope as stored: kept when it looks like a plain name, else the fallback. Never raises - a request
     header may carry anything."""
@@ -189,8 +222,10 @@ def tool_result(mem: "MemoryService", arguments, scope: str = "default",
         return _tool_done(t0, False, '{"error": "q (the words to recall) is required"}')
     try:
         limit = max(1, min(20, int(args.get("limit") or 8)))
-        cls = [c for c in (class_name(x, quiet=True) for x in str(args.get("class") or "").split(","))
-               if c] or classes
+        named = [x.strip() for x in str(args.get("class") or "").split(",") if x.strip()]
+        # An explicit class argument that names no shelf returns nothing, not the whole store (see
+        # class_list); no argument at all still means the server's default classes, byte-identical.
+        cls = class_list(named) if named else classes
         since, until = time_bound(args.get("since")), time_bound(args.get("until"))
     except (TypeError, ValueError) as e:
         return _tool_done(t0, False, json.dumps({"error": f"bad argument: {e}"}))
@@ -905,6 +940,9 @@ class MemoryService:
         # PHASE 4: with an embedder configured, a query bm25 CANNOT serve is exactly the case the
         # cosine pass exists for (spikes/lme/TEMPORAL_DIAG.md: multi-evidence rows that share no rare
         # word with the question). Embedder OFF keeps both early returns untouched - byte-identical.
+        classes = class_list(classes)          # a name that is not a call number addresses NOTHING
+        if classes is not None and not classes:
+            return []                          # ...and not, as it used to, everything
         words = WORD_RE.findall(query.lower())[:MAX_QUERY_WORDS]
         match = " OR ".join(f'"{w}"' for w in words) if words else None
         scopes = [USER_SCOPE]
@@ -1170,7 +1208,7 @@ class MemoryService:
         if not users:
             return None, [], ""
         scope = scope_name(scope)
-        shelf = ",".join(sorted(set(class_name(c, quiet=True) for c in classes or ()))) if classes else ""
+        shelf = shelf_key(classes)      # see shelf_key: a bad address must not share the unscoped pin
         # The ARM rides the pin key, exactly as the shelf does: a block built by the LEXICAL arm must
         # never answer the embedder arm's identical question (and vice versa), or the arm-C A/B would
         # measure the same bytes twice and report a difference that is not there. Stores with no
@@ -1214,7 +1252,7 @@ class MemoryService:
             return None, []
         scope = scope_name(scope)
         seen = sorted(set(int(i) for i in exclude_ids or ()))
-        shelf = ",".join(sorted(set(class_name(c, quiet=True) for c in classes or ()))) if classes else ""
+        shelf = shelf_key(classes)      # see shelf_key: a bad address must not share the unscoped pin
         arm = "" if self.embedder is None else ("|s" if semantic else "|l")   # see block_for: the arm
         material = f"{norm_text(users[-1][:400])}|{','.join(map(str, seen))}|{shelf}" + arm
         key = (scope, "t" + hashlib.sha1(material.encode("utf-8", "replace")).hexdigest()[:16])
@@ -1488,9 +1526,11 @@ def request_state(mem: "MemoryService | None", messages: list[dict], headers, re
     # the class axis (PHASE 4.5): "X-Strata-Memory-Class: STR,USR" pulls engine talk off the eval
     # corpus. Junk prefixes are dropped quietly (a header may carry anything, and a half-valid list
     # still filters); NOTHING in the header means every fact stays eligible, byte-identical to the
-    # pre-class store - the filter only ever narrows what a request that asks for a shelf sees.
-    classes = [c for c in (class_name(x, quiet=True)
-                           for x in (headers.get("X-Strata-Memory-Class") or "").split(",")) if c] or None
+    # pre-class store - the filter only ever narrows what a request that asks for a shelf sees. An
+    # ALL-junk header is the one case that changed (2026-10-15): it used to mean "no filter" and show
+    # the whole store, and now means "an address that names no shelf" and shows nothing - see class_list.
+    raw = [x.strip() for x in (headers.get("X-Strata-Memory-Class") or "").split(",") if x.strip()]
+    classes = class_list(raw) if raw else None      # an absent header stays None: byte-identical
     # The per-request embedder mute (arm-C A/B): the SAME store, the SAME vector set, one boot - only
     # the ranking differs. Absent header, absent embedder: nothing changes anywhere.
     semantic = (headers.get("X-Strata-Memory-Embedder") or "").strip().lower() not in ("off", "mute", "0")

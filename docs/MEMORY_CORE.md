@@ -1268,6 +1268,111 @@ dev server answers the agent's *own* inference, so the agent does not restart it
 and it waits on the **port** (`ss -ltn | grep :8005`), not on `pgrep -f`, whose pattern also matches the
 invoking shell.
 
+## Shelf isolation — what a call returns, at any budget (measured 2026-10-15, accumulated dev store: 2,796 active rows, 567 of them unclassified)
+
+The shelves are supposed to be **addresses**: calling `POL` returns what lives on `POL` and nothing else,
+at any block size. Whether that is true, and what a bigger budget costs, is now measured on the store that
+actually accumulated rather than on a benchmark copy — `tools/m4_shelfcall.py`, 20 topic-local probes per
+shelf (a row's own common words), three budgets, three arms per probe (scoped call / unscoped call /
+router-scoped call), every pin cache cleared per probe.
+
+```
+  shelf           budget  notes  purity  sibling   reach    leak  routed leak  routed reach   pick
+  TECH            96/24k     96   1.000     0.0%   1.000    7.2%         1.4%         1.000   100%
+  TECH           384/96k    384   1.000     0.0%   1.000   17.3%         1.7%         1.000   100%
+  POL/ARSA        96/24k     96   1.000     0.0%   0.947   51.2%        35.7%         0.947   100%
+  POL/ARSA       384/96k    384   1.000     0.0%   0.947   58.9%        36.8%         0.947   100%
+  POL             96/24k     96   1.000    60.3%   1.000   10.3%         2.9%         1.000   100%
+  POL            384/96k    384   1.000    63.7%   1.000   25.8%         4.0%         1.000   100%
+  EVAL            96/24k     94   1.000     0.0%   0.550   41.4%         4.9%         0.550   100%
+  EVAL           384/96k     94   1.000     0.0%   0.550   79.8%         5.0%         0.550   100%
+  AI              96/24k     96   1.000     0.0%   0.944   45.6%        25.0%         0.944   100%
+  AI             384/96k    114   1.000     0.0%   0.944   77.8%        51.8%         0.944   100%
+  MEM             96/24k     87   1.000     0.0%   1.000   69.1%        14.2%         1.000   100%
+  MEM            384/96k     87   1.000     0.0%   1.000   84.2%        18.6%         1.000   100%
+  WILD 96/24k: reach 0.800   wild rows in a shown block: 50.4% of the notes
+  WILD 384/96k: reach 0.800   wild rows in a shown block: 38.7% of the notes
+```
+
+- **The contract holds: purity 1.000 at every shelf and every budget.** A scoped call has never once shown
+  another shelf's row. The filter is trustworthy; everything below is about what happens when nothing calls it.
+- **Contamination grows monotonically with the block.** `leak` is the share of what an ordinary (unscoped)
+  conversation is *shown* that comes from outside the shelf its question belongs to: TECH 7.2 → 17.3%,
+  EVAL 41.4 → 79.8%, MEM 69.1 → 84.2% as the budget goes 96/24k → 384/96k. A bigger block never improves
+  isolation and always costs it, which is the argument for the shipped 96/24k being kept as the everyday
+  setting (the dev-store budget probe measured +0.000 relevant facts for going wider).
+- **The router gets a second life, on a different metric.** `m4_shelf_nav.py` killed shelf routing as a
+  *recall* lever (an oracle shelf scored exactly the unfiltered baseline — narrowing cannot add coverage
+  when the gold is already in). These numbers give it a different job: contamination. Routing with the
+  cheap bm25 vote cuts leak **2–5×** (MEM 69.1 → 14.2%, EVAL 41.4 → 4.9%) and `routed reach` is
+  **identical to unscoped reach in every single row** — the fact is still there. Caveat stated before the
+  claim: the probes are a row's own words, the easiest case for a router; on vague or short queries the
+  pick is the risk (routing accuracy measured 0.92–0.96 there).
+- **`POL` is mostly its sub-shelf.** Calling `POL` returns 60.3–63.7% `POL/ARSA` rows (the prefix match is
+  by design — a shelf means its subtree — but nobody had quantified it). A parent whose subtree is 1.7×
+  its own content is a lossy address: `POL/ARSA` is what anyone asking about `POL` is actually after.
+- **`EVAL` reach 0.550 is the duplicate family showing up in a second place.** Its rows are near-duplicates
+  of each other, so a probe's own row is often not shown *even though an equivalent fact is* — read-path
+  dedupe collapses it into its twin. Near-dupes were already measured to cost 0.2% of block slots; they
+  also cost **attributability**, which is what a gold-row metric reads as a miss.
+
+**How to cut an oversized shelf (`tools/m4_shelfcut.py`, same store, 96/24k, cap 90).** Two candidate
+cuts — buckets named after real rare tokens inside the shelf, and greedy cosine buckets — against the
+whole shelf as it is:
+
+```
+  shelf / cut                     buckets   max   navig   reach  purity    leak  router   routed reach
+  TECH / as it is                       1   863      0%   0.950   1.000   10.6%    1.00         0.950
+  TECH / named cut                     41   396     98%   0.650   0.650   10.6%    1.00         0.684
+  TECH / cosine cut                    11    90    100%   0.950   0.950   10.6%    0.95         0.950
+  POL/ARSA / as it is                   1   575      0%   0.947   1.000   43.0%    1.00         0.947
+  POL/ARSA / named cut                 41   232     98%   0.474   0.526   43.0%    1.00         0.474
+  POL/ARSA / cosine cut                 7    90    100%   1.000   1.000   43.0%    1.00         0.947
+  AI / as it is                         1   117      0%   1.000   1.000   55.2%    1.00         1.000
+  AI / named cut                       41    13    100%   0.944   0.861   55.2%    1.00         0.944
+  AI / cosine cut                       2    90    100%   1.000   1.000   55.2%    1.00         1.000
+```
+
+- **`leak` is identical for every cut, to the decimal point — and that is the finding, not a bug.**
+  Relabeling shelves cannot change what a call that ignores the labels is shown. **The taxonomy only pays
+  when something calls it**, so the decision belongs to the router/caller, not to the filing scheme.
+- **Token-named buckets lose.** TECH 0.950 → 0.650, POL/ARSA 0.947 → 0.474 reach. Naming a bucket after a
+  word inside it splits a topic by surface wording, and the leftover `_rest` bucket swallows 396 of TECH's
+  863 rows (46%) into an unaddressable pile — `navig` 98% hides that because it counts buckets, not rows.
+- **Cosine buckets win, and they win twice.** POL/ARSA reach goes **0.947 → 1.000** (narrowing beats the
+  shelf's own twin competition — the same duplicate effect measured above), and the routed block shows the
+  fact in **fewer notes**: 60 instead of 96 for POL/ARSA, 39 instead of 96 for AI, with leak 0%. Same
+  knowledge, half the reading.
+- The recommendation, as a rule: **the cut decides membership, the name is a label added afterwards** (name
+  each bucket from its own top legal tokens once the cosine pass has fixed who is in it). And the name's
+  alphabet is `[A-Z0-9]` — see the bug below.
+
+**A bad shelf address used to return the whole store (found and fixed 2026-10-15).** `class_name` upper-cases
+segments (harmless: SQLite `LIKE` is case-insensitive) and returns `''` for anything outside `CLASS_RE` —
+which rejects `-`, `_`, `+` and spaces. Every caller treated `''` as "no name given", so **an all-rejected
+list fell through as no filter at all**. Measured on this store: `classes=["TECH/strata-mam"]` came back with
+**96 hits, and all 96 were rows from other shelves** — the caller asked for the narrowest address in the store
+and was shown everything. `class_list`/`shelf_key` now fail **closed**: an address that names no shelf holds
+nothing (the request still works, no exception, no dropped turn — which is what the old test actually cared
+about, and it now says so). Half-valid lists still filter exactly as they always did, an absent header/tool
+argument is still `None`, and the everyday path is byte-identical. Four surfaces were fixed together:
+`search()`, the `X-Strata-Memory-Class` header, the MCP `memory_search` `class` argument, and the API's
+`?class=` / `op=search`. **The running dev server predates the fix** — it changes nothing until the next
+dev-up, and nothing for ordinary conversations at that.
+
+**Probe hygiene, third instance (and the one that nearly wrote the headline).** `block_for` returns full hit
+records on a pin miss and **id-only dicts on a pin hit** (`serve/memory.py`, in its docstring). A probe that
+reads `h["class"]` therefore measures the cache, not the store: EVAL's probes collide constantly (its rows
+are near-duplicates, so they generate identical normalized queries) and its first run scored purity **0.600**
+and leak **68.6%** — the shelves with distinctive wording scored 1.000 only because they never hit the cache.
+Resolve ids against the db (`class_of`), clear `_blocks` per probe, and expect the numbers to move: EVAL's
+purity became 1.000 and its leak 41.4%. Same family as the two earlier lessons: an unpatched copy of a shared
+mechanism is a wrong claim waiting to be published.
+
+**Store hygiene, noted in passing:** the dev store still carries 84 rows in three `lme_gpt4_*` scopes from
+the early pilots. They cannot pollute recall (recall reads `user` + the request's own scope) but they are
+benchmark evidence sitting in the everyday store, and they inflate the stats and the UI.
+
 ## Licensing and attribution
 
 - Strata (upstream) is MIT © Niko1221 and contributors; this fork's independent code keeps MIT.

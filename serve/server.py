@@ -5478,8 +5478,10 @@ def make_handler(svc: Service):
             q = (qs.get("q") or [""])[0]
             scope = (qs.get("scope") or [""])[0]
             klass = (qs.get("class") or [""])[0]        # shelf subtree (PHASE 4.5): ?class=MEM/CRG or STR,USR
-            prefixes = [c for c in (memory_api.class_name(x, quiet=True)
-                                    for x in klass.split(",")) if c] or None
+            # class_list, not a bare filter: a ?class= that names NO shelf returns nothing rather than the
+            # whole store (measured 2026-10-15 on 2,796 rows - see memory_api.class_list)
+            pref = [x.strip() for x in klass.split(",") if x.strip()]
+            prefixes = memory_api.class_list(pref) if pref else None   # absent header: byte-identical
             try:                                        # ?since= / ?until=: the date index (Primnox lesson)
                 since = memory_api.time_bound((qs.get("since") or [""])[0])
                 until = memory_api.time_bound((qs.get("until") or [""])[0])
@@ -5552,8 +5554,8 @@ def make_handler(svc: Service):
                 r = {"classified": svc.memory.classify(int(req.get("id") or 0), str(req.get("class") or ""))}
             elif op == "search":
                 lim = int(req.get("limit") or 0) or None
-                classes = [c for c in (memory_api.class_name(x, quiet=True)
-                                       for x in str(req.get("class") or "").split(",")) if c] or None
+                named = [x.strip() for x in str(req.get("class") or "").split(",") if x.strip()]
+                classes = memory_api.class_list(named) if named else None   # absent: byte-identical
                 r = {"hits": svc.memory.search(str(req.get("q") or ""), scope=str(req.get("scope") or "default"),
                                                limit=lim, classes=classes,
                                                since=memory_api.time_bound(req.get("since")),
