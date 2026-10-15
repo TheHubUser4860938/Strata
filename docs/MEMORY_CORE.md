@@ -761,6 +761,58 @@ agentic `memory_search` tool, worth ~+0.003 through the block - and re-ordering 
 remaining 24% lives. The synthetic probe's 72 lines are kept as a pilot of reader attention, not as a
 product result.
 
+**The last two tier-3 levers, both measured the same night (2026-10-15, offline; `tools/curate_loop.py
+--no-date`, `tools/m4_subject.py`).**
+
+*Grounding the extractor — the shipped change, verified.* 10 pending journal turns, both arms, two passes
+each (extraction runs at temp 0.8), `--extract-only` so nothing was written and the turns stayed pending:
+
+```
+  arm         turns  facts  facts/turn  chars/fact   facts naming an absolute date   voids  fails
+  dated           7      8        1.14           94                              6        0      0
+  undated (control)   9     11        1.22           91                              0        0      0
+```
+
+**0% → 75% of facts now carry a resolvable date**, while facts per turn did NOT rise (1.14 vs 1.22 — if
+anything the dated prompt is more selective) and each fact grew by 3 characters, which is the length of the
+date itself. Zero geometry voids, so the longer prompt still render-matches the engine's own count. The
+stated falsifier ("grounding bought verbosity, not dates") did not fire. Sample output makes the mechanism
+concrete: `On 2026-10-15, the user instructed the assistant to proceed with tasks that do not require the
+venue…` and `A −0.139 investigation occurred prior to 2026-10-15` against the control's dateless
+equivalents. Small sample (7-9 turns), so the point estimate is soft — but the direction is 0% to 75%, and
+the cost metrics are flat, which is what the decision needed.
+
+*The subject axis — the last retrieval idea, and it is dead at this size.* Graphiti's entity rollup and
+mem0's subject index converged independently, and the store already computes the rare-token subject at
+write time for the merge veto and discards it at read. There was visible headroom: coverage at the width a
+venue-shaped block shows is 0.936 overall but **0.893 on multi-session and 0.920 on temporal** questions,
+the two multi-evidence types. Tested by searching deep (limit 64) and pulling rows that share a subject
+with the anchor hits up into the 16 slots the block would show:
+
+```
+  ROW COVERAGE at the block's own width (k=16), venue copy, 470 scored questions
+  type                        n    shipped   gather >=1 shared   gather >=2 shared
+  OVERALL                   470      0.936              0.933              0.936
+  multi-session             121      0.893              0.889              0.893
+  temporal-reasoning        127      0.920              0.916              0.920
+  questions whose coverage moved AT ALL: 4 of 470
+```
+
+The gather does not raise coverage; the lenient variant slightly LOSES it (it displaces as many gold rows as
+it recruits). Four questions out of 470 is not a mechanism. At this store size the bm25+cosine fusion is
+already surfacing the rows a subject index would go and get, so the entity idea needs a graph database and
+a bigger corpus to be worth its cost — which is exactly the caveat both source systems leave unsaid.
+
+**Where that leaves tier-3.** Six candidate levers have now been measured and killed at ≤11k rows: injection
+budget (+0.000), shelf navigation (oracle == baseline), denser shelves (+0.015), the two-stage router
+(−0.031), near-dupe suppression as a retrieval win (0.2% of a block), rank order inside the block (~0 on the
+product path), RRF tuning (+0.004 coverage), and now the subject gather (4/470). The retrieval side is at its
+ceiling on this corpus: 0.936 coverage at the block's width, and the errors are 244-to-102 skewed toward
+reasoning with the evidence present. **What is left is what gets WRITTEN (grounding, measured positive
+tonight; junk pre-filters) and how it is PRESENTED (labels and structure, not order), plus the one open
+question these results cannot answer: whether any of them flip at 10k-100k rows, which is the S-split's
+job and needs a venue boot.**
+
 **Near-duplicate families, and what they actually cost (2026-10-15, `tools/m4_families.py`, live dev
 store copy + 300 real journal blocks).** Prompted by Graphiti's upstream issue #1956 — their invalidation
 pool is capped at 10 candidates, so a subject's dead history fills the pool and the live fact never

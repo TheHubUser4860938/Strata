@@ -165,7 +165,8 @@ killed-at-this-size rather than forgotten:
 | a bigger injection block | arm C | +0.000 relevant facts at both query shapes and both arms |
 | near-dupe guard fix as a retrieval win | Graphiti #1956 | the product cost is **0.21 slots per block (0.2%)**; the cap explains 0 of 90 violating pairs |
 | rank-order work as an accuracy lever | the reranker's +0.139 rank-1 swing | measured twice, and the product path is the one that counts: `tools/lme_posrank.py` on the 1,500 filed arm-C lines shows **no monotone position effect** (rank 1 0.748 vs rank 2 0.835 vs rank 10 0.833; flat inside the easy types), and `k=1`'s +0.013 top1 moves block coverage by only +0.004 -> ~+0.003 accuracy. The synthetic `m4_position.py` pilot DID find ~19 points front-to-tail, but only in blocks with exactly one answer-bearing row — real for reader attention, not for the product. The agentic tool is where rank order pays. |
-| speaker/assistant-echo demotion | the knowledge-update -0.139 | parked; still parked — `k=1` does not repair it either, and the positional probe is the test of whether order can pay at all |
+| speaker/assistant-echo demotion | the knowledge-update -0.139 | parked; still parked — `k=1` does not repair it either, and the positional probe is the test of whether order can pay at all. `tools/m4_consensus.py` then showed all 11 flips were the cosine arm's OWN rank-1 row, and that a lexical-weighted fusion recovers knowledge-update (0.486 → 0.611) only by paying overall top1 (0.517 → 0.506) and top3 (0.849 → 0.830) — a metric swap, so it does not ship. |
+| **the subject / entity axis** — gather by subject instead of filtering by category, the strongest idea shared by two of the six systems | Graphiti's entity rollup + mem0's hub-penalised subject index (`main.py:1807-1821`) | `tools/m4_subject.py` on the venue copy: coverage at the block's own width (k=16) 0.936 → 0.933 (lenient) or unchanged (strict), and **only 4 of 470 questions moved at all**. The headroom was real (multi-session 0.893, temporal 0.920) and the gather did not touch it — below ~11k rows the fusion already surfaces what an entity index would go and get. |
 
 ## Ranked enhancement backlog
 
@@ -173,6 +174,14 @@ Ranked by (measured or documented payoff) / cost, with the falsifier stated befo
 attack the **reasoning residual** (244 of 346 wrong lines had every gold session present) or the
 **temporal category** (0.465, the worst type); items 5-8 attack growth and hygiene; 9-10 are
 instrumentation that makes everything else attributable.
+
+**Re-ordered by what got measured the same night the list was written.** Item 1 is verified positive (facts
+naming an absolute date: 0% → 75%, facts/turn flat, +3 chars, zero geometry voids). Item 3 — the subject
+axis, the last open retrieval idea — is **measured no at this size**: gathering by shared rare-token subject
+moved coverage on **4 of 470 questions** and lost 0.003 overall, so the fusion already surfaces what an
+entity index would go and get below ~11k rows. Items 9 (rank provenance) shipped and paid for itself within
+the hour. That leaves **presentation (item 4) and the write side (items 1 and 8)** as the only live
+hypotheses for the 24% that remains, with the scale question handed to the S-split.
 
 1. **Ground the extractor: feed it the last-k turns plus an observation date.** Source: mem0
    `main.py:922`, `prompts.py:524-535`. Our `curate_loop.py` extracts one turn in isolation, so pronouns

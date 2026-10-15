@@ -1,0 +1,40 @@
+{
+ "wide": 64,
+ "show": 16,
+ "anchors": 3,
+ "coverage": {
+  "shipped: fusion order, top 16": {
+   "overall": 0.9359255319148935,
+   "by_type": {
+    "temporal-reasoning": 0.9199527559055118,
+    "multi-session": 0.8929834710743801,
+    "knowledge-update": 0.9583333333333334,
+    "single-session-preference": 1.0,
+    "single-session-assistant": 0.9464285714285714,
+    "single-session-user": 0.984375
+   }
+  },
+  "subject gather, >=1 shared rare token": {
+   "overall": 0.9328404255319147,
+   "by_type": {
+    "temporal-reasoning": 0.9160157480314961,
+    "multi-session": 0.8892644628099173,
+    "knowledge-update": 0.9583333333333334,
+    "single-session-preference": 0.9833333333333333,
+    "single-session-assistant": 0.9464285714285714,
+    "single-session-user": 0.984375
+   }
+  },
+  "subject gather, >=2 shared (anchors=3)": {
+   "overall": 0.9359255319148935,
+   "by_type": {
+    "temporal-reasoning": 0.9199527559055118,
+    "multi-session": 0.8929834710743801,
+    "knowledge-update": 0.9583333333333334,
+    "single-session-preference": 1.0,
+    "single-session-assistant": 0.9464285714285714,
+    "single-session-user": 0.984375
+   }
+  }
+ }
+}
