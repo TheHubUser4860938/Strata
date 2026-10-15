@@ -184,6 +184,36 @@ class Store(unittest.TestCase):
         self.mem.mark_processed([tid])
         self.assertEqual(self.mem.pending_turns(), [])
 
+    def test_journal_keeps_what_the_server_actually_showed(self):
+        """The self-feeding instrument. A curated fact can only be tested against the memory that was on
+        screen if the journal recorded what was on screen - request_state has carried the id list in
+        ctx since the block existed and the turns table never kept it, which is why
+        tools/m4_selffeed.py had to fall back on word overlap and called 42.6% of curated facts
+        unmatchable. NULL, [] and a list are three different facts and stay three."""
+        a = self.mem.journal_turn("fw", "q1", "a1", "m", [7, 3, 7])
+        b = self.mem.journal_turn("fw", "q2", "a2", "m", [])
+        c = self.mem.journal_turn("fw", "q3", "a3", "m")
+        got = {t["id"]: t["injected"] for t in self.mem.pending_turns()}
+        self.assertEqual(got[a], [3, 7])            # the SET, deduped and sorted: order is not the fact
+        self.assertEqual(got[b], [])                # recall ran and showed nothing
+        self.assertIsNone(got[c])                   # caller did not know - NOT the same as "showed none"
+
+    def test_the_injected_column_migrates_an_old_store(self):
+        """A db written before this column has no `injected`; the first open must add it and leave every
+        journaled turn intact - the pattern memories' own columns follow, tested by removing the column
+        rather than by trusting the CREATE PATH, because the live store reaches this code as an ALTER."""
+        tid = self.mem.journal_turn("fw", "an old question", "an old answer", "m")
+        with self.mem.lock:
+            self.mem.conn.execute("alter table turns drop column injected")
+            self.mem.conn.commit()
+        self.mem.close()
+        self.mem = MemoryService(self.tmp.name)     # the reopen IS the migration
+        pend = self.mem.pending_turns()
+        self.assertEqual([t["id"] for t in pend], [tid], "a journaled turn was lost to the migration")
+        self.assertIsNone(pend[0]["injected"], "pre-migration turns must read as unknown, not as 'showed none'")
+        nid = self.mem.journal_turn("fw", "a new question", "a new answer", "m", [4])
+        self.assertEqual({t["id"]: t["injected"] for t in self.mem.pending_turns()}[nid], [4])
+
 
 class PerTurnRecall(unittest.TestCase):
     """Gate-1's fix (docs/MEMORY_CORE.md "Phase 2"): recall must FOLLOW the conversation, but the

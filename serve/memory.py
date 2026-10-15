@@ -405,6 +405,16 @@ class MemoryService:
             # request that ASKS for a class prefix narrows to shelved rows; the default path never does.
             if "class" not in cols:
                 self.conn.execute("alter table memories add column class TEXT NOT NULL DEFAULT ''")
+            # The journal's own provenance: WHICH rows the server showed on that turn. request_state has
+            # carried the list in ctx since the block existed (serve/memory.py:1486) and the turns table
+            # never kept it, which is why "is this curated fact memory feeding on itself?" could not be
+            # answered at all - the lexical audit in tools/m4_selffeed.py calls 42.6% of curated facts
+            # UNMATCHED because paraphrase, not provenance, is all it can see. One nullable column and
+            # no backfill: rows written before it keep NULL and stay attributable by turn_id alone, and
+            # the curation loop's behaviour does not change until something asks for the column.
+            tcols = [r[1] for r in self.conn.execute("pragma table_info(turns)")]
+            if "injected" not in tcols:
+                self.conn.execute("alter table turns add column injected TEXT")
             self.conn.commit()
 
     # ---- store ---------------------------------------------------------------
@@ -1230,12 +1240,23 @@ class MemoryService:
 
     # ---- journal (raw turns; the curation loop reads these) -------------------
 
-    def journal_turn(self, scope: str, user_text: str, assistant_text: str, model: str | None = None) -> int:
+    def journal_turn(self, scope: str, user_text: str, assistant_text: str, model: str | None = None,
+                     injected: list[int] | None = None) -> int:
+        """Store one completed turn for curation to read later. `injected` is the list of memory row ids
+        the server actually showed on that turn (ctx["hits"] from request_state). NULL and [] are
+        different facts and are kept different: NULL means the caller did not know - an API journal write,
+        or any turn before this column existed - while [] means recall ran and showed nothing. Without
+        that distinction the self-feeding question ("did this fact come from memory the server itself
+        supplied?") cannot be asked, which is the whole reason tools/m4_selffeed.py had to fall back on
+        word overlap and called 42.6% of curated facts unmatchable."""
         with self.lock:
             cur = self.conn.execute(
-                "insert into turns(scope,user_text,assistant_text,model,created_at) values(?,?,?,?,?)",
+                "insert into turns(scope,user_text,assistant_text,model,created_at,injected)"
+                " values(?,?,?,?,?,?)",
                 (scope_name(scope), user_text[:8000], assistant_text[:16000],
-                 (model or "")[:80] or None, time.time()))
+                 (model or "")[:80] or None, time.time(),
+                 None if injected is None
+                 else json.dumps(sorted({int(i) for i in injected if str(i).strip() != ""}))))
             self.conn.commit()
             self._touched()
             return cur.lastrowid
@@ -1243,10 +1264,15 @@ class MemoryService:
     def pending_turns(self, limit: int = 200) -> list[dict]:
         with self.lock:
             rows = self.conn.execute(
-                "select id,scope,user_text,assistant_text,created_at from turns where processed=0"
+                "select id,scope,user_text,assistant_text,created_at,injected from turns where processed=0"
                 " order by id limit ?", (max(1, min(1000, int(limit))),)).fetchall()
         return [dict(id=r[0], scope=r[1], user=r[2][:2000], assistant=r[3][:4000],
-                     created_at=round(r[4], 1)) for r in rows]
+                     created_at=round(r[4], 1),
+                     # None = the caller never told us (a turn journaled before the column, or an API
+                     # write); [] = recall ran and showed nothing. The curation loop grounds the
+                     # extractor on created_at already and can use this the same way.
+                     injected=(None if r[5] is None else json.loads(r[5] or "[]")))
+                    for r in rows]
 
     def mark_processed(self, ids: list[int]) -> None:
         if not ids:
@@ -1537,7 +1563,8 @@ def journal_chunks(chunks, mem: "MemoryService", ctx: dict):
         text = "".join(parts).strip()
         if text:
             try:
-                mem.journal_turn(ctx["scope"], ctx["user"], text, ctx.get("model"))
+                mem.journal_turn(ctx["scope"], ctx["user"], text, ctx.get("model"),
+                                 ctx.get("hits"))
             except Exception:      # noqa: BLE001 - the journal is never allowed to break a reply
                 pass
 
@@ -1569,6 +1596,7 @@ def journal_stream(items, mem: "MemoryService", ctx: dict):
         text = "".join(parts).strip()
         if text:
             try:
-                mem.journal_turn(ctx["scope"], ctx["user"], text, ctx.get("model"))
+                mem.journal_turn(ctx["scope"], ctx["user"], text, ctx.get("model"),
+                                 ctx.get("hits"))
             except Exception:      # noqa: BLE001 - the journal is never allowed to break a reply
                 pass

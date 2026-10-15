@@ -813,6 +813,37 @@ tonight; junk pre-filters) and how it is PRESENTED (labels and structure, not or
 question these results cannot answer: whether any of them flip at 10k-100k rows, which is the S-split's
 job and needs a venue boot.**
 
+**Can we even measure self-feeding memory? Not yet - so the column got added (2026-10-15,
+`tools/m4_selffeed.py`, `serve/memory.py` `turns.injected`).** mem0's 32-day production audit (#4573) names
+"recalled-context re-extraction" as a junk mechanism, and Strata has the same shape: the server injects a
+block, the model narrates over it, the journal stores both halves, and curation extracts from the pair. The
+first attempt to measure it here fell back on word overlap and the result is mostly a measurement failure
+rather than a finding:
+
+```
+  701 curated rows in the live store, traced through provenance.turn_id back to their journaled turn
+    UNMATCHED - shares <0.12 content-word Jaccard with EITHER half        291   41.5%
+    no turn_id in provenance (all 148 such rows are from curation-2026-10-11, the first spike run)
+                                                                            148   21.1%
+    leans ASSISTANT-derived                                               139   19.8%
+    leans user-derived                                                    110   15.7%
+    both halves                                                            13    1.9%
+```
+
+Three honest conclusions. (1) A lexical test cannot answer this: 41.5% of curated facts are paraphrases that
+match neither half, so the 56/44 split is computed on a biased third of the store and is not a basis for a
+filter. (2) "Assistant-derived" is not the same as junk — in a coding session the durable decisions
+legitimately land in the assistant's narration (row 422: *"The merge tool's survivor rule requires
+adversarial review because a wrong-town fact and its correction…"* is a real project fact that happens to
+come from the assistant's text). (3) The only sound test is "did this fact restate a row the SERVER put on
+screen, without the user saying it?" — and the journal had no column for what was on screen, even though
+`request_state` has carried the id list in `ctx["hits"]` since the block existed (`serve/memory.py:1486`).
+So the fix is one nullable column plus the three-line pass-through, with NULL and `[]` kept distinct on
+purpose (unknown vs recall-ran-and-showed-nothing are different facts), and the migration tested by dropping
+the column and reopening rather than by trusting the create path. 88 tests green. The audit re-runs itself
+once the restarted server has journaled turns with the field; until then it prints `measurable by
+provenance: 0 of 701` rather than dressing up the word-overlap floor as an answer.
+
 **Near-duplicate families, and what they actually cost (2026-10-15, `tools/m4_families.py`, live dev
 store copy + 300 real journal blocks).** Prompted by Graphiti's upstream issue #1956 — their invalidation
 pool is capped at 10 candidates, so a subject's dead history fills the pool and the live fact never
