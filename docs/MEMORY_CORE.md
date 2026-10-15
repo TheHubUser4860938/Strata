@@ -805,6 +805,18 @@ taxonomy B: 45 shelves cut from 18 base classes by cosine clusters capped at 90 
    be missed**. So 50% of the misses come from 18% of the rows. The valuable taxonomy work is getting rows
    OFF WILD (the embedder-centroid route, or a human naming the category, as `m2_ingest --class` already
    does), not cutting existing shelves finer and not routing into them.
+
+   **Corrected the same day, because the causal half of that last sentence was mine, not the
+   measurement's.** `class` is not an input to ranking anywhere in this store: it appears only as a
+   `m.class like ?` filter when a caller NAMES shelves (`serve/memory.py:910-915`), and the blend reads
+   rank, recency and confidence. The injection path passes no `classes`, so re-shelving a wild row cannot
+   move it in the block — the two measurements would be identical by construction. What the 4.5× gap
+   really says is that the rows the keyword map cannot name are also the rows bm25 and cosine rank badly:
+   a CONTENT correlation. Emptying the WILD bucket still pays — for the UI, for cartridge eligibility, for
+   filtered tool calls — just not for retrieval accuracy. The retrieval answer to that 4.5× is a ranking
+   signal that reads something those rows have (the subject axis, `spikes/memory_systems/RESEARCH.md`
+   backlog item 3) or better extraction so the junk never lands. Filed as a correction rather than
+   quietly rewritten.
 5. **Two instruments disagree about growth, and the disagreement is the point.** This degraded-query,
    candidate-list measure is FLAT with store size (0.919 at every size), while the own-words,
    rendered-block measure above falls 0.977 → 0.919. Ranking quality on a common-words query does not

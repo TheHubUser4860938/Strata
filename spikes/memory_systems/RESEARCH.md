@@ -164,7 +164,7 @@ killed-at-this-size rather than forgotten:
 | "more prenamed shelves" (denser cutters) | user proposal + Graphiti subclasses | 45 clusters all smaller than the block lift the oracle by 3 probes of 197 |
 | a bigger injection block | arm C | +0.000 relevant facts at both query shapes and both arms |
 | near-dupe guard fix as a retrieval win | Graphiti #1956 | the product cost is **0.21 slots per block (0.2%)**; the cap explains 0 of 90 violating pairs |
-| rank-order work as an accuracy lever | the reranker's +0.139 rank-1 swing | RRF `k=1` moves rank order (+0.013 top1, +0.026 top3) and block coverage by only +0.004 -> ~+0.003 accuracy, inside the band |
+| rank-order work as an accuracy lever | the reranker's +0.139 rank-1 swing | RRF `k=1` moves rank order (+0.013 top1, +0.026 top3) and block coverage by only +0.004 -> ~+0.003 accuracy, inside the band. **Under revision while `m4_position.py` runs**: its first 7 questions give front 0.94 / middle 0.86 / tail 0.75, i.e. position inside the block moves accuracy by ~19 points, so "coverage unchanged -> accuracy unchanged" is only true if the reader is indifferent to where the fact sits — and it is not. Do not cite this row as settled until n=60 lands. |
 | speaker/assistant-echo demotion | the knowledge-update -0.139 | parked; still parked — `k=1` does not repair it either, and the positional probe is the test of whether order can pay at all |
 
 ## Ranked enhancement backlog
@@ -201,13 +201,15 @@ instrumentation that makes everything else attributable.
    `tools/m4_position.py` is currently measuring the order half of it. Cost: prompt shape only. Measure:
    venue accuracy, 3 repeats, same store; falsifier: positional probe flat AND tiered block flat, which
    would say presentation cannot pay either and the residual really is the reader model.
-5. **Empty the WILD bucket.** Measured cost today: a wild row is **4.5x more likely to be missed**, 18% of
-   rows, half the misses. Sources: Cognee's shelf telemetry + canonicalization (difflib cutoff 0.8,
-   annotate-don't-reject), Graphiti's centroid subclasses. Route: embedder centroids (the planned
-   data-driven path) plus a human naming what the map cannot place. Cost: offline backfill, no LLM.
-   Measure: `m4_shelf_nav.py`'s wild-vs-shelved split, then the right-fact probes; falsifier: re-shelved
-   rows still miss at the wild rate, meaning the ranking is blind to `class` and the gap is correlation,
-   not cause.
+5. **Empty the WILD bucket — but for the right reason.** Measured: a wild row is **4.5x more likely to be
+   missed**, 18% of rows, half the misses. The falsifier written before the mechanism was checked has
+   already fired analytically: `class` is not a ranking input anywhere (`serve/memory.py:910-915` uses it
+   only as a `like` filter when a caller names shelves, and the blend reads rank/recency/confidence), so
+   re-shelving a wild row cannot move it in the block. Keep this item for what it genuinely buys — human
+   navigation in the UI, cartridge eligibility (`class_prefixes`), and filtered tool calls — and take the
+   retrieval half of the 4.5x to item 3. Sources for the mechanism: Cognee's shelf telemetry +
+   canonicalization (difflib cutoff 0.8, annotate-don't-reject), Graphiti's centroid subclasses. Cost:
+   offline backfill, no LLM.
 6. **Deterministic gates and scoping before every expensive judgment.** Source: Zep runs identity ->
    exact-name -> MinHash Jaccard >= 0.9 behind an entropy floor and pays the LLM only for the residue
    (`dedup_helpers.py:31-86`); its pair-scoping is what makes its write cost store-size-independent. Ours
