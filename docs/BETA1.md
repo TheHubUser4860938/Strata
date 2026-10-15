@@ -93,12 +93,26 @@ engine logs.
   scope). Retrieval rides FTS5 bm25, and - since arm C - an **opt-in** hybrid reranker; a store with no
   `memory.embedder` in its config never imports the module and ranks byte-identically to the last
   release.
-- **"More injection budget" is not a lever by itself.** Arm C doubled it (96 notes / 24k chars -> 192 /
-  48k) and the rendered block did not change size at all on this corpus: 14.6 notes, 18,735 chars at
-  both settings, because venue rows run ~1,300 chars and the CHAR cap binds long before the note cap.
-  The +4.0 came from the reranker, which raised the gold rows actually pasted from 0.895 to 0.943.
-  Measured on long rows; a store of ~250-char personal facts is note-bound instead, which is why the
-  dev config stays at 96/24k until that case is measured rather than assumed.
+- **"More injection budget" IS a lever on long rows — and this page said the opposite until the next
+  day.** Arm C doubled the budget (96 notes / 24k chars → 192 / 48k). Re-rendered offline with the block
+  cache cleared between settings (`tools/m4_blockcov.py`, 500 questions), the block did grow: **14.6 →
+  19.1 notes** lexical and **15.9 → 20.3** hybrid, 18,735 → 24,429 chars. At 24k the CHAR cap binds on
+  ~1,300-char venue rows; at 48k what binds is how many rows the question's own scope holds (~22 in the
+  oracle set). Gold-row coverage of the rendered block:
+
+  | budget | lexical | hybrid |
+  |---|---|---|
+  | 96 notes / 24k chars | 0.895 | 0.946 |
+  | 192 notes / 48k chars | 0.942 | **0.965** |
+
+  So arm C's +4.0 was a **bundle of two levers of similar size** — the reranker (+0.051 coverage at 24k)
+  and the doubled budget (+0.047 at the lexical arm) — not the reranker alone. Arm B ran with no embedder
+  at all, so B→C changed two things at once and the venue cannot separate them; only a fourth arm
+  (lexical at 192/48k) can, and that is a venue decision rather than a claim. The dev config still stays
+  at 96/24k: on ~250-char personal facts the NOTE cap binds, and there the doubled budget was measured to
+  add +0.000 relevant facts. How the error happened is in `docs/MEMORY_CORE.md` ("Probe hygiene") and it
+  is worth keeping: the pin-cache trap was found, written down and fixed in three probes, and missed in
+  the fourth — the one whose number carried the attribution.
 - **The rest of the failures are mostly not memory's.** Of arm C's 346 wrong lines, **244 had every gold
   session present in the block** (reasoning) and 102 were missing one (retrieval). temporal-reasoning
   sits at 0.465 with 0.852 session coverage: the evidence is in the prompt and this 24 GB-class model

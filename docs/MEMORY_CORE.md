@@ -620,13 +620,31 @@ a memory-project target.
 arm B's 0.721 / 0.732 — +4.0 points, per-repeat 381/378/383, so the delta is ~7x the noise band.** The
 pre-registration held in both of its halves:
 
-- **The reranker earned the gain; the budget did nothing.** Rendering the *real* block offline at both
-  budgets gives **14.6 notes / 18,735 chars at 96/24k AND at 192/48k** — with venue rows running
-  ~1,300 chars the CHAR cap binds at ~15 notes long before the note cap, so the doubled budget never
-  reached the prompt. The reranker raised the gold rows actually pasted from **0.895 → 0.943** (+0.048)
-  and `turn_top3` from 0.749 → 0.823; accuracy followed with +0.040. **C1 was skipped on that evidence**,
-  exactly as agreed: the axis it would measure is provably empty at the block level, so 1.8 h of owned
-  port would have bought a split of a zero.
+- **Corrected the next day: the gain was a BUNDLE, not the reranker alone.** As filed on 2026-10-14 this
+  bullet read *"the reranker earned the gain; the budget did nothing"*, resting on `block_cov.py` rendering
+  **14.6 notes / 18,735 chars at 96/24k AND at 192/48k**. That measurement was stale by construction: the
+  head block is pinned by (scope, first user message, shelf, arm) and the **budget is not in the key**, so
+  flipping budgets inside one process re-measures the first block unless `_blocks` is cleared — and this
+  probe never got the fix its three siblings had (see "Probe hygiene, second instance" below). Re-run with
+  the cache cleared (`tools/m4_blockcov.py`, 500 questions, both arms, both budgets):
+
+  | budget | arm | notes shown | chars | gold-row coverage |
+  |---|---|---|---|---|
+  | 96 / 24k | lexical | 14.6 | 18,735 | 0.895 |
+  | 96 / 24k | hybrid | 15.9 | 18,931 | 0.946 |
+  | 192 / 48k | lexical | 19.1 | 24,429 | 0.942 |
+  | 192 / 48k | hybrid | 20.3 | 24,934 | **0.965** |
+
+  The doubled budget reaches the prompt after all: at 24k the CHAR cap binds on ~1,300-char venue rows,
+  while at 48k what binds is that an oracle question's own scope holds only ~22 rows. So the reranker adds
+  **+0.051** coverage at 24k and only **+0.023** at 48k, the budget adds **+0.047** lexical / **+0.019**
+  hybrid, and arm B → arm C moved rendered-block coverage 0.895 → 0.965 (+0.070) through BOTH levers at
+  once — arm B ran with no embedder at all, so no accuracy run on that pair can attribute the +4.0 to one
+  of them. **C1 (lexical at 192/48k) was skipped on the stale number, and it is precisely the arm that
+  would separate the two, so it goes back on the venue queue rather than being re-argued here.** What still
+  stands from the original bullet: the reranker is a real positive (coverage +0.051 at the shipped 96/24k,
+  `turn_top3` 0.749 → 0.823), the dev config's budget question is a different regime (note-bound, measured
+  +0.000), and the temporal row is a reasoning ceiling at 0.852 session coverage.
 - **Coverage rose, and temporal moved only 0.433 → 0.465.** At 0.852 session coverage the evidence is in
   the prompt; of 346 wrong lines, **244 had every gold session present (reasoning)** vs 102 missing one
   (retrieval). Per the pre-registration, that makes the row a reasoning ceiling for this model class
@@ -879,9 +897,12 @@ Three lessons, and the middle one is a near-miss worth keeping:
    measurement did not support.
 
 **Everyday budget, measured on the live store (2026-10-14, offline copies, no engine, no port).** The
-arm-C result says 192/48k was a no-op *on the venue corpus* (long rows, char cap binds at ~15 notes).
-Personal facts run ~160 chars, so there the **note** cap is what binds — which is a different regime, and
-"does the bigger block help everyday?" was asked by the user and answered with measurements, not scope:
+arm-C result then on the books said 192/48k was a no-op *on the venue corpus* (long rows, char cap binds at
+~15 notes) — a claim corrected the following day by `tools/m4_blockcov.py` (see the arm-C bullet above: the
+venue block DOES grow, 14.6 → 19.1 notes); it is kept here in its original form because what this probe
+concluded does not depend on it. Personal facts run ~160 chars, so here the **note** cap is what binds —
+which is a different regime, and "does the bigger block help everyday?" was asked by the user and answered
+with measurements, not scope:
 
 ```
 WHAT THE BLOCK LOOKS LIKE (300 real queries from the journal, 2,655 rows)
@@ -924,6 +945,18 @@ pinned bytes (the first run of this probe reported an impossible "identical bloc
 exactly that reason). `m._blocks.clear()` between budgets is mandatory in any offline budget comparison —
 and if a per-request budget override is ever added, the pin key must gain the budget, the same way it
 gained the arm.
+
+**Probe hygiene, second instance (2026-10-15) - the lesson is not "clear the cache".** That trap was
+discovered on the dev-store budget probes, written down in this file, and fixed in all three of them
+(`dev_block_cov.py`, `dev_block_gold.py`, `dev_scale_curve.py` each clear `_blocks` today). It was NOT
+fixed in `block_cov.py` - the venue probe whose output carried the headline attribution for arm C - because
+it lived in `/tmp/opencode/`, had already produced its number, and nobody re-audited it against the note
+that its own siblings had forced. One unpatched copy of a four-copy mechanism was enough to flip a
+release-facing claim. So the rule to keep is not the mechanic, it is this: **a documented fix has to be
+applied to every instrument that shares the mechanism, and the only way to make that happen reliably is to
+promote probes into `tools/` where a reader can diff them against each other.** `block_cov.py` is now
+`tools/m4_blockcov.py`, parameterized, with the clear built in, the trap named in its docstring, and the
+filed numbers it is checking itself against printed in the same docstring.
 
 **Shelf navigation, measured (2026-10-14, `tools/m4_shelf_nav.py`, offline copies of the live store, no
 engine, no port).** Conclusion 3 above parked the query→shelf step as "the next measurement, not asserted
