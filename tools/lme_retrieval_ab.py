@@ -108,14 +108,22 @@ def copy_dir(src: Path, dst: Path) -> None:
             shutil.copy2(f, dst / f.name)
 
 
-def open_copy(dir_path: Path, model: str, threads: int, embed: bool):
+def open_copy(dir_path: Path, model: str, threads: int, embed: bool, dedup: bool = True):
+    """`dedup=False` turns off the READ-PATH near-dupe collapse only (serve.memory dedup_recall),
+    the ranking untouched. It exists for the knowledge-update question raised twice from outside
+    on 2026-10-15: Primnox measured that retiring old facts HURTS on real two-person chats (plain
+    search 45.7 top-1 vs their 40.0-42.8) because most such questions are ABOUT the change, and a
+    Strata A/B had already measured -0.139 turn_top1 on the same question type. A collapse that
+    keeps one of two near-identical rows is indistinguishable from a retirement when the question
+    needs both, so the mechanism has to be separated from the ranking before any demotion rule
+    gets built."""
     from serve.memory import MemoryService                        # late: the HTTP arm needs neither
     kw = {}
     if embed:
         from serve.embedder import Embedder
         kw["embedder"] = Embedder(model, threads=threads)
     return MemoryService(str(dir_path), recall_limit=192, max_block_chars=48000, encrypt=True,
-                         key_file=str(dir_path / "memory.key"), **kw)
+                         dedup_recall=dedup, key_file=str(dir_path / "memory.key"), **kw)
 
 
 def prepare_offline(store_dir: str, model: str, threads: int, work: Path) -> tuple[Path, Path]:
@@ -184,6 +192,8 @@ def main(argv=None) -> int:
                          "paper's convention); Graphiti and Zep both ship rank_const=1 for the same "
                          "fusion, so this flag exists to settle it on OUR store instead of on "
                          "convention. Deterministic: one run is one answer, no sampling.")
+    ap.add_argument("--no-dedup", dest="no_dedup", action="store_true",
+                    help="offline only: disable the read-path near-dupe collapse in the scoring arms")
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--types", default="")
     a = ap.parse_args(argv)
@@ -211,8 +221,11 @@ def main(argv=None) -> int:
         if a.offline:
             tmp = Path(a.work).resolve() if a.work else Path(tempfile.mkdtemp(prefix="lmeab-"))
             lex, hyb = prepare_offline(a.offline, a.model, a.threads, tmp)
-            services = {"lexical": open_copy(lex, a.model, a.threads, False),
-                        "hybrid": open_copy(hyb, a.model, a.threads, True)}
+            nd = not a.no_dedup
+            if not nd:
+                print("[ab] read-path near-dupe collapse OFF in the scoring arms (write-path laws unchanged)")
+            services = {"lexical": open_copy(lex, a.model, a.threads, False, dedup=nd),
+                        "hybrid": open_copy(hyb, a.model, a.threads, True, dedup=nd)}
             for s in services.values():
                 s.search("warm", limit=1)             # build the caches before any timing claim
         for ki, k in enumerate([a.recall_k] + ([a.wide_k] if a.wide_k else [])):

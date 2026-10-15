@@ -1399,6 +1399,85 @@ mechanism is a wrong claim waiting to be published.
 the early pilots. They cannot pollute recall (recall reads `user` + the request's own scope) but they are
 benchmark evidence sitting in the everyday store, and they inflate the stats and the UI.
 
+## Two external systems arrived the same evening; measurement handled both (2026-10-15 evening)
+
+The user dropped two Reddit posts in as PDFs (the model cannot take PDF input, so both were read by
+extracting them with `pdftotext` into `/tmp/opencode/pdfs/`) plus seven figures from the second:
+
+- **Primnox** — "I created a new type of memory architecture. Which is similar to how books work",
+  r/AIMemory, u/Fine_Credit_3088, code at <https://github.com/Primnox/Memory-system>. Five memory types
+  kept separate instead of one pile; a **contents page** (a folder per person/pet/place/org/thing, plus
+  one for you); **chapters** as semantic memory with headings like `Sarah.lives_in` and `me.employer`
+  (some single-valued, some multi); a **date index** for episodic memory so "who did I meet yesterday"
+  navigates a date into a person's chapter; **cross-references** so "a fact is filed in every chapter it
+  relates to"; **corrections not deletions** (the old fact is marked replaced). A local ~500 M model is
+  the editor, the big model is the reader that opens chapters. Measured: 171 questions over 12 made-up
+  people, similarity 41.5 top-1 / 85.4 top-3, Hindsight on a local 7B 39.8/73.7, their previous version
+  80.1/94.2, the new book 86.5/97.7, filing 309 facts in ~54 s on a T4. The honest caveats are the useful
+  part: 86.5 needs post-hoc naming rules and is **83.0 without them**; on real two-person chats
+  (REALTALK) **retiring old facts hurts** - plain search 45.7 top-1 against their 40.0-42.8, because most
+  of those questions are about the history - and the editor files the right **chapter** 92% of the time
+  but the right **heading** only 71%. Our own code already carries one of its ideas: the `since`/`until`
+  date bounds in `search()` are documented as "the Primnox date-index lesson".
+- **MAM v1.4 / Silicon Hippocampus** — Akbascare's update, r/LocalLLM, u/Nearby_Indication474, doi
+  10.5281/zenodo.23381336, code `ceceli33/titan-cognitive-core-v2`. Three cartridges consolidated into one
+  append-only numerical memory injected at the layer-3 boundary of a frozen Qwen2.5-7B; 109 rows / 5.96
+  MiB and 115 rows / 6.29 MiB; nine causal conditions (NONE…ABC_CF); a counterfactual cartridge changes
+  the answer (reversal of time flow → temporal stasis; bullet-dodge → slow-motion perception). The
+  sentence that matters to us is theirs: **`DC_CUT3` (numerical) and `TEXT_JOINT` (the text control)
+  produced identical raw answers in 93 of 99 comparisons - "agreement, not 93/99 accuracy" - and "the
+  numerical approach has not been shown to outperform the text control on this panel."** A commenter
+  reported llama.cpp's own cache save/resume reaching the same result about twice as fast, at a fraction
+  of the size; the author's reply was a Turkish proverb. Independent support, then, for the ordering this
+  project chose: the text block is not a fallback to be embarrassed about - the burden of proof sits on
+  the tensor path.
+
+**Primnox and LCC converge on one feature we do not have: a fact lives in more than one place.** LCC
+keeps that in a separate system (index terms, `Cf.`/`see` edges, LCSH headings) because a call number is
+one address; Primnox ships it as cross-references and lists "let a fact sit under more than one heading
+when it fits" as its fix for its own 71% heading accuracy. Our `class` column is one string, so it cannot
+hold one. Two probes on the venue copy measured what happens if we do hold it anyway
+(`tools/m4_xref.py`, subject law = the merge tool's own rare-token subject rule, 39,385 subject pairs
+over 20,529 terms on the venue store's 10,973 rows):
+
+| arm (500 LongMemEval questions, hybrid, 96/24k) | notes shown | chars | gold-row coverage | gold-session coverage |
+|---|---|---|---|---|
+| the shipped block | 15.9 | 18,931 | **0.946** | 0.996 |
+| cross-reference **scope** (answer only from rows sharing a winning subject) | 3.3 | 3,656 | **0.441** | 0.793 |
+
+On the dev store the same mechanism looked excellent - POL contamination 56.2% → 8.3%, reach unchanged -
+because those probes are a row's own words, the easiest case a probe can be given. On real questions the
+subject set is far too narrow to be a block: **the falsifier fired and cross-references are killed as a
+block scoper.** They are *not* killed as extra access points, but the additive version is not a probe
+tweak either: a union against the same `search()` list is a no-op by construction (same candidates), so
+headings have to enter as a **third candidate list with its own score**, fused the way bm25 and cosine
+already are. That is a build, and it is queued behind the venue arms, not before them.
+
+**The retirement hypothesis died the same hour.** Primnox's REALTALK regression (retiring old facts hurts
+history-heavy questions) matched our own filed A/B: knowledge-update `turn_top1` 0.625 → 0.486, a
+**−0.139** drop, while multi-session gained +0.100. The standing decision was to try a soft bounded
+demotion, on the theory that the read-path near-dupe collapse was hiding one half of an update pair.
+`tools/lme_retrieval_ab.py` gained `--no-dedup` to test exactly that, on the same 500 questions, both
+arms, same store copy:
+
+| slice | dedupe ON (shipped) | dedupe OFF | the hybrid delta |
+|---|---|---|---|
+| knowledge-update, turn_top1 | 0.625 → 0.486 | 0.639 → 0.500 | **−0.139 either way** |
+| knowledge-update, row coverage at k=192 | 0.958 | 1.000 | the collapse does cost *row* coverage |
+| multi-session, turn_top1 | 0.421 → 0.521 | 0.421 → 0.521 | +0.100 either way |
+
+The collapse is exonerated: it costs 4 points of row coverage on knowledge-update questions and **zero**
+points of accuracy, and the −0.139 is the cosine arm's own rank-1 choice, not a retirement. So the soft
+demotion would have been built against the wrong mechanism, and the earlier note that all eleven
+knowledge-update flips were the cosine arm's rank-1 row is now the live lead instead of a side remark.
+Recorded before building, which is the whole point of the instrument.
+
+**Primnox's 92%-chapter / 71%-heading split is the second external confirmation of something measured
+here twice.** A small model is decent at the coarse shelf and bad at the fine one; tonight's cut
+experiment found the same shape from the other direction (token-named buckets cut reach on TECH to 0.650
+and left 46% of the shelf in a `_rest` pile, while cosine buckets raised POL/ARSA to 1.000). The rule both
+support: **the extractor files at chapter level, the store computes the depth.**
+
 ## Licensing and attribution
 
 - Strata (upstream) is MIT © Niko1221 and contributors; this fork's independent code keeps MIT.
@@ -1407,5 +1486,6 @@ benchmark evidence sitting in the everyday store, and they inflate the stats and
   sub-$50M commercial use of the material are permitted; any copied or substantially derived code stays in
   clearly marked files with attribution. Prior MIT-era AkbasCore material remains MIT with its attribution
   notice retained.
-- Technical disclosures cited: doi 10.5281/zenodo.23127434, 10.5281/zenodo.23143605, 10.5281/zenodo.23146475.
+- Technical disclosures cited: doi 10.5281/zenodo.23127434, 10.5281/zenodo.23143605, 10.5281/zenodo.23146475,
+  10.5281/zenodo.23381336 (MAM / Silicon Hippocampus v1.4, 2026-10-15).
   Closest published systems work: CacheBlend (arXiv 2405.16444), Prompt Cache (arXiv 2311.04934).

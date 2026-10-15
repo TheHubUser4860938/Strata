@@ -38,6 +38,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
 import lme_harness as H                                          # noqa: E402
 from serve.memory import MemoryService                           # noqa: E402
+from m4_xref import subjects_of, vote_subjects                   # noqa: E402  one subject law, two tools
 
 
 def mean(xs):
@@ -56,6 +57,23 @@ def main() -> int:
                     help="note-cap:char-cap pairs to compare, comma separated")
     ap.add_argument("--arms", choices=("both", "hybrid", "lexical"), default="both")
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--xref", action="store_true",
+                    help="add a cross-reference arm: scope the block to the rows that share a SUBJECT "
+                         "with the top hits (LCC's headings / Primnox's 'filed in every chapter it "
+                         "relates to'), rendered at the same budget, and report its coverage next to "
+                         "the unscoped one. The question this answers is not whether contamination "
+                         "falls - it does, measured 2026-10-15 (POL 56.2%% -> 8.3%% leak) - but whether "
+                         "the much smaller block still holds the evidence.")
+    ap.add_argument("--xref-mode", choices=("scope", "union"), default="scope",
+                    help="scope = answer ONLY from rows that share a subject (the strict LCC/Primnox "
+                         "reading, and the one Primnox's chapter-opening loop does). union = keep the "
+                         "normal candidates and ADD the cross-reference rows to them (the additive "
+                         "reading: headings as extra access points, never as a fence). Measured 2026-10-15: "
+                         "scope at 96/24k showed 3.7 notes and 0.404 row coverage against 18.3 notes and "
+                         "0.966 unscoped - too narrow to be a block - so the live question is whether the "
+                         "additive form buys coverage the ranking alone misses.")
+    ap.add_argument("--df-max", type=int, default=20, help="a subject is a token this rare or rarer")
+    ap.add_argument("--top-subjects", type=int, default=2, help="subjects a call may name")
     ap.add_argument("--json", default="")
     a = ap.parse_args()
 
@@ -67,7 +85,7 @@ def main() -> int:
             if a.arms == "both" or (a.arms == "hybrid") == x[1]]
 
     work = Path(a.work)
-    services = {}
+    services, xterms = {}, {}
     for lab, embed in arms:
         d = work / ("hyb" if embed else "lex")
         if not (d / "memory.db.enc").exists() and not (d / "memory.db").exists():
@@ -78,6 +96,18 @@ def main() -> int:
         services[lab] = MemoryService(str(d), recall_limit=192, max_block_chars=48000, encrypt=True,
                                       key_file=str(d / "memory.key"), **kw)
         services[lab].search("warm", limit=1)                    # warm the vector matrix once
+        if embed and a.xref:
+            tab = services[lab]._dedupe_tables()
+            tab["dfmax"] = a.df_max
+            rows = services[lab].conn.execute("select id, text, coalesce(class,'') from memories"
+                                              " where invalid_at is null").fetchall()
+            by_term = {}
+            for rid, terms in subjects_of(rows, tab).items():
+                for t in terms:
+                    by_term.setdefault(t, set()).add(rid)
+            xterms[lab] = by_term
+            print(f"  [{lab}] cross-references: {sum(len(v) for v in by_term.values())} pairs over "
+                  f"{len(by_term)} terms")
 
     data = json.load(open(a.data))[: (a.limit or None)]
     maps = H.load_map(a.mpath)
@@ -104,6 +134,33 @@ def main() -> int:
                                     if gold_s else None)
                 cell["notes"].append(len(ids))
                 cell["chars"].append(len(block or ""))
+                if a.xref and embed:                # the cross-reference arm, same budget, same question
+                    stage = [(h["id"], h.get("class") or "") for h in
+                             m.search(q["question"], scope=f"lme_{q['question_id']}", limit=12,
+                                      semantic=False)]
+                    keep = set()
+                    for t in vote_subjects([(i, [x for x in xterms[lab] if i in xterms[lab][x]])
+                                            for i, _c in stage], a.top_subjects):
+                        keep |= xterms[lab].get(t, set())
+                    wide = m.search(q["question"], scope=f"lme_{q['question_id']}", limit=1200,
+                                    semantic=True)
+                    cand = [h for h in wide if h["id"] in keep]
+                    if a.xref_mode == "union":      # additive: the block's own list, plus any xref row
+                        seen = {h["id"] for h in cand}
+                        _bl, base = m._render_block(m.search(q["question"],
+                                                            scope=f"lme_{q['question_id']}", limit=1200,
+                                                            semantic=True), 10 ** 9,
+                                                   f"lme_{q['question_id']}")   # char cap off: full list
+                        cand = [h for h in base if h["id"] not in seen] + cand
+                        cand.sort(key=lambda h: -h.get("score", 0.0))
+                    xb, xshown = m._render_block(cand, m.max_block_chars, f"lme_{q['question_id']}")
+                    xids = {h["id"] for h in xshown}
+                    xc = acc.setdefault((bname, "xref"), {"rows": [], "sess": [], "notes": [], "chars": []})
+                    xc["rows"].append(len(gold_r & xids) / len(gold_r) if gold_r else None)
+                    xc["sess"].append(len(gold_s & {where[i][1] for i in xids if i in where}) / len(gold_s)
+                                      if gold_s else None)
+                    xc["notes"].append(len(xids))
+                    xc["chars"].append(len(xb or ""))
         if qi and qi % 100 == 0:
             print(f"  {qi}/{len(data)} ...", flush=True)
 
@@ -111,12 +168,16 @@ def main() -> int:
     print(f"  {'budget':<14}{'arm':<9}{'notes shown':>12}{'chars':>9}{'row cov':>10}{'sess cov':>10}")
     out = {}
     for bname, _n, _c in budgets:
-        for lab, _e in arms:
-            cell = acc[(bname, lab)]
+        for lab, _e in list(arms) + ([("xref", True)] if a.xref else []):
+            cell = acc[(bname, lab if lab != "xref" else arms[0][0])] if lab != "xref" else acc[(bname, "xref")]
             r, s, nt, ch = mean(cell["rows"]), mean(cell["sess"]), mean(cell["notes"]), mean(cell["chars"])
             out[f"{bname}|{lab}"] = {"notes": round(nt, 2), "chars": round(ch), "row_cov": round(r, 3),
                                      "sess_cov": round(s, 3)}
             print(f"  {bname:<14}{lab:<9}{nt:>12.1f}{ch:>9.0f}{r:>10.3f}{s:>10.3f}")
+    print("\n  the xref line is the cross-reference arm: a block scoped to every row that shares a subject")
+    print("  with the top hits. Fewer notes at the SAME coverage is the win this arm is chasing - fewer")
+    print("  tokens, less to read, same evidence. Fewer notes at LOWER coverage is the falsifier: the")
+    print("  subject set is too narrow to be a block, and the store needs the wide unscoped one.")
     print("\n  read as: the BUDGET lever is the gap in notes/chars between two budget lines at the SAME arm;")
     print("  the RERANKER lever is the gap in coverage at the SAME budget. If the note count does not move")
     print("  between budgets, the budget axis is empty by construction and the accuracy run cannot answer")
