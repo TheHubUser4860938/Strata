@@ -200,13 +200,21 @@ def text_of(content) -> str:
 
 
 def memory_dir(value: str, base: str | None = None) -> str:
-    """The store directory as one absolute, normalized path (relative to the config's "cwd" when it has
-    one), created private (mode 0700) when missing.  ValueError for anything unusable."""
+    """The store directory as one absolute PHYSICAL path - symlinks collapsed, because one
+    directory must have one identity (see the realpath law below); relative to the config's
+    "cwd" when it has one, created private (mode 0700) when missing. ValueError for anything
+    unusable."""
     if not isinstance(value, str) or not value.strip():
         raise ValueError('memory "dir" must be a directory path (a string)')
     if any(ord(c) < 32 for c in value):
         raise ValueError('memory "dir" must not contain control characters')
-    path = os.path.abspath(os.path.join(base, value) if base and not os.path.isabs(value) else value)
+    # REALPATH, not abspath: a store's identity is its PHYSICAL directory. Measured the failure
+    # the day it was found (2026-10-16, the cutover itself): the repo's Strata-data is a
+    # symlink, the importer resolved it and landed 3,370 rows under one dbname, the server
+    # booted with the unresolved path string and opened a FRESH EMPTY database in the SAME
+    # cluster - two sha1 names, one directory, one store. realpath() collapses every spelling
+    # of one path onto one identity: config, importer, attach() and the tools agree by law.
+    path = os.path.realpath(os.path.join(base, value) if base and not os.path.isabs(value) else value)
     os.makedirs(path, mode=0o700, exist_ok=True)
     if not os.path.isdir(path):
         raise ValueError(f"memory dir {path} is not a directory")
