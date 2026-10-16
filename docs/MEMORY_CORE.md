@@ -1716,6 +1716,47 @@ grounding, which is settled. Method note kept on purpose: the first falsifier fi
 degenerate arm - a control that cannot fail is not a control, and this one could not even see its
 own variable.
 
+## The stuffing complaint, measured twice: the purge was the cure, the floor is a trade (measured 2026-10-16, `tools/m4_stuffing.py`, `tools/m4_floor.py`)
+
+The everyday-use report (ported from the webui): "it stuffs the budget full of everything it can
+find, including stuff completely unrelated." The journal's `turns.injected` column - what the
+server actually sent each real turn - made it a number: **8.2%** of injected rows shared a rare
+payload token with the user's question, 96-104 rows a turn, the same filler riding 8 of 12 turns
+regardless of topic (the semantic arm's hub rows: short facts near the corpus centroid, "similar"
+to everything - `server = Server("my-server")`, an MCP-doc ingest row, rode eight turns straight).
+
+Then the purge ran - 163 quiz-corpus rows and 84 benchmark rows out of the store - and the same
+re-rendered traffic scored **50.1% related**. The corpus rows were the stuffing: 247 rows of
+always-similar trivia in a 2.9k-row store dominated every unscoped block. The complaint was real,
+and the store surgery fixed most of it.
+
+The relevance floor (`floor_cosine`, the hub gate) was then swept against the same 20 real turns
+and guarded on the replayed grounding store (the dated arm's 1,682 facts replayed from git records,
+zero engine asks) over the 127 temporal questions:
+
+| floor | dev-store related % | venue gold-row coverage | questions with zero gold in block |
+|---|---|---|---|
+| 0.00 (default) | 50.1% | **0.962** | 1 |
+| 0.50 | 49.9% | 0.917 (-0.045) | 3 |
+| 0.60 | 54.7% | **0.890** (-0.072) | 4 |
+
+Read honestly: the floor trades purity for evidence. At 0.60 it buys +4.6 points of related share
+on dev traffic and costs 7.2 points of gold-row coverage on the benchmark - and the coverage the
+floor kills is precisely the paraphrase recall the cosine arm exists to union (TEMPORAL_DIAG's
+whole point; the grounding result itself rode blocks at 0.945 coverage). **The verdict: the knob
+ships, the default stays 0.0 (off, byte-identical), and no floor value is justified by these
+numbers.** The block staying at 96 rows even at floor 0.60 says the remaining filler arrives
+LEXICALLY - bm25 matches on common words - which the floor cannot reach. The follow-up design is
+the block-level cap-not-quota rule (stop extending at the relevance cliff), but the venue numbers
+just raised the bar for it: any cliff must never cut a row the gold map needs, so it gets the same
+replay-guard treatment before it ships.
+
+Method notes worth keeping: the floor sweep restores `hits`/`last_seen_at` afterwards (search()
+bumps the feedback counter on every shown row - measuring must not mutate the ranking inputs), and
+it clears `_blocks` before every render (the floor is not in the pin key - the budget trap, third
+time). The replay guard itself is new and reusable: a scratch store rebuilt from git ingest records
+in 3 seconds, no engine, answers coverage questions at zero generation cost.
+
 ## Licensing and attribution
 
 - Strata (upstream) is MIT © Niko1221 and contributors; this fork's independent code keeps MIT.

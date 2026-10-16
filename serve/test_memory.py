@@ -1524,6 +1524,34 @@ class SemanticRerank(unittest.TestCase):
         self.mem.close()
         self.tmp.cleanup()
 
+    def test_relevance_floor_silences_the_hub_rows(self):
+        """The everyday-use report (2026-10-16): the cosine arm proposed rows at ANY similarity and
+        the block filled its budget with them - measured 8.2% payload-related, same rows riding 8
+        of 12 turns. floor_cosine makes the cosine arm vouch only for rows above the floor; floor
+        0.0 (the shipped default until the numbers land) keeps every union byte-identical."""
+        import numpy as np  # noqa: F401  (the stub builds arrays; imported for clarity)
+        stub = StubEmbedder({"quax zibble flux": [1.0, 0.0, 0.0, 0.0],      # cos 1.0 vs the query
+                             "quux zibblem froth": [0.0, 1.0, 0.0, 0.0],    # cos 0.0 - the hub case
+                             "zibber zabble": [1.0, 0.0, 0.0, 0.0]})        # the query's own vector
+        # no shared rare tokens between query and either row: bm25 proposes NOTHING, so whatever
+        # comes back rode the cosine arm alone - the floor's exact battleground
+        for floor, want in ((0.0, 2), (0.5, 1)):
+            tmp = tempfile.TemporaryDirectory()
+            m = MemoryService(tmp.name, embedder=stub, floor_cosine=floor)
+            m.remember("quax zibble flux", scope="fw", guard=False)
+            m.remember("quux zibblem froth", scope="fw", guard=False)
+            got = m.search("zibber zabble", scope="fw")
+            if floor == 0.0:
+                self.assertEqual({g["text"] for g in got},
+                                 {"quax zibble flux", "quux zibblem froth"},
+                                 "floor off: the union is untouched - byte-identical by construction")
+            else:
+                self.assertEqual([g["text"] for g in got], ["quax zibble flux"],
+                                 "floor 0.5: the cos-0 hub row casts no vote and does not ride in")
+            m.close()
+        self.assertEqual(MemoryService(tempfile.mkdtemp()).floor_cosine, 0.0,
+                         "the default is off")
+
     def test_semantic_finds_what_fts_never_proposes(self):
         self.mem.remember("zebra flibberquant gauge")           # shares NO word with the query
         hits = self.mem.search("glimmery")

@@ -317,9 +317,19 @@ class MemoryService:
                  turn_recall_limit: int = 8, turn_block_chars: int = 2000,
                  max_memories: int = 0, dedup_recall: bool = True,
                  encrypt: bool = False, key_file: str = "", passphrase_env: str = "",
-                 tool: bool = False, embedder=None):
+                 tool: bool = False, embedder=None, floor_cosine: float = 0.0):
         self.directory = memory_dir(directory)      # absolute, created 0700 - same rules as slot_save_path
         self.db_path = os.path.join(self.directory, "memory.db")
+        # RELEVANCE FLOOR (2026-10-16, the everyday-use complaint "it stuffs the budget full of
+        # everything it can find"): measured on the journal's own turns.injected record, 8.2% of
+        # injected rows shared a payload with the question, and the same rows rode 8 of 12 turns
+        # regardless of topic - the cosine arm's HUB problem, already named in the fusion comment
+        # ("a store that size holds dozens of rows at cos 0.5-0.6 on any topical query"). The floor
+        # makes the cosine arm vouch only for rows it actually believes in; the budget then stops
+        # by relevance instead of by quota. 0.0 = off = every ranking byte-identical to before;
+        # the shipped default flips only with the before/after numbers (tools/m4_stuffing.py) and
+        # the coverage guard (lme_retrieval_ab --offline) behind it.
+        self.floor_cosine = max(0.0, min(1.0, float(floor_cosine)))
         self.max_block_chars = max(200, int(max_block_chars))
         # the 50-note ceiling was sized to the 6k/12k char budgets: ~250 chars per note means 50
         # notes IS ~12.5k chars, so a config that raises max_block_chars past that could never
@@ -1156,6 +1166,11 @@ class MemoryService:
         picked: list[int] = []
         for cr, j in enumerate(order, start=1):
             if not mask[j]:
+                continue
+            if self.floor_cosine > 0.0 and float(cos[j]) < self.floor_cosine:
+                # below the floor the cosine arm casts NO vote at all: not a pick of its own,
+                # and no cos_rank boost for a lexical candidate it does not believe in either.
+                # (The floor is the hub-row gate - see the __init__ note; 0.0 never lands here.)
                 continue
             rid = int(meta["ids"][j])
             cos_rank[rid] = cr

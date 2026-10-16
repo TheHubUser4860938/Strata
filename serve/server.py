@@ -6914,6 +6914,7 @@ def main() -> int:
                 passphrase_env=str(mcfg.get("passphrase_env") or ""),
                 inject=mcfg.get("inject") is not False,
                 tool=mcfg.get("tool") is True or str(mcfg.get("tool") or "").lower() in ("1", "on", "true"),
+                floor_cosine=float(mcfg.get("floor_cosine") or 0.0),
                 embedder=(({"dir": mcfg["embedder"]} if isinstance(mcfg.get("embedder"), str)
                             else mcfg.get("embedder")) or None))
         except (ValueError, OSError, TypeError) as e:
@@ -6926,6 +6927,7 @@ def main() -> int:
               f"<= {svc.memory.max_block_chars} chars; per-turn {'on ' if svc.memory.per_turn else 'off'}"
               f"{svc.memory.turn_recall_limit} notes <= {svc.memory.turn_block_chars} chars; "
               f"budget {svc.memory.max_memories or 'unlimited'}; "
+              f"floor cos {svc.memory.floor_cosine or 'off'}; "
               f"at-rest {at_rest_line}; "
               f"tool {svc.memory.tool and 'on' or 'off'} (X-Strata-Memory-Tool: 1 per request); "
               f"embedder {svc.memory.embedder and 'on: ' + getattr(svc.memory.embedder, 'model_name', '?') + ' (CPU, hybrid rerank)' or (svc.memory.embedder_error and 'FAILED - lexical only: ' + svc.memory.embedder_error or 'off')}; "
