@@ -1757,6 +1757,62 @@ it clears `_blocks` before every render (the floor is not in the pin key - the b
 time). The replay guard itself is new and reusable: a scratch store rebuilt from git ingest records
 in 3 seconds, no engine, answers coverage questions at zero generation cost.
 
+## The cap-not-quota floor, measured on both sides and shipped off (measured 2026-10-16, `tools/m4_blockrule.py`, `tools/m4_venue_rebuild.py`)
+
+The follow-up the section above promised: a block-level rule that treats the budget as a ceiling,
+not a quota - `_render_block` stops taking candidates once the fused score falls below
+`memory.block_min_score` (opt-in, default 0.0 = byte-identical, banner prints
+`block floor off (quota)`). The pre-stated falsifier, inherited from the floor_cosine lesson:
+gold coverage may not fall - not "falls less than purity rises", falls, full stop.
+
+Measuring it needed the venue store, which /tmp reboots keep eating, so the fleet gained
+`tools/m4_venue_rebuild.py`: an in-process twin of `lme_harness.ingest`'s exact laws (day prefix,
+role lead, chunk_turn caps with gold on every piece, `guard=False` evidence law, first-session/OR-
+of-gold map merge, same sidecar format) that rebuilds all 500 haystacks in ~3 minutes at 58 rows/s
+- the old 40-minute estimate died with the matrix-rebuild fix. The rebuilt store is strictly
+better than the original it replaces: **10,947 of 10,978 rows carry dates** where the venue-day
+store had 0 of 10,973 (the `day_of` fix was invisible to it), and it is the store every retrieval
+sweep from here runs against.
+
+The sweep (`tools/m4_blockrule.py`, deterministic - no temperature, no repeats needed) failed
+twice before it measured anything, and both failures are the lesson: the replay store the design
+inherited (`ground-new-replay`) is a 127-question GROUNDING store at ~13 rows/scope - too small to
+express the rule at all - and the floors were calibrated against `k=60` while the shipped constant
+is **RRF_K = 1.0**: scores are 1/(1+rank) sums spanning 0-1.5, not 0.01-0.03. (The store itself
+disagreed: thirteen curated rows asserted k=60. Corrected to one canonical fact plus three
+satellites; the store's architecture lore now matches the code it describes.) On the real scale,
+venue 500 questions, head-block shape (k=96, 24,000 chars):
+
+| floor | rows/q | related % | gold row coverage | cost vs 0.0 |
+|---|---|---|---|---|
+| 0.00 (default) | 15.9 | 23.3 | **0.952** | - |
+| 0.05 | 15.9 | 23.3 | 0.951 | -0.001 |
+| 0.10 | 15.0 | 24.6 | 0.947 | -0.005 |
+| 0.13 | 12.8 | 27.6 | 0.935 | -0.017 |
+| 0.17 | 10.0 | 31.9 | 0.911 | -0.041 |
+| 0.35 | 4.2 | 46.1 | 0.761 | -0.191 |
+
+The cost side is clean and monotone: every point of purity costs evidence. The benefit side, on
+the 12 newest LIVE injected turns (store copy, search re-run, same rare-token proxy):
+
+| floor | rows/turn | related % |
+|---|---|---|
+| 0.00 | 96.0 | 71.5 |
+| 0.05 | 39.8 | 69.5 |
+| 0.10 | 18.1 | 70.5 |
+| 0.17 | 7.7 | 68.5 |
+
+Flat. The floor halves, quarters, tenths the block and the related share does not move - because
+the filler the complaint named (the hub rows riding every turn, m4_stuffing's repeat-finder) sits
+at cos_rank 1-5 against any question, scoring 0.17-0.5, ABOVE any floor the venue gate survives.
+The floor cuts the deep tail, and on live traffic the deep tail is still relevant (71.5% at
+floor 0). **The verdict, same shape as floor_cosine's an hour earlier: the knob ships, the default
+stays 0.0, and no floor value is justified by these numbers.** Two independent levers - the
+cosine arm's vote, the block's tail - measured against the same complaint, both inert-or-harmful.
+What remains is the hub itself: the next lever is exposure-decay (a row the last K turns already
+injected pays a bounded demotion - `turns.injected` is the exposure ledger, already in the
+journal), which attacks the top-of-list where the filler actually lives.
+
 ## Licensing and attribution
 
 - Strata (upstream) is MIT © Niko1221 and contributors; this fork's independent code keeps MIT.

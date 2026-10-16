@@ -321,7 +321,7 @@ class MemoryService:
                  max_memories: int = 0, dedup_recall: bool = True,
                  encrypt: bool = False, key_file: str = "", passphrase_env: str = "",
                  tool: bool = False, embedder=None, floor_cosine: float = 0.0,
-                 auto_shelve: bool = False):
+                 auto_shelve: bool = False, block_min_score: float = 0.0):
         self.directory = memory_dir(directory)      # absolute, created 0700 - same rules as slot_save_path
         self.db_path = os.path.join(self.directory, "memory.db")
         # RELEVANCE FLOOR (2026-10-16, the everyday-use complaint "it stuffs the budget full of
@@ -339,6 +339,15 @@ class MemoryService:
         # every write path byte-identical until a config turns it on. See auto_classify for the
         # rules and why ONLY sub-shelves are auto-mintable.
         self.auto_shelve = bool(auto_shelve)
+        # BLOCK FLOOR (cap-not-quota, m4_blockrule 2026-10-16): _render_block stops taking
+        # candidates once the fused RRF score falls below this floor - the budget stays as the
+        # hard ceiling, but a full block of weak rows no longer beats an honest short one.
+        # 0.0 (the default, and the shipped path until the venue sweep says otherwise): the
+        # gate never fires, byte-identical to the quota behaviour this feature replaces.
+        # Chosen over a cosine floor because floor_cosine shipped OFF the same day: gating the
+        # semantic arm's VOTE cost -7.2 points of gold coverage; this gates what the block SHOWS,
+        # both arms alike, and rides the score fusion the retrieval A/B already stands behind.
+        self.block_min_score = max(0.0, float(block_min_score))
         self.max_block_chars = max(200, int(max_block_chars))
         # the 50-note ceiling was sized to the 6k/12k char budgets: ~250 chars per note means 50
         # notes IS ~12.5k chars, so a config that raises max_block_chars past that could never
@@ -1352,6 +1361,13 @@ class MemoryService:
         trimmed, used = [], len(lines[0]) + len(lines[-1]) + 120          # the header and the instruction line cost
         shown = []
         for h, line in zip(hits, lines[2:-1]):
+            sc = h.get("score")
+            if self.block_min_score > 0.0 and sc is not None and sc < self.block_min_score:
+                break       # CAP NOT QUOTA (m4_blockrule, 2026-10-16): the list is score-
+                # descending, so the first miss ends the block - everything after is further
+                # below. A hit without a score passes: the floor cannot gate what it cannot
+                # read, and silently emptying a pinned block would be a worse bug than the
+                # stuffing this replaces.
             used += len(line) + 1
             if used > budget:
                 break

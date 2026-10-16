@@ -7259,6 +7259,7 @@ def main() -> int:
                 floor_cosine=float(mcfg.get("floor_cosine") or 0.0),
                 auto_shelve=mcfg.get("auto_shelve") is True
                             or str(mcfg.get("auto_shelve") or "").lower() in ("1", "on", "true"),
+                block_min_score=float(mcfg.get("block_min_score") or 0.0),
                 embedder=(({"dir": mcfg["embedder"]} if isinstance(mcfg.get("embedder"), str)
                             else mcfg.get("embedder")) or None))
         except (ValueError, OSError, TypeError) as e:
@@ -7273,6 +7274,7 @@ def main() -> int:
               f"budget {svc.memory.max_memories or 'unlimited'}; "
               f"floor cos {svc.memory.floor_cosine or 'off'}; "
               f"auto-shelve {svc.memory.auto_shelve and 'on (sub-shelves only)' or 'off'}; "
+              f"block floor {svc.memory.block_min_score or 'off (quota)'}; "
               f"at-rest {at_rest_line}; "
               f"tool {svc.memory.tool and 'on' or 'off'} (X-Strata-Memory-Tool: 1 per request); "
               f"embedder {svc.memory.embedder and 'on: ' + getattr(svc.memory.embedder, 'model_name', '?') + ' (CPU, hybrid rerank)' or (svc.memory.embedder_error and 'FAILED - lexical only: ' + svc.memory.embedder_error or 'off')}; "

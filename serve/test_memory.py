@@ -1598,6 +1598,59 @@ class MatrixStaleness(unittest.TestCase):
                          "a superseded fact must leave the cosine arm's candidate set with its row")
 
 
+class BlockFloor(unittest.TestCase):
+    """CAP NOT QUOTA (m4_blockrule, 2026-10-16): the render block stops at the first candidate
+    whose fused score falls below block_min_score; the character budget stays as the hard
+    ceiling. Default 0.0 = the gate never fires = byte-identical to the shipped quota path."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _svc(self, floor=0.0):
+        m = MemoryService(self.tmp.name, block_min_score=floor)
+        self.addCleanup(m.close)
+        return m
+
+    @staticmethod
+    def _hits():
+        return [dict(id=1, scope="default", text="strong fact about the thing", score=0.0200),
+                dict(id=2, scope="default", text="medium fact about the thing", score=0.0130),
+                dict(id=3, scope="default", text="weak filler about other things", score=0.0050)]
+
+    def test_default_off_shows_everything_the_budget_fits(self):
+        m = self._svc()
+        block, shown = m._render_block(self._hits(), 24000, "default")
+        self.assertEqual(len(shown), 3, "floor 0.0: byte-identical quota behaviour")
+
+    def test_floor_drops_the_weak_tail(self):
+        m = self._svc(floor=0.0125)
+        block, shown = m._render_block(self._hits(), 24000, "default")
+        self.assertEqual([h["id"] for h in shown], [1, 2],
+                         "0.0050 < 0.0125 ends the block; the tail never rides just because chars remain")
+        self.assertIn('shown="2 of 0 active"', block,
+                      "the header count follows the trimmed block (shown = what the model reads)")
+
+    def test_floor_above_top1_honest_empty(self):
+        m = self._svc(floor=0.0164)
+        block, shown = m._render_block([self._hits()[2]], 24000, "default")
+        self.assertEqual(shown, [], "cap semantics: no strong-enough fact, no block content")
+
+    def test_unscored_hits_pass_the_gate(self):
+        m = self._svc(floor=0.0125)
+        block, shown = m._render_block([dict(id=9, scope="default", text="pinned id dict")],
+                                       24000, "default")
+        self.assertEqual([h["id"] for h in shown], [9],
+                         "the floor cannot gate what it cannot read - never silently empty a block")
+
+    def test_budget_still_the_ceiling_with_the_floor_off(self):
+        m = self._svc()
+        block, shown = m._render_block(self._hits(), 180, "default")
+        self.assertLess(len(shown), 3, "the old law survives next to the new one")
+
+
 class StubEmbedder:
     """Duck-typed embedder with hand-built vectors per exact text (zeros for anything else):
     tests the hybrid PLUMBING - union, filters, lifecycle, stats - with no onnxruntime and no
