@@ -67,13 +67,20 @@ Pixeltable itself (0.7.17, "the unified multimodal backend") runs production on 
 embedded-pgserver pattern - the shape this rebase bets on is proven by someone else at scale.
 
 **PG version policy (from postgresql.org, 2026-10-16):** stable is **18.6** (what R0 measured);
-**PostgreSQL 19 RC 1 shipped the day before the audit** (2026-10-15), final expected ~November.
+**PostgreSQL 19 RC 1 shipped the day before the audit** (2026-10-15), with **RC 2 set for
+2026-11-12 and general availability planned for 2026-11-19** (the RC1 announcement's own dates).
 We build on 18 stable - the schema uses only core-18 features the feature matrix confirms (GIN,
 stored generated columns, upsert, `RETURNING`; UUIDv7 exists in 18 but bigint IDENTITY is kept
-for id-preservation across the import; AIO in 18 is a free win). PG 19 is a **wheel swap +
+for id-preservation across the import; AIO in 18 is a free win). PG 19 at GA is a **wheel swap +
 `pg_upgrade`**, not a rebase event: both packaging tracks follow PG majors (embedded-postgres
 versions its wheels by PG release; pixeltable-pgserver takes `postgres_version` as a parameter),
-and no RC is chased before it is final. The gap named early is now CLOSED: 18.6.3's missing
+and **no RC goes into a data store** - RCs are for finding regressions, not for holding a
+shipping system's memory. Optional preview, owner's call: run the venue replay against a
+throwaway 19-RC2 cluster on 2026-11-12 to decide whether GA day is a same-day swap or a
+wait-for-19.1 swap. Neither wheel is a Postgres fork: both `pgbuild` recipes download the
+**official PGDG source tarball** (embedded-postgres says so verbatim in its README; the lineage
+postgresql-wheel -> pgserver -> pixeltable-pgserver forked only the Python launcher layer), and
+R0's `SELECT version()` returned plain "PostgreSQL 18.6" - the official engine, unpatched. The gap named early is now CLOSED: 18.6.3's missing
 Windows wheel is no longer a beta-2 question mark - the Windows answer is named, versioned, and
 pgvector-bundled.
 
