@@ -2,6 +2,9 @@
 
 **Status: accepted (2026-10-16, the user's decision; phasing agreed the same day).**
 **Deciders: the user (direction, ownership of claims); Clio (measurements and the phased plan).**
+**Build spec: [docs/POSTGRES_BUILD.md](../POSTGRES_BUILD.md) - the code audit + research loop run
+before P1 (2026-10-16): the storage-surface inventory, the pgserver/pgvector/psycopg/FTS-parity
+findings, the thin-adapter seam shape, and the two amendments this loop produces below.**
 
 ## Context
 
@@ -50,13 +53,23 @@ of model streaming.
      **both** (the doubled matrix is the price of the byte-identical rule, paid willingly);
    - **P2 parity gate**: venue reruns, grounding replays, and m4_stuffing on both backends must
      reproduce the filed numbers within the measured noise floor (±0.05 on 127 lines - the floor
-     this project calibrated the hard way);
+     this project calibrated the hard way); *(amendment, 2026-10-16 audit: P2 acceptance also
+     includes an FTS parity battery - same corpus, same query set, both backends, candidate SETS
+     compared; the porter/unicode61-vs-PG-parser split on apostrophes is a measured risk, see
+     docs/POSTGRES_BUILD.md §2);*
    - **P3 importer**: SQLite -> Postgres one-shot (TEXT->TIMESTAMPTZ, INTEGER PK->IDENTITY,
      FTS5->tsvector/GIN, pinned vectors->pgvector(384)+HNSW, provenance->JSONB); the data is
      megabytes, the code is the ~20 service methods plus packaging, estimated 2-3 focused weeks;
+     *(amendment, 2026-10-16 audit: vectors move as float32 `vector(384)` bytes and the pinned-
+     numpy read path is UNCHANGED - the HNSW index is installed but unused until the 1M-fact
+     trigger needs it, and `halfvec` stays out (lossy fp16 breaks score parity); the typed-
+     parameter win lives in the importer's own tests, not automatically in the column type);*
    - **P4 packaging**: "starts with Strata" - a bundled portable Postgres as a supervised
      subprocess (initdb on first run, start/stop with the server, scram secret beside the existing
-     key-file, `127.0.0.1` only, banner line like every other activation);
+     key-file, `127.0.0.1` only, banner line like every other activation); *(amendment,
+     2026-06 find, 2026-10-16 audit: `pgserver` 0.5.0 ships Postgres 18.3 + pgvector inside
+     manylinux/Windows wheels with auto-shutdown and multi-process safety - P4's risk shrinks to
+     "the wheel installs and starts on the target PC", verified at P4, not promised now);*
    - **P5 flip**: default becomes Postgres only when P2 passes; `store.engine: sqlite` remains as
      the escape hatch.
 3. **Revisit triggers** (any one accelerates P1): the DB exceeds 10% of measured recall latency at
