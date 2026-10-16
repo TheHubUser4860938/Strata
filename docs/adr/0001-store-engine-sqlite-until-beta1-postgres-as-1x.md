@@ -1,6 +1,11 @@
 # ADR-001: The store engine - SQLite through beta-1, PostgreSQL as the 1.x migration
 
-**Status: accepted (2026-10-16, the user's decision; phasing agreed the same day).**
+**SUPERSEDED the same day by [ADR-002](0002-postgres-native-rebase.md)** - the user's call:
+PostgreSQL becomes the base with a full native rebase, no shim, no dual-backend phasing. The
+audit and research below stand (they fed ADR-002); the P1-P5 plan, the shim shape, and the
+escape hatch do not. Historical record, kept for the reasoning trail.
+
+**Was: accepted (2026-10-16, the user's decision; phasing agreed the same day).**
 **Deciders: the user (direction, ownership of claims); Clio (measurements and the phased plan).**
 **Build spec: [docs/POSTGRES_BUILD.md](../POSTGRES_BUILD.md) - the code audit + research loop run
 before P1 (2026-10-16): the storage-surface inventory, the pgserver/pgvector/psycopg/FTS-parity
@@ -70,6 +75,9 @@ of model streaming.
      2026-06 find, 2026-10-16 audit: `pgserver` 0.5.0 ships Postgres 18.3 + pgvector inside
      manylinux/Windows wheels with auto-shutdown and multi-process safety - P4's risk shrinks to
      "the wheel installs and starts on the target PC", verified at P4, not promised now);*
+     *(R0 correction, same day: pgserver 0.5.0 was a search-snippet artifact - real latest is
+     0.1.4/cp312-capped; the measured wheel is `embedded-postgres` 18.6.3, PG 18.6 + pgvector,
+     proven on this box: start 0.3 s, createdb 3 ms. See ADR-002.)*
    - **P5 flip**: default becomes Postgres only when P2 passes; `store.engine: sqlite` remains as
      the escape hatch.
 3. **Revisit triggers** (any one accelerates P1): the DB exceeds 10% of measured recall latency at

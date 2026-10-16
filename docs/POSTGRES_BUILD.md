@@ -1,5 +1,11 @@
 # Postgres Build: the code audit and research loop (2026-10-16)
 
+**Amended the same day by [ADR-002](adr/0002-postgres-native-rebase.md): the user decided a full
+native rebase - the §3 "thin adapter" shape below is SUPERSEDED (the audit inventory becomes the
+rewrite checklist instead), and §2's packaging claim was corrected by measurement (pgserver 0.5.0
+does not exist; `embedded-postgres` 18.6.3 is the wheel that works - see below). The audit itself
+(§1) stands untouched: it is now the R2 work list.**
+
 The loop ADR-001 requires before P1. The audit inventories exactly what the seam must abstract
 (with file:line evidence), the research checks the build's load-bearing assumptions against the
 2026 state of the ecosystem (sources cited; anything cited is RESEARCHED, not measured here), and
@@ -50,13 +56,18 @@ identical either way; `vector(384)` is float32-exact while `halfvec` is lossy fp
 P2 stores the same float32 bytes and keeps the pinned-numpy read path; the pgvector index is
 installed but UNUSED until the 1M-fact trigger in ADR-001 makes an in-server scan necessary.
 
-**Packaging - the P4 risk ADR-001 priced in is largely retired by `pgserver`.** `pgserver` 0.5.0
-(PyPI, 2026-06) ships static Postgres **18.3** binaries inside manylinux and Windows wheels,
-starts via `get_server(data_dir)`, hands back a connection URI, shuts down when the owning
-process exits, is multi-process safe on one data dir, and builds pgvector IN (`load_ext=
-["pgvector"]`). The old 0.1.4 line capped at cp312 and would not import on this venv
-(python 3.14.8, checked); 0.5.0 declares no Python ceiling. The P4 acceptance test is simply
-"the wheel installs and starts on the target PC" - checked at P4, not promised now.
+**Packaging - CORRECTED BY MEASUREMENT the same day (a wrong number gets corrected publicly):
+the "pgserver 0.5.0 / PG 18.3" claim this section carried from search snippets does not exist.
+PyPI's own JSON (checked from this box) says pgserver's latest is 0.1.4 (June 2024, cp310-cp312
+wheels only) and `pip install pgserver` fails on this python 3.14.8 venv (measured, twice).
+The packaging that actually works here is `embedded-postgres` 18.6.3: Postgres 18.6 binaries as
+`py3-none-manylinux` wheels (no Python-version ceiling), with a Python layer that inits, starts,
+and stops the server and hands back a unix-socket URI, multi-process safe via fasteners.
+PROVEN on this box 2026-10-16: fresh data dir initdb+start 0.3 s, stop 0.1 s, `createdb` 3 ms
+median, and `pg_available_extensions` shows **vector, pg_trgm, unaccent, hstore bundled** -
+pgvector is there for the 1M trigger without any extra dependency. The known gap, named early:
+18.6.3 ships macOS + manylinux wheels only, no Windows wheel (checked from the release files) -
+Linux beta-1 unaffected; sourcing a PG 18 win wheel is a named Windows beta-2 job.**
 
 **Driver - psycopg 3.3 `psycopg[binary]`** bundles libpq in one wheel (psycopg.org, 2025-12);
 the sync API fits the one-lock threading model unchanged; `psycopg_pool` exists for the
@@ -71,11 +82,15 @@ psycopg2, asyncpg, sqlalchemy) - the seam's job is that NOTHING above it notices
   arrives as a few rank swaps, not score shifts.
 - *Stemming and stopwords*: FTS5 `porter` is the Porter stemmer with NO stopword removal; PG's
   `english` config is a snowball stemmer PLUS an English stopword list - divergent on both axes
-  (PG docs, Ch. 12.2 and 12.9). PG's predefined **`porter` config** (Porter stemmer, simple
-  dict, no stopwords) is the closest match to FTS5 and is what the PG backend must use.
+  (PG docs, Ch. 12.2 and 12.9). **Measured correction (2026-10-16, PG 18.6 live on this box):
+  PG 18 has no `porter` config and no porter dictionary at all - `pg_ts_config`/`pg_ts_dict`
+  list only snowball `*_stem` dictionaries + `simple`.** The native answer is a custom config
+  the schema creates itself: default parser + `english_stem` + no stopword list (measured
+  working - indexes `"user's serviced widgets"` as `servic/user/widget`).
 - *Tokenizer*: `unicode61` and PG's default parser split differently - `"user's"` becomes
   `user` + `s` under unicode61 and one word token under PG's parser. A custom text-search
-  configuration (default parser + porter dict + empty stopword list) gets closest; the residue
+  configuration (default parser + `english_stem` + empty stopword list, the `strata_fts` above)
+  gets closest; the residue
   is MEASURED, not assumed: **P2 acceptance adds an FTS parity battery** - the same corpus and a
   query set through both backends, comparing candidate SETS (coverage is the hard requirement;
   rank swaps fall inside the venue noise-floor budget that gates the flip anyway).
