@@ -44,7 +44,13 @@ from __future__ import annotations
 
 import argparse, json, re, sys, time, urllib.error, urllib.parse, urllib.request as U
 
-DATE_RE = re.compile(r"^\s*(\d{4}-\d{2}-\d{2})")
+DATE_RE = re.compile(r"^\s*(\d{4})[-/](\d{2})[-/](\d{2})")
+# BOTH separators, measured 2026-10-15: the oracle's haystack_dates are SLASH-delimited
+# ("2023/04/10 (Mon) 17:50", 0x2f bytes confirmed) while question_date uses hyphens, and the
+# hyphen-only regex made day_of return "" for every haystack date since this file existed - a
+# silent no-op with zero test coverage: the ingest's `[{day}] ` prefix never landed (0 of 10,973
+# venue rows carry one), the extraction A/B's dated arm was told "unknown date" for every pair,
+# and a chronological-render probe sorted on empty strings. day_of now normalizes to hyphens.
 ANSWER_RULES = {
     "direct": ("Answer in a few words from the memory you carry. If it does not hold what "
                "is needed, reply exactly: idk"),
@@ -83,7 +89,7 @@ def get(url: str, path: str, params: dict, headers: dict | None = None, timeout:
 
 def day_of(date_str: str) -> str:
     m = DATE_RE.match(date_str or "")
-    return m.group(1) if m else ""
+    return f"{m.group(1)}-{m.group(2)}-{m.group(3)}" if m else ""
 
 
 def chunk_turn(full: str, cap: int = 3900) -> list[str]:

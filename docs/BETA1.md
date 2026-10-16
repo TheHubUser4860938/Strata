@@ -119,6 +119,17 @@ engine logs.
   still cannot order it. Retrieval-level rank-1 damage corroborates it - knowledge-update lost 0.139 of
   rank-1 to the reranker and its accuracy moved +0.005, so at this block size the model is not using
   rank order, which is also why a speaker-aware re-order was measured offline and then parked.
+- **The temporal ordering failure now has a measured fix at the WRITE path.** Facts extracted with
+  the dated prompt answer the same 127 temporal questions at **0.591-0.606 across three answer
+  repeats** vs 0.370-0.425 undated (pooled **+0.207**, McNemar p<=1.2e-12; abstention 0.41 -> 0.11),
+  measured in scratch stores on the venue corpus, memory muted, one server. Re-sorting the block
+  chronologically in the renderer does nothing (-0.008, inside the measured single-run noise floor
+  of ±0.047): the model orders events when the FACTS carry dates, not when the renderer reshuffles
+  dateless ones. The caveat that reframes every temporal number above: the venue store's rows carry
+  **no dates at all** - the oracle's slash-delimited session dates never matched the harness's
+  hyphen-only `day_of` regex (0/10,973 rows), so 0.433/0.457/0.465 were measured on dateless
+  evidence, and a dated verbatim re-ingest is untested. Records: `docs/MEMORY_CORE.md` ("Date
+  grounding settled at the answer level"), `spikes/lme/grounding-20261015-*`.
 
 ## Reproducing
 

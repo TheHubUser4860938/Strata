@@ -78,7 +78,9 @@ def session_epoch(date_str: str) -> float | None:
     """"2023-04-10 (Mon) 17:50" -> local epoch seconds, the form observed_on() wants. None says
     the stamp is unreadable, and then the dated arm's own rule ("write no date rather than a
     guessed one") keeps the arm honest instead of inventing a day."""
-    s = (date_str or "").strip()
+    s = (date_str or "").strip().replace(chr(47), "-")   # oracle haystack_dates are SLASH-delimited -
+    # the lme_harness DATE_RE lesson (2026-10-15): a hyphen-only parser silently returned None and
+    # the dated arm degenerated into "unknown date" for every pair. Normalize, then try the shapes.
     for fmt in ("%Y-%m-%d (%a) %H:%M", "%Y-%m-%d %H:%M", "%Y-%m-%d"):
         try:
             return datetime.datetime.strptime(re.sub(r"\([A-Za-z]+\)", " ", s).strip(), fmt).timestamp()

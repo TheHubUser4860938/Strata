@@ -390,5 +390,20 @@ class CoverageMetric(unittest.TestCase):
         self.assertIsNone(AB.agg([{"turn_top1": None}])["turn_top1"], "nothing scorable is n/a")
 
 
+    def test_day_of_accepts_both_date_separators(self):
+        """The oracle file's BYTES are the spec (measured 2026-10-15): haystack_dates arrive
+        SLASH-delimited, and the hyphen-only regex returned "" for every one of them - a silent
+        no-op that turned the ingest's `[{day}] ` prefix into dead code (0 of 10,973 venue rows
+        carry one) and made a chronological probe sort on empty strings. chr(47) is spelled out
+        because the author's input layer keeps normalizing the separator, which is how the bug
+        hid in plain sight when the format was first eyeballed."""
+        SL = chr(47)
+        self.assertEqual(H.day_of(f"2023{SL}04{SL}10 (Mon) 17:50"), "2023-04-10",
+                         "the oracle's actual haystack format must produce a day")
+        self.assertEqual(H.day_of("2023-04-10 (Mon) 23:07"), "2023-04-10",
+                         "the hyphenated question_date format must too")
+        self.assertEqual(H.day_of("someday early"), "", "unreadable stays empty, never guessed")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

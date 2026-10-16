@@ -1622,52 +1622,82 @@ the filed run is not measuring the thing. Fixed to the product's own shape (memo
 question from the user), and the empty-completion case is now counted as a probe failure, never as a wrong
 answer.
 
-## The grounding A/B at answer level: the dated prompt wrote dates on 1.1% of this corpus (measured 2026-10-15, `tools/m4_grounding.py`)
+## Date grounding settled at the answer level - after one regex quietly degraded three measurements (measured 2026-10-15, `tools/m4_grounding.py`, `tools/m4_rerank.py`)
 
-The mutation probe opened the gate (0.808 of correct temporal answers die when the gold row is
-dropped), so the dated `EXTRACT_PROMPT` got the answer-level A/B the queue was priced on: the 127
-temporal questions, 1,615 user/assistant pairs per arm, two scratch stores built **in-process** on the
-current server - `old` extracts with the pre-grounding prompt (byte-identical control, sha `e7c8fa6b`),
-`new` with the shipped dated prompt. Same pairing, same parse regex, same idk-gold skip, same
-guard=False writes, same `lme_<qid>` scopes, same decode (temp 0.8 / 256 tok / muted); the curation
-loop's cold-score stage deliberately skipped so the only variable is the prompt. Scoring renders each
-store's block at 192/48k, answers at temp 0.8 / 500 tok / fresh conversation, judges with the official
-checker. Ingest: 3,230 asks in 3,719 s, zero failures. Score: 511 s.
+**The bug, found by a null that would not move.** The grounding A/B's first pass came back
+-0.008 with 1.1% compliance - and the rerank probe's date column read 0/360, then 0/127 even after
+switching to map-based dates. The bytes explain all of it: the oracle's `haystack_dates` are
+**slash-delimited** (`"2023/04/10 (Mon) 17:50"`, 0x2f confirmed by code point) while `question_date`
+uses hyphens, and `lme_harness.DATE_RE` matched **hyphens only**. `day_of()` returned `""` for every
+haystack date since the file existed - with zero test coverage - and the failure was silent three
+times over:
 
-| arm | acc | idk | notes | row-cov | turn_top1 | turn_top3 |
-|---|---|---|---|---|---|---|
-| old (undated prompt) | **0.386** | 0.409 | 13.5 | 0.927 | 0.606 | 0.858 |
-| new (dated prompt) | **0.378** | 0.449 | 12.4 | 0.919 | 0.630 | 0.890 |
+- the venue ingest's `[{day}] ` prefix was dead code: **0 of 10,973 venue rows carry a date**, so
+  every temporal number ever filed on this venue - 0.433, 0.457, 0.465 - was measured on **dateless**
+  evidence, and the store's "predates the dated ingest" archaeology story was wrong;
+- the extraction A/B's dated arm was told "an unknown date" for all 1,615 pairs, so it could not
+  ground what it was built to ground (and in 18 facts it *invented* years anyway - one of them 2024
+  for a 2023 session, which is the "never invent a date" rule failing exactly as feared);
+- the chronological-rerank probe sorted on empty strings, making both arms identical.
 
-**Falsifier fired: paired delta -0.008 (10 dated-right-only vs 11 undated-right-only - the noise
-itself).** Dates helped *ranking* a little (top1 +0.024, top3 +0.032, consistent with the prompt-level
-A/B) and did nothing at the answer level. Per the pre-registered rule, grounding stays a retrieval-side
-result and the next venue window goes to arm C1.
+`DATE_RE` now accepts both separators and normalizes to hyphens; `tools/test_lme_harness.py` pins
+both real formats (with `chr(47)` spelled out, because the author's input layer kept normalizing the
+separator while *writing the test* - the bug hiding in plain sight a fifth time).
 
-**Why the arms could barely differ - compliance, counted from the ingest checkpoints: the dated prompt
-put an ISO date on 18 of 1,710 facts (1.1%); the control put one on 0.** The rule targets *relative*
-dates ("yesterday", "on Friday") and the oracle corpus states its dates **explicitly** ("March 22"),
-which the extractor copies as-is; "never invent a date" then keeps even the year off most facts (it
-supplied one - "March 22" became "2024-03-22" - per-fact, not per-prompt). On dev-store turns, which
-talk about *today*, the same prompt grounds almost every fact ("On 2026-10-15, ...",
-`ab-dated-1.log`). Compliance is corpus-dependent, and this corpus is the one the metric runs on.
+**The accidental calibration: the noise floor of one 127-line run.** That first identical-arms rerank
+run is not a wasted measurement - it is the test-retest floor of this pool at temp 0.8: byte-identical
+prompts answered twice scored **0.425 vs 0.472, 14:8 discordants, 22 of 127 lines flipped**
+(`spikes/lme/rerank-noise-floor-20261015.jsonl`). A single-run delta under ~0.05 on 127 lines is
+inside the floor. The >=3-repeat rule, finally with a number attached.
 
-**And the ceiling check that makes the ordering story sharper: the venue's own verbatim rows already
-carry `[2023-04-13]`-style absolute dates on 100% of rows - and temporal still scores 0.457 there.**
-Dates in the text are not the lever, at 1% compliance or at 100%.
+**The grounding A/B, corrected.** The control arm never saw the bug: the undated prompt has no
+`{observed}` slot at all, so only the dated arm needed re-extracting (per-arm checkpoints made that
+34 minutes, not an hour). Compliance jumped **1.1% -> 55.1%** of facts carrying an ISO date - the
+extractor is selective, it stamps time-bearing facts and leaves timeless ones alone. Three fresh
+answer repeats over the same stores, temp 0.8, muted, official checker:
 
-**The bigger number in this run is extraction vs verbatim.** Paired against the filed venue run on the
-same 127 questions, same budget, same decode: the extraction path wins 10, loses 19 (net -7.1 points),
-and **abstains on 52-57 of 127 questions where the verbatim store answered all 127** (idk 0/127 there).
-The shipped extractor (max 2 facts per turn, one sentence each) throws away the mileage figures, model
-names and day-level specifics these questions ask for. That is the production ingest path's measured
-cost on evidence-dense temporal queries - larger than anything dates were worth.
+| repeat | undated | dated | dated-only right | undated-only right | delta |
+|---|---|---|---|---|---|
+| 1 | 0.386 | **0.606** | 34 | 6 | +0.220 |
+| 2 | 0.370 | **0.591** | 35 | 7 | +0.220 |
+| 3 | 0.425 | **0.606** | 35 | 12 | +0.181 |
+| **pooled** | ~0.39 | **~0.60** | **104** | **25** | **+0.207, McNemar p <= 1.2e-12** |
 
-**What the dated prompt keeps**: it is free at read time, it demonstrably grounds conversation-relative
-language (the dev corpus), it nudges ranking, and nothing here regresses. `docs/BETA1.md` makes no
-answer-level temporal claim for it, and this run is why. The successor probe writes itself: the venue's
-rows already carry dates - let the **renderer order the block by them** instead of asking the writer to
-put them there.
+The abstention rate collapses with it: idk 0.409 -> 0.110. The retrieval side moves a little
+(turn_top1 0.606 -> 0.646); the effect is overwhelmingly at the answer level - the model *reads* the
+date and does the ordering arithmetic. This is the first intervention measured to move temporal
+accuracy at all, and it is a **write-path** change: the shipped dated `EXTRACT_PROMPT`, measured on
+the venue's own corpus, in scratch stores, no boot, one server.
+
+**The ladder on these 127 temporal questions** (all measured, same budget and decode):
+
+| store | accuracy | what it isolates |
+|---|---|---|
+| extracted, undated prompt (control x3) | 0.370-0.425 | the pre-grounding write path |
+| verbatim venue rows - **which carry no dates** (filed run) | 0.457 | raw detail, dateless |
+| extracted, dated prompt (arm x3) | **0.591-0.606** | the shipped write path |
+
+Dates in the fact text beat raw verbatim detail on this type. And every temporal number filed before
+today was measured on dateless venue rows - a **dated verbatim re-ingest** is now an untested venue
+arm the current harness would actually write.
+
+**The rerank negative, which completes the story.** With real map-based dates (rows dated 127/127),
+re-sorting the venue's rows chronologically in the **renderer** - same hits, same
+budget, oldest event first - scored **0.433 vs 0.441 default,
+-0.008, 8:9 discordants** (`spikes/lme/rerank-chrono-20261015.jsonl`): inside the floor, no effect.
+Presentation order does not reach the temporal deficit; content order does. The four probes now
+read as one mechanism chain: the gold row carries the answer (mutation 0.808), more presence does
+not help (sensitivity +0.085), reordering dateless rows does nothing (rerank -0.008), and dates
+**inside the facts** move it +0.207.
+
+**What changes.** (1) The dated extract prompt is validated at answer level - the claim lands in
+`docs/BETA1.md`. (2) The venue store is dateless, so its temporal numbers are a floor, not a ceiling;
+the obvious next port-free run is the extraction A/B across **all 500 venue questions** - the
+scratch-store path needs no boot, and the non-temporal types are where the extractor's one-sentence
+compression might pay differently. (3) Arm C1's window is re-priced against that run, not against
+grounding, which is settled. Method note kept on purpose: the first falsifier fired against a
+degenerate arm - a control that cannot fail is not a control, and this one could not even see its
+own variable.
 
 ## Licensing and attribution
 
