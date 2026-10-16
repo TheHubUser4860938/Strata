@@ -882,12 +882,16 @@ class ConfigApiKey(unittest.TestCase):
     """#569 (and #213): the key in the config, through main(): empty is a warning, a blank one is refused."""
 
     def run_main(self, cfg):
-        """-> (return code, the API key the service got or None when main() stopped before serving, stderr)."""
+        """-> (return code, the API key the service got or None when main() stopped before serving, stderr).
+        The store rides too (memory is ON by default in this fork, f05d29b1): point it at the temp
+        dir so main() never mints a stray cluster in the repo root, and CLOSE it when the patched
+        serve() raises - an unclosed store leaks its Postgres cluster past the test."""
         import serve.server as S
         seen = {}
 
         def fake_serve(svc, host=None, port=None):
             seen["key"] = svc.api_key
+            seen["svc"] = svc
             raise _Reached
 
         err = io.StringIO()
@@ -895,12 +899,19 @@ class ConfigApiKey(unittest.TestCase):
                 mock.patch.object(S, "serve", fake_serve), mock.patch.object(sys, "stderr", new=err):
             os.environ.pop("STRATA_API_KEY", None)
             p = Path(d) / "cfg.json"
+            cfg = dict(cfg)
+            cfg.setdefault("memory", {"dir": str(Path(d) / "memstore")})
             p.write_text(json.dumps(cfg), encoding="utf-8")
             with mock.patch.object(sys, "argv", ["server.py", "--engine", "mock", "--port", "0", "--config", str(p)]):
                 try:
-                    code = S.main()
-                except _Reached:
-                    code = 0
+                    try:
+                        code = S.main()
+                    except _Reached:
+                        code = 0
+                finally:
+                    svc = seen.get("svc")
+                    if svc is not None and getattr(svc, "memory", None) is not None:
+                        svc.memory.close()       # the cluster dies with the test, not at interpreter exit
         return code, seen.get("key"), err.getvalue()
 
     def test_an_empty_key_is_a_warning(self):

@@ -64,6 +64,7 @@ build-vision-cuda12.bat
 
 # memory-core fork: shared model-data symlink and the dev-cycle console logs
 /Strata-data
+/memory
 /dev-server.out
 /dev-cycle-server.out
 /venue-server.out
