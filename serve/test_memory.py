@@ -1548,6 +1548,56 @@ class AutoShelve(unittest.TestCase):
                          "Parent/CUTTER exists anchored to another entity: do not hijack, stay wild")
 
 
+    def test_rarest_subject_wins_over_a_passing_mention(self):
+        m = self._svc(auto_shelve=True)
+        for i in range(3):   # Strata: the store's busiest neighbour family (TECH-shelved)
+            m.remember(f"Strata calibration step {i} runs at temperature 0.8", scope="fw", klass="TECH")
+        m.remember("The Zorblaxian archive catalogues comets", scope="fw", klass="FIC/VOLDR")
+        m.remember("Strata ships the Zorblaxian archive index each spring", scope="fw")
+        self.assertEqual(self._classes(m)[-1], "FIC/ZORBL",
+                         "the drawer is named after the house, not the visitor: the rarest "
+                         "qualifying subject wins, a passing mention of a busy one does not")
+
+
+class MatrixStaleness(unittest.TestCase):
+    """The vector matrix cache carries a CLASS column (for the cosine arm's shelf_mask) and holds
+    ONLY active rows - so every mutation that changes a class or a validity must dirty it, or the
+    hybrid arm answers for yesterday's store. Bug caught 2026-10-16 by the backfill: 122
+    op=classify calls left the running server's cosine arm filtering on the pre-backfill class
+    column (the lexical arm was always right); invalidate/correct shared the same staleness."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _svc(self):
+        m = MemoryService(self.tmp.name, embedder=StubEmbedder({"placeholder": [1.0, 0.0]}))
+        self.addCleanup(m.close)
+        return m
+
+    def test_classify_refreshes_the_matrix_class_column(self):
+        m = self._svc()
+        m.remember("the archive catalogues comets", scope="fw")
+        meta = m._vec_matrix()
+        self.assertEqual(meta["class"][0], "", "cached unshelved first")
+        rid = int(meta["ids"][0])
+        self.assertTrue(m.classify(rid, "MEM/GRAPH"))
+        meta2 = m._vec_matrix()
+        self.assertEqual(meta2["class"][0], "MEM/GRAPH",
+                         "classify must dirty the matrix: the cosine arm's shelf_mask reads its class column")
+
+    def test_invalidate_drops_the_row_from_the_matrix(self):
+        m = self._svc()
+        m.remember("first fact stands", scope="fw")
+        m.remember("second fact stands", scope="fw")
+        ids = [int(i) for i in m._vec_matrix()["ids"]]
+        self.assertTrue(m.invalidate(ids[0], by_id=ids[1]))
+        self.assertEqual([int(i) for i in m._vec_matrix()["ids"]], [ids[1]],
+                         "a superseded fact must leave the cosine arm's candidate set with its row")
+
+
 class StubEmbedder:
     """Duck-typed embedder with hand-built vectors per exact text (zeros for anything else):
     tests the hybrid PLUMBING - union, filters, lifecycle, stats - with no onnxruntime and no

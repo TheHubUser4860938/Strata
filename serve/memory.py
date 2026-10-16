@@ -541,9 +541,9 @@ class MemoryService:
 
         The learned taxonomy is STORE data (the shelves table: name, source, anchor), not code -
         a new category needs no deploy and no reboot, which is the whole point the Postgres port
-        inherits (GIN over this table is then trivial). Cost note: the neighbour lookup is a
-        lower(text) LIKE scan - fine at today's few thousand rows, and the first thing to replace
-        with an index (or pgvector/JSONB thinking) when the store grows.
+        inherits (GIN over this table is then trivial). The neighbour lookup rides the store's own
+        FTS5 index - exact-token and indexed from day one, after a dry run caught LIKE's substring
+        ghosts shelving facts into drawers named by "judgment" and "official".
         """
         cands: list[str] = []
         seen: set[str] = set()
@@ -563,10 +563,24 @@ class MemoryService:
             if self.conn.execute("select count(*) from shelves where source='learned'").fetchone()[0] \
                     >= AUTO_SHELF_CAP:
                 return ""                   # past the cap: propose, do not mint
+            # RAREST SUBJECT WINS (docstring law, made real 2026-10-16 by the backfill's dry-run):
+            # text order let a passing mention of the store's busiest entity (Strata: 77 wild rows)
+            # outvote the fact's actual subject (cognee, longmemeval, onnx) - the drawer would have
+            # been named after the visitor, not the house. Count neighbours per candidate first,
+            # then try them least-mentioned first: the specific claim on the house wins.
+            # NEIGHBOURS ARE EXACT TOKENS, found through the store's own FTS index (learned the
+            # same dry-run day): LIKE %judge% counts "judgment" and %office% counts "offi-cial",
+            # and those substring ghosts shelved measurement-protocol facts onto POL/JUDGE and
+            # Cognee research onto POL/OFFIC. FTS5 phrase match is exact-token AND indexed - it
+            # fixes the false families and the scan-cost note in one move.
+            counts: dict[str, list] = {}
             for w in cands:
-                rows = self.conn.execute(
-                    "select coalesce(class,'') from memories where invalid_at is null "
-                    "and lower(text) like ?", (f"%{w.lower()}%",)).fetchall()
+                counts[w] = self.conn.execute(
+                    "select coalesce(m.class,'') from mem_fts join memories m on m.id = mem_fts.rowid"
+                    " where mem_fts match ? and m.invalid_at is null",
+                    ('"' + w.lower().replace('"', '""') + '"',)).fetchall()
+            for w in sorted(cands, key=lambda w: (len(counts[w]), cands.index(w))):
+                rows = counts[w]
                 if not rows:
                     continue                                            # first mention: no drawer yet
                 parents = [r[0].split("/")[0].split(".")[0] for r in rows if r[0]]
@@ -804,6 +818,9 @@ class MemoryService:
             self._bump()
             self.conn.commit()
             self._touched()
+            self._vdirty = True       # same law as classify: the matrix holds ONLY active rows, so
+            # an invalidate that does not dirty it leaves the cosine arm offering a superseded fact
+            # (its fetch by id does not re-check invalid_at). correct() inherits this fix.
             return r.rowcount > 0
 
     def correct(self, text: str, old_id: int, scope: str = USER_SCOPE, source: str = "manual",
@@ -836,6 +853,10 @@ class MemoryService:
             self._bump()
             self.conn.commit()
             self._touched()
+            self._vdirty = True       # the matrix cache carries a CLASS column for the cosine arm's
+            # shelf_mask: a classify that does not dirty it leaves the hybrid arm answering for the
+            # OLD shelf until some unrelated write rebuilds - the backfill's 122 op=classify calls
+            # (2026-10-16) were invisible to the cosine arm while the lexical arm was always right.
             return r.rowcount > 0
 
     def list_memories(self, scope: str | None = None, limit: int = 100,
