@@ -163,6 +163,22 @@ curl http://127.0.0.1:8080/v1/chat/completions -H "Content-Type: application/jso
 With an API key, add `-H "Authorization: Bearer <key>"`. The server window prints a `ready: http://127.0.0.1:8080/v1`
 line when it is ready; the engine log is `strata-<model>.log` in the Strata folder.
 
+## 7b. Turn on the memory (memory-core branch only)
+
+This branch ships Strata Mnemosyne, the built-in memory store. It is opt-in: with no `"memory"` key
+in the engine config and no `--memory DIR` flag, every path is upstream Strata byte for byte. To
+turn it on (only if the user wants the memory system — ask once):
+
+- add `"memory": { "dir": "Strata-data/memory" }` to the engine config, or pass
+  `--memory Strata-data/memory` at start;
+- for paraphrase recall also set `"embedder": { "dir": "Strata-data/embeddings/bge-small-en-v1.5" }`
+  (pinned files, MIT, CPU-only; skip it and recall stays lexical — everything else works);
+- verify before reporting done: the boot banner must print `[strata] memory core on: ...` (the
+  banner is the check — a silent no-op config is the failure mode), and
+  `http://127.0.0.1:<port>/memory-ui` must answer;
+- never expose `/memory` beyond `127.0.0.1` without `--api-key` — the store holds what the server
+  remembers about the user.
+
 ## 8. Connect the user's apps
 
 - **Browser:** `http://127.0.0.1:8080` - Chat, a live Monitor, and About (settings and addresses).

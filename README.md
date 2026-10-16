@@ -1,15 +1,60 @@
-# Strata — MAM Cartridge Fork
+# Strata Mnemosyne — Strata with built-in long-term memory
 
 **What this fork is for: building memory into Strata — a persistent, harness-independent long-term memory
 that lives at the inference server.** Every client (OpenCode, Claude Code, Codex, the web app) shares one
 store, and no harness ever re-sends conversation history — the server remembers, and it remembers the same
 way no matter which app is knocking.
 
-Status, October 2026 — **beta-1 (Linux)**: the claim list, with what each measurement was run on
+**Naming (settled 2026-10-16).** The project is **Strata**. Its built-in memory system is **Strata
+Mnemosyne** — the store: subject shelves, SQLite + FTS5 + pinned embeddings, the journal, the sweep.
+The assistant that recalls it — the chat voice and the coding agent's hands — is **Clio** (KLY-oh),
+who in the mythology is Mnemosyne's daughter: the retriever descends from the store. The split is
+architectural, not decoration: storage is passive and curated; recall is the part with rules,
+budgets and judgement. Short form for code and speech: **Mnemo**.
+
+## Try it: Strata with memory
+
+**Windows:** double-click `START-HERE.bat`. **Linux:** `./setup.sh`. Run it from a clone of **this**
+repository's `memory-core` branch — the installer checks your PC, picks the model size that fits
+your RAM, downloads it, and starts the server at `http://127.0.0.1:8080`:
+
+```
+git clone -b memory-core https://github.com/TheHubUser4860938/Strata.git
+cd Strata
+```
+
+Memory is **opt-in**: without its config key every path is upstream Strata, byte for byte. Turn it
+on by adding to the engine config:
+
+```json
+"memory": { "dir": "Strata-data/memory",
+            "embedder": { "dir": "Strata-data/embeddings/bge-small-en-v1.5" } }
+```
+
+or by starting the server with `--memory Strata-data/memory`. When it is live the boot banner prints
+`[strata] memory core on: ...`, and `http://127.0.0.1:8080/memory-ui` is the store's own page —
+stats, search, forget. The embedder (pinned by SHA-256, MIT, ~130 MB, CPU-only — it never touches
+the GPU your model owns) is what lets recall understand paraphrase; without it recall stays lexical
+and everything else still works. The exact files and hashes: `docs/MEMORY_CORE.md`.
+
+### Or point your AI agent at it
+
+Paste this into any coding agent (Claude Code, Codex, OpenCode, Cursor, Copilot):
+
+```text
+Set up Strata with its built-in memory (Strata Mnemosyne) on this PC for me:
+https://github.com/TheHubUser4860938/Strata - use the memory-core branch, follow
+docs/AI_SETUP.md in that repository, and turn the memory on as its memory step describes.
+Before reporting done, verify the boot banner says "memory core on" and /memory-ui answers.
+```
+
+The agent can also drive install/start/stop through Strata's [MCP server](docs/MCP_SERVER.md).
+
+Status, October 16, 2026 — **beta-1 (Linux)**: the claim list, with what each measurement was run on
 and what beta-1 refuses to claim, is [`docs/BETA1.md`](docs/BETA1.md). The text tier is live on
 the dev server and the K/V tier is in code:
 
-- **Tier 3, curated text memory (running):** ~2,400 facts on subject shelves, recalled server-side and
+- **Tier 3, curated text memory (running):** ~2,700 facts on subject shelves, recalled server-side and
   injected as one hidden system block that rides all three dialects (OpenAI, Anthropic, Responses). A
   journal feeds itself from conversations; a curation loop classifies, dedups, and consolidates with
   human-gated merge review; a budget speaks before it's full; `?since=`/`?until=` date windows answer
@@ -44,7 +89,11 @@ the dev server and the K/V tier is in code:
   A/B on the same store and protocol, per-repeat spread only ±5. The cold control is the line to
   trust: memory muted, **98.4–98.7% answer `idk`** and gold leaks are **2 in 1,500**. Recall splits
   honestly: single-session 0.91–0.95, preferences 0.90, knowledge-update 0.75, multi-session 0.74,
-  abstention 0.78, temporal arithmetic 0.43 — the known weak spot, unmoved by budget. The judge
+  abstention 0.78, temporal arithmetic 0.43 — the known weak spot, unmoved by budget. The write path
+   then moved it: facts extracted with absolute dates answer the same 127 temporal questions
+   **+0.207** over the undated prompt (3 answer repeats, pooled McNemar p ≤ 1.2e-12, scratch stores,
+   2026-10-16) — the first intervention measured to move it at all, and it is already in the curation
+   loop every install ships. The judge
   model is local (same engine, paper's decoding shape, disclosed); the doubled head costs ~2.3 s at
   conversation start and zero per follow-up (pinned prefix). Full protocol, caveats, and records:
   `docs/MEMORY_CORE.md` (F venue section) + `spikes/lme/oracle-20261013-full.jsonl` (12k) and
