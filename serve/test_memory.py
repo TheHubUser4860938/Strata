@@ -9,17 +9,43 @@ injected block is byte-stable for a conversation while the store changes underne
 import http.client
 import json
 import os
-import sqlite3
 import tempfile
 import time
 import unittest
 from pathlib import Path
 
 from serve.frontend import ChatTemplate
-from serve.memory import MemoryService, request_state, time_bound, tool_result
+from serve.memory import MemoryService as _BaseMemoryService, request_state, time_bound, tool_result
 from serve.server import ByteTokenizer, Cartridges, MockEngine, Service, serve
 
 ROOT = Path(__file__).resolve().parents[1]
+
+# TEST HARNESS (ADR-002 R3): one shared Postgres cluster per test process - initdb+start measured
+# 0.3 s, stopped at exit - and every store dir gets its OWN DATABASE inside it (createdb measured
+# 3 ms), so the suite keeps its 431 independent stores without paying a cluster each. Production
+# runs the SAME code in own-cluster mode (no pg_uri); the wrapper only supplies the URI, so every
+# call site below stays byte-identical to the SQLite-era tests.
+import atexit
+
+import serve.memory as _memory_mod
+
+_CLUSTER = None
+
+
+def _cluster_uri() -> str:
+    global _CLUSTER
+    if _CLUSTER is None:
+        import embedded_postgres as ep
+        d = Path(tempfile.mkdtemp(prefix="strata-test-pg-")) / "pgdata"
+        _CLUSTER = ep.get_server(d)
+        atexit.register(_CLUSTER.cleanup)
+    return _CLUSTER.get_uri()
+
+
+class MemoryService(_BaseMemoryService):
+    def __init__(self, directory, **kw):
+        kw.setdefault("pg_uri", _cluster_uri())
+        super().__init__(directory, **kw)
 
 
 class Store(unittest.TestCase):
@@ -125,7 +151,7 @@ class Store(unittest.TestCase):
         mem = MemoryService(os.path.join(self.tmp.name, "cap"), max_memories=6)
         try:
             kept = mem.remember("a fact the recall has served", scope="fw", confidence=0.1)["id"]
-            mem.conn.execute("update memories set hits=3 where id=?", (kept,))   # served: never evicted
+            mem.conn.execute("update memories set hits=3 where id = %s", (kept,))   # served: never evicted
             low = mem.remember("low confidence never seen", scope="fw", confidence=0.2)["id"]
             for i in range(5):
                 mem.remember(f"solid fact {i}", scope="fw", confidence=0.9)
@@ -973,8 +999,8 @@ class ClassAxis(unittest.TestCase):
         # question, and every row already carries its created_at stamp - search() now bounds on it
         old = self.mem.remember("the standup agenda moved to the lake cabin", scope="ops")
         with self.mem.lock:
-            self.mem.conn.execute("update memories set created_at = created_at - 864000 * 10"
-                                  " where id = ?", (old["id"],))
+            self.mem.conn.execute("update memories set created_at = created_at - interval '8640000 seconds'"
+                                  " where id = %s", (old["id"],))
             self.mem.conn.commit()
         new = self.mem.remember("the standup agenda moved back to the office tower", scope="ops")
         now = time.time()
@@ -1026,10 +1052,12 @@ class ClassAxis(unittest.TestCase):
         self.assertNotIn("Itasca", out3[0]["content"], "junk in the header never breaks the request")
 
 
-class EncryptionAtRest(unittest.TestCase):
-    """M2 job 6: key-file encryption, honest about its threat model - ciphertext when STOPPED,
-    plaintext while running, loud failure on tamper, and an optional scrypt-stretched passphrase
-    that never enters the config file or git."""
+class AtRestKeyMaterial(unittest.TestCase):
+    """ADR-002 retired the seal/reveal FILE mechanics - they were one-file rules and a Postgres
+    data dir is many files. What survives the rebase is the 0600 key-file beside the store (the
+    encrypted pg_dump backup path, R6, reads it) and the honest at_rest sentence in stats(): a
+    running store is plaintext to whoever owns the machine, a stopped one is as private as its
+    0700 data dir, and the ciphertext line of the story is the backup."""
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -1038,121 +1066,26 @@ class EncryptionAtRest(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def _reopen(self, **kw):
-        return MemoryService(self.dir, encrypt=True, **kw)
-
-    def test_a_plaintext_husk_never_outranks_a_real_ciphertext(self):
-        """2026-10-14, learned the hard way on the dev box: a restart raced a seal-and-shred, a 45 KB
-        plaintext husk ended up over a 9.6 MB ciphertext, and the crash rule trusted the husk - the
-        store opened with ONE fact, said nothing about it, and sealed that emptiness back over the
-        real store on its next close."""
-        m = self._reopen()
-        for i in range(3):
-            m.remember(f"the fact number {i} about the cascade fix", scope="user")
-        m.close()                                     # seal + shred: no plaintext behind
-        sqlite3.connect(os.path.join(self.dir, "memory.db")).close()   # the husk a raced start leaves
-        back = self._reopen()
+    def test_the_key_file_lands_private_when_configured(self):
+        m = MemoryService(self.dir, encrypt=True)
         try:
-            self.assertEqual(back.stats()["memories"], 3,
-                             "a husk is not newer truth - the ciphertext wins")
-            self.assertTrue(back.stats()["at_rest"]["revealed_at_open"],
-                            "and the open says so, in stats as well as on the banner")
-        finally:
-            back.close()
-
-    def test_a_plaintext_with_facts_still_outranks_an_older_seal(self):
-        """The crash rule, untouched: the db the server was WRITING into beats the last seal."""
-        m = self._reopen()
-        m.remember("the fact the last seal never saw", scope="user")
-        m._seal()                                     # a mid-run seal (the sweep): plaintext stays
-        m.remember("a second fact written after that seal", scope="user")
-        m.conn.close()                                # crash: plaintext survives, no close() ran
-        back = self._reopen()
-        try:
-            self.assertEqual(back.stats()["memories"], 2, "the surviving plaintext keeps the lead")
-            self.assertFalse(back.stats()["at_rest"]["revealed_at_open"])
-        finally:
-            back.close()
-
-    def test_roundtrip_key_and_shred(self):
-        m = self._reopen()
-        m.remember("Quillon is the user's middle name, not their first", scope="user")
-        m.close()
-        self.assertFalse(os.path.exists(os.path.join(self.dir, "memory.db")),
-                         "a clean stop of an encrypted store leaves NO plaintext behind")
-        self.assertTrue(os.path.exists(os.path.join(self.dir, "memory.db.enc")))
-        key = os.path.join(self.dir, "memory.key")
-        self.assertEqual(os.stat(key).st_mode & 0o777, 0o600, "the key-file is 0600 beside the db")
-        self.assertEqual(len(open(key, "rb").read()), 32)
-        m = self._reopen()
-        try:
-            hits = m.search("which name is quillon", scope="user")
-            self.assertTrue(hits, "the store came back through the seal intact")
-            self.assertIn("middle name", hits[0]["text"])
-        finally:
-            m.close()
-
-    def test_tamper_fails_loudly_not_empty(self):
-        m = self._reopen()
-        m.remember("the sealed store never opens quietly wrong", scope="user")
-        m.close()
-        blob = bytearray(open(os.path.join(self.dir, "memory.db.enc"), "rb").read())
-        blob[-33] ^= 1                                    # flip one ciphertext byte (just before the tag)
-        open(os.path.join(self.dir, "memory.db.enc"), "wb").write(bytes(blob))
-        with self.assertRaises(ValueError, msg="a flipped byte must fail the MAC, not decrypt to mush"):
-            self._reopen()
-
-    def test_wrong_key_fails_loudly(self):
-        m = self._reopen()
-        m.remember("a lost key must not look like an empty store", scope="user")
-        m.close()
-        open(os.path.join(self.dir, "memory.key"), "wb").write(b"\x01" * 32)
-        with self.assertRaises(ValueError):
-            self._reopen()
-
-    def test_passphrase_is_a_second_factor(self):
-        os.environ["STRATA_TEST_PW"] = "zippel-township-1898"
-        try:
-            m = self._reopen(passphrase_env="STRATA_TEST_PW")
-            m.remember("the passphrase never enters the config file or git", scope="user")
-            m.close()
-            with self.assertRaises(ValueError):
-                self._reopen()                            # key alone: wrong (no passphrase in env)
-            m = self._reopen(passphrase_env="STRATA_TEST_PW")
-            try:
-                self.assertTrue(m.search("passphrase config file git", scope="user"))
-            finally:
-                m.close()
-        finally:
-            del os.environ["STRATA_TEST_PW"]
-
-    def test_periodic_snapshot_keeps_plaintext_for_crash_recovery(self):
-        m = self._reopen()
-        try:
-            for i in range(50):                           # the 50-write seal cadence
-                m.remember(f"snapshot probe number {i} for the seal cadence", scope="user")
-            self.assertTrue(os.path.exists(os.path.join(self.dir, "memory.db.enc")),
-                            "50 writes sealed a snapshot")
-            self.assertTrue(os.path.exists(os.path.join(self.dir, "memory.db")),
-                            "and the plaintext stayed: a crash mid-run loses at most 49 writes")
+            self.assertEqual(os.stat(m.key_path).st_mode & 0o777, 0o600)
+            self.assertEqual(len(open(m.key_path, "rb").read()), 32)
+            s = m.stats()
+            self.assertTrue(s["at_rest"]["mode"].startswith("pgdata-0700"))
+            self.assertTrue(s["at_rest"]["running_is_plaintext"])   # the honest state, said aloud
         finally:
             m.close()
 
     def test_stats_report_at_rest_and_by_class(self):
-        m = self._reopen()
+        m = MemoryService(self.dir)
         try:
             m.remember("generate.cpp owns the decode loop", scope="ops", klass="STR")
             s = m.stats()
             self.assertEqual(s["by_class"], {"STR": 1})
-            self.assertEqual(s["at_rest"]["mode"], "key-file")
-            self.assertTrue(s["at_rest"]["plaintext_while_running"])
+            self.assertEqual(s["at_rest"], "off")   # encrypt=False: the plain 0700 story, plainly
         finally:
             m.close()
-        plain = MemoryService(os.path.join(self.dir, "plain"))
-        try:
-            self.assertEqual(plain.stats()["at_rest"], "off")
-        finally:
-            plain.close()
 
 
 class DedupeCache(unittest.TestCase):
@@ -1318,7 +1251,8 @@ class WriteCacheFastPaths(unittest.TestCase):
             tab = m._dedupe_tables()
             with m.lock:
                 m.conn.execute("insert into memories(scope,text,source,confidence,created_at,updated_at)"
-                               " values('default','station kzq9 is licensed to Pruetz','manual',1,0,99)")
+                               " values('default','station kzq9 is licensed to Pruetz','manual',1,"
+                               "to_timestamp(0),to_timestamp(99))")
                 m.conn.commit()
             self.assertIsNot(m._dedupe_tables(), tab, "a foreign insert must not inherit the amended table")
             self.assert_cache_equals_rebuild(m)
@@ -1618,7 +1552,7 @@ class ExposureDecay(unittest.TestCase):
     def _journal_exposed(self, m, ids, n):
         for _ in range(n):
             tid = m.journal_turn("default", "question about widgets", "because widgets")
-            m.conn.execute("update turns set injected=? where id=?", (json.dumps(ids), tid))
+            m.conn.execute("update turns set injected = %s::jsonb where id = %s", (json.dumps(ids), tid))
             m.conn.commit()
 
     def test_off_by_default_the_hub_stays_on_top(self):

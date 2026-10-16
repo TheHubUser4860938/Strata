@@ -8,9 +8,15 @@ turn is journaled for curation. Design, measured constraints and the cartridge r
 docs/MEMORY_CORE.md.
 
 Off unless the engine config carries a "memory" block or the server runs with --memory DIR; with it
-absent every code path stays byte-identical to upstream Strata. Storage is one SQLite file (WAL) with
-an FTS5 index - stdlib only, no new dependencies. An optional local embedder can join the ranking
-later; nothing here requires it.
+absent every code path stays byte-identical to upstream Strata. Storage is NATIVE PostgreSQL
+(ADR-002, 2026-10-16 - the user's rebase decision): psycopg 3 against a cluster that starts with
+the store (unix socket inside the data dir, so it never touches the network), tsvector + GIN full
+text through a custom "strata_fts" config (default parser + english_stem + no stopword list + the
+unicode61 apostrophe law via translate()), timestamptz, jsonb provenance, and float32 vectors as
+bytea behind the same pinned-numpy exact-scan law. The recall MATH - RRF fusion, the blend
+weights, dedup, exposure - is byte-for-byte the engine SQLite shipped with; only the storage is
+new. Packaging is a per-OS wheel (embedded-postgres / pixeltable-pgserver) behind one get_server
+call; see docs/adr/0002-postgres-native-rebase.md.
 
 Block stickiness is deliberate, and so is its half-life. The block a conversation is SHOWN at the head
 is computed once - keyed by scope and the conversation's first user message - and pinned in an LRU
@@ -32,16 +38,17 @@ from __future__ import annotations
 
 import datetime
 import hashlib
-import hmac
 import json
 import math
 import os
 import re
-import sqlite3
 import threading
 import time
 from collections import OrderedDict
 from pathlib import Path
+
+import psycopg
+from psycopg.types.json import Jsonb
 
 SCOPE_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,39}\Z")
 USER_SCOPE = "user"                     # the profile shared by every client and project
@@ -136,7 +143,7 @@ def shelf_sql(col: str, prefixes: list[str]) -> tuple[str, list[str]]:
     scope filter has already shrunk)."""
     ors, params = [], []
     for pre in prefixes:
-        ors.append(f"({col} = ? or {col} like ? or {col} like ?)")
+        ors.append(f"({col} = %s or {col} like %s or {col} like %s)")
         params += [pre, pre + ".%", pre + "/%"]
     return "(" + " or ".join(ors) + ")", params
 
@@ -311,11 +318,73 @@ def time_bound(value) -> float | None:
 AUTO_SHELF_CAP = 200      # the most LEARNED sub-drawers one store may auto-mint; past the cap the
                           # taxonomy goes back to human review (m4_shelves propose mode)
 
-class MemoryService:
-    """The store, the recall and the journal. Thread-safe: every statement runs under one lock on a single
-    connection (WAL, busy_timeout) - the server's request threads write from several at once."""
+FTS_CFG = "strata_fts"    # the store's OWN text-search configuration, created by the schema below.
+                          # PG 18 has no porter dictionary at all (measured, ADR-002 R0: pg_ts_dict
+                          # lists only snowball *_stem + simple), so the native answer to FTS5's
+                          # 'porter unicode61' is: default parser + english_stem + NO stopword list.
+                          # The unicode61 apostrophe law rides the generated column instead
+                          # (translate(lower(text), '''', ' ')): measured "user's" indexes as user
+                          # and a user query matches (True); hyphens index the whole token AND the
+                          # parts - a SUPERSET of FTS5's splits, so recall gains matches and never
+                          # loses one; snowball's built-in stop list drops don/t/the/s on BOTH sides
+                          # of the match, self-consistent. The venue re-record (ADR-002's gate) is
+                          # what measures the snowball-vs-porter residue, row by row if it breaks.
 
-    def __init__(self, directory: str, *, max_block_chars: int = 6000, recall_limit: int = 8,
+_PG_DDL: tuple[str, ...] = (
+    # One statement per entry (psycopg has no executescript; the loop is the script). The shapes
+    # are the ADR-002 native answers, each replacing a named SQLite-ism from the audit: IDENTITY
+    # for AUTOINCREMENT, timestamptz for REAL epoch, jsonb for TEXT-json provenance and the
+    # exposure ledger, a STORED generated tsvector + GIN for the FTS5 external-content table and
+    # its three triggers (the column IS the index entry - no trigger to keep it honest), ON DELETE
+    # CASCADE for the embeddings pair SQLite could only do by convention.
+    """create table if not exists memories(
+         id bigint generated always as identity primary key,
+         scope text not null,
+         text text not null,
+         source text not null default 'manual',
+         provenance jsonb,
+         confidence double precision not null default 0.8,
+         created_at timestamptz not null,
+         updated_at timestamptz not null,
+         last_seen_at timestamptz,
+         hits integer not null default 0,
+         invalid_at timestamptz,
+         superseded_by bigint,
+         class text not null default '',
+         ts tsvector generated always as
+             (to_tsvector('strata_fts', translate(lower(text), '''', ' '))) stored)""",
+    "create index if not exists mem_ts_gin on memories using gin(ts)",
+    "create index if not exists mem_updated on memories(updated_at)",
+    "create index if not exists mem_scope_active on memories(scope) where invalid_at is null",
+    """create table if not exists shelves(
+         name text primary key,
+         created_at timestamptz not null,
+         source text not null default 'seed',
+         anchor text not null default '')""",
+    """create table if not exists turns(
+         id bigint generated always as identity primary key,
+         scope text not null,
+         user_text text not null,
+         assistant_text text not null,
+         model text,
+         created_at timestamptz not null,
+         processed integer not null default 0,
+         injected jsonb)""",
+    "create index if not exists turns_pending on turns(id) where processed = 0",
+    "create table if not exists meta(key text primary key, value text not null)",
+    """create table if not exists embeddings(
+         id bigint primary key references memories(id) on delete cascade,
+         vec bytea not null)""",
+)
+
+class MemoryService:
+    """The store, the recall and the journal. Thread-safe: every statement runs under one lock on a
+    single psycopg connection (ADR-002: one writer, now with real transactions - the lock keeps the
+    single-owner semantics the SQLite era shipped with; MVCC multi-writer is a measured upgrade for
+    after the flip, not a day-one change)."""
+
+    def __init__(self, directory: str, *, pg_uri: str | None = None,
+                 max_block_chars: int = 6000, recall_limit: int = 8,
                  cache_entries: int = 64, inject: bool = True, per_turn: bool = True,
                  turn_recall_limit: int = 8, turn_block_chars: int = 2000,
                  max_memories: int = 0, dedup_recall: bool = True,
@@ -324,7 +393,19 @@ class MemoryService:
                  auto_shelve: bool = False, block_min_score: float = 0.0,
                  expose_window: int = 0, expose_step: float = 0.0, expose_cap: int = 3):
         self.directory = memory_dir(directory)      # absolute, created 0700 - same rules as slot_save_path
-        self.db_path = os.path.join(self.directory, "memory.db")
+        # STORAGE (ADR-002 native rebase, 2026-10-16): PostgreSQL, no SQLite anywhere. Production
+        # OWNS its cluster under <dir>/pgdata - a unix socket inside the data dir, so the store
+        # never touches the network and the 127.0.0.1-only law is satisfied by construction. Tests
+        # and multi-store boxes pass pg_uri and get ONE DATABASE PER STORE DIR inside a shared
+        # cluster: createdb measured 3 ms (ADR-002 R0), so per-store isolation costs nothing and
+        # the 431-test suite keeps its 431 independent stores without paying 0.3 s of initdb each.
+        # Packaging is a per-OS wheel behind one get_server call (embedded-postgres on Linux/macOS,
+        # pixeltable-pgserver on Windows); an attaching process that did not start the cluster does
+        # not stop it when it leaves - measured, ADR-002 R0b, the law close() depends on.
+        self.pgdata = os.path.join(self.directory, "pgdata")
+        self._pg_uri = pg_uri
+        self._srv = None                            # the cluster handle when this store started one
+        self._dbname = "m" + hashlib.sha1(self.directory.encode("utf-8")).hexdigest()[:16]
         # RELEVANCE FLOOR (2026-10-16, the everyday-use complaint "it stuffs the budget full of
         # everything it can find"): measured on the journal's own turns.injected record, 8.2% of
         # injected rows shared a payload with the question, and the same rows rode 8 of 12 turns
@@ -408,19 +489,18 @@ class MemoryService:
         # dedup_recall=False; the search() ranking itself is untouched - this only stops the same fact
         # riding twice under different words.
         self.dedup_recall = bool(dedup_recall)
-        # at-rest encryption (M2 job 6, opt-in: encrypt=False keeps every byte exactly as earlier
-        # releases left them). Threat model stated honestly: the key-file sits BESIDE the db, so this
-        # stops the casual snoop - anyone who browses or copies the store dir while the server is
-        # STOPPED finds ciphertext. It does not stop a thief who owns a running machine: the open db
-        # is plaintext while serving, which is what stats()["at_rest"] says out loud. The passphrase
-        # (an ENVIRONMENT VARIABLE named by config, so the secret never enters the config file or git)
-        # and a FIDO2 passkey seal raise the bar in stages - see _reveal/_seal.
+        # AT REST (ADR-002 retired the seal/reveal file mechanics - they were one-file rules and a
+        # Postgres data dir is many files). The native story: the store dir and the cluster inside
+        # it are 0700 (memory_dir creates it so; initdb inherits), and the durability/privacy line
+        # moves to ENCRYPTED pg_dump BACKUPS under this same key-file - R6 ships the backup tool.
+        # encrypt/key_file/passphrase_env stay as accepted config so every server config boots
+        # unchanged; the key-file itself is created 0600 because backups will need it. The old
+        # threat model stays true in one sentence: a running store is readable by whoever owns the
+        # machine; a stopped one is only as private as its data dir, and its backups are ciphertext.
         self.encrypt = bool(encrypt)
         self.key_path = key_file or os.path.join(self.directory, "memory.key")
         self.passphrase_env = passphrase_env or ""
         self._writes = 0
-        self._sealed_at: float | None = None
-        self._revealed = False        # this open started from ciphertext (fresh boot OR a husk fix)
         # budget (M2 job 5, opt-in: 0 = no cap, the path stays byte-identical to every earlier release).
         # Over-cap writes evict the WORST never-recalled rows first (lowest confidence, then oldest) and
         # NEVER touch a fact the recall has actually served (hits>0) - those retire only by human review
@@ -436,68 +516,59 @@ class MemoryService:
         self._cache_entries = max(1, int(cache_entries))
         if self.encrypt:
             self._key_bytes()                                   # create the 0600 key-file when missing
-            if not os.path.exists(self.db_path) and os.path.exists(self.db_path + ".enc"):
-                self._reveal()                                  # ciphertext -> fresh plaintext db
-            elif os.path.exists(self.db_path + ".enc") and self._plaintext_is_shell():
-                # 2026-10-14, the day it bit: a restart raced a seal-and-shred, a 45 KB plaintext
-                # husk sat over a 9.6 MB ciphertext, the crash rule below trusted the husk, the
-                # store opened with ONE row and said nothing about it - and sealed that emptiness
-                # back on its next close. A plaintext that holds no facts is not "the newer truth",
-                # it is a husk: the ciphertext wins, and stats() says it was revealed at open.
-                self._reveal()
-            # if BOTH the plaintext db and a .enc exist, a crash left the plaintext: it is the newer
-            # truth (the .enc is only as fresh as the last seal), so it wins and the next seal renews.
-        self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
+        self._startup()
+
+    def _startup(self) -> None:
+        """Connect and own the schema - the three native steps the SQLite one-liner never needed.
+        (1) The CLUSTER: production starts or reattaches one under <dir>/pgdata (the unix socket
+        lives inside the data dir - the store never touches the network); pg_uri mode creates one
+        DATABASE per store dir in a shared cluster, the test-harness law measured at 3 ms per
+        store. An attaching process that did not start the cluster does not stop it on the way
+        out (measured, ADR-002 R0b) - which is what lets the curation tool read a live store.
+        (2) The TEXT-SEARCH CONFIG before the table: the generated tsvector column resolves
+        'strata_fts' at CREATE TABLE time, so the config must exist first (PG has no IF NOT EXISTS
+        for configurations - the pg_ts_config probe is the idempotency).
+        (3) The DDL and the migration law: the runtime add-a-column-on-first-open history that
+        pragma table_info carried survives through information_schema; a fresh store passes every
+        check because the DDL already carries what the migrations once patched in."""
+        if self._pg_uri:
+            self._uri = self._pg_uri
+        else:
+            try:
+                import embedded_postgres as _ep
+            except ImportError:
+                try:                                    # the Windows wheel (ADR-002 per-OS branch)
+                    import pixeltable_pgserver as _ep   # type: ignore
+                except ImportError:
+                    _ep = None
+            if _ep is None:
+                raise RuntimeError(
+                    "the memory store needs a Postgres server: pip install embedded-postgres "
+                    "(Linux/macOS) or pixeltable-pgserver (Windows), or pass pg_uri= for an "
+                    "existing cluster")
+            self._srv = _ep.get_server(self.pgdata)
+            self._uri = self._srv.get_uri()
+        self.db_path = self.pgdata if self._srv is not None else f"{self._dbname}@cluster"
+        # CREATE DATABASE cannot run inside a transaction, so the probe and the maker ride their
+        # own autocommit connections; the store connection opens against the db either way.
+        with psycopg.connect(self._uri, autocommit=True) as probe:
+            have = probe.execute("select 1 from pg_database where datname = %s",
+                                 (self._dbname,)).fetchone()
+        if not have:
+            with psycopg.connect(self._uri, autocommit=True) as maker:
+                maker.execute('create database "%s"' % self._dbname)
+        self.conn = psycopg.connect(self._uri, dbname=self._dbname)
         with self.lock:
-            self.conn.execute("PRAGMA journal_mode=WAL")
-            self.conn.execute("PRAGMA synchronous=NORMAL")
-            self.conn.execute("PRAGMA busy_timeout=5000")
-            self.conn.executescript(
-                """
-                CREATE TABLE IF NOT EXISTS memories(
-                  id INTEGER PRIMARY KEY AUTOINCREMENT,
-                  scope TEXT NOT NULL,
-                  text TEXT NOT NULL,
-                  source TEXT NOT NULL DEFAULT 'manual',
-                  provenance TEXT,
-                  confidence REAL NOT NULL DEFAULT 0.8,
-                  created_at REAL NOT NULL,
-                  updated_at REAL NOT NULL,
-                  last_seen_at REAL,
-                  hits INTEGER NOT NULL DEFAULT 0
-                );
-                CREATE TABLE IF NOT EXISTS shelves(
-                  name TEXT PRIMARY KEY,
-                  created_at REAL NOT NULL,
-                  source TEXT NOT NULL DEFAULT 'seed',
-                  anchor TEXT NOT NULL DEFAULT ''
-                );
-                CREATE TABLE IF NOT EXISTS turns(
-                  id INTEGER PRIMARY KEY AUTOINCREMENT,
-                  scope TEXT NOT NULL,
-                  user_text TEXT NOT NULL,
-                  assistant_text TEXT NOT NULL,
-                  model TEXT,
-                  created_at REAL NOT NULL,
-                  processed INTEGER NOT NULL DEFAULT 0
-                );
-                CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
-                CREATE VIRTUAL TABLE IF NOT EXISTS mem_fts USING fts5(
-                  text, content='memories', content_rowid='id',
-                  tokenize='porter unicode61 remove_diacritics 1');
-                CREATE TRIGGER IF NOT EXISTS mem_ai AFTER INSERT ON memories BEGIN
-                  INSERT INTO mem_fts(rowid, text) VALUES (new.id, new.text);
-                END;
-                CREATE TRIGGER IF NOT EXISTS mem_ad AFTER DELETE ON memories BEGIN
-                  INSERT INTO mem_fts(mem_fts, rowid, text) VALUES('delete', old.id, old.text);
-                END;
-                CREATE TRIGGER IF NOT EXISTS mem_au AFTER UPDATE ON memories BEGIN
-                  INSERT INTO mem_fts(mem_fts, rowid, text) VALUES('delete', old.id, old.text);
-                  INSERT INTO mem_fts(rowid, text) VALUES (new.id, new.text);
-                END;
-                CREATE TABLE IF NOT EXISTS embeddings(
-                  id INTEGER PRIMARY KEY, vec BLOB NOT NULL);
-                """)
+            if not self.conn.execute("select 1 from pg_ts_config where cfgname = %s",
+                                     (FTS_CFG,)).fetchone():
+                self.conn.execute(f"create text search configuration {FTS_CFG} (parser = default)")
+                self.conn.execute(
+                    f"alter text search configuration {FTS_CFG} alter mapping for "
+                    "word, asciiword, hword, hword_asciipart, hword_part, numword, asciihword "
+                    "with english_stem")
+                self.conn.commit()
+            for stmt in _PG_DDL:
+                self.conn.execute(stmt)
             self.conn.commit()
             row = self.conn.execute("select value from meta where key='version'").fetchone()
             if row is None:
@@ -505,29 +576,34 @@ class MemoryService:
                 self.conn.commit()
             # M2 job 7 (the Zep/Graphiti pattern): a correction SUPERSEDES the fact it replaces -
             # invalid_at + superseded_by turn every overwrite into a version chain the review list
-            # can walk, instead of a delete that loses the ledger. Two plain ALTERs: SQLite keeps
-            # them instant, and old db files migrate on first open.
-            cols = [r[1] for r in self.conn.execute("pragma table_info(memories)")]
+            # can walk, instead of a delete that loses the ledger. The runtime-migration law that
+            # pragma table_info carried survives natively: information_schema is the discovery,
+            # and a FRESH store passes every check because the DDL above already carries what the
+            # migrations once patched in (timestamptz where SQLite had REAL, bigint where it had
+            # INTEGER, jsonb where it had TEXT - the ADR-002 type answers).
+            cols = {r[0] for r in self.conn.execute(
+                "select column_name from information_schema.columns where table_name = 'memories'")}
             if "invalid_at" not in cols:
-                self.conn.execute("alter table memories add column invalid_at REAL")
+                self.conn.execute("alter table memories add column invalid_at timestamptz")
             if "superseded_by" not in cols:
-                self.conn.execute("alter table memories add column superseded_by INTEGER")
+                self.conn.execute("alter table memories add column superseded_by bigint")
             # PHASE 4.5 first column: the class axis (call number). '' = unclassified, and unclassified
             # is WILD by design - a fact nobody shelved still surfaces in unfiltered recall exactly as
             # before, so every byte of the pre-classification store keeps behaving identically. Only a
             # request that ASKS for a class prefix narrows to shelved rows; the default path never does.
             if "class" not in cols:
-                self.conn.execute("alter table memories add column class TEXT NOT NULL DEFAULT ''")
+                self.conn.execute("alter table memories add column class text not null default ''")
             # The journal's own provenance: WHICH rows the server showed on that turn. request_state has
-            # carried the list in ctx since the block existed (serve/memory.py:1486) and the turns table
-            # never kept it, which is why "is this curated fact memory feeding on itself?" could not be
-            # answered at all - the lexical audit in tools/m4_selffeed.py calls 42.6% of curated facts
-            # UNMATCHED because paraphrase, not provenance, is all it can see. One nullable column and
-            # no backfill: rows written before it keep NULL and stay attributable by turn_id alone, and
-            # the curation loop's behaviour does not change until something asks for the column.
-            tcols = [r[1] for r in self.conn.execute("pragma table_info(turns)")]
+            # carried the list in ctx since the block existed and the turns table never kept it, which
+            # is why "is this curated fact memory feeding on itself?" could not be answered at all -
+            # the lexical audit in tools/m4_selffeed.py calls 42.6% of curated facts UNMATCHED because
+            # paraphrase, not provenance, is all it can see. One nullable column and no backfill: rows
+            # written before it keep NULL and stay attributable by turn_id alone, and the curation
+            # loop's behaviour does not change until something asks for the column.
+            tcols = {r[0] for r in self.conn.execute(
+                "select column_name from information_schema.columns where table_name = 'turns'")}
             if "injected" not in tcols:
-                self.conn.execute("alter table turns add column injected TEXT")
+                self.conn.execute("alter table turns add column injected jsonb")
             self.conn.commit()
 
     # ---- store ---------------------------------------------------------------
@@ -538,6 +614,25 @@ class MemoryService:
 
     def _bump(self) -> None:
         self.conn.execute("update meta set value = cast(cast(value as integer) + 1 as text) where key='version'")
+
+    def _execmany(self, sql: str, seq) -> None:
+        """psycopg has no executemany ON THE CONNECTION (the sqlite3 module did) - the cursor
+        does; one named twin so the four batch writers read the same way they always did."""
+        with self.conn.cursor() as cur:
+            cur.executemany(sql, seq)
+
+    @staticmethod
+    def _dt(epoch: float):
+        """epoch seconds -> aware UTC datetime for timestamptz parameters. The API contract keeps
+        EPOCH FLOATS everywhere (list/stats/export/search bounds, day_of, the freshness blend) -
+        ADR-002's type upgrade is storage-only, converted at exactly this boundary."""
+        return datetime.datetime.fromtimestamp(float(epoch), datetime.timezone.utc)
+
+    @staticmethod
+    def _ep(dt) -> float | None:
+        """timestamptz (an aware datetime from psycopg) back to the epoch float every caller
+        downstream already speaks."""
+        return None if dt is None else dt.timestamp()
 
 
     def auto_classify(self, text: str) -> str:
@@ -564,7 +659,8 @@ class MemoryService:
         The learned taxonomy is STORE data (the shelves table: name, source, anchor), not code -
         a new category needs no deploy and no reboot, which is the whole point the Postgres port
         inherits (GIN over this table is then trivial). The neighbour lookup rides the store's own
-        FTS5 index - exact-token and indexed from day one, after a dry run caught LIKE's substring
+        FTS index (tsvector/GIN since ADR-002, FTS5 before it - same exact-token law) - indexed
+        from day one, after a dry run caught LIKE's substring
         ghosts shelving facts into drawers named by "judgment" and "official".
         """
         cands: list[str] = []
@@ -578,9 +674,9 @@ class MemoryService:
         now = time.time()
         with self.lock:
             if not self.conn.execute("select 1 from shelves limit 1").fetchone():
-                self.conn.execute("insert or ignore into shelves(name, created_at, source) "
-                                  "select distinct class, ?, 'seed' from memories where class != ''",
-                                  (now,))
+                self.conn.execute("insert into shelves(name, created_at, source) "
+                                  "select distinct class, %s, 'seed' from memories where class != ''"
+                                  " on conflict do nothing", (self._dt(now),))
                 self.conn.commit()          # lazy seed: the table learns the shelves the store already has
             if self.conn.execute("select count(*) from shelves where source='learned'").fetchone()[0] \
                     >= AUTO_SHELF_CAP:
@@ -593,13 +689,15 @@ class MemoryService:
             # NEIGHBOURS ARE EXACT TOKENS, found through the store's own FTS index (learned the
             # same dry-run day): LIKE %judge% counts "judgment" and %office% counts "offi-cial",
             # and those substring ghosts shelved measurement-protocol facts onto POL/JUDGE and
-            # Cognee research onto POL/OFFIC. FTS5 phrase match is exact-token AND indexed - it
+            # Cognee research onto POL/OFFIC. The phrase match (FTS5 then, to_tsquery now) is
+            # exact-token AND indexed - it
             # fixes the false families and the scan-cost note in one move.
             counts: dict[str, list] = {}
             for w in cands:
                 counts[w] = self.conn.execute(
-                    "select coalesce(m.class,'') from mem_fts join memories m on m.id = mem_fts.rowid"
-                    " where mem_fts match ? and m.invalid_at is null",
+                    f"select coalesce(m.class,'') from memories m,"
+                    f" to_tsquery('{FTS_CFG}', %s) q"
+                    " where m.ts @@ q and m.invalid_at is null",
                     ('"' + w.lower().replace('"', '""') + '"',)).fetchall()
             for w in sorted(cands, key=lambda w: (len(counts[w]), cands.index(w))):
                 rows = counts[w]
@@ -614,10 +712,10 @@ class MemoryService:
                     name = class_name(name)
                 except ValueError:
                     continue                                            # grammar refuses the address
-                cur = self.conn.execute("insert or ignore into shelves values(?,?,?,?)",
-                                        (name, now, "learned", w.lower()))
+                cur = self.conn.execute("insert into shelves values(%s,%s,%s,%s) on conflict do nothing",
+                                        (name, self._dt(now), "learned", w.lower()))
                 if cur.rowcount == 0:
-                    anchor = self.conn.execute("select anchor from shelves where name=?",
+                    anchor = self.conn.execute("select anchor from shelves where name=%s",
                                                (name,)).fetchone()
                     if not anchor or anchor[0] != w.lower():
                         continue                    # same cutter, different entity: do not hijack
@@ -657,14 +755,15 @@ class MemoryService:
         vec = self.embedder.embed_docs([text])[0] if self.embedder is not None else None
         with self.lock:
             same = self.conn.execute(
-                "select id, text, class from memories where scope=? and invalid_at is null", (scope,)).fetchall()
+                "select id, text, class from memories where scope=%s and invalid_at is null",
+                (scope,)).fetchall()
             hit = next((r for r in same if norm_text(r[1]) == norm_text(text)), None)
             if hit:
                 self.conn.execute(
-                    "update memories set updated_at=?, confidence=max(confidence,?), class=? where id=?",
-                    (now, conf, hit[2] or klass, hit[0]))
+                    "update memories set updated_at=%s, confidence=greatest(confidence,%s), class=%s where id=%s",
+                    (self._dt(now), conf, hit[2] or klass, hit[0]))
                 if vec is not None:   # text unchanged, but the row may predate the embedder
-                    self.conn.execute("insert or ignore into embeddings values(?,?)",
+                    self.conn.execute("insert into embeddings values(%s,%s) on conflict (id) do nothing",
                                       (hit[0], vec.tobytes()))
                 self.conn.commit()
                 self._touched()
@@ -682,9 +781,10 @@ class MemoryService:
                 verdict = self._semantic_dupe(text, same, vec, scope)
                 if verdict and verdict[0] == "suppress":
                     self.conn.execute(
-                        "update memories set updated_at=?, confidence=max(confidence,?), class=coalesce(nullif(class,''),?)"
-                        " where id=?", (now, conf, klass, verdict[1]))
-                    self.conn.execute("insert or ignore into embeddings values(?,?)",
+                        "update memories set updated_at=%s, confidence=greatest(confidence,%s), "
+                        "class=coalesce(nullif(class,''),%s) where id=%s",
+                        (self._dt(now), conf, klass, verdict[1]))
+                    self.conn.execute("insert into embeddings values(%s,%s) on conflict (id) do nothing",
                                       (verdict[1], vec.tobytes()))
                     self.conn.commit()
                     self._touched()
@@ -693,19 +793,21 @@ class MemoryService:
                     return {"id": verdict[1], "deduped": "semantic"}
                 if verdict and verdict[0] == "supersede":
                     supersede = verdict[1]
-            cur = self.conn.execute(
+            new_id = self.conn.execute(
                 "insert into memories(scope,text,source,provenance,confidence,created_at,updated_at,class)"
-                " values(?,?,?,?,?,?,?,?)",
-                (scope, text, str(source)[:40], json.dumps(provenance, ensure_ascii=False) if provenance else None,
-                 conf, now, now, klass))
+                " values(%s,%s,%s,%s,%s,%s,%s,%s) returning id",
+                (scope, text, str(source)[:40],
+                 Jsonb(provenance) if provenance else None,
+                 conf, self._dt(now), self._dt(now), klass)).fetchone()[0]
             if vec is not None:
-                self.conn.execute("insert or replace into embeddings values(?,?)",
-                                  (cur.lastrowid, vec.tobytes()))
+                self.conn.execute(
+                    "insert into embeddings values(%s,%s) on conflict (id) do update set vec = excluded.vec",
+                    (new_id, vec.tobytes()))
                 if supersede:      # the richer phrasing wins: the older row retires pointing at it,
                     self.conn.execute(       # the Zep chain stays intact - nothing is deleted (invalidate
-                        "update memories set invalid_at=?, superseded_by=?, updated_at=?"   # is the same op)
-                        " where id=? and invalid_at is null",
-                        (now, cur.lastrowid, now, supersede))
+                        "update memories set invalid_at=%s, superseded_by=%s, updated_at=%s"
+                        " where id=%s and invalid_at is null",   # is the same op)
+                        (self._dt(now), new_id, self._dt(now), supersede))
             evicted: list[int] = []
             if self.max_memories:
                 # the budget line: over cap, the worst NEVER-RECALLED rows go first (lowest confidence,
@@ -715,11 +817,15 @@ class MemoryService:
                 over = n - self.max_memories
                 if over > 0:
                     gone = self.conn.execute(
-                        "select id from memories where hits=0 and invalid_at is null and id!=?"
-                        " order by confidence asc, created_at asc limit ?", (cur.lastrowid, over)).fetchall()
+                        "select id from memories where hits=0 and invalid_at is null and id != %s"
+                        " order by confidence asc, created_at asc limit %s", (new_id, over)).fetchall()
                     if gone:
-                        self.conn.executemany("delete from memories where id=?", [(g[0],) for g in gone])
-                        self.conn.executemany("delete from embeddings where id=?", [(g[0],) for g in gone])
+                        # ON DELETE CASCADE on embeddings is the native pair-keeping (the DDL note);
+                        # the explicit delete stays as the SQLite-era belt, harmless on PG.
+                        self._execmany("delete from memories where id = %s",
+                                       [(g[0],) for g in gone])
+                        self._execmany("delete from embeddings where id = %s",
+                                       [(g[0],) for g in gone])
                         evicted = [g[0] for g in gone]
             self._bump()
             self.conn.commit()
@@ -727,9 +833,9 @@ class MemoryService:
             self._vdirty = True
             # the token table folds this write in instead of rebuilding (see _dedupe_amend): a
             # superseded row leaves the active set, an eviction deletes one, and the new row joins it.
-            self._dedupe_amend(added=[(cur.lastrowid, set(norm_text(text).split()))],
+            self._dedupe_amend(added=[(new_id, set(norm_text(text).split()))],
                                retired=([supersede] if supersede else []) + evicted)
-            out = {"id": cur.lastrowid, "deduped": False}
+            out = {"id": new_id, "deduped": False}
             if supersede:
                 out["superseded"] = supersede
             if evicted:
@@ -820,8 +926,8 @@ class MemoryService:
 
     def forget(self, memory_id: int) -> bool:
         with self.lock:
-            gone = self.conn.execute("delete from memories where id=?", (int(memory_id),))
-            self.conn.execute("delete from embeddings where id=?", (int(memory_id),))
+            gone = self.conn.execute("delete from memories where id = %s", (int(memory_id),))
+            self.conn.execute("delete from embeddings where id = %s", (int(memory_id),))
             self._bump()
             self.conn.commit()
             self._touched()
@@ -835,8 +941,10 @@ class MemoryService:
         walk the history - the honest-ledger rule the merge deletes quietly broke."""
         with self.lock:
             r = self.conn.execute(
-                "update memories set invalid_at=?, superseded_by=?, updated_at=? where id=? and invalid_at is null",
-                (time.time(), int(by_id) if by_id else None, time.time(), int(memory_id)))
+                "update memories set invalid_at=%s, superseded_by=%s, updated_at=%s"
+                " where id=%s and invalid_at is null",
+                (self._dt(time.time()), int(by_id) if by_id else None,
+                 self._dt(time.time()), int(memory_id)))
             self._bump()
             self.conn.commit()
             self._touched()
@@ -856,7 +964,9 @@ class MemoryService:
         the conversations that need it."""
         if klass is None:
             with self.lock:
-                old = self.conn.execute("select class from memories where id=?", (int(old_id),)).fetchone()
+                old = self.conn.execute("select class from memories where id = %s",
+                                        (int(old_id),)).fetchone()
+                self.conn.commit()
             klass = old[0] if old and old[0] else None
         new = self.remember(text, scope=scope, source=source, confidence=confidence,
                             provenance=provenance, klass=klass)
@@ -870,7 +980,7 @@ class MemoryService:
         what, scope says who."""
         klass = class_name(klass)
         with self.lock:
-            r = self.conn.execute("update memories set class=?, updated_at=updated_at where id=?",
+            r = self.conn.execute("update memories set class=%s, updated_at=updated_at where id=%s",
                                   (klass, int(memory_id)))
             self._bump()
             self.conn.commit()
@@ -889,7 +999,7 @@ class MemoryService:
         one shelf subtree (prefix match: MEM pulls MEM/CRG with it)."""
         conds, params = [], []
         if scope:
-            conds.append("scope=?")
+            conds.append("scope = %s")
             params.append(scope)
         if klass:
             named = [c for c in (class_name(x, quiet=True) for x in klass.split(",")) if c]
@@ -905,10 +1015,13 @@ class MemoryService:
         with self.lock:
             rows = self.conn.execute(
                 "select id,scope,text,source,confidence,created_at,updated_at,hits,class" + cols
-                + " from memories" + where + " order by updated_at desc limit ?", params).fetchall()
+                + " from memories" + where + " order by updated_at desc limit %s", params).fetchall()
+            self.conn.commit()
         return [dict(id=r[0], scope=r[1], text=r[2], source=r[3], confidence=r[4],
-                     created_at=round(r[5], 1), updated_at=round(r[6], 1), hits=r[7], **{"class": r[8]},
-                     **({"invalid_at": round(r[9], 1) if r[9] else None, "superseded_by": r[10]}
+                     created_at=round(self._ep(r[5]), 1), updated_at=round(self._ep(r[6]), 1),
+                     hits=r[7], **{"class": r[8]},
+                     **({"invalid_at": round(self._ep(r[9]), 1) if r[9] else None,
+                        "superseded_by": r[10]}
                         if include_invalid else {})) for r in rows]
 
     # ---- recall --------------------------------------------------------------
@@ -928,7 +1041,7 @@ class MemoryService:
     def _dedupe_tables(self) -> dict:
         """The whole-store token table, its document frequencies and the rare-token bar that
         _dedupe reads. They depend on nothing but the ACTIVE row set, so they are cached and
-        rebuilt only when that set moves. The key is (count, max rowid, max updated_at) of the
+        rebuilt only when that set moves. The key is (count, max id, max updated_at) of the
         active rows, which catches every write this server makes: an insert or an eviction moves
         the count, an edit bumps updated_at, an invalidation moves the count. Measured at build
         (2026-10-14, the 2,521-row dev store, RTX 4090 box, CPU, limit 96): rebuilding the table
@@ -947,12 +1060,13 @@ class MemoryService:
         human vetoes every group before anything retires."""
         with self.lock:
             key = tuple(self.conn.execute(
-                "select count(*), coalesce(max(rowid),0), coalesce(max(updated_at),0.0)"
+                "select count(*), coalesce(max(id),0), coalesce(extract(epoch from max(updated_at)), 0.0)"
                 " from memories where invalid_at is null").fetchone())
             if self._dcache is not None and self._dkey == key:
                 return self._dcache
             rows = self.conn.execute(
                 "select id, text from memories where invalid_at is null").fetchall()
+            self.conn.commit()
         toks = {r[0]: set(norm_text(r[1]).split()) for r in rows}
         df: dict[str, int] = {}
         for s in toks.values():
@@ -965,7 +1079,7 @@ class MemoryService:
     def _dedupe_stamp(self) -> tuple:
         with self.lock:
             return tuple(self.conn.execute(
-                "select count(*), coalesce(max(rowid),0), coalesce(max(updated_at),0.0)"
+                "select count(*), coalesce(max(id),0), coalesce(extract(epoch from max(updated_at)), 0.0)"
                 " from memories where invalid_at is null").fetchone())
 
     def _dedupe_amend(self, added=(), retired=()) -> None:
@@ -1087,6 +1201,7 @@ class MemoryService:
             rows = self.conn.execute(
                 "select id, class, text, confidence from memories where invalid_at is null and "
                 + frag + " order by confidence desc, id asc", args).fetchall()
+            self.conn.commit()
         header = "STANDING MEMORY - always known; never restate it, never search for it:"
         lines, used, left = [], len(header) + 1, 0
         for i, (_rid, cls, txt, _conf) in enumerate(rows, 1):
@@ -1103,8 +1218,14 @@ class MemoryService:
     def search(self, query: str, scope: str = DEFAULT_PROJECT, limit: int | None = None,
                classes: list[str] | None = None, since: float | None = None,
                until: float | None = None, semantic: bool = True) -> list[dict]:
-        """FTS5 bm25 candidates over the user scope plus this request's project scope, then re-ordered by a
-        blend: 0.75 rank + 0.25 recency + 0.10 confidence, all in [0,1]-ish. Returns at most `limit`.
+        """tsvector/GIN candidates over the user scope plus this request's project scope - the native
+        twin of the SQLite-era bm25 arm (ADR-002): to_tsquery ORs with |, the order is ts_rank_cd
+        DESC with an explicit id tiebreak (SQLite's ties fell to rowid order; PG's are undefined, so
+        the law moves into the ORDER BY where it is visible), and the arm feeds the blend RANK
+        POSITIONS, never rank values - which is what contains the bm25-vs-ts_rank_cd divergence to
+        a few adjacent swaps, with the venue re-record measuring the residue row by row. Then
+        re-ordered by a blend: 0.75 rank + 0.25 recency + 0.10 confidence, all in [0,1]-ish.
+        Returns at most `limit`.
         classes (PHASE 4.5) filters to shelf subtrees by prefix - a conversation about the engine asks
         for ["STR","USR"] and the eval corpus trivia simply is not in the candidate set. Unclassified
         facts ('') match NO prefix: they ride every UNFILTERED request exactly as before, and a request
@@ -1124,7 +1245,9 @@ class MemoryService:
         if classes is not None and not classes:
             return []                          # ...and not, as it used to, everything
         words = WORD_RE.findall(query.lower())[:MAX_QUERY_WORDS]
-        match = " OR ".join(f'"{w}"' for w in words) if words else None
+        # tsquery OR is | ; WORD_RE words are \w{2,} so no tsquery operator character can leak in
+        # unescaped - the closed alphabet replaces the old per-word FTS5 quoting.
+        match = " | ".join(words) if words else None
         scopes = [USER_SCOPE]
         s = scope_name(scope)
         if s != USER_SCOPE:
@@ -1138,28 +1261,30 @@ class MemoryService:
                 frag, prefixes = shelf_sql("m.class", ok)
                 shelf = " and " + frag
         bounds = ""
-        bparams: list[float] = []
+        bparams: list = []
         for cmp_op, v in ((">=", since), ("<=", until)):
             if v is not None:
-                bounds += f" and m.created_at {cmp_op} ?"
-                bparams.append(float(v))
+                bounds += f" and m.created_at {cmp_op} %s"
+                bparams.append(self._dt(float(v)))
         rows: list = []
         if match:
             with self.lock:
                 rows = self.conn.execute(
                     f"select m.id, m.scope, m.text, m.confidence, m.updated_at, m.class, m.hits,"
-                    f" bm25(mem_fts) as r"
-                    " from mem_fts join memories m on m.id = mem_fts.rowid"
-                    " where mem_fts match ? and m.invalid_at is null and m.scope in ("
-                    + ",".join("?" * len(scopes)) + ")" + shelf + bounds
-                    + " order by r limit ?", [match] + scopes + prefixes + bparams + [limit * 3]).fetchall()
+                    f" ts_rank_cd(m.ts, q) as r"
+                    f" from memories m, to_tsquery('{FTS_CFG}', %s) q"
+                    " where m.ts @@ q and m.invalid_at is null and m.scope in ("
+                    + ",".join(["%s"] * len(scopes)) + ")" + shelf + bounds
+                    + " order by r desc, m.id asc limit %s",
+                    [match] + scopes + prefixes + bparams + [limit * 3]).fetchall()
+                self.conn.commit()
         if not rows and self.embedder is None:
             return []
         k = len(rows)
         now = time.time()
         out = []
         for pos, r in enumerate(rows):
-            fresh = math.exp(-max(0.0, now - r[4]) / 86400.0 / AGE_SCALE_DAYS)
+            fresh = math.exp(-max(0.0, now - self._ep(r[4])) / 86400.0 / AGE_SCALE_DAYS)
             score = 0.75 * ((k - pos) / k) + 0.25 * fresh + 0.10 * r[3]
             out.append(dict(id=r[0], scope=r[1], text=r[2], score=round(score, 4),
                             lex_rank=pos + 1,          # position in the bm25 list, BEFORE the blend
@@ -1200,11 +1325,14 @@ class MemoryService:
         with self.lock:
             n = self.conn.execute("select count(*) from embeddings").fetchone()[0]
             if self._vmeta is not None and not self._vdirty and n == self._ecount:
+                self.conn.commit()
                 return self._vmeta
             rows = self.conn.execute(
-                "select m.id, e.vec, m.scope, coalesce(m.class,''), m.created_at, m.updated_at, m.confidence"
+                "select m.id, e.vec, m.scope, coalesce(m.class,''),"
+                " extract(epoch from m.created_at), extract(epoch from m.updated_at), m.confidence"
                 " from embeddings e join memories m on m.id = e.id where m.invalid_at is null"
                 " order by m.id").fetchall()
+            self.conn.commit()
         if not rows:
             self._vmeta, self._vdirty, self._ecount = None, False, n
             return None
@@ -1221,7 +1349,7 @@ class MemoryService:
 
     def _scope_vecs(self, scope: str) -> dict:
         """{row id: vector} for the ACTIVE rows of ONE scope, cached against that scope's own stamp
-        (count, max rowid, max updated_at). The write-time near-dupe guard compares a new fact only
+        (count, max id, max updated_at). The write-time near-dupe guard compares a new fact only
         with its own scope - the same boundary exact-text dedup uses - so that is all it needs, and
         taking the whole-store matrix for the job made every write pay a store-sized rebuild:
         measured 2026-10-14, ingest ran 5.5 rows/s at ~10k rows (180 ms per write) against 7 ms at
@@ -1233,14 +1361,15 @@ class MemoryService:
         import numpy as np
         with self.lock:
             key = self.conn.execute(
-                "select count(*), coalesce(max(rowid),0), coalesce(max(updated_at),0.0)"
-                " from memories where scope=? and invalid_at is null", (scope,)).fetchone()
+                "select count(*), coalesce(max(id),0), coalesce(extract(epoch from max(updated_at)), 0.0)"
+                " from memories where scope = %s and invalid_at is null", (scope,)).fetchone()
             hit = self._svec.get(scope)
             if hit is not None and hit[0] == tuple(key):
                 return hit[1]
             rows = self.conn.execute(
                 "select m.id, e.vec from embeddings e join memories m on m.id = e.id"
-                " where m.scope = ? and m.invalid_at is null", (scope,)).fetchall()
+                " where m.scope = %s and m.invalid_at is null", (scope,)).fetchall()
+            self.conn.commit()
         vecs = {int(rid): np.frombuffer(blob, dtype=np.float32) for rid, blob in rows}
         self._svec[scope] = (tuple(key), vecs)
         self._svec.move_to_end(scope)
@@ -1340,7 +1469,8 @@ class MemoryService:
                 got = {r[0]: r for r in self.conn.execute(
                     "select id, scope, text, coalesce(class,''), confidence, coalesce(hits, 0) "
                     "from memories where id in ("
-                    + ",".join("?" * len(picked)) + ")", picked)}
+                    + ",".join(["%s"] * len(picked)) + ")", picked).fetchall()}
+                self.conn.commit()
             for rid in picked:
                 r = got.get(rid)
                 if r is None:
@@ -1365,19 +1495,24 @@ class MemoryService:
         with self.lock:
             key = self.conn.execute("select count(*), coalesce(max(id),0) from turns").fetchone()
             if self._expo is not None and self._expo[0] == tuple(key):
+                self.conn.commit()
                 return self._expo[1]
-            rows = self.conn.execute("select injected from turns order by id desc limit ?",
+            rows = self.conn.execute("select injected from turns order by id desc limit %s",
                                      (max(1, self.expose_window),)).fetchall()
+            self.conn.commit()
         dem: dict = {}
         for (inj,) in rows:
             if not inj:
                 continue
-            try:
-                ids = json.loads(inj)
-            except ValueError:
-                continue
-            if isinstance(ids, dict):
-                ids = ids.get("ids", [])
+            if isinstance(inj, dict):
+                ids = inj.get("ids", [])
+            elif isinstance(inj, list):
+                ids = inj                       # jsonb returns the ledger natively - no parse, no wire
+            else:
+                try:
+                    ids = json.loads(inj)       # a TEXT-era value (imported store): still readable
+                except (TypeError, ValueError):
+                    continue
             for i in ids:
                 try:
                     dem[int(i)] = dem.get(int(i), 0) + 1
@@ -1387,10 +1522,10 @@ class MemoryService:
         return dem
 
     def _seen(self, ids: list[int]) -> None:
-        now = time.time()
+        now = self._dt(time.time())
         with self.lock:
-            self.conn.executemany("update memories set hits=hits+1, last_seen_at=? where id=?",
-                                  [(now, i) for i in ids])
+            self._execmany("update memories set hits=hits+1, last_seen_at=%s where id=%s",
+                           [(now, i) for i in ids])
             self.conn.commit()
 
     def _render_block(self, hits: list[dict], budget: int, scope: str) -> tuple[str, list[dict]]:
@@ -1404,6 +1539,7 @@ class MemoryService:
         with self.lock:
             n_active = self.conn.execute(
                 "select count(*) from memories where invalid_at is null").fetchone()[0]
+            self.conn.commit()
         v, instruction = self.version(), (
             "Long-term memory of this user, kept by the inference server and shared by all their"
             " applications. Use it silently when relevant - never mention these notes, this tag, or"
@@ -1525,35 +1661,44 @@ class MemoryService:
         supplied?") cannot be asked, which is the whole reason tools/m4_selffeed.py had to fall back on
         word overlap and called 42.6% of curated facts unmatchable."""
         with self.lock:
-            cur = self.conn.execute(
+            new_id = self.conn.execute(
                 "insert into turns(scope,user_text,assistant_text,model,created_at,injected)"
-                " values(?,?,?,?,?,?)",
+                " values(%s,%s,%s,%s,%s,%s) returning id",
                 (scope_name(scope), user_text[:8000], assistant_text[:16000],
-                 (model or "")[:80] or None, time.time(),
+                 (model or "")[:80] or None, self._dt(time.time()),
                  None if injected is None
-                 else json.dumps(sorted({int(i) for i in injected if str(i).strip() != ""}))))
+                 else Jsonb(sorted({int(i) for i in injected if str(i).strip() != ""})))).fetchone()[0]
             self.conn.commit()
             self._touched()
-            return cur.lastrowid
+            return new_id
 
     def pending_turns(self, limit: int = 200) -> list[dict]:
         with self.lock:
             rows = self.conn.execute(
                 "select id,scope,user_text,assistant_text,created_at,injected from turns where processed=0"
-                " order by id limit ?", (max(1, min(1000, int(limit))),)).fetchall()
+                " order by id limit %s", (max(1, min(1000, int(limit))),)).fetchall()
+            self.conn.commit()
+
+        def _inj(v):
+            """jsonb returns the ledger list natively; a TEXT-era value (an imported pre-jsonb row
+            that arrives as str) still parses, and None stays None - the NULL-vs-empty law above."""
+            if v is None:
+                return None
+            return json.loads(v) if isinstance(v, str) else list(v)
         return [dict(id=r[0], scope=r[1], user=r[2][:2000], assistant=r[3][:4000],
-                     created_at=round(r[4], 1),
+                     created_at=round(self._ep(r[4]), 1),
                      # None = the caller never told us (a turn journaled before the column, or an API
                      # write); [] = recall ran and showed nothing. The curation loop grounds the
                      # extractor on created_at already and can use this the same way.
-                     injected=(None if r[5] is None else json.loads(r[5] or "[]")))
+                     injected=_inj(r[5]))
                     for r in rows]
 
     def mark_processed(self, ids: list[int]) -> None:
         if not ids:
             return
         with self.lock:
-            self.conn.executemany("update turns set processed=1 where id=?", [(int(i),) for i in ids])
+            self._execmany("update turns set processed=1 where id = %s",
+                           [(int(i),) for i in ids])
             self.conn.commit()
             self._touched()
 
@@ -1575,20 +1720,23 @@ class MemoryService:
                 " where m.invalid_at is null").fetchone()[0]
             pending = self.conn.execute("select count(*) from turns where processed=0").fetchone()[0]
             turns = self.conn.execute("select count(*) from turns").fetchone()[0]
+            self.conn.commit()
         return {"version": self.version(), "memories": memories, "by_scope": by_scope,
                 "by_class": by_class,
                 "turns": turns, "turns_pending": pending, "inject": self.inject,
                 "max_memories": self.max_memories, "invalid": invalid,
                 "dedup_recall": self.dedup_recall,
                 "at_rest": ("off" if not self.encrypt else {
-                    "mode": "key-file" + ("+passphrase-env" if self.passphrase_env else ""),
+                    "mode": "pgdata-0700 + key-file" + ("+passphrase-env" if self.passphrase_env else ""),
                     "key_file": self.key_path,
-                    "sealed_at": round(self._sealed_at, 1) if self._sealed_at else None,
-                    # the diagnostic missing on 2026-10-14: this open began from the ciphertext (a
-                    # fresh boot, or a plaintext husk the reveal rule overrode). A store that opens
-                    # WITHOUT revealing while its .enc is large is exactly the failure mode.
-                    "revealed_at_open": self._revealed,
-                    "plaintext_while_running": True}),   # the honest state of a RUNNING encrypted store
+                    "cluster": "own" if self._srv is not None else "attached",
+                    "data": self.pgdata if self._srv is not None else self._dbname,
+                    # the honest sentence ADR-002 ships in place of the old seal law: a RUNNING
+                    # store is readable by whoever owns the machine; a stopped one is only as
+                    # private as its 0700 data dir; the CIPHERTEXT line of the story is the
+                    # backup - encrypted pg_dump under this same key-file (the R6 tool).
+                    "running_is_plaintext": True,
+                    "backups": "encrypted pg_dump (R6 tool pending)"}),
                 "pressure": bool(self.max_memories) and memories >= 0.8 * self.max_memories,
                 "recall_limit": self.recall_limit, "max_block_chars": self.max_block_chars,
                 "per_turn": self.per_turn, "turn_recall_limit": self.turn_recall_limit,
@@ -1604,28 +1752,31 @@ class MemoryService:
                 "db": self.db_path}
 
     def close(self) -> None:
+        """Close the store connection, then release the cluster handle. The library's own law,
+        measured in ADR-002 R0b: a process that ATTACHED to a running cluster does not stop it
+        when it leaves - only the starter's cleanup stops it - which is what lets the curation
+        tool and the venue harnesses read a live store without tripping the server over. Within
+        ONE process the rule is the older one: one owner instance per store dir (production has
+        exactly one; tests run in pg_uri mode and own no cluster at all)."""
         with self.lock:
-            sealed = self._seal() if self.encrypt else False
-            self.conn.close()
-        if sealed:                                  # clean stop of an encrypted store: ciphertext only
-            for suffix in ("", "-shm", "-wal"):
-                try:
-                    os.remove(self.db_path + suffix)
-                except OSError:
-                    pass
+            try:
+                self.conn.close()
+            except Exception:                        # noqa: BLE001 - close is best-effort by law
+                pass
+        if self._srv is not None:
+            srv, self._srv = self._srv, None
+            try:
+                srv.cleanup()
+            except Exception:                        # noqa: BLE001
+                pass
 
-    # ---- at-rest encryption (M2 job 6; every method below is dead code unless encrypt=True) ----
-    # Cipher built from stdlib parts, because this fork keeps memory dependency-free: an
-    # HMAC-SHA256 keystream in counter mode (HMAC-SHA256 is a PRF; CTR over a PRF is a stream
-    # cipher), encrypt-then-MAC - the tag covers header+ciphertext, so a flipped byte fails the
-    # open LOUDLY instead of decrypting to mush. AES-GCM would be the library answer (the
-    # `cryptography` package is not in this venv); this is the dependency-free one, stated as
-    # such rather than pretending otherwise. File: b"SMEM1" | nonce(16) | ciphertext | tag(32).
-    # The passphrase, when memory.passphrase_env names an environment variable that is set, is
-    # scrypt-stretched and XORed into the master - key-file AND passphrase are both needed to
-    # open, and the secret never enters the config file or git. A FIDO2 passkey seal
-    # (hmac-secret extension, the key-file itself wrapped by the device) is the planned next
-    # stage: tools/passkey_seal.py, needs python-fido2, touch-to-open at dev-up.
+    # ---- at-rest key material (ADR-002 retired the seal/reveal FILE mechanics - they were
+    # one-file rules and a Postgres data dir is many files. What stays is the 0600 key-file
+    # beside the store, because the ENCRYPTED pg_dump backup path (R6) reads it. The
+    # passphrase-env stretch and the FIDO2 seal ride that same key story when the backup tool
+    # lands; the stdlib cipher that sealed the old single file (HMAC-SHA256 CTR,
+    # encrypt-then-MAC, the SMEM1 format) is the obvious core for the dump pipe - deleted here
+    # with the seal it served, returning in the R6 tool where it belongs.) ----
 
     def _key_bytes(self) -> bytes:
         """The 32-byte master, created 0600 on first use. O_EXCL closes the create race; a loser
@@ -1645,102 +1796,11 @@ class MemoryService:
             raise ValueError(f"memory key-file {self.key_path} is {len(key)} bytes, expected 32")
         return key
 
-    def _crypt_keys(self, nonce: bytes) -> tuple[bytes, bytes]:
-        master = self._key_bytes()
-        pw = os.environ.get(self.passphrase_env, "") if self.passphrase_env else ""
-        if pw:                                      # scrypt per-file salt (the nonce): one leaked
-            master = bytes(a ^ b for a, b in zip(  # ciphertext does not make the passphrase cheap
-                master, hashlib.scrypt(pw.encode("utf-8"), salt=nonce, n=16384, r=8, p=1,
-                                       dklen=32, maxmem=64 * 1024 * 1024)))
-        return (hmac.new(master, b"strata-memory-enc", hashlib.sha256).digest(),
-                hmac.new(master, b"strata-memory-mac", hashlib.sha256).digest())
-
-    @staticmethod
-    def _xor_stream(key: bytes, nonce: bytes, data: bytes) -> bytes:
-        """CTR-mode XOR: keystream block i = HMAC-SHA256(key, nonce || i_be64). The big-int XOR
-        keeps the byte loop out of Python (a whole-store pass is tens of ms, not seconds)."""
-        blocks = -(-len(data) // 32)
-        ks = b"".join(hmac.new(key, nonce + i.to_bytes(8, "big"), hashlib.sha256).digest()
-                      for i in range(blocks))[:len(data)]
-        return (int.from_bytes(data, "big") ^ int.from_bytes(ks, "big")).to_bytes(len(data), "big")
-
     def _touched(self) -> None:
-        """One more committed write. Every 50th, seal a snapshot: a machine that loses power then
-        loses at most 49 writes of plaintext-only state, and the next boot reveals from the seal.
-        Caller holds self.lock (the seal itself takes no lock)."""
-        if not self.encrypt:
-            return
+        """One more committed write. The SQLite era sealed a snapshot every 50th write so a power
+        loss lost at most 49; the cluster's own WAL and checkpoints own durability now, so this
+        is the counter only - kept because the write paths and stats read it."""
         self._writes += 1
-        if self._writes % 50 == 0:
-            self._seal()
-
-    def _seal(self) -> bool:
-        """Checkpoint the WAL, then write memory.db.enc atomically (tmp + rename + fsync). The
-        plaintext STAYS: a crash mid-run must lose nothing, so while the server runs the store is
-        plaintext on disk and stats() says so out loud. Only a clean close() shreds it."""
-        try:
-            self.conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
-            with open(self.db_path, "rb") as f:
-                raw = f.read()
-            nonce = os.urandom(16)
-            enc_key, mac_key = self._crypt_keys(nonce)
-            body = b"SMEM1" + nonce + self._xor_stream(enc_key, nonce, raw)
-            tmp = self.db_path + ".enc.tmp"
-            with open(tmp, "wb") as f:
-                f.write(body + hmac.new(mac_key, body, hashlib.sha256).digest())
-                f.flush()
-                os.fsync(f.fileno())
-            os.replace(tmp, self.db_path + ".enc")
-            self._sealed_at = time.time()
-            return True
-        except OSError:
-            return False
-
-    def _plaintext_is_shell(self) -> bool:
-        """True when memory.db exists but holds no facts while a sealed .enc sits beside it. The
-        crash rule ("a surviving plaintext is the newer truth") is right about a db the server was
-        WRITING into and dead wrong about a husk left by a restart that raced a seal-and-shred:
-        measured 2026-10-14, a 45 KB husk over a 9.6 MB ciphertext opened as a one-row store, and
-        the next close sealed that emptiness back over the real thing. A db with no memories table
-        counts as a husk too - a file that never held the schema cannot be anybody's truth.
-        Read-only open, never a write, so a live server is never disturbed by the question."""
-        try:
-            con = sqlite3.connect(f"file:{self.db_path}?mode=ro", uri=True)
-            try:
-                n = con.execute("select count(*) from memories").fetchone()[0]
-            finally:
-                con.close()
-        except sqlite3.Error:                 # no table, locked, not a database: it is a husk
-            return True
-        return n == 0
-
-    def _reveal(self) -> None:
-        """memory.db.enc -> fresh plaintext db, before the connection opens. A bad tag is FATAL on
-        purpose: starting an 'empty' store because the key changed or the file was tampered with
-        would quietly forget everything the user was shown yesterday - and the model would never
-        know. The decrypted SQLite header is a free extra integrity check."""
-        with open(self.db_path + ".enc", "rb") as f:
-            blob = f.read()
-        if len(blob) < 53 or blob[:5] != b"SMEM1":
-            raise ValueError("memory.db.enc: not a sealed store (bad magic)")
-        nonce, ct, tag = blob[5:21], blob[21:-32], blob[-32:]
-        enc_key, mac_key = self._crypt_keys(nonce)
-        if not hmac.compare_digest(hmac.new(mac_key, blob[:-32], hashlib.sha256).digest(), tag):
-            raise ValueError("memory.db.enc failed its MAC: wrong key or passphrase, or the file changed")
-        raw = self._xor_stream(enc_key, nonce, ct)
-        if raw[:16] != b"SQLite format 3\x00":
-            raise ValueError("memory.db.enc decrypted to something that is not a SQLite file")
-        tmp = self.db_path + ".tmp"
-        with open(tmp, "wb") as f:
-            f.write(raw)
-        os.replace(tmp, self.db_path)
-        for suffix in ("-shm", "-wal"):
-            try:
-                os.remove(self.db_path + suffix)
-            except FileNotFoundError:
-                pass
-        self._revealed = True             # the banner and stats() say the store came from ciphertext
-        self._sealed_at = time.time()
 
 
 # ---- server glue ---------------------------------------------------------------

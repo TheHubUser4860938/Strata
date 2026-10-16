@@ -7282,9 +7282,8 @@ def main() -> int:
                 embedder=ed or None)
         except (ValueError, OSError, TypeError) as e:
             raise SystemExit(f"[strata] memory: {e}")
-        at_rest_line = (svc.memory.encrypt and "key-file") or "off"
-        if getattr(svc.memory, "_revealed", False):
-            at_rest_line += " (revealed from ciphertext at open)"   # the husk guard, visible at boot
+        at_rest_line = ("data-dir 0700, encrypted dumps under the key-file (R6)"
+                        if svc.memory.encrypt else "data-dir 0700")   # ADR-002: the seal law retired
         print(f"[strata] memory core on: {svc.memory.db_path} "
               f"(inject {'on' if svc.memory.inject else 'off'}, recall {svc.memory.recall_limit} notes "
               f"<= {svc.memory.max_block_chars} chars; per-turn {'on ' if svc.memory.per_turn else 'off'}"
@@ -7410,12 +7409,11 @@ def main() -> int:
         print("\n[strata] stopping (Ctrl+C again to end the engine at once) ...", flush=True)
         closers = [httpd.shutdown, getattr(engine, "close", None), vision.shutdown if vision else None,
                    hub.close if hub is not None else None,
-                   # memory-core M2 job 6: a clean stop must SEAL and SHRED - without this closer the
-                   # periodic every-50-writes seal keeps memory.db.enc fresh, but the plaintext db
-                   # survives the stop too, and "a stopped server leaves only ciphertext" stays a
-                   # promise instead of a fact. Last in line: requests are done by then, and
-                   # close() takes the store lock, so a final straggler journal (which swallows its
-                   # own errors) can never break the exit.
+                   # ADR-002: the store connection closes and, if this process STARTED the cluster,
+                   # the cluster stops with it (an attacher's close leaves a live cluster alone -
+                   # measured law, R0b). Last in line: requests are done by then, and close() takes
+                   # the store lock, so a final straggler journal (which swallows its own errors)
+                   # can never break the exit.
                    svc.memory.close if getattr(svc, "memory", None) is not None else None]
         for close in filter(None, closers):
             try:
