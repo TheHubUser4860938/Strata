@@ -662,6 +662,15 @@ class MemoryTool(unittest.TestCase):
         d = json.loads(r["text"])
         self.assertEqual(d["found"], 1)
         self.assertIn("41.2", d["facts"][0]["text"])
+        # the two fields the tool promises must carry real values: the everyday-use report of
+        # 2026-10-16 showed "confidence": null, "hits": null on EVERY fact, because the lexical
+        # select read confidence only to feed the blend then dropped it, and hits was never
+        # selected at all - the same on the cosine-only arm.
+        self.assertEqual(d["facts"][0]["confidence"], 0.8, "confidence is real, not null")
+        self.assertEqual(d["facts"][0]["hits"], 0, "hits starts visible at zero")
+        again = json.loads(tool_result(self.svc.memory, {"q": "zygost scale"}, scope="fw")["text"])
+        self.assertEqual(again["facts"][0]["hits"], 1,
+                         "the served counter increments - the recall's own feedback is inspectable")
         bad = tool_result(self.svc.memory, {"q": "zygost", "since": "last tuesday"}, scope="fw")
         self.assertFalse(bad["ok"], "a junk date is an honest tool error, not a widened window")
         empty = tool_result(self.svc.memory, {}, scope="fw")

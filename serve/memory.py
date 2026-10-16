@@ -1001,7 +1001,8 @@ class MemoryService:
         if match:
             with self.lock:
                 rows = self.conn.execute(
-                    f"select m.id, m.scope, m.text, m.confidence, m.updated_at, m.class, bm25(mem_fts) as r"
+                    f"select m.id, m.scope, m.text, m.confidence, m.updated_at, m.class, m.hits,"
+                    f" bm25(mem_fts) as r"
                     " from mem_fts join memories m on m.id = mem_fts.rowid"
                     " where mem_fts match ? and m.invalid_at is null and m.scope in ("
                     + ",".join("?" * len(scopes)) + ")" + shelf + bounds
@@ -1016,6 +1017,9 @@ class MemoryService:
             score = 0.75 * ((k - pos) / k) + 0.25 * fresh + 0.10 * r[3]
             out.append(dict(id=r[0], scope=r[1], text=r[2], score=round(score, 4),
                             lex_rank=pos + 1,          # position in the bm25 list, BEFORE the blend
+                            confidence=r[3], hits=r[6],  # the memory_search tool shows both; they were
+                            #   promised and came back null - confidence fed the blend then got dropped,
+                            #   hits was never selected (everyday-use bug report, 2026-10-16)
                             **{"class": r[5]}))        # re-sorting loses it and the blend is not the ranking
         out.sort(key=lambda x: -x["score"])
         if semantic and self.embedder is not None:
@@ -1172,7 +1176,8 @@ class MemoryService:
         if picked:
             with self.lock:
                 got = {r[0]: r for r in self.conn.execute(
-                    "select id, scope, text, coalesce(class,'') from memories where id in ("
+                    "select id, scope, text, coalesce(class,''), confidence, coalesce(hits, 0) "
+                    "from memories where id in ("
                     + ",".join("?" * len(picked)) + ")", picked)}
             for rid in picked:
                 r = got.get(rid)
@@ -1184,6 +1189,7 @@ class MemoryService:
                                               float(meta["updated"][j]), float(meta["conf"][j])),
                                   cos_rank=cos_rank.get(rid),     # the cosine arm found it, bm25 never did
                                   lex_rank=None,
+                                  confidence=r[4], hits=r[5],     # same promise as the lexical arm above
                                   **{"class": r[3]}))
         return cands
 

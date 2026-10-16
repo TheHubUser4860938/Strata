@@ -12,6 +12,10 @@ start and verify the server, and connect the user's apps. Never expose the serve
 `--api-key`. As an alternative to shell commands, Strata's MCP server ([docs/MCP_SERVER.md](docs/MCP_SERVER.md))
 offers the same steps as tools.
 
+The built-in memory system is **Strata Mnemosyne** (the store) served by the assistant
+persona **Clio**; the recall code is `serve/memory.py` and the work branch is `memory-core` -
+see [docs/MEMORY_CORE.md](docs/MEMORY_CORE.md), section "Naming".
+
 ## Working on the code
 
 - How the engine works, every measured number, the API and all settings: [docs/DETAILS.md](docs/DETAILS.md) and

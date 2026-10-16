@@ -21,6 +21,23 @@ byte-identical to the release it forked from (v0.1.42, `61b3fb5`).
   reads back without the source text ever returning. On this model that is **open research, not an established
   result** — see the architecture caveat below. Positive *and* negative results get recorded here.
 
+## Naming (settled 2026-10-16, decided in the system's own webui chat)
+
+- **Strata** - the project, the whole build.
+- **Strata Mnemosyne** (short form **Mnemo**) - the memory system this document describes: the store.
+  Shelves and sub-shelves, SQLite + FTS5 + pinned embeddings, the journal, the sweep. Passive, curated.
+- **Clio** (KLY-oh) - the assistant: the recall path and the working hands. The part with rules,
+  budgets and judgement.
+
+The split is architectural, not decorative: storage and retrieval are separate jobs in this design,
+and the naming keeps "the memory" from being conflated with "the thing that searches it". It is also
+genealogically exact - Clio is Mnemosyne's daughter, the Muse of recorded history born of Memory
+herself: the retriever descends from the store. Known collisions are accepted knowingly (a Clio
+award, a legal-tech company; a versioning file system, Warburg's atlas, and at least one published
+LLM-memory system called Mnemosyne) - nothing here is being sold. Code keeps the existing names
+(`serve/memory.py`, the `memory-core` branch); a rename to `mnemo` in identifiers is welcome in
+new code, not chased through old.
+
 ## The dev install (how to work on this fork without risking the running model)
 
 The machine runs the production engine at `:8004` from a separate, unmodified `~/Strata` install. RAM is the
