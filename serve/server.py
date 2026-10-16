@@ -6729,7 +6729,7 @@ def origin_allowed(origin: str, host, names, origins=()) -> bool:
     return bool(name) and (name in LOOPBACK_NAMES or name.endswith(".localhost") or _name_in(name, names))
 
 
-def serve(svc: Service, host="127.0.0.1", port=8095) -> ThreadingHTTPServer:
+def serve(svc: Service, host="127.0.0.1", port=8005) -> ThreadingHTTPServer:
     svc.host_names = host_names_for(host, svc.allowed_hosts, svc.trusted_origins)
     svc.start_telemetry()
     httpd = Server((host, port), make_handler(svc))
@@ -7003,7 +7003,7 @@ def main() -> int:
     ap.add_argument("--script", action="append",
                     help="the mock engine's answer (default: a short greeting); given more than once, requests get "
                          "them in turn and the last one repeats")
-    ap.add_argument("--port", type=int, default=8095)
+    ap.add_argument("--port", type=int, default=8005)
     ap.add_argument("--gpu", help="the GPU to run on, as nvidia-smi numbers them, or several for a layer split "
                                   "(\"0,2\"; also \"gpu\" in the config)")
     ap.add_argument("--tokenizer", default=str(ROOT / "pack/full/tokenizer"),
@@ -7233,14 +7233,30 @@ def main() -> int:
             raise SystemExit(f"[strata] {e}")
         print(f"[strata] slot save/restore on: {svc.slot_save_path} (session files are kept until deleted: "
               "about 1.2 GB per 63K-token conversation; restore only files this server wrote)", flush=True)
-    # memory-core fork: the built-in memory store, opt-in like slot_save_path - absent keeps every path
-    # byte-identical to upstream. The config's "memory" is an object {"dir", "max_block_chars", "recall_limit",
-    # "inject", "per_turn", "turn_recall_limit", "turn_block_chars"} or a plain DIR string; --memory DIR on
-    # the command line is the quick way.
-    if a.memory or cfg.get("memory"):
-        mcfg = cfg.get("memory") or {}
-        if isinstance(mcfg, str):
-            mcfg = {"dir": mcfg}
+    # memory-core fork: the built-in memory store. FORK DEFAULT: ON (the user's decision, 2026-10-16:
+    # "if someone doesn't want the built-in memory system they won't be using our fork to begin
+    # with"). The byte-identical law survives as the explicit OPT-OUT: "memory": false or
+    # {"enabled": false} in the config returns every path to upstream Strata byte for byte. The
+    # config's "memory" is an object {"enabled", "dir", "max_block_chars", "recall_limit", "inject",
+    # "per_turn", "turn_recall_limit", "turn_block_chars", "embedder", ...} or a plain DIR string;
+    # --memory DIR on the command line forces the store on at that directory.
+    mcfg = cfg.get("memory")
+    if isinstance(mcfg, str):
+        mcfg = {"dir": mcfg}
+    mem_off = mcfg is False or (isinstance(mcfg, dict) and
+                                mcfg.get("enabled") in (False, 0, "", "off", "false"))
+    if a.memory or not mem_off:
+        mcfg = mcfg if isinstance(mcfg, dict) else {}
+        # the embedder fork-default: no key and the model setup fetched is on disk -> the hybrid arm
+        # rides without being asked; no model anywhere -> lexical, and the banner says so out loud
+        # ("embedder off" / "FAILED - lexical only") - the degrade is visible, never a silent no-op.
+        ed = mcfg.get("embedder")
+        if isinstance(ed, str):
+            ed = {"dir": ed}
+        if not ed:
+            _emb = Path(cfg.get("cwd") or ".") / "Strata-data/embeddings/bge-small-en-v1.5"
+            if (_emb / "model.onnx").exists():
+                ed = {"dir": str(_emb)}
         try:
             svc.memory = memory_api.MemoryService(
                 a.memory or memory_api.memory_dir(mcfg.get("dir", "memory"), cfg.get("cwd")),
@@ -7260,8 +7276,7 @@ def main() -> int:
                 auto_shelve=mcfg.get("auto_shelve") is True
                             or str(mcfg.get("auto_shelve") or "").lower() in ("1", "on", "true"),
                 block_min_score=float(mcfg.get("block_min_score") or 0.0),
-                embedder=(({"dir": mcfg["embedder"]} if isinstance(mcfg.get("embedder"), str)
-                            else mcfg.get("embedder")) or None))
+                embedder=ed or None)
         except (ValueError, OSError, TypeError) as e:
             raise SystemExit(f"[strata] memory: {e}")
         at_rest_line = (svc.memory.encrypt and "key-file") or "off"

@@ -32,6 +32,11 @@ see [docs/MEMORY_CORE.md](docs/MEMORY_CORE.md), section "Naming".
 - Open an issue with the form that fits (bug report, feature request or question).
 - One change per pull request. Say what it changes and what it leaves alone.
 - A new feature is opt-in, and the default path stays byte-identical to the last release. Say how you checked.
+  (The one decided exception in this fork: the memory system is ON by default - the user's call, 2026-10-16,
+  "if someone doesn't want the built-in memory system they won't be using our fork to begin with" - and the
+  byte-identical law survives as the opt-out: `"memory": {"enabled": false}` returns every path to upstream
+  Strata. This fork also defaults to port **8005** where upstream uses 8080/8095, so a main Strata install
+  and a memory-fork install can run side by side.)
 - Build every backend a file touches (CUDA, HIP, SYCL) before asking for review.
 - Change a default only where you measured it faster, and show the numbers with what they were measured on.
 - A report from hardware the maintainers do not have is welcome. Follow

@@ -124,6 +124,11 @@ class InstallOwnPath(unittest.TestCase):
         rc, out = self.install(model="UD-Q4_K_XL")
         self.assertEqual(rc, 0, out)
         get = [c for c in self.calls if c[0] == "get"]
+        # memory-core fork: setup also fetches the memory embedder (BAAI/bge-small-en-v1.5:
+        # model.onnx + tokenizer.json) because memory is ON by default - the one-download
+        # contract this test pins is about the MODEL file, so filter the embedder out and keep
+        # the original claim intact.
+        get = [c for c in get if "bge-small" not in c[1]]
         self.assertEqual(len(get), 1)
         gguf = self.root / "models" / "qwen36-UD-Q4_K_XL" / "Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf"
         self.assertEqual(get[0][1], setup.hf(REPO) + gguf.name)

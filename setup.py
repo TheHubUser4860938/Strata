@@ -4,7 +4,7 @@
     START-HERE.bat  (Windows)   /   ./setup.sh  (Linux)      - they install Python if needed and run this file
 
 The first time it asks four questions - which model (the original Qwen3.8-Flash-Next or the Swift 1.5 fine-tune),
-which size, how much context, and whether the model should also read images - then installs everything and starts the model on http://127.0.0.1:8080 (OpenAI- and Anthropic-compatible
+which size, how much context, and whether the model should also read images - then installs everything and starts the model on http://127.0.0.1:8005 (OpenAI- and Anthropic-compatible
 API; a small page there shows that it runs). Every later start skips straight to running the model: nothing that
 is already downloaded, installed or prepared is done again.
 
@@ -23,7 +23,7 @@ What the first run does (each step is skipped when it is already done):
 Options: --family qwen|swift, --model Q2_0|IQ2_XS|IQ3_XXS|IQ3_S, --context 32768, --rope-scaling none|linear|yarn
 (--rope-scale F; past the trained 262144 the setup adds yarn and the factor is the final context over 262144,
 at least 1 - an explicit --rope-scaling none is refused for such a context), --vision yes|no|gpu|cpu, --port
-8080, --yes (recommended
+8005, --yes (recommended
 answers, no questions), --setup (install another model / change settings instead of starting), --no-start,
 --host 0.0.0.0 --api-key KEY (reach it from other devices on your network), --experimental-speed-projection on|off
 (EXPERIMENTAL, off by default),
@@ -1807,6 +1807,69 @@ def verify_sha256(s: Path, size: int, sha: str) -> None:
         fail(f"{s.name} has the wrong SHA-256 ({h.hexdigest()}, expected {sha}): deleted",
              "run setup again to download it again")
     mark(s, f"sha256 {sha}")
+
+
+# ---------------------------------------------------------------------------
+# memory-core fork: the memory system ships ON by default (the user's decision, 2026-10-16:
+# "if someone doesn't want the built-in memory system they won't be using our fork to begin
+# with"), so the installer writes the memory block and fetches the embedder the hybrid arm
+# needs. Both are tolerant by design: memory trouble is a warning and a lexical store, never
+# a failed install - the engine and the model are the product, memory rides on top of them.
+
+EMBEDDER_NAME = "bge-small-en-v1.5"
+EMBEDDER_REPO = "BAAI/bge-small-en-v1.5"          # MIT; the same model the development store embeds with
+EMBEDDER_FILES = {                                 # repo path -> local name -> (bytes, sha256), pinned
+    "onnx/model.onnx": ("model.onnx", 133093490,  # from the developer's verified copy (SHA256SUMS,
+                        "828e1496d7fabb79cfa4dcd84fa38625c0d3d21da474a00f08db0f559940cf35"),   # 2026-10-14)
+    "tokenizer.json": ("tokenizer.json", 711396,
+                       "d241a60d5e8f04cc1b2b3e9ef7a4921b27bf526d9f6050ab90f9267a1f9e5c66"),
+}
+
+
+def _sha_ok(f: Path, size: int, sha: str) -> bool:
+    """Soft SHA-256 check: exists, right size, right digest. Deliberately NOT verify_sha256 -
+    that one EXITS setup on a mismatch, and the embedder must never exit a Strata install."""
+    if not f.exists() or f.stat().st_size != size:
+        return False
+    h = hashlib.sha256()
+    with open(f, "rb") as fh:
+        for b in iter(lambda: fh.read(16 << 20), b""):
+            h.update(b)
+    return h.hexdigest() == sha
+
+
+def fetch_embedder(root: Path) -> bool:
+    """The memory store's ONNX embedder, beside the install. Idempotent: files already on disk with
+    the pinned hashes are skipped without asking the server. Network or hash trouble is a warning -
+    the store runs lexical and the server banner says so out loud - so the install never dies here."""
+    dst = root / "Strata-data" / "embeddings" / EMBEDDER_NAME
+    host = hf_endpoint()
+    ready = True
+    for rp, (name, size, sha) in EMBEDDER_FILES.items():
+        f = dst / name
+        if _sha_ok(f, size, sha):
+            continue
+        try:
+            download(f"{host}/{EMBEDDER_REPO}/resolve/main/{rp}", f, what=f"memory embedder {name}")
+            if not _sha_ok(f, size, sha):
+                f.unlink(missing_ok=True)
+                raise RuntimeError(f"sha256 mismatch (expected {sha[:16]}...)")
+        except Exception as e:                                    # noqa: BLE001 - tolerant by law
+            warn(f"memory embedder: {name} not fetched ({e}) - memory runs lexical until it arrives")
+            ready = False
+    return ready
+
+
+def fork_memory_cfg(root: Path) -> dict:
+    """The "memory" block setup writes: the shape the development store has run since boot day -
+    96 recall notes at 24,000 chars, per-turn fresh recall, the agentic tool, at-rest encryption,
+    the self-growing taxonomy (auto-shelve), hybrid embeddings. Opt out with "memory":
+    {"enabled": false}; every other edit tunes rather than disables."""
+    return {"dir": str(root / "Strata-data" / "memory"), "recall_limit": 96,
+            "max_block_chars": 24000, "per_turn": True, "turn_recall_limit": 8,
+            "turn_block_chars": 2000, "encrypt": 1, "tool": True, "auto_shelve": True,
+            "embedder": {"dir": str(root / "Strata-data" / "embeddings" / EMBEDDER_NAME),
+                         "threads": 4}}
 
 
 def ready_files(model: str) -> list:
@@ -4413,7 +4476,9 @@ def write_config(path: Path, cfg: dict):
 # #629: the run config's keys setup writes itself (and rewrites on every setup run); any other key is the user's - a
 # "sampling" or "mcp_servers" block, "allowed_hosts", "cors_origins", "open_browser" - and is kept when setup runs again
 SETUP_KEYS = frozenset({"exe", "args", "cwd", "tokenizer", "model_name", "log", "lib_dirs", "port", "backend", "env",
-                        "gpu", "gpus_asked", "layer_split", "host", "api_key", "draft_vocab", "vision"})
+                        "gpu", "gpus_asked", "layer_split", "host", "api_key", "draft_vocab", "vision",
+                        "memory"})    # memory-core fork: setup writes the memory block too (on by default,
+                                      # 2026-10-16) - it is a setup-owned key in this fork
 SETUP_ENV = frozenset({"STRATA_HIPBLASLT_TUNING", "STRATA_RESIDENT_PIN", "STRATA_NO_ARENA_THP", "STRATA_MMQ_KQ", "STRATA_HC_Q8",
                        "STRATA_ROUTE_TAIL_SKIP"})   # the "env" entries setup writes
 # 0.1.44 added these three, written for Unsloth's files only (unsloth_default_env).  In any other model's config they are the
@@ -4863,7 +4928,7 @@ def settings_summary(cfg: dict, port=None) -> str:
         if val is not None and ("/" in val or "\\" in val or val.lower().endswith((".gguf", ".bin"))):
             continue                                   # a path: --native, --mtp, --profile ...
         out.append(flag if val is None else f"{flag} {val}")
-    srv = [f"{cfg.get('host', '127.0.0.1')}:{port or cfg.get('port', 8080)}"]
+    srv = [f"{cfg.get('host', '127.0.0.1')}:{port or cfg.get('port', 8005)}"]
     if cfg.get("api_key"):
         srv.append("api key set")
     if cfg.get("open_browser") is False:               # #609
@@ -4903,7 +4968,7 @@ def start(cfg_path: Path, port: int | None, gpu: int | list | None = None, open_
     if "--mtp" in cfg["args"][:-1] and not own_path_config(cfg):
         refresh_draft_vocab(Path(cfg["args"][cfg["args"].index("--mtp") + 1]), cfg.get("draft_vocab", "cjk"))
     cmd = [sys.executable, str(ROOT / "serve" / "server.py"), "--engine", "strata", "--config", str(cfg_path),
-           "--port", str(port or cfg.get("port", 8080))]
+           "--port", str(port or cfg.get("port", 8005))]
     if cfg.get("backend") == "hip":                    # AMD, numbered as HIP numbers them (setup's KFD order)
         if WIN:
             hip_runtime_beside_exe(Path(cfg["exe"]).parent)   # #468 #461: also fixes a 0.1.34 install
@@ -5630,6 +5695,8 @@ def install_own_path(a, family, gpu, hip, amd, cuda_tk, multi, port, ram, adopte
     cfg = {"exe": str(eng / EXE), "args": args, "cwd": str(ROOT), "tokenizer": str(pack / "tokenizer"),
            "model_name": f"{fam['name']}-{model.lower()}", "arch": fam["arch"],
            "log": str(ROOT / f"strata-{tag.lower()}.log"), "lib_dirs": lib_dirs, "port": port}
+    cfg["memory"] = fork_memory_cfg(ROOT)          # memory-core fork: memory on by default, and the
+    fetch_embedder(ROOT)                           # hybrid arm's model is part of the install
     if cuda_tk == 12:
         cfg["cuda"] = 12
     if hip:
@@ -5742,7 +5809,7 @@ def main() -> int:
     ap.add_argument("--experimental-speed-projection", metavar="on|off|GGUF",
                     help="EXPERIMENTAL, off by default: the control vector in data/experimental-speed-projection "
                          "(or another GGUF) as a projection on layers 4-44; see docs/DETAILS.md")
-    ap.add_argument("--port", type=int, help="the server's port (default: the one the install was set up with, 8080 for a new one)")
+    ap.add_argument("--port", type=int, help="the server's port (default: the one the install was set up with, 8005 for a new one)")
     ap.add_argument("--gpu", help="one GPU, numbered as nvidia-smi numbers them (AMD: as setup lists them) (default: asked when several can be "
                                   "used; with --setup it is saved, when starting it is for that start only)")
     ap.add_argument("--gpus", help="several GPUs sharing one model, as nvidia-smi numbers them (AMD: as setup lists "
@@ -5889,7 +5956,7 @@ def main() -> int:
     # on the first one alone unless given with --setup), --gpu N runs this start on one card; neither: the saved
     # choice, and asked once when the PC has cards that could share the model
     run_gpu = start_gpus(a.gpus) or a.gpu
-    port = a.port or 8080                              # a new install's port (issue #32: --port for an existing one)
+    port = a.port or 8005                              # a new install's port (issue #32: --port for an existing one)
     if a.calibrate and (a.setup or a.check or not have):    # #2036: said, not dropped
         why = ("--setup" if a.setup else "--check" if a.check else "no model is installed yet")
         warn(f"--calibrate does nothing with {why}: it tunes a model that is already installed. Run setup first, "
@@ -6728,6 +6795,8 @@ def main() -> int:
     cfg = {"exe": str(eng / EXE), "args": args, "cwd": str(ROOT), "tokenizer": str(pack / "tokenizer"),
            "model_name": f"{fam['name']}-{model.lower()}", "log": str(ROOT / f"strata-{tag.lower()}.log"),
            "lib_dirs": lib_dirs, "port": port}
+    cfg["memory"] = fork_memory_cfg(ROOT)          # memory-core fork: on every time, opt-out by config
+    fetch_embedder(ROOT)
     if cuda_tk == 12:                                  # the experimental CUDA 12 engine (engine-cuda12/)
         cfg["cuda"] = 12
     if (uenv := unsloth_default_env(family, model, hip, in_budget)):

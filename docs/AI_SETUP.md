@@ -2,7 +2,7 @@
 
 This page is written for an AI coding assistant (Claude Code, Cursor, Codex, GitHub Copilot, ...) that a user asked to
 set up Strata on their PC. Strata runs the Qwen3.8-Flash-Next model locally on one NVIDIA or AMD graphics card plus
-system RAM, and serves an OpenAI- and Anthropic-compatible API on `http://127.0.0.1:8080`. The human-oriented
+system RAM, and serves an OpenAI- and Anthropic-compatible API on `http://127.0.0.1:8005`. The human-oriented
 version of everything below is [INSTALL.md](INSTALL.md).
 
 Work through the steps in order. Tell the user what you are doing in plain words; they may not be technical.
@@ -99,7 +99,7 @@ The flags (all of them: `START-HERE.bat --help`):
 | `--gpu N` / `--gpus 0,1` / `--gpus all` | one card, or several sharing the model (default: the card with the most VRAM) |
 | `--backend cuda\|hip` | NVIDIA or AMD engine; chosen by itself on a PC with only one kind of card |
 | `--data-dir PATH` | where the 70-120 GB of model files go |
-| `--port N` | the server port (default 8080) |
+| `--port N` | the server port (default 8005) |
 | `--host H --api-key K` | listen beyond this PC; **only together with a key** |
 | `--no-start` | install only, do not start the server |
 | `--setup` | install another model or change settings of an installed one |
@@ -141,7 +141,7 @@ Linux:                 nohup ./run-iq2_xs.sh > strata-server.out 2>&1 &
 ```
 
 Or `START-HERE.bat` / `./setup.sh` without flags, which starts the installed model (it asks which one when several are
-installed; add `--yes` to take the first). The server opens the user's browser on `http://127.0.0.1:8080` when it is
+installed; add `--yes` to take the first). The server opens the user's browser on `http://127.0.0.1:8005` when it is
 ready. Closing its window (or stopping the process) stops the model.
 
 ## 7. Verify
@@ -149,45 +149,50 @@ ready. Closing its window (or stopping the process) stops the model.
 The HTTP server answers once the model is loaded (30-90 s on later starts, a few minutes the first time). Poll:
 
 ```
-curl http://127.0.0.1:8080/health
+curl http://127.0.0.1:8005/health
 ```
 
 It returns `{"status": "ok", "model": ..., "max_context": ..., "images": ..., "api_key": ..., "loaded": true, ...}`.
 Then:
 
 ```
-curl http://127.0.0.1:8080/v1/models
-curl http://127.0.0.1:8080/v1/chat/completions -H "Content-Type: application/json" -d "{\"model\": \"strata\", \"messages\": [{\"role\": \"user\", \"content\": \"Say hello in five words.\"}], \"max_tokens\": 64, \"reasoning_effort\": \"none\"}"
+curl http://127.0.0.1:8005/v1/models
+curl http://127.0.0.1:8005/v1/chat/completions -H "Content-Type: application/json" -d "{\"model\": \"strata\", \"messages\": [{\"role\": \"user\", \"content\": \"Say hello in five words.\"}], \"max_tokens\": 64, \"reasoning_effort\": \"none\"}"
 ```
 
-With an API key, add `-H "Authorization: Bearer <key>"`. The server window prints a `ready: http://127.0.0.1:8080/v1`
+With an API key, add `-H "Authorization: Bearer <key>"`. The server window prints a `ready: http://127.0.0.1:8005/v1`
 line when it is ready; the engine log is `strata-<model>.log` in the Strata folder.
 
-## 7b. Turn on the memory (memory-core branch only)
+## 7b. The memory (memory-core branch only) - ON by default
 
-This branch ships Strata Mnemosyne, the built-in memory store. It is opt-in: with no `"memory"` key
-in the engine config and no `--memory DIR` flag, every path is upstream Strata byte for byte. To
-turn it on (only if the user wants the memory system — ask once):
+This branch ships Strata Mnemosyne, the built-in memory store, **on by default** (the user's
+decision, 2026-10-16: "if someone doesn't want the built-in memory system they won't be using
+our fork to begin with"). Setup writes the `"memory"` block into the engine config and fetches
+the embedder it ships with (`BAAI/bge-small-en-v1.5`, MIT, pinned by SHA-256, ~130 MB, CPU-only -
+it never touches the GPU your model owns); a server started with no `"memory"` key at all also
+turns the store on, with a default directory and the embedder auto-detected when present. To
+turn it OFF, set `"memory": { "enabled": false }` (or `"memory": false`) - every path then
+returns to upstream Strata, byte for byte. `--memory DIR` still forces the store on at a given
+directory. Tuning (all optional): `"recall_limit"`, `"max_block_chars"`, `"per_turn"`,
+`"turn_recall_limit"`, `"turn_block_chars"`, `"encrypt"`, `"tool"`, `"auto_shelve"`,
+`"embedder"`, `"cartridges"`; without the embedder files recall stays lexical and the banner
+says so out loud - the degrade is visible, never a silent no-op.
 
-- add `"memory": { "dir": "Strata-data/memory" }` to the engine config, or pass
-  `--memory Strata-data/memory` at start;
-- for paraphrase recall also set `"embedder": { "dir": "Strata-data/embeddings/bge-small-en-v1.5" }`
-  (pinned files, MIT, CPU-only; skip it and recall stays lexical — everything else works);
 - verify before reporting done: the boot banner must print `[strata] memory core on: ...` (the
-  banner is the check — a silent no-op config is the failure mode), and
+  banner is the check - a silent no-op config is the failure mode), and
   `http://127.0.0.1:<port>/memory-ui` must answer;
 - never expose `/memory` beyond `127.0.0.1` without `--api-key` — the store holds what the server
   remembers about the user.
 
 ## 8. Connect the user's apps
 
-- **Browser:** `http://127.0.0.1:8080` - Chat, a live Monitor, and About (settings and addresses).
-- **Any OpenAI-compatible app or agent:** base URL `http://127.0.0.1:8080/v1`, any API key (or the configured one),
+- **Browser:** `http://127.0.0.1:8005` - Chat, a live Monitor, and About (settings and addresses).
+- **Any OpenAI-compatible app or agent:** base URL `http://127.0.0.1:8005/v1`, any API key (or the configured one),
   any model name.
-- **Anthropic-compatible apps:** `http://127.0.0.1:8080/v1/messages`.
-- **Codex CLI and other Responses API apps:** `http://127.0.0.1:8080/v1/responses` (stateless; Codex's
+- **Anthropic-compatible apps:** `http://127.0.0.1:8005/v1/messages`.
+- **Codex CLI and other Responses API apps:** `http://127.0.0.1:8005/v1/responses` (stateless; Codex's
   `config.toml`: [DETAILS.md](DETAILS.md#the-responses-api-and-codex-cli)).
-- **Claude Code:** `ANTHROPIC_BASE_URL=http://127.0.0.1:8080`, `ANTHROPIC_MODEL` set to a Claude model name it knows
+- **Claude Code:** `ANTHROPIC_BASE_URL=http://127.0.0.1:8005`, `ANTHROPIC_MODEL` set to a Claude model name it knows
   (Strata ignores the name), and any `ANTHROPIC_AUTH_TOKEN` (or the configured key).
 - **Thinking level:** `"reasoning_effort": "none" | "low" | "medium" | "high"` (default high).
 - Strata answers one request at a time; `"parallel": N` in the model's config (or setup `--parallel N`) decodes up to
@@ -199,7 +204,7 @@ turn it on (only if the user wants the memory system — ask once):
 | --- | --- |
 | `the NVIDIA driver is too old` | The user updates the driver (NVIDIA App or nvidia.com/drivers) and restarts; rerun setup. |
 | Download or install stopped | Rerun the same setup command; it continues. |
-| `port 8080 is already in use` | Strata is already running (check `/health`), or use `--port 8081`. |
+| `port 8005 is already in use` | Strata is already running (check `/health`), or use `--port 8081`. |
 | Very slow, disk busy, or "the engine stopped unexpectedly" | Not enough free RAM: close programs, or set up a smaller size (`--setup --model Q2_0` or IQ2_XS). |
 | `ExpertCache: cudaMalloc(...) failed: out of memory` with free VRAM (Windows) | The page file is off or tiny: set a fixed size (Custom size, the same initial and maximum size, e.g. 65536 MB) and restart; a page file Windows grows on demand ("System managed") may not grow in time (#60). |
 | `prompt ... exceeds the context` | Rerun setup with `--setup --context <bigger>`. |

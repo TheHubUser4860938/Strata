@@ -36,8 +36,23 @@
     "<cuda>"
    ],
    "log": "<T>/strata-iq3_s.log",
+   "memory": {
+    "auto_shelve": true,
+    "dir": "<T>/Strata-data/memory",
+    "embedder": {
+     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "threads": 4
+    },
+    "encrypt": 1,
+    "max_block_chars": 24000,
+    "per_turn": true,
+    "recall_limit": 96,
+    "tool": true,
+    "turn_block_chars": 2000,
+    "turn_recall_limit": 8
+   },
    "model_name": "qwen3.8-flash-next-iq3_s",
-   "port": 8080,
+   "port": 8005,
    "tokenizer": "<T>/data/packs/iq3_s/tokenizer"
   }
  },
@@ -78,8 +93,23 @@
     "<cuda>"
    ],
    "log": "<T>/strata-iq3_xxs.log",
+   "memory": {
+    "auto_shelve": true,
+    "dir": "<T>/Strata-data/memory",
+    "embedder": {
+     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "threads": 4
+    },
+    "encrypt": 1,
+    "max_block_chars": 24000,
+    "per_turn": true,
+    "recall_limit": 96,
+    "tool": true,
+    "turn_block_chars": 2000,
+    "turn_recall_limit": 8
+   },
    "model_name": "qwen3.8-flash-next-iq3_xxs",
-   "port": 8080,
+   "port": 8005,
    "tokenizer": "<T>/data/packs/iq3_xxs/tokenizer"
   }
  },
@@ -120,8 +150,23 @@
     "<cuda>"
    ],
    "log": "<T>/strata-q2_0.log",
+   "memory": {
+    "auto_shelve": true,
+    "dir": "<T>/Strata-data/memory",
+    "embedder": {
+     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "threads": 4
+    },
+    "encrypt": 1,
+    "max_block_chars": 24000,
+    "per_turn": true,
+    "recall_limit": 96,
+    "tool": true,
+    "turn_block_chars": 2000,
+    "turn_recall_limit": 8
+   },
    "model_name": "qwen3.8-flash-next-q2_0",
-   "port": 8080,
+   "port": 8005,
    "tokenizer": "<T>/data/packs/q2_0/tokenizer"
   }
  },
@@ -162,8 +207,23 @@
     "<cuda>"
    ],
    "log": "<T>/strata-iq3_s.log",
+   "memory": {
+    "auto_shelve": true,
+    "dir": "<T>/Strata-data/memory",
+    "embedder": {
+     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "threads": 4
+    },
+    "encrypt": 1,
+    "max_block_chars": 24000,
+    "per_turn": true,
+    "recall_limit": 96,
+    "tool": true,
+    "turn_block_chars": 2000,
+    "turn_recall_limit": 8
+   },
    "model_name": "qwen3.8-flash-next-iq3_s",
-   "port": 8080,
+   "port": 8005,
    "tokenizer": "<T>/data/packs/iq3_s/tokenizer"
   }
  },
@@ -209,11 +269,26 @@
     "<cuda>"
    ],
    "log": "<T>/strata-unsloth-ud-q4_k_xl.log",
+   "memory": {
+    "auto_shelve": true,
+    "dir": "<T>/Strata-data/memory",
+    "embedder": {
+     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "threads": 4
+    },
+    "encrypt": 1,
+    "max_block_chars": 24000,
+    "per_turn": true,
+    "recall_limit": 96,
+    "tool": true,
+    "turn_block_chars": 2000,
+    "turn_recall_limit": 8
+   },
    "model_name": "qwen3.8-flash-next-unsloth-ud-q4_k_xl",
-   "port": 8080,
+   "port": 8005,
    "tokenizer": "<T>/data/packs/unsloth-ud-q4_k_xl/tokenizer",
    "vision": {
-    "exe": "<T>/engine/strata-vision.exe",
+    "exe": "<T>/engine/strata-vision",
     "gpu": true,
     "max_tokens": 1024,
     "mmproj": "<T>/models/mmproj-Qwen3.8-Flash-Next-BF16.gguf",
@@ -261,8 +336,23 @@
     "<cuda>"
    ],
    "log": "<T>/strata-iq3_s.log",
+   "memory": {
+    "auto_shelve": true,
+    "dir": "<T>/Strata-data/memory",
+    "embedder": {
+     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "threads": 4
+    },
+    "encrypt": 1,
+    "max_block_chars": 24000,
+    "per_turn": true,
+    "recall_limit": 96,
+    "tool": true,
+    "turn_block_chars": 2000,
+    "turn_recall_limit": 8
+   },
    "model_name": "qwen3.8-flash-next-iq3_s",
-   "port": 8080,
+   "port": 8005,
    "tokenizer": "<T>/data/packs/iq3_s/tokenizer"
   }
  },
@@ -306,8 +396,23 @@
     "<cuda>"
    ],
    "log": "<T>/strata-iq3_xxs.log",
+   "memory": {
+    "auto_shelve": true,
+    "dir": "<T>/Strata-data/memory",
+    "embedder": {
+     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "threads": 4
+    },
+    "encrypt": 1,
+    "max_block_chars": 24000,
+    "per_turn": true,
+    "recall_limit": 96,
+    "tool": true,
+    "turn_block_chars": 2000,
+    "turn_recall_limit": 8
+   },
    "model_name": "qwen3.8-flash-next-iq3_xxs",
-   "port": 8080,
+   "port": 8005,
    "tokenizer": "<T>/data/packs/iq3_xxs/tokenizer"
   }
  },
@@ -351,8 +456,23 @@
     "<cuda>"
    ],
    "log": "<T>/strata-q2_0.log",
+   "memory": {
+    "auto_shelve": true,
+    "dir": "<T>/Strata-data/memory",
+    "embedder": {
+     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "threads": 4
+    },
+    "encrypt": 1,
+    "max_block_chars": 24000,
+    "per_turn": true,
+    "recall_limit": 96,
+    "tool": true,
+    "turn_block_chars": 2000,
+    "turn_recall_limit": 8
+   },
    "model_name": "qwen3.8-flash-next-q2_0",
-   "port": 8080,
+   "port": 8005,
    "tokenizer": "<T>/data/packs/q2_0/tokenizer"
   }
  },
@@ -396,8 +516,23 @@
     "<cuda>"
    ],
    "log": "<T>/strata-q2_0.log",
+   "memory": {
+    "auto_shelve": true,
+    "dir": "<T>/Strata-data/memory",
+    "embedder": {
+     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "threads": 4
+    },
+    "encrypt": 1,
+    "max_block_chars": 24000,
+    "per_turn": true,
+    "recall_limit": 96,
+    "tool": true,
+    "turn_block_chars": 2000,
+    "turn_recall_limit": 8
+   },
    "model_name": "qwen3.8-flash-next-q2_0",
-   "port": 8080,
+   "port": 8005,
    "tokenizer": "<T>/data/packs/q2_0/tokenizer"
   }
  },
@@ -442,11 +577,26 @@
     "<cuda>"
    ],
    "log": "<T>/strata-unsloth-ud-q4_k_xl.log",
+   "memory": {
+    "auto_shelve": true,
+    "dir": "<T>/Strata-data/memory",
+    "embedder": {
+     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "threads": 4
+    },
+    "encrypt": 1,
+    "max_block_chars": 24000,
+    "per_turn": true,
+    "recall_limit": 96,
+    "tool": true,
+    "turn_block_chars": 2000,
+    "turn_recall_limit": 8
+   },
    "model_name": "qwen3.8-flash-next-unsloth-ud-q4_k_xl",
-   "port": 8080,
+   "port": 8005,
    "tokenizer": "<T>/data/packs/unsloth-ud-q4_k_xl/tokenizer",
    "vision": {
-    "exe": "<T>/engine/strata-vision.exe",
+    "exe": "<T>/engine/strata-vision",
     "gpu": true,
     "max_tokens": 1024,
     "mmproj": "<T>/models/mmproj-Qwen3.8-Flash-Next-BF16.gguf",
@@ -494,8 +644,23 @@
     "<cuda>"
    ],
    "log": "<T>/strata-iq3_s.log",
+   "memory": {
+    "auto_shelve": true,
+    "dir": "<T>/Strata-data/memory",
+    "embedder": {
+     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "threads": 4
+    },
+    "encrypt": 1,
+    "max_block_chars": 24000,
+    "per_turn": true,
+    "recall_limit": 96,
+    "tool": true,
+    "turn_block_chars": 2000,
+    "turn_recall_limit": 8
+   },
    "model_name": "qwen3.8-flash-next-iq3_s",
-   "port": 8080,
+   "port": 8005,
    "tokenizer": "<T>/data/packs/iq3_s/tokenizer"
   }
  },
@@ -539,8 +704,23 @@
     "<cuda>"
    ],
    "log": "<T>/strata-iq3_xxs.log",
+   "memory": {
+    "auto_shelve": true,
+    "dir": "<T>/Strata-data/memory",
+    "embedder": {
+     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "threads": 4
+    },
+    "encrypt": 1,
+    "max_block_chars": 24000,
+    "per_turn": true,
+    "recall_limit": 96,
+    "tool": true,
+    "turn_block_chars": 2000,
+    "turn_recall_limit": 8
+   },
    "model_name": "qwen3.8-flash-next-iq3_xxs",
-   "port": 8080,
+   "port": 8005,
    "tokenizer": "<T>/data/packs/iq3_xxs/tokenizer"
   }
  },
@@ -583,8 +763,23 @@
     "<cuda>"
    ],
    "log": "<T>/strata-q2_0.log",
+   "memory": {
+    "auto_shelve": true,
+    "dir": "<T>/Strata-data/memory",
+    "embedder": {
+     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "threads": 4
+    },
+    "encrypt": 1,
+    "max_block_chars": 24000,
+    "per_turn": true,
+    "recall_limit": 96,
+    "tool": true,
+    "turn_block_chars": 2000,
+    "turn_recall_limit": 8
+   },
    "model_name": "qwen3.8-flash-next-q2_0",
-   "port": 8080,
+   "port": 8005,
    "tokenizer": "<T>/data/packs/q2_0/tokenizer"
   }
  },
@@ -627,8 +822,23 @@
     "<cuda>"
    ],
    "log": "<T>/strata-q2_0.log",
+   "memory": {
+    "auto_shelve": true,
+    "dir": "<T>/Strata-data/memory",
+    "embedder": {
+     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "threads": 4
+    },
+    "encrypt": 1,
+    "max_block_chars": 24000,
+    "per_turn": true,
+    "recall_limit": 96,
+    "tool": true,
+    "turn_block_chars": 2000,
+    "turn_recall_limit": 8
+   },
    "model_name": "qwen3.8-flash-next-q2_0",
-   "port": 8080,
+   "port": 8005,
    "tokenizer": "<T>/data/packs/q2_0/tokenizer"
   }
  },
@@ -673,11 +883,26 @@
     "<cuda>"
    ],
    "log": "<T>/strata-unsloth-ud-q4_k_xl.log",
+   "memory": {
+    "auto_shelve": true,
+    "dir": "<T>/Strata-data/memory",
+    "embedder": {
+     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "threads": 4
+    },
+    "encrypt": 1,
+    "max_block_chars": 24000,
+    "per_turn": true,
+    "recall_limit": 96,
+    "tool": true,
+    "turn_block_chars": 2000,
+    "turn_recall_limit": 8
+   },
    "model_name": "qwen3.8-flash-next-unsloth-ud-q4_k_xl",
-   "port": 8080,
+   "port": 8005,
    "tokenizer": "<T>/data/packs/unsloth-ud-q4_k_xl/tokenizer",
    "vision": {
-    "exe": "<T>/engine/strata-vision.exe",
+    "exe": "<T>/engine/strata-vision",
     "gpu": true,
     "max_tokens": 1024,
     "mmproj": "<T>/models/mmproj-Qwen3.8-Flash-Next-BF16.gguf",
@@ -720,8 +945,23 @@
     "<cuda>"
    ],
    "log": "<T>/strata-iq3_s.log",
+   "memory": {
+    "auto_shelve": true,
+    "dir": "<T>/Strata-data/memory",
+    "embedder": {
+     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "threads": 4
+    },
+    "encrypt": 1,
+    "max_block_chars": 24000,
+    "per_turn": true,
+    "recall_limit": 96,
+    "tool": true,
+    "turn_block_chars": 2000,
+    "turn_recall_limit": 8
+   },
    "model_name": "qwen3.8-flash-next-iq3_s",
-   "port": 8080,
+   "port": 8005,
    "tokenizer": "<T>/data/packs/iq3_s/tokenizer"
   }
  },
@@ -762,8 +1002,23 @@
     "<cuda>"
    ],
    "log": "<T>/strata-iq3_xxs.log",
+   "memory": {
+    "auto_shelve": true,
+    "dir": "<T>/Strata-data/memory",
+    "embedder": {
+     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "threads": 4
+    },
+    "encrypt": 1,
+    "max_block_chars": 24000,
+    "per_turn": true,
+    "recall_limit": 96,
+    "tool": true,
+    "turn_block_chars": 2000,
+    "turn_recall_limit": 8
+   },
    "model_name": "qwen3.8-flash-next-iq3_xxs",
-   "port": 8080,
+   "port": 8005,
    "tokenizer": "<T>/data/packs/iq3_xxs/tokenizer"
   }
  },
@@ -804,8 +1059,23 @@
     "<cuda>"
    ],
    "log": "<T>/strata-q2_0.log",
+   "memory": {
+    "auto_shelve": true,
+    "dir": "<T>/Strata-data/memory",
+    "embedder": {
+     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "threads": 4
+    },
+    "encrypt": 1,
+    "max_block_chars": 24000,
+    "per_turn": true,
+    "recall_limit": 96,
+    "tool": true,
+    "turn_block_chars": 2000,
+    "turn_recall_limit": 8
+   },
    "model_name": "qwen3.8-flash-next-q2_0",
-   "port": 8080,
+   "port": 8005,
    "tokenizer": "<T>/data/packs/q2_0/tokenizer"
   }
  },
@@ -844,8 +1114,23 @@
     "<cuda>"
    ],
    "log": "<T>/strata-iq3_s.log",
+   "memory": {
+    "auto_shelve": true,
+    "dir": "<T>/Strata-data/memory",
+    "embedder": {
+     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "threads": 4
+    },
+    "encrypt": 1,
+    "max_block_chars": 24000,
+    "per_turn": true,
+    "recall_limit": 96,
+    "tool": true,
+    "turn_block_chars": 2000,
+    "turn_recall_limit": 8
+   },
    "model_name": "qwen3.8-flash-next-iq3_s",
-   "port": 8080,
+   "port": 8005,
    "tokenizer": "<T>/data/packs/iq3_s/tokenizer"
   }
  },
@@ -890,11 +1175,26 @@
     "<cuda>"
    ],
    "log": "<T>/strata-unsloth-ud-q4_k_xl.log",
+   "memory": {
+    "auto_shelve": true,
+    "dir": "<T>/Strata-data/memory",
+    "embedder": {
+     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "threads": 4
+    },
+    "encrypt": 1,
+    "max_block_chars": 24000,
+    "per_turn": true,
+    "recall_limit": 96,
+    "tool": true,
+    "turn_block_chars": 2000,
+    "turn_recall_limit": 8
+   },
    "model_name": "qwen3.8-flash-next-unsloth-ud-q4_k_xl",
-   "port": 8080,
+   "port": 8005,
    "tokenizer": "<T>/data/packs/unsloth-ud-q4_k_xl/tokenizer",
    "vision": {
-    "exe": "<T>/engine/strata-vision.exe",
+    "exe": "<T>/engine/strata-vision",
     "gpu": true,
     "max_tokens": 1024,
     "mmproj": "<T>/models/mmproj-Qwen3.8-Flash-Next-BF16.gguf",
@@ -939,8 +1239,23 @@
     "<cuda>"
    ],
    "log": "<T>/strata-iq3_s.log",
+   "memory": {
+    "auto_shelve": true,
+    "dir": "<T>/Strata-data/memory",
+    "embedder": {
+     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "threads": 4
+    },
+    "encrypt": 1,
+    "max_block_chars": 24000,
+    "per_turn": true,
+    "recall_limit": 96,
+    "tool": true,
+    "turn_block_chars": 2000,
+    "turn_recall_limit": 8
+   },
    "model_name": "qwen3.8-flash-next-iq3_s",
-   "port": 8080,
+   "port": 8005,
    "tokenizer": "<T>/data/packs/iq3_s/tokenizer"
   }
  },
@@ -981,8 +1296,23 @@
     "<cuda>"
    ],
    "log": "<T>/strata-iq3_xxs.log",
+   "memory": {
+    "auto_shelve": true,
+    "dir": "<T>/Strata-data/memory",
+    "embedder": {
+     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "threads": 4
+    },
+    "encrypt": 1,
+    "max_block_chars": 24000,
+    "per_turn": true,
+    "recall_limit": 96,
+    "tool": true,
+    "turn_block_chars": 2000,
+    "turn_recall_limit": 8
+   },
    "model_name": "qwen3.8-flash-next-iq3_xxs",
-   "port": 8080,
+   "port": 8005,
    "tokenizer": "<T>/data/packs/iq3_xxs/tokenizer"
   }
  },
@@ -1023,8 +1353,23 @@
     "<cuda>"
    ],
    "log": "<T>/strata-q2_0.log",
+   "memory": {
+    "auto_shelve": true,
+    "dir": "<T>/Strata-data/memory",
+    "embedder": {
+     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "threads": 4
+    },
+    "encrypt": 1,
+    "max_block_chars": 24000,
+    "per_turn": true,
+    "recall_limit": 96,
+    "tool": true,
+    "turn_block_chars": 2000,
+    "turn_recall_limit": 8
+   },
    "model_name": "qwen3.8-flash-next-q2_0",
-   "port": 8080,
+   "port": 8005,
    "tokenizer": "<T>/data/packs/q2_0/tokenizer"
   }
  },
@@ -1065,8 +1410,23 @@
     "<cuda>"
    ],
    "log": "<T>/strata-iq3_s.log",
+   "memory": {
+    "auto_shelve": true,
+    "dir": "<T>/Strata-data/memory",
+    "embedder": {
+     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "threads": 4
+    },
+    "encrypt": 1,
+    "max_block_chars": 24000,
+    "per_turn": true,
+    "recall_limit": 96,
+    "tool": true,
+    "turn_block_chars": 2000,
+    "turn_recall_limit": 8
+   },
    "model_name": "qwen3.8-flash-next-iq3_s",
-   "port": 8080,
+   "port": 8005,
    "tokenizer": "<T>/data/packs/iq3_s/tokenizer"
   }
  },
@@ -1112,11 +1472,26 @@
     "<cuda>"
    ],
    "log": "<T>/strata-unsloth-ud-q4_k_xl.log",
+   "memory": {
+    "auto_shelve": true,
+    "dir": "<T>/Strata-data/memory",
+    "embedder": {
+     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "threads": 4
+    },
+    "encrypt": 1,
+    "max_block_chars": 24000,
+    "per_turn": true,
+    "recall_limit": 96,
+    "tool": true,
+    "turn_block_chars": 2000,
+    "turn_recall_limit": 8
+   },
    "model_name": "qwen3.8-flash-next-unsloth-ud-q4_k_xl",
-   "port": 8080,
+   "port": 8005,
    "tokenizer": "<T>/data/packs/unsloth-ud-q4_k_xl/tokenizer",
    "vision": {
-    "exe": "<T>/engine/strata-vision.exe",
+    "exe": "<T>/engine/strata-vision",
     "gpu": true,
     "max_tokens": 1024,
     "mmproj": "<T>/models/mmproj-Qwen3.8-Flash-Next-BF16.gguf",

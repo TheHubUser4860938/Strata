@@ -166,9 +166,10 @@ class Base(unittest.TestCase):
                  for i in range(n_gpus)]
 
         def fake_download(url, dst, what=None):
-            self.downloads.append(url)
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            dst.write_bytes(b"")
+            if "bge-small" not in url:          # memory-core fork: setup also fetches the memory
+                self.downloads.append(url)      # embedder (ON by default 2026-10-16); these tests
+            dst.parent.mkdir(parents=True, exist_ok=True)   # pin the MODEL download list, so the
+            dst.write_bytes(b"")                            # embedder rides without polluting it
             setup.mark(dst)
 
         def fake_run(cmd, *a, **k):

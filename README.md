@@ -16,15 +16,18 @@ budgets and judgement. Short form for code and speech: **Mnemo**.
 
 **Windows:** double-click `START-HERE.bat`. **Linux:** `./setup.sh`. Run it from a clone of **this**
 repository's `memory-core` branch — the installer checks your PC, picks the model size that fits
-your RAM, downloads it, and starts the server at `http://127.0.0.1:8080`:
+your RAM, downloads it, and starts the server at `http://127.0.0.1:8005`:
 
 ```
 git clone -b memory-core https://github.com/TheHubUser4860938/Strata.git
 cd Strata
 ```
 
-Memory is **opt-in**: without its config key every path is upstream Strata, byte for byte. Turn it
-on by adding to the engine config:
+Memory is **on by default** in this fork (decided 2026-10-16: someone who does not want the built-in
+memory system would not be using this fork of Strata to begin with). Setup writes the block below and
+fetches the embedder it ships with, so the hybrid recall works out of the box. To turn the memory off,
+set `"memory": { "enabled": false }` in the engine config - every path then returns to upstream Strata,
+byte for byte:
 
 ```json
 "memory": { "dir": "Strata-data/memory",
@@ -32,7 +35,7 @@ on by adding to the engine config:
 ```
 
 or by starting the server with `--memory Strata-data/memory`. When it is live the boot banner prints
-`[strata] memory core on: ...`, and `http://127.0.0.1:8080/memory-ui` is the store's own page —
+`[strata] memory core on: ...`, and `http://127.0.0.1:8005/memory-ui` is the store's own page —
 stats, search, forget. The embedder (pinned by SHA-256, MIT, ~130 MB, CPU-only — it never touches
 the GPU your model owns) is what lets recall understand paraphrase; without it recall stays lexical
 and everything else still works. The exact files and hashes: `docs/MEMORY_CORE.md`.
@@ -44,7 +47,8 @@ Paste this into any coding agent (Claude Code, Codex, OpenCode, Cursor, Copilot)
 ```text
 Set up Strata with its built-in memory (Strata Mnemosyne) on this PC for me:
 https://github.com/TheHubUser4860938/Strata - use the memory-core branch, follow
-docs/AI_SETUP.md in that repository, and turn the memory on as its memory step describes.
+docs/AI_SETUP.md in that repository. The memory is ON by default on that branch, and setup
+fetches its embedder as part of the install.
 Before reporting done, verify the boot banner says "memory core on" and /memory-ui answers.
 ```
 

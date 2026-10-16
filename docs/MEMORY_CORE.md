@@ -8,8 +8,12 @@ STRATA_PLE_OVERLAY), then the coordinated measurement window. Last updated: 2026
 
 This fork explores built-in long-term memory for Strata: recall that lives at the inference server, shared by
 every client (OpenCode, Odysseus AI, the web app), with **no harness ever resending memory text into the
-context window**. Following upstream rules, everything stays **opt-in**: the default serving path stays
-byte-identical to the release it forked from (v0.1.42, `61b3fb5`).
+context window**. It shipped **opt-in** from the fork point (v0.1.42, `61b3fb5`) - and on 2026-10-16 the
+owner flipped the default: **the memory system is ON by default** ("if someone doesn't want the built-in
+memory system they won't be using our fork to begin with"). The byte-identical law survives as the opt-out:
+`"memory": {"enabled": false}` returns every serving path to upstream Strata, byte for byte. The fork's
+installs also default to port **8005** (upstream: 8080/8095) so a main install and a fork install can run
+side by side on one PC.
 
 - **Phase 1 — memory service (building):** a curated store (SQLite, FTS5 + a small local embedder) and
   automatic recall injected as a stable hidden block ahead of the conversation. Persistence rides on
@@ -235,7 +239,9 @@ coordinated window. Record: `spikes/ple-overlay/NOTES.md`.
 
 ## Store operations — consolidation, budget, invalidation, self-feeding journal (added 2026-10-11/12)
 
-Four server-side capabilities, all opt-in or byte-identical-when-off, each triggered by a
+Four server-side capabilities, all opt-in or byte-identical-when-off as shipped (the 2026-10-16
+default flip makes the whole memory system on-by-default; these knobs still tune or disable their
+own paths), each triggered by a
 measurement rather than a guess. Unit-tested without a GPU (`serve/test_memory.py`, 25 cases);
 live-verified on the dev build (RTX 4090 / 62 GB, engine 0.1.43/0.1.43.1).
 
