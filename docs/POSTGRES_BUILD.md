@@ -65,9 +65,15 @@ The packaging that actually works here is `embedded-postgres` 18.6.3: Postgres 1
 and stops the server and hands back a unix-socket URI, multi-process safe via fasteners.
 PROVEN on this box 2026-10-16: fresh data dir initdb+start 0.3 s, stop 0.1 s, `createdb` 3 ms
 median, and `pg_available_extensions` shows **vector, pg_trgm, unaccent, hstore bundled** -
-pgvector is there for the 1M trigger without any extra dependency. The known gap, named early:
-18.6.3 ships macOS + manylinux wheels only, no Windows wheel (checked from the release files) -
-Linux beta-1 unaffected; sourcing a PG 18 win wheel is a named Windows beta-2 job.**
+pgvector is there for the 1M trigger without any extra dependency. The gap named early is now
+CLOSED (R0b, the user's pixeltable lead): **`pixeltable-pgserver` 0.6.0 - Pixeltable's maintained
+pgserver fork - ships win_amd64 AND win_arm64 wheels (cp310-cp314, checked from the release
+files), bundles pgvector, and measured on this box with the same battery: start 0.3 s, createdb
+4 ms - but carries PG 18.4 vs embedded-postgres's 18.6 and C-extension tags vs py3-none. So the
+answer is a per-OS wheel choice behind one get_server(data_dir) -> URI call: embedded-postgres on
+Linux/macOS, pixeltable-pgserver on Windows. And postgresql.org dated the clock: PG 19 RC 1
+released 2026-10-15, stable 18.6 - we build on 18 stable, and 19 is a wheel swap + pg_upgrade
+when it ships final, not a rebase event.**
 
 **Driver - psycopg 3.3 `psycopg[binary]`** bundles libpq in one wheel (psycopg.org, 2025-12);
 the sync API fits the one-lock threading model unchanged; `psycopg_pool` exists for the

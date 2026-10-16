@@ -47,9 +47,35 @@ amendment and `docs/POSTGRES_BUILD.md` §2 cited **pgserver 0.5.0 with PG 18.3**
 latest is **0.1.4** (June 2024, cp310-cp312 wheels, dead on python 3.14). The packaging that
 actually works here is **`embedded-postgres` 18.6.3**: PG 18.6 binaries as a pip wheel with
 initdb/start/stop handled, unix-socket URI, multi-process safe via fasteners. `pgserver-extend`
-(0.0.2, cp310-cp313) also misses 3.14. Known gap, named early: **18.6.3 ships no Windows wheel**
-(macosx + manylinux only) - Linux beta-1 is unaffected; the Windows beta-2 job includes sourcing
-a PG 18 win wheel (embedded-postgres upstream, or compile, or the cp313 pgserver-extend line).
+(0.0.2, cp310-cp313) also misses 3.14.
+
+**R0b - the user's leads checked the same hour (pixeltable + postgresql.org):** the stale
+"pgserver 0.5.0 / PG 18.3" snippet now has a NAME - it was describing **`pixeltable-pgserver`**,
+Pixeltable's actively maintained fork of pgserver (PyPI 0.6.0), which is exactly where that
+version/PG pair lives. Measured on this box with the identical battery: initdb+start **0.3 s**,
+stop **0.1 s**, createdb **4 ms** median, pgvector bundled - but its wheel carries **PG 18.4**
+(embedded-postgres carries 18.6) and cp310-cp314 C-extension tags (embedded-postgres is
+`py3-none`, immune to Python-minor churn). The decisive difference runs the other direction:
+**pixeltable-pgserver ships `win_amd64` AND `win_arm64` wheels** (cp310-cp314, in both 0.5.1 and
+0.6.0, checked from the release files) where embedded-postgres ships none - and it carries
+`upgrade_db`/`pgdata_version` helpers plus a `postgres_version=18` parameter. So the packaging
+answer is not one winner but a **per-OS wheel choice behind one `get_server(data_dir) -> URI`
+call** (an OS branch, not the SQLite/PG dialect shim the rebase retired): Linux/macOS =
+`embedded-postgres` (newer stable PG, more extensions bundled: vector + pg_trgm + unaccent +
+hstore); Windows = `pixeltable-pgserver` (the only win wheels that exist, pgvector included).
+Pixeltable itself (0.7.17, "the unified multimodal backend") runs production on the
+embedded-pgserver pattern - the shape this rebase bets on is proven by someone else at scale.
+
+**PG version policy (from postgresql.org, 2026-10-16):** stable is **18.6** (what R0 measured);
+**PostgreSQL 19 RC 1 shipped the day before the audit** (2026-10-15), final expected ~November.
+We build on 18 stable - the schema uses only core-18 features the feature matrix confirms (GIN,
+stored generated columns, upsert, `RETURNING`; UUIDv7 exists in 18 but bigint IDENTITY is kept
+for id-preservation across the import; AIO in 18 is a free win). PG 19 is a **wheel swap +
+`pg_upgrade`**, not a rebase event: both packaging tracks follow PG majors (embedded-postgres
+versions its wheels by PG release; pixeltable-pgserver takes `postgres_version` as a parameter),
+and no RC is chased before it is final. The gap named early is now CLOSED: 18.6.3's missing
+Windows wheel is no longer a beta-2 question mark - the Windows answer is named, versioned, and
+pgvector-bundled.
 
 ## The native shapes that replace the SQLite-isms
 
@@ -99,9 +125,10 @@ pin-cache laws, the `/memory` API, and the measurement protocol.
 - **R4 importer**: one-way, ids preserved, vectors byte-copied, FTS rebuilt by insert; runs on a
   copy of the live store first, counts and spot-recall verified before anything cutover-touches.
 - **R5 tools**: the seven raw-sqlite tools + venue rebuild + eval stores, native.
-- **R6 packaging**: `setup.py` installs `embedded-postgres` + `psycopg[binary]`; the server
-  starts the cluster beside the store dir, banner line like every other activation, encrypted
-  backups per above.
+- **R6 packaging**: `setup.py` installs `psycopg[binary]` plus the **per-OS server wheel** -
+  `embedded-postgres` on Linux/macOS, `pixeltable-pgserver` on Windows (one `get_server(data_dir)
+  -> URI` call either way); the server starts the cluster beside the store dir, banner line like
+  every other activation, encrypted backups per above.
 - **R7 cutover**: import the live store, dev server runs on Postgres - **this is the one reboot**
   - then venue + eval stores rebuild on PG and the numbers re-record.
 

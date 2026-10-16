@@ -77,7 +77,9 @@ of model streaming.
      "the wheel installs and starts on the target PC", verified at P4, not promised now);*
      *(R0 correction, same day: pgserver 0.5.0 was a search-snippet artifact - real latest is
      0.1.4/cp312-capped; the measured wheel is `embedded-postgres` 18.6.3, PG 18.6 + pgvector,
-     proven on this box: start 0.3 s, createdb 3 ms. See ADR-002.)*
+     proven on this box: start 0.3 s, createdb 3 ms. See ADR-002. R0b named the culprit the same
+     hour: the snippet was describing `pixeltable-pgserver`, Pixeltable's maintained pgserver
+     fork - which is also the Windows answer.)*
    - **P5 flip**: default becomes Postgres only when P2 passes; `store.engine: sqlite` remains as
      the escape hatch.
 3. **Revisit triggers** (any one accelerates P1): the DB exceeds 10% of measured recall latency at
