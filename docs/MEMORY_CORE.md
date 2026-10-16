@@ -1622,6 +1622,53 @@ the filed run is not measuring the thing. Fixed to the product's own shape (memo
 question from the user), and the empty-completion case is now counted as a probe failure, never as a wrong
 answer.
 
+## The grounding A/B at answer level: the dated prompt wrote dates on 1.1% of this corpus (measured 2026-10-15, `tools/m4_grounding.py`)
+
+The mutation probe opened the gate (0.808 of correct temporal answers die when the gold row is
+dropped), so the dated `EXTRACT_PROMPT` got the answer-level A/B the queue was priced on: the 127
+temporal questions, 1,615 user/assistant pairs per arm, two scratch stores built **in-process** on the
+current server - `old` extracts with the pre-grounding prompt (byte-identical control, sha `e7c8fa6b`),
+`new` with the shipped dated prompt. Same pairing, same parse regex, same idk-gold skip, same
+guard=False writes, same `lme_<qid>` scopes, same decode (temp 0.8 / 256 tok / muted); the curation
+loop's cold-score stage deliberately skipped so the only variable is the prompt. Scoring renders each
+store's block at 192/48k, answers at temp 0.8 / 500 tok / fresh conversation, judges with the official
+checker. Ingest: 3,230 asks in 3,719 s, zero failures. Score: 511 s.
+
+| arm | acc | idk | notes | row-cov | turn_top1 | turn_top3 |
+|---|---|---|---|---|---|---|
+| old (undated prompt) | **0.386** | 0.409 | 13.5 | 0.927 | 0.606 | 0.858 |
+| new (dated prompt) | **0.378** | 0.449 | 12.4 | 0.919 | 0.630 | 0.890 |
+
+**Falsifier fired: paired delta -0.008 (10 dated-right-only vs 11 undated-right-only - the noise
+itself).** Dates helped *ranking* a little (top1 +0.024, top3 +0.032, consistent with the prompt-level
+A/B) and did nothing at the answer level. Per the pre-registered rule, grounding stays a retrieval-side
+result and the next venue window goes to arm C1.
+
+**Why the arms could barely differ - compliance, counted from the ingest checkpoints: the dated prompt
+put an ISO date on 18 of 1,710 facts (1.1%); the control put one on 0.** The rule targets *relative*
+dates ("yesterday", "on Friday") and the oracle corpus states its dates **explicitly** ("March 22"),
+which the extractor copies as-is; "never invent a date" then keeps even the year off most facts (it
+supplied one - "March 22" became "2024-03-22" - per-fact, not per-prompt). On dev-store turns, which
+talk about *today*, the same prompt grounds almost every fact ("On 2026-10-15, ...",
+`ab-dated-1.log`). Compliance is corpus-dependent, and this corpus is the one the metric runs on.
+
+**And the ceiling check that makes the ordering story sharper: the venue's own verbatim rows already
+carry `[2023-04-13]`-style absolute dates on 100% of rows - and temporal still scores 0.457 there.**
+Dates in the text are not the lever, at 1% compliance or at 100%.
+
+**The bigger number in this run is extraction vs verbatim.** Paired against the filed venue run on the
+same 127 questions, same budget, same decode: the extraction path wins 10, loses 19 (net -7.1 points),
+and **abstains on 52-57 of 127 questions where the verbatim store answered all 127** (idk 0/127 there).
+The shipped extractor (max 2 facts per turn, one sentence each) throws away the mileage figures, model
+names and day-level specifics these questions ask for. That is the production ingest path's measured
+cost on evidence-dense temporal queries - larger than anything dates were worth.
+
+**What the dated prompt keeps**: it is free at read time, it demonstrably grounds conversation-relative
+language (the dev corpus), it nudges ranking, and nothing here regresses. `docs/BETA1.md` makes no
+answer-level temporal claim for it, and this run is why. The successor probe writes itself: the venue's
+rows already carry dates - let the **renderer order the block by them** instead of asking the writer to
+put them there.
+
 ## Licensing and attribution
 
 - Strata (upstream) is MIT © Niko1221 and contributors; this fork's independent code keeps MIT.
