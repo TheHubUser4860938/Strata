@@ -1598,6 +1598,89 @@ class MatrixStaleness(unittest.TestCase):
                          "a superseded fact must leave the cosine arm's candidate set with its row")
 
 
+class ExposureDecay(unittest.TestCase):
+    """EXPOSURE-DECAY (2026-10-16, the lever m4_blockrule pointed at): a row the last K journaled
+    turns already injected pays step x min(exposures, cap) off its fused score. The ledger is
+    turns.injected - what the model really read. Off unless window AND step are set; the demotion
+    is exact arithmetic on the same store state, so the tests measure the rule itself."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _svc(self, window=0, step=0.0, cap=3):
+        m = MemoryService(self.tmp.name, expose_window=window, expose_step=step, expose_cap=cap)
+        self.addCleanup(m.close)
+        return m
+
+    def _journal_exposed(self, m, ids, n):
+        for _ in range(n):
+            tid = m.journal_turn("default", "question about widgets", "because widgets")
+            m.conn.execute("update turns set injected=? where id=?", (json.dumps(ids), tid))
+            m.conn.commit()
+
+    def test_off_by_default_the_hub_stays_on_top(self):
+        m = self._svc()
+        hub = m.remember("widget alpha is the loudest widget of all", scope="default")
+        self._journal_exposed(m, [hub["id"]], 5)
+        hits = m.search("widget", scope="default", limit=5)
+        self.assertEqual([h["id"] for h in hits], [hub["id"]],
+                         "window 0 / step 0: byte-identical, no ledger effect")
+
+    def test_demotion_is_exact_step_times_exposures(self):
+        m0 = self._svc()
+        hub = m0.remember("widget alpha is the loudest widget of all", scope="default")
+        self._journal_exposed(m0, [hub["id"]], 2)
+        base = next(h for h in m0.search("widget", scope="default", limit=5) if h["id"] == hub["id"])
+        m1 = self._svc(window=12, step=0.05)      # second service, same store, ledger now visible
+        got = next(h for h in m1.search("widget", scope="default", limit=5) if h["id"] == hub["id"])
+        self.assertAlmostEqual(base["score"] - got["score"], 0.10, places=4,
+                               msg="2 exposures x step 0.05, nothing else moves")
+
+    def test_cap_bounds_the_demotion(self):
+        m0 = self._svc()
+        hub = m0.remember("widget alpha is the loudest widget of all", scope="default")
+        self._journal_exposed(m0, [hub["id"]], 5)   # five exposures, cap 3
+        base = next(h for h in m0.search("widget", scope="default", limit=5) if h["id"] == hub["id"])
+        m1 = self._svc(window=12, step=0.05, cap=3)
+        got = next(h for h in m1.search("widget", scope="default", limit=5) if h["id"] == hub["id"])
+        self.assertAlmostEqual(base["score"] - got["score"], 0.15, places=4,
+                               msg="capped at 3: a fact can be over-shown but never buried by history")
+
+    def test_window_ignores_older_exposures(self):
+        m0 = self._svc()
+        hub = m0.remember("widget alpha is the loudest widget of all", scope="default")
+        self._journal_exposed(m0, [hub["id"]], 5)
+        base = next(h for h in m0.search("widget", scope="default", limit=5) if h["id"] == hub["id"])
+        m1 = self._svc(window=2, step=0.05)        # only the newest 2 turns count
+        got = next(h for h in m1.search("widget", scope="default", limit=5) if h["id"] == hub["id"])
+        self.assertAlmostEqual(base["score"] - got["score"], 0.10, places=4)
+
+    def test_a_fresh_answer_outvotes_the_over_shown_hub(self):
+        m0 = self._svc()
+        hub = m0.remember("widget alpha is the loudest widget of all", scope="default")
+        fresh = m0.remember("widget beta answers the very same widget question", scope="default")
+        self._journal_exposed(m0, [hub["id"]], 4)
+        off = m0.search("widget", scope="default", limit=5)
+        m1 = self._svc(window=12, step=0.15, cap=3)   # 2 candidates: the lexical rank gap is 0.375,
+        on = m1.search("widget", scope="default", limit=5)   # so the capped 0.45 demotion must flip it
+        self.assertEqual(on[0]["id"], fresh["id"],
+                         "with the ledger live the never-shown answer leads")
+        self.assertNotEqual(off[0]["id"], on[0]["id"], "and it only moves because of the ledger")
+
+    def test_the_ledger_cache_follows_the_turns_stamp(self):
+        m = self._svc(window=12, step=0.05)
+        hub = m.remember("widget alpha is the loudest widget of all", scope="default")
+        self._journal_exposed(m, [hub["id"]], 1)
+        one = next(h for h in m.search("widget", scope="default", limit=5) if h["id"] == hub["id"])
+        self._journal_exposed(m, [hub["id"]], 1)   # one more exposure: the stamp moves
+        two = next(h for h in m.search("widget", scope="default", limit=5) if h["id"] == hub["id"])
+        self.assertAlmostEqual(one["score"] - two["score"], 0.05, places=4,
+                               msg="a cached ledger must never freeze yesterday's demotion in place")
+
+
 class BlockFloor(unittest.TestCase):
     """CAP NOT QUOTA (m4_blockrule, 2026-10-16): the render block stops at the first candidate
     whose fused score falls below block_min_score; the character budget stays as the hard

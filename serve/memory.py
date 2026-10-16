@@ -321,7 +321,8 @@ class MemoryService:
                  max_memories: int = 0, dedup_recall: bool = True,
                  encrypt: bool = False, key_file: str = "", passphrase_env: str = "",
                  tool: bool = False, embedder=None, floor_cosine: float = 0.0,
-                 auto_shelve: bool = False, block_min_score: float = 0.0):
+                 auto_shelve: bool = False, block_min_score: float = 0.0,
+                 expose_window: int = 0, expose_step: float = 0.0, expose_cap: int = 3):
         self.directory = memory_dir(directory)      # absolute, created 0700 - same rules as slot_save_path
         self.db_path = os.path.join(self.directory, "memory.db")
         # RELEVANCE FLOOR (2026-10-16, the everyday-use complaint "it stuffs the budget full of
@@ -348,6 +349,18 @@ class MemoryService:
         # semantic arm's VOTE cost -7.2 points of gold coverage; this gates what the block SHOWS,
         # both arms alike, and rides the score fusion the retrieval A/B already stands behind.
         self.block_min_score = max(0.0, float(block_min_score))
+        # EXPOSURE-DECAY (2026-10-16, the lever the m4_blockrule sweep pointed at): a row the last
+        # expose_window journaled turns already injected pays step*min(exposures, expose_cap) off
+        # its fused score. The ledger is turns.injected - what the model really read, not what
+        # recall proposed. Off until both knobs are set (step 0 or window 0 = byte-identical):
+        # the hub-row filler the stuffing complaint named scores 0.17-0.5 and survives every
+        # coverage-safe floor (m4_blockrule), so the demotion has to be proportional to how often
+        # a row has been shown lately - and capped, so a re-asked fact always outvotes its own
+        # history (two fresh top votes beat any cap).
+        self.expose_window = max(0, int(expose_window))
+        self.expose_step = max(0.0, float(expose_step))
+        self.expose_cap = max(1, int(expose_cap))
+        self._expo = None          # {(turns stamp): {row id: exposures}} - cached, see _exposure
         self.max_block_chars = max(200, int(max_block_chars))
         # the 50-note ceiling was sized to the 6k/12k char budgets: ~250 chars per note means 50
         # notes IS ~12.5k chars, so a config that raises max_block_chars past that could never
@@ -1158,6 +1171,17 @@ class MemoryService:
         if semantic and self.embedder is not None:
             out = self._semantic(out, query, scopes, classes, since, until, limit)
             out.sort(key=lambda x: -x["score"])
+        if self.expose_step > 0.0 and self.expose_window > 0:
+            # EXPOSURE-DECAY (see __init__): demote what the recent ledger already showed, AFTER
+            # fusion (so it demotes the final claim to attention, whichever arm voted it there)
+            # and BEFORE dedup (so a demoted twin loses the collapse to its fresher sibling).
+            dem = self._exposure()
+            if dem:
+                for h in out:
+                    e = dem.get(h["id"])
+                    if e:
+                        h["score"] = max(0.0, round(h["score"] - self.expose_step * min(e, self.expose_cap), 6))
+                out.sort(key=lambda x: -x["score"])
         if self.dedup_recall:
             out = self._dedupe(out)
         hits = out[:limit]
@@ -1330,6 +1354,37 @@ class MemoryService:
                                   confidence=r[4], hits=r[5],     # same promise as the lexical arm above
                                   **{"class": r[3]}))
         return cands
+
+    def _exposure(self) -> dict:
+        """{row id: exposures} across the newest expose_window journaled turns - the exposure
+        ledger (turns.injected: the ids each turn's block ACTUALLY showed, written by the
+        injection path, not what recall merely proposed). Cached against the turns stamp
+        (count, max id) so a steady conversation pays one scan; reading the ledger never
+        touches hits/last_seen_at - exposure demotes recall, it does not feed the feedback
+        counter back on itself (the pin-cache law, applied to the new input)."""
+        with self.lock:
+            key = self.conn.execute("select count(*), coalesce(max(id),0) from turns").fetchone()
+            if self._expo is not None and self._expo[0] == tuple(key):
+                return self._expo[1]
+            rows = self.conn.execute("select injected from turns order by id desc limit ?",
+                                     (max(1, self.expose_window),)).fetchall()
+        dem: dict = {}
+        for (inj,) in rows:
+            if not inj:
+                continue
+            try:
+                ids = json.loads(inj)
+            except ValueError:
+                continue
+            if isinstance(ids, dict):
+                ids = ids.get("ids", [])
+            for i in ids:
+                try:
+                    dem[int(i)] = dem.get(int(i), 0) + 1
+                except (TypeError, ValueError):
+                    continue
+        self._expo = (tuple(key), dem)
+        return dem
 
     def _seen(self, ids: list[int]) -> None:
         now = time.time()

@@ -1819,6 +1819,44 @@ What remains is the hub itself: the next lever is exposure-decay (a row the last
 injected pays a bounded demotion - `turns.injected` is the exposure ledger, already in the
 journal), which attacks the top-of-list where the filler actually lives.
 
+**Exposure-decay, the third lever, also measured and shipped off (2026-10-16,
+`tools/m4_expose.py`).** Built as designed: `expose_window` / `expose_step` / `expose_cap`
+(defaults 0/0/3 = off = byte-identical), the ledger read from `turns.injected` (what the model
+really read), the demotion applied after fusion and before dedup, capped so no fact is ever
+buried by its own history; six tests pin the exact arithmetic, the cap, the window, and the
+ledger-cache stamp. The measurement replays the 40 newest REAL turns in order over store copies,
+truncating each copy's turns table to history before every search so the server's own ledger
+sees exactly what it would have held at that moment:
+
+| step | rows/turn | related % | suppressed-relevant % | top hub rides |
+|---|---|---|---|---|
+| 0.00 | 96.0 | 53.0 | 0.0 | 19 |
+| 0.02 | 96.0 | 51.2 | 25.9 | 19 |
+| 0.05 | 96.0 | 50.7 | 32.8 | 19 |
+| 0.20 | 96.0 | 49.6 | 37.6 | 19 |
+
+It fails BOTH ends: the prize goes DOWN (related% 53→50, not up) and the gate breaks hard
+(26-38% of the block's demonstrably relevant rows suppressed at even step 0.02) - while the
+hub-ride count never moves. The reason is structural and it closes the whole stuffing question:
+**consecutive turns of one conversation are topically correlated, so exposure is a relevance
+signal, not an anti-signal** - the rows shown most are the rows the conversation keeps needing,
+and decay demotes exactly them. The named diagnostic says the rest: the top hubs riding 37 of 40
+turns are two MCP-doc fragments, two ARSA slogans, and real user facts - real content that is
+near-centroid in embedding space, riding every block because recall is top-k of a 2,700-row
+store. They are the same rows the venue proves cosine MUST surface (paraphrase recall is what
+earned the +0.085 sensitivity and the +0.207 grounding); no ranking lever separates "hub riding
+an unrelated query" from "evidence riding a paraphrase query" because they are one mechanism.
+
+The trilogy, closed: **the junk was purged** (8.2% → 50.1% related, the purge was the cure - the
+section above already said so; the hygiene pass this diagnosis surfaced adds the reboot-chatter
+pair 3174/3175, forgotten). **What remains of "stuffing" is the price of paraphrase recall** -
+measured three independent ways (cosine floor: −7.2 coverage; block floor: purity flat while
+evidence falls; exposure: suppresses the relevant) - **plus block size**, which is a product
+dial (`recall_limit`/`max_block_chars`: 96 notes ≈ 18-24k chars ≈ 5-6k tokens of context per
+conversation turn), not an algorithm. All three knobs ship in the tree, each measured, each
+default off; if the block should shrink, the honest lever is the budget the owner sets, with
+the venue replay as the standing coverage guard.
+
 ## Licensing and attribution
 
 - Strata (upstream) is MIT © Niko1221 and contributors; this fork's independent code keeps MIT.
