@@ -1853,7 +1853,9 @@ class MemoryService:
                     # private as its 0700 data dir; the CIPHERTEXT line of the story is the
                     # backup - encrypted pg_dump under this same key-file (the R6 tool).
                     "running_is_plaintext": True,
-                    "backups": "encrypted pg_dump (R6 tool pending)"}),
+                    "backups": "encrypted pg_dump - tools/m6_backup.py (round trip verified "
+                               "2026-10-16: live-store backup 1.7 s, restore byte-verified by "
+                               "identical lexical rankings)"}),
                 "pressure": bool(self.max_memories) and memories >= 0.8 * self.max_memories,
                 "recall_limit": self.recall_limit, "max_block_chars": self.max_block_chars,
                 "per_turn": self.per_turn, "turn_recall_limit": self.turn_recall_limit,
@@ -1891,11 +1893,13 @@ class MemoryService:
 
     # ---- at-rest key material (ADR-002 retired the seal/reveal FILE mechanics - they were
     # one-file rules and a Postgres data dir is many files. What stays is the 0600 key-file
-    # beside the store, because the ENCRYPTED pg_dump backup path (R6) reads it. The
-    # passphrase-env stretch and the FIDO2 seal ride that same key story when the backup tool
-    # lands; the stdlib cipher that sealed the old single file (HMAC-SHA256 CTR,
-    # encrypt-then-MAC, the SMEM1 format) is the obvious core for the dump pipe - deleted here
-    # with the seal it served, returning in the R6 tool where it belongs.) ----
+    # beside the store, because the ENCRYPTED pg_dump backup path reads it - and it has been
+    # read since the same day: the stdlib cipher that sealed the old single file (HMAC-SHA256
+    # CTR, encrypt-then-MAC) returned as tools/m6_backup.py, the SMEM1 format reborn as SDMP1,
+    # round-trip verified live 2026-10-16 (backup of a mid-replay venue store 1.7 s; restore
+    # into a fresh dir searched byte-identical). The passphrase stretch rides --pass-env;
+    # the FIDO2 seal idea stays parked. A stopped cluster is only as private as its data dir,
+    # and its backups are ciphertext. ----
 
     def _key_bytes(self) -> bytes:
         """The 32-byte master, created 0600 on first use. O_EXCL closes the create race; a loser

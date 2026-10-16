@@ -162,6 +162,19 @@ The corrections, for the reader who arrives here first:
   jsonb, the whole import ONE transaction, verification prints counts / supersede-chain
   delta / a spot-recall parity pass. The live store imported clean: 3,347 memories, 75
   shelves, 1,491 turns, 2,907 vectors - all exact; chains 91/91 faithful to the source.
+- **R5b, the named remainder (same-day audit):** the offline A/B harnesses that COPY a store to
+  probe it - lme_retrieval_ab (copy_dir + reveal + husk rules), and beside it m4_expose,
+  m4_grounding, m4_reach, m4_selffeed - still assume a SQLite FILE they may copy. A Postgres
+  store is a cluster, and copying a RUNNING pgdata is a lie; these tools must open stores
+  directly (as m4_blockrule now does) or clone with `CREATE DATABASE ... TEMPLATE` (instant,
+  file-level, isolated - the probe-isolation primitive Postgres hands you) before their next
+  venue use. None is on the cutover path; none should touch a live store until converted.
+- **R6 landed the same evening**: requirements.txt pins psycopg[binary]==3.3.6 and
+  embedded-postgres==18.6.3 (non-Windows marker; Windows rides pixeltable-pgserver at beta-2,
+  wheel and smoke test measured together); setup.py's package lists follow; and
+  `tools/m6_backup.py` pipes pg_dump through the returned stdlib cipher (SDMP1) under the
+  store's key-file - round trip verified on the live venue store mid-replay: dump+seal+write
+  22.6 MB in 1.7 s, restore into a fresh dir searched 5/5 identical.
 - **Cost**: lexical-arm internals 6.3 ms/query at 3,347 rows (FTS5's arm was 1.6 ms - the
   price of computing bm25 from the data instead of a hidden index); full search 19.6 ms,
   hybrid ~79 ms (embedder-dominated, unchanged). See ADR-002's amendment for the breakdown.

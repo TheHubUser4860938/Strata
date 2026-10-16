@@ -15,7 +15,9 @@ memory system they won't be using our fork to begin with"). The byte-identical l
 installs also default to port **8005** (upstream: 8080/8095) so a main install and a fork install can run
 side by side on one PC.
 
-- **Phase 1 — memory service (building):** a curated store (SQLite, FTS5 + a small local embedder) and
+- **Phase 1 — memory service (building):** a curated store (Postgres-native: tsvector/GIN + true
+  BM25 + a small local embedder - the SQLite engine it launched on was retired by ADR-002,
+  2026-10-16) and
   automatic recall injected as a stable hidden block ahead of the conversation. Persistence rides on
   Strata's existing machinery: system-prompt-root checkpoints, pinned message boundaries, parked
   conversations, and `--slot-save-path` session files. Harness cost of memory: zero tokens resent, near-zero
@@ -29,7 +31,8 @@ side by side on one PC.
 
 - **Strata** - the project, the whole build.
 - **Strata Mnemosyne** (short form **Mnemo**) - the memory system this document describes: the store.
-  Shelves and sub-shelves, SQLite + FTS5 + pinned embeddings, the journal, the sweep. Passive, curated.
+  Shelves and sub-shelves, a Postgres-native store (tsvector/GIN + true BM25 + pinned embeddings,
+  ADR-002), the journal, the sweep. Passive, curated.
 - **Clio** (KLEE-oh) - the assistant: the recall path and the working hands. The part with rules,
   budgets and judgement.
 
@@ -118,8 +121,13 @@ suites ran **702 tests, OK (skipped=11)** on `8b1826cd` — unit-proven, suite-p
 recall across fresh conversations on the real IQ3_S model, OpenCode-shape requests (leading client system
 turn), scope isolation, mute, and journal deltas, all measured at :8005 on 2026-10-10 late / 2026-10-11 early.
 
-- **Store:** one SQLite file (WAL, dir mode 0700): `Strata-data/memory/memory.db` on this machine. Stdlib
-  only - FTS5 (porter+unicode61) index, BM25 candidates re-ranked by
+- **Store:** one PostgreSQL cluster inside the store dir (`<dir>/pgdata`, dir mode 0700 - the engine
+  ships inside the pip wheel, cluster start measured 0.3 s, ADR-002 R0), one database per store dir
+  (the path's sha1; `serve.memory.attach()` is the tools' one-line twin of the old sqlite3.connect).
+  The lexical arm is TRUE Lucene BM25 - GIN `@@` candidates, exact-lexeme df probes, store-wide
+  stats from ts_stat, tf read from tsvector position lists (the venue re-record of 2026-10-16
+  rejected `ts_rank_cd` for carrying no IDF: top1 0.394 -> 0.186, measured, and bm25 restored
+  0.370) - re-ranked by
   `0.75 x rank + 0.25 x exp(-age/90d) + 0.10 x confidence`. Scopes: one `user` profile joined to every
   search, plus per-project scopes; a project fact never leaks into another project's recall. Dedup by
   normalized text per scope.
@@ -365,23 +373,24 @@ proved the failure — reciting a rotated-away sample and the current one with i
 because from inside a retrieval budget "I recall" and "I plausibly generated" feel the same. One
 honest number per header turns sample blindness into a stated limit the model can speak around.
 
-**Encryption at rest, stated honestly** (M2 job 6, `memory.encrypt: 1`, live in the dev config
-2026-10-12). A 32-byte key sits beside the db (`memory.key`, 0600, auto-created; `memory.key_file`
-moves it elsewhere - e.g. outside a synced folder). `memory.passphrase_env` names an env var whose
-value is scrypt-stretched and XORed into the master: with it set, the key file AND the passphrase
-are both needed to open the seal. The cipher is
-stdlib-only because memory stays a dependency-free feature here: an HMAC-SHA256 keystream in counter
-mode, encrypt-then-MAC — a flipped byte fails the open loudly instead of decrypting to mush. The seal
-(`memory.db.enc`) is written atomically at every 50th write (measured: 22 ms over the 0.8 MB dev
-store, so a power loss costs at most 49 writes of plaintext-only state) and at every clean shutdown,
-which also shreds the plaintext — **a stopped server leaves only ciphertext; a running one keeps the
-db readable, and `stats().at_rest` says so out loud** rather than claiming more. An optional second
-factor: `memory.passphrase_env` names an environment variable, scrypt-stretched per file, XORed into
-the master — the secret never enters the config file or git. Wrong key or tampered file aborts the
-boot loudly: an "empty" store that quietly forgot yesterday is the failure mode this exists to
-prevent. The planned next stage is a FIDO2 passkey seal (the `hmac-secret` extension wraps the
-key-file itself — touch-to-open on the physical device; opt-in, needs python-fido2, and a printed
-recovery key because a lost passkey must not be a lost memory).
+**Encryption at rest, stated honestly** (rewritten 2026-10-16 by the Postgres rebase, ADR-002: the
+single-file seal retired with the single file). A Postgres cluster is many files, and its plaintext
+lives while the server runs - so the ciphertext is now the BACKUP. A 32-byte key sits beside the
+store (`memory.key`, 0600, auto-created; `memory.key_file` moves it elsewhere - e.g. outside a
+synced folder). `tools/m6_backup.py` pipes the cluster's own pg_dump (the server wheel ships the
+binaries) through the same stdlib cipher that sealed the old file - an HMAC-SHA256 keystream in
+counter mode, encrypt-then-MAC, the SMEM1 format reborn as SDMP1 - and writes the dump 0600 into
+`<dir>/backups/`: measured 1.7 s for the 22.6 MB venue dump beside a running server, and the
+restore into a fresh dir searched byte-identical (5/5 lexical top-10). `memory.passphrase_env`
+names an environment variable whose value is scrypt-stretched per file and XORed into the master -
+the secret never enters the config file or git, and `--pass-env` rides the same stretch. A bad
+magic or a bad tag on restore ABORTS loudly - an "empty" store that quietly forgot yesterday is
+the failure mode this exists to prevent; restore also refuses a database another session holds
+(`pg_stat_activity` counts the neighbors), because pg_restore onto a running writer is how
+half-restored stores are born. A stopped cluster is only as private as its data dir (mode 0700);
+its backups are ciphertext. The planned next stage is a FIDO2 passkey seal (the `hmac-secret`
+extension wraps the key-file itself — touch-to-open on the physical device; opt-in, needs
+python-fido2, and a printed recovery key because a lost passkey must not be a lost memory).
 
 ## Agentic recall and the standing cartridge (added 2026-10-12, live at the next dev-up)
 

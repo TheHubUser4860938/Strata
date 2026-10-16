@@ -27,7 +27,12 @@ free -h | awk 'NR==2 { print "  RAM after stop: used " $3 ", available " $7 }'
 echo "[dev-up 2/4] Starting dev (:8005) ..."
 mkdir -p "$DEVROOT/Strata-data/sessions-dev"
 cd "$DEVROOT" || exit 1
-nohup .venv/bin/python serve/server.py --engine strata --config "$DEVROOT/strata-dev.json" --port 8005 >> "$DEVROOT/dev-server.out" 2>&1 &
+# STRATA_CFG names a different run config (venue days: STRATA_CFG=$PWD/strata-venue-pg.json ./dev-up.sh);
+# the default stays byte-identical to every other boot. The echo is the venue-day guard: the operator
+# sees WHICH store came up instead of guessing (measured the confusion, 2026-10-16 cutover day).
+CFG="${STRATA_CFG:-$DEVROOT/strata-dev.json}"
+echo "  config: $(basename "$CFG")"
+nohup .venv/bin/python serve/server.py --engine strata --config "$CFG" --port 8005 >> "$DEVROOT/dev-server.out" 2>&1 &
 echo "  server pid $!"
 
 echo "[dev-up 3/4] Waiting for the engine to load (weights ~51 GB; up to 7 min) ..."

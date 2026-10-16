@@ -7282,7 +7282,7 @@ def main() -> int:
                 embedder=ed or None)
         except (ValueError, OSError, TypeError) as e:
             raise SystemExit(f"[strata] memory: {e}")
-        at_rest_line = ("data-dir 0700, encrypted dumps under the key-file (R6)"
+        at_rest_line = ("data-dir 0700, encrypted pg_dump backups: tools/m6_backup.py"
                         if svc.memory.encrypt else "data-dir 0700")   # ADR-002: the seal law retired
         print(f"[strata] memory core on: {svc.memory.db_path} "
               f"(inject {'on' if svc.memory.inject else 'off'}, recall {svc.memory.recall_limit} notes "
