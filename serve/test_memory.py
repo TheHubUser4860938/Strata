@@ -1489,6 +1489,65 @@ class WriteTimeDedupe(unittest.TestCase):
             m.close()
 
 
+class AutoShelve(unittest.TestCase):
+    """Write-time sub-shelf creation (user ask, 2026-10-16: "the memory system needs to be able to
+    automatically create new categories and cutters as memories are made"). The law "a false shelf
+    hides a fact" is honored by narrowing what AUTO may mint: sub-shelves only, under a parent the
+    entity's neighbours already live under, on the entity's second mention, collisions refused.
+    Off by default: every write path byte-identical."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _svc(self, **kw):
+        m = MemoryService(self.tmp.name, **kw)
+        self.addCleanup(m.close)
+        return m
+
+    def _classes(self, m):
+        return [r[0] for r in m.conn.execute("select class from memories order by id")]
+
+    def test_off_by_default(self):
+        m = self._svc()
+        m.remember("The city of Klornish-Reach burns every winter", scope="fw")
+        self.assertEqual(self._classes(m), [""], "default path: no shelving, byte-identical")
+
+    def test_second_mention_mints_under_the_family_parent(self):
+        m = self._svc(auto_shelve=True)
+        m.remember("The city of Klornish-Reach burns every winter", scope="fw", klass="FIC/VOLDR")
+        m.remember("Trade ships leave Klornish-Reach each spring", scope="fw")
+        self.assertEqual(self._classes(m), ["FIC/VOLDR", "FIC/KLORN"],
+                         "first mention stayed wild (caller-named shelf aside), the second opened "
+                         "the sub-drawer under the parent its family already lives on")
+        learned = [(r[0], r[1], r[2]) for r in m.conn.execute(
+            "select name, source, anchor from shelves where source='learned'")]
+        self.assertEqual(learned, [("FIC/KLORN", "learned", "klornish-reach")],
+                         "the learned taxonomy is store data: name, source, anchor")
+        seeded = [(r[0], r[1]) for r in m.conn.execute(
+            "select name, source from shelves where source='seed'")]
+        self.assertIn(("FIC/VOLDR", "seed"), seeded,
+                      "the lazy seed taught the table the shelves the store already had")
+
+    def test_entity_whose_family_is_never_shelved_stays_wild(self):
+        m = self._svc(auto_shelve=True)
+        m.remember("Zzyzxqwerty station smells of sulfur", scope="fw")
+        m.remember("Zzyzxqwerty station closes on Sundays", scope="fw")
+        self.assertEqual(set(self._classes(m)), {""},
+                         "auto opens SUB-drawers, never new top-level shelves: top stays human-gated")
+
+    def test_cutter_collision_refuses_the_stranger_drawer(self):
+        m = self._svc(auto_shelve=True)
+        m.remember("The city of Klornish-Reach burns every winter", scope="fw", klass="FIC/VOLDR")
+        m.remember("Ships sail from Klornish-Reach each spring", scope="fw")    # opens FIC/KLORN
+        m.remember("Klornishfield exports grain by rail", scope="fw", klass="FIC/VOLDR")
+        m.remember("Klornishfield joins the customs union", scope="fw")         # same 5-char cutter
+        self.assertEqual(self._classes(m)[-1], "",
+                         "Parent/CUTTER exists anchored to another entity: do not hijack, stay wild")
+
+
 class StubEmbedder:
     """Duck-typed embedder with hand-built vectors per exact text (zeros for anything else):
     tests the hybrid PLUMBING - union, filters, lifecycle, stats - with no onnxruntime and no

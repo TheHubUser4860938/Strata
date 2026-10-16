@@ -308,6 +308,9 @@ def time_bound(value) -> float | None:
     raise ValueError(f"bad date {s!r}: use YYYY-MM-DD, an ISO datetime, or epoch seconds")
 
 
+AUTO_SHELF_CAP = 200      # the most LEARNED sub-drawers one store may auto-mint; past the cap the
+                          # taxonomy goes back to human review (m4_shelves propose mode)
+
 class MemoryService:
     """The store, the recall and the journal. Thread-safe: every statement runs under one lock on a single
     connection (WAL, busy_timeout) - the server's request threads write from several at once."""
@@ -317,7 +320,8 @@ class MemoryService:
                  turn_recall_limit: int = 8, turn_block_chars: int = 2000,
                  max_memories: int = 0, dedup_recall: bool = True,
                  encrypt: bool = False, key_file: str = "", passphrase_env: str = "",
-                 tool: bool = False, embedder=None, floor_cosine: float = 0.0):
+                 tool: bool = False, embedder=None, floor_cosine: float = 0.0,
+                 auto_shelve: bool = False):
         self.directory = memory_dir(directory)      # absolute, created 0700 - same rules as slot_save_path
         self.db_path = os.path.join(self.directory, "memory.db")
         # RELEVANCE FLOOR (2026-10-16, the everyday-use complaint "it stuffs the budget full of
@@ -330,6 +334,11 @@ class MemoryService:
         # the shipped default flips only with the before/after numbers (tools/m4_stuffing.py) and
         # the coverage guard (lme_retrieval_ab --offline) behind it.
         self.floor_cosine = max(0.0, min(1.0, float(floor_cosine)))
+        # AUTO-SHELVE (2026-10-16, the user's ask: "the memory system needs to be able to
+        # automatically create new categories and cutters as memories are made"). Off by default:
+        # every write path byte-identical until a config turns it on. See auto_classify for the
+        # rules and why ONLY sub-shelves are auto-mintable.
+        self.auto_shelve = bool(auto_shelve)
         self.max_block_chars = max(200, int(max_block_chars))
         # the 50-note ceiling was sized to the 6k/12k char budgets: ~250 chars per note means 50
         # notes IS ~12.5k chars, so a config that raises max_block_chars past that could never
@@ -435,6 +444,12 @@ class MemoryService:
                   last_seen_at REAL,
                   hits INTEGER NOT NULL DEFAULT 0
                 );
+                CREATE TABLE IF NOT EXISTS shelves(
+                  name TEXT PRIMARY KEY,
+                  created_at REAL NOT NULL,
+                  source TEXT NOT NULL DEFAULT 'seed',
+                  anchor TEXT NOT NULL DEFAULT ''
+                );
                 CREATE TABLE IF NOT EXISTS turns(
                   id INTEGER PRIMARY KEY AUTOINCREMENT,
                   scope TEXT NOT NULL,
@@ -502,6 +517,80 @@ class MemoryService:
     def _bump(self) -> None:
         self.conn.execute("update meta set value = cast(cast(value as integer) + 1 as text) where key='version'")
 
+
+    def auto_classify(self, text: str) -> str:
+        """Write-time sub-shelf minting (the user's ask, 2026-10-16: categories and cutters must
+        grow as memories are made). The store's own law - "eyeball before you shelve; a false
+        shelf HIDES a fact from every filtered request that stops asking for it" (50-group merge
+        audit) - is honored by narrowing WHAT auto may do, not by gating every shelf on a human:
+
+          * auto mints SUB-shelves only (Parent/CUTTER). The subtree law makes a wrong child
+            survivable: a search on the parent still returns the row, and an unfiltered search
+            always does. A wrong TOP shelf is what hides facts - top shelves stay human-gated
+            (the m4_shelves propose path).
+          * the cutter is the fact's entity token uppercased and cut to 5 chars, LCC-cutter
+            style (Klornish-Reach -> FIC/KLORN), validated through class_name() so the address
+            grammar can never be broken by a learned name;
+          * a drawer opens on the SECOND mention: the entity must already appear in at least one
+            active row, AND at least one of those neighbours must already carry a class - the new
+            cutter inherits the parent its entity's family already lives under. An entity nobody
+            has ever shelved stays wild, exactly as today;
+          * cutter collisions do not hijack: if Parent/CUTTER already exists anchored to a
+            different entity, this fact stays wild rather than joining a stranger's drawer;
+          * AUTO_SHELF_CAP bounds taxonomy explosion.
+
+        The learned taxonomy is STORE data (the shelves table: name, source, anchor), not code -
+        a new category needs no deploy and no reboot, which is the whole point the Postgres port
+        inherits (GIN over this table is then trivial). Cost note: the neighbour lookup is a
+        lower(text) LIKE scan - fine at today's few thousand rows, and the first thing to replace
+        with an index (or pgvector/JSONB thinking) when the store grows.
+        """
+        cands: list[str] = []
+        seen: set[str] = set()
+        for w in re.findall(r"[A-Za-z][A-Za-z0-9'-]{3,}", text):
+            if w[0].isupper() and w.lower() not in STOP and w.lower() not in seen:
+                seen.add(w.lower())
+                cands.append(w)
+        if not cands:
+            return ""
+        now = time.time()
+        with self.lock:
+            if not self.conn.execute("select 1 from shelves limit 1").fetchone():
+                self.conn.execute("insert or ignore into shelves(name, created_at, source) "
+                                  "select distinct class, ?, 'seed' from memories where class != ''",
+                                  (now,))
+                self.conn.commit()          # lazy seed: the table learns the shelves the store already has
+            if self.conn.execute("select count(*) from shelves where source='learned'").fetchone()[0] \
+                    >= AUTO_SHELF_CAP:
+                return ""                   # past the cap: propose, do not mint
+            for w in cands:
+                rows = self.conn.execute(
+                    "select coalesce(class,'') from memories where invalid_at is null "
+                    "and lower(text) like ?", (f"%{w.lower()}%",)).fetchall()
+                if not rows:
+                    continue                                            # first mention: no drawer yet
+                parents = [r[0].split("/")[0].split(".")[0] for r in rows if r[0]]
+                if not parents:
+                    continue                                            # family never shelved: stays wild
+                parent = max(set(parents), key=parents.count)
+                name = f"{parent}/{w[:5].upper()}"
+                try:
+                    name = class_name(name)
+                except ValueError:
+                    continue                                            # grammar refuses the address
+                cur = self.conn.execute("insert or ignore into shelves values(?,?,?,?)",
+                                        (name, now, "learned", w.lower()))
+                if cur.rowcount == 0:
+                    anchor = self.conn.execute("select anchor from shelves where name=?",
+                                               (name,)).fetchone()
+                    if not anchor or anchor[0] != w.lower():
+                        continue                    # same cutter, different entity: do not hijack
+                self.conn.commit()
+                self._touched()                     # the version stamp moves with the taxonomy
+                return name
+        return ""
+
+
     def remember(self, text: str, scope: str = USER_SCOPE, source: str = "manual",
                  confidence: float | None = None, provenance: dict | None = None,
                  klass: str | None = None, guard: bool = True) -> dict:
@@ -520,6 +609,10 @@ class MemoryService:
             raise ValueError("memory text is over 4000 characters - split it into separate facts")
         scope = scope_name(scope, USER_SCOPE)
         klass = class_name(klass) if klass else ""
+        if not klass and self.auto_shelve:
+            # the auto-shelver only fills in what the caller did NOT name: a caller that named a
+            # class (the sweep's keyword map, a human op=remember, correct()) always wins.
+            klass = self.auto_classify(text)
         conf = 0.8 if confidence is None else max(0.0, min(1.0, float(confidence)))
         now = time.time()
         # PHASE 4: embed OUTSIDE the lock (~5 ms CPU per note) so writes never serialize on the
