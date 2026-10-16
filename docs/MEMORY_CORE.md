@@ -26,7 +26,7 @@ byte-identical to the release it forked from (v0.1.42, `61b3fb5`).
 - **Strata** - the project, the whole build.
 - **Strata Mnemosyne** (short form **Mnemo**) - the memory system this document describes: the store.
   Shelves and sub-shelves, SQLite + FTS5 + pinned embeddings, the journal, the sweep. Passive, curated.
-- **Clio** (KLY-oh) - the assistant: the recall path and the working hands. The part with rules,
+- **Clio** (KLEE-oh) - the assistant: the recall path and the working hands. The part with rules,
   budgets and judgement.
 
 The split is architectural, not decorative: storage and retrieval are separate jobs in this design,

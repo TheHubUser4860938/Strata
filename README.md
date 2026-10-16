@@ -7,7 +7,7 @@ way no matter which app is knocking.
 
 **Naming (settled 2026-10-16).** The project is **Strata**. Its built-in memory system is **Strata
 Mnemosyne** — the store: subject shelves, SQLite + FTS5 + pinned embeddings, the journal, the sweep.
-The assistant that recalls it — the chat voice and the coding agent's hands — is **Clio** (KLY-oh),
+The assistant that recalls it — the chat voice and the coding agent's hands — is **Clio** (KLEE-oh),
 who in the mythology is Mnemosyne's daughter: the retriever descends from the store. The split is
 architectural, not decoration: storage is passive and curated; recall is the part with rules,
 budgets and judgement. Short form for code and speech: **Mnemo**.
