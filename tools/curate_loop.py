@@ -42,7 +42,7 @@ answers) - deliberately UNTRACKED by git (personal-hygiene policy); the evidence
 git is the aggregate counts + the verdict block, never raw personal text.
 """
 from __future__ import annotations
-import argparse, collections, datetime, json, os, re, sqlite3, sys, time
+import argparse, collections, datetime, json, os, re, sys, time
 import urllib.error, urllib.parse, urllib.request as U
 from pathlib import Path
 
@@ -609,10 +609,16 @@ def main():
                       f"    probe: {c['probe']}  gold: {c['gold']}  "
                       f"cold: {' | '.join(x['answer'][:40] for x in cold)}")
     if processed_ids and not a.no_store:                   # the store's own hygiene flag
-        con = sqlite3.connect(db_path, timeout=10)
-        con.executemany("update turns set processed=1 where id=?", [(i,) for i in processed_ids])
-        con.commit()
-        con.close()
+        from serve.memory import attach
+        store_dir = stats.get("dir") or (os.path.dirname(db_path) if db_path else "")
+        if not store_dir:
+            raise SystemExit("stats.dir missing - cannot mark turns processed")
+        # ADR-002: the PG twin of the old sqlite3.connect - and the ATTACH law (measured, R0b)
+        # is what makes this safe mid-server-run: the sweep never stops a live cluster.
+        with attach(store_dir, autocommit=True) as con:
+            with con.cursor() as cur:
+                cur.executemany("update turns set processed=1 where id = %s",
+                                [(int(i),) for i in processed_ids])
 
     # ---- verdict block (the part that is safe to commit: counts, no personal text) --------
     pend_after = (http(url + "/memory", timeout=15)[1].get("stats") or {}).get("turns_pending")

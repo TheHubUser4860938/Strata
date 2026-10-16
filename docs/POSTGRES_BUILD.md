@@ -131,3 +131,37 @@ time.
 What the seam does NOT touch: the recall math (RRF_K=1.0, blend weights, the pinned-matrix
 cosine), the curation loop and merge law, the `/memory` API, the block/pin-cache laws, and every
 default - SQLite stays the shipped default until P5 says otherwise with numbers.
+
+## 4. Corrections, same day - R1-R5 landed (2026-10-16, evening)
+
+This document is the audit as it stood in the morning; by evening it is history, not plan.
+The corrections, for the reader who arrives here first:
+
+- **§3's thin adapter is dead.** ADR-002 chose the full native rewrite and it landed (R1-R3,
+  `ce07c225`): `serve/memory.py` is Postgres through one psycopg connection; there is no
+  dialect shim and no SQLite path.
+- **The lexical arm's law changed twice, and the second change was measured.** R1 shipped
+  `ts_rank_cd` as the rank; the venue re-record preview fell top1 0.394 -> 0.186 (coverage
+  held), because ts_rank_cd has no IDF. The arm now computes REAL Lucene bm25 natively -
+  GIN `@@` candidates, exact-lexeme df probes, cached ts_stat stats, tf from the position
+  lists - and the gate passed (-0.004 / -0.006 / -0.024, explained row-by-row). The full
+  account, with the wrong-number correction of this doc's own "tokenizer config" bet, is
+  ADR-002's amendment section.
+- **Two Postgres primitives that were assumed do not behave as assumed** (checked against
+  18.6, measured): the `? ?| ?&` lexeme-operator family is jsonb's - `tsvector ? text` does
+  not exist in core PG; exact-lexeme matching is `@@` at the 'simple' config. And
+  `tsvector_to_array` DEDUPLICATES its lexemes, so the only exact term frequency a bare
+  tsvector column offers is its position list (`'tok':1,4,7A`).
+- **§1's raw-sqlite tool inventory (R5) landed the same day**: curate_loop, m2_merge,
+  m4_embed, m4_floor, m4_shelves, m4_stuffing, test_m2_merge and m4_blockrule now speak
+  Postgres through `serve.memory.attach()` - the tools' one-line twin of sqlite3.connect,
+  under the attach law (R0b: a sweep never stops a running cluster). m4_blockrule dropped
+  the copy/reveal/husk dance: an eval store is disposable by law, so probes open it direct.
+- **R4 landed**: `tools/m5_import.py` - the one-way door. Ids preserved (OVERRIDING SYSTEM
+  VALUE + setval), vectors byte-copied, provenance and the injected ledger parsed into real
+  jsonb, the whole import ONE transaction, verification prints counts / supersede-chain
+  delta / a spot-recall parity pass. The live store imported clean: 3,347 memories, 75
+  shelves, 1,491 turns, 2,907 vectors - all exact; chains 91/91 faithful to the source.
+- **Cost**: lexical-arm internals 6.3 ms/query at 3,347 rows (FTS5's arm was 1.6 ms - the
+  price of computing bm25 from the data instead of a hidden index); full search 19.6 ms,
+  hybrid ~79 ms (embedder-dominated, unchanged). See ADR-002's amendment for the breakdown.

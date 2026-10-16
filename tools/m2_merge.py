@@ -19,13 +19,13 @@ Dry run by default; --apply deletes.  Prints before/after counts.  No engine cal
 """
 import argparse
 import json
-import sqlite3
 import sys
 import urllib.request
 from collections import Counter, defaultdict
+from pathlib import Path
 
 sys.path.insert(0, __file__.rsplit("/", 2)[0])
-from serve.memory import STOP, norm_text  # noqa: E402  (same identity + same stop-words the store dedups on)
+from serve.memory import STOP, attach, norm_text  # noqa: E402  (same identity + same stop-words the store dedups on)
 
 NEG = {"not", "no", "never", "n't", "none", "without", "isnt", "arent"}
 WH = ("who", "what", "when", "where", "which", "why", "how", "is", "are", "was",
@@ -117,7 +117,9 @@ def groups(rows, df, bar):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--db", default="Strata-data/memory-eval/memory.db")
+    ap.add_argument("--db", default="Strata-data/memory-eval",
+                    help="store DIRECTORY (ADR-002: the cluster lives inside it; a path ending in "
+                         "memory.db still resolves to its directory, for old hands' sake)")
     ap.add_argument("--url", default="http://127.0.0.1:8005")
     ap.add_argument("--apply", action="store_true", help="retire the redundant rows (default: dry run)")
     ap.add_argument("--hard", action="store_true", help="with --apply: delete (op=forget) instead of "
@@ -132,12 +134,19 @@ def main():
                                                "stay store-wide; only these rows may group.")
     a = ap.parse_args()
 
-    conn = sqlite3.connect(a.db)
-    conn.row_factory = sqlite3.Row
-    cols = {r[1] for r in conn.execute("pragma table_info(memories)")}   # pre-job-7 dbs have no invalid_at
-    live = "where invalid_at is null" if "invalid_at" in cols else ""
+    # ADR-002: the store is Postgres - attach() is the tools' one-liner twin of the old
+    # sqlite3.connect, and the attach law (measured, R0b) keeps a dry run safe beside a live
+    # server. The pre-job-7 pragma probe retires with SQLite: a PG store carries invalid_at
+    # from birth, so "active rows only" needs no capability check. created_at crosses as an
+    # epoch float (extract) so the survivor sort -rows[i]["created_at"] keeps its exact law.
+    from psycopg.rows import dict_row
+    _p = Path(a.db)
+    store = str(_p.parent if _p.name.startswith("memory.db") else _p)
+    conn = attach(store, autocommit=True, row_factory=dict_row)
     rows = [dict(r) for r in conn.execute(
-        f"select id,scope,text,source,hits,confidence,created_at from memories {live} order by id")]
+        "select id,scope,text,source,hits,confidence,extract(epoch from created_at) as created_at"
+        " from memories where invalid_at is null order by id").fetchall()]
+    conn.close()
     docs = [set(norm_text(r["text"]).split()) for r in rows]
     df = Counter(t for d in docs for t in d)
     bar = max(3, len(rows) // 50)          # the RELATIVE rare-token bar (see groups())

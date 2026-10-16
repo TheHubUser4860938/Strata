@@ -31,7 +31,6 @@ Rows without vectors are embedded on the fly here (cheap: ~2 ms each); a store t
 clustered often is better served by tools/m4_embed.py once.
 """
 import argparse
-import sqlite3
 import sys
 from collections import Counter
 from pathlib import Path
@@ -39,7 +38,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import numpy as np                                                # noqa: E402
 from serve.embedder import Embedder                               # noqa: E402
-from serve.memory import norm_text, STOP                          # noqa: E402
+from serve.memory import attach, norm_text, STOP                  # noqa: E402
 import urllib.request as U                                        # noqa: E402
 import json                                                       # noqa: E402
 
@@ -53,7 +52,7 @@ def rows_with_vectors(conn, emb, want_class):
     if want_class == "wild":
         where += " and (class is null or class='')"
     elif want_class:
-        where += " and class like ?"
+        where += " and class like %s"
         args.append(want_class + "%")
     rows = conn.execute(f"select id, text, coalesce(class,'') from memories {where} order by id",
                         args).fetchall()
@@ -131,12 +130,12 @@ def main() -> int:
     ap.add_argument("--url", default="http://127.0.0.1:8005")
     a = ap.parse_args()
 
-    db = Path(a.dir) / "memory.db"
-    if not db.exists():
-        print(f"no store at {db}")
+    if not (Path(a.dir) / "pgdata").exists():
+        print(f"no Postgres cluster in {a.dir} - import the store once: "
+              f"python3 tools/m5_import.py --dir {a.dir}")
         return 2
-    conn = sqlite3.connect(str(db))
-    conn.execute("PRAGMA busy_timeout=10000")
+    conn = attach(a.dir)          # ADR-002: attach law (R0b) - a proposal run never disturbs a
+                                  # live server, and there is no WAL busy_timeout to negotiate
 
     if a.apply:
         ids = [int(x) for x in a.ids.split(",") if x.strip()]

@@ -10,30 +10,14 @@ The rules under test, each earned as a bug on the live store:
 Run: python3 tools/test_m2_merge.py
 """
 import re
-import sqlite3
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parent))
 TOOL = HERE / "m2_merge.py"
-
-SCHEMA = """
-create table memories (
-    id integer primary key autoincrement,
-    scope text not null,
-    text text not null,
-    source text,
-    hits integer default 0,
-    confidence real,
-    created_at integer,
-    class text,
-    provenance text,
-    invalid_at integer,
-    superseded_by integer
-);
-"""
 
 FIXTURES = [
     # one fact, two phrasings: shared rare payload, no divergent subjects -> mergeable.
@@ -53,28 +37,37 @@ FIXTURES = [
 ]
 
 
-def make_db(path: str) -> None:
-    conn = sqlite3.connect(path)
-    conn.executescript(SCHEMA)
-    for i, (scope, text) in enumerate(FIXTURES):
-        conn.execute("insert into memories (scope, text, source, created_at) values (?,?,?,?)",
-                     (scope, text, "fixture", 1_700_000_000 + i))
-    conn.commit()
-    conn.close()
+def make_store(dirpath: str) -> None:
+    """ADR-002: the fixture store is a REAL Postgres store - MemoryService starts a cluster in
+    the tmp dir (0.3 s) and remember() lands the rows exactly the way the product does; then
+    created_at gets the fixture's distinct stamps (to_timestamp) so the survivor law - oldest
+    row wins a group - reads exactly as the SQLite-era fixture wrote it. Ids land 1..N in
+    insert order: the identity column has never been touched."""
+    from serve.memory import MemoryService
+    m = MemoryService(dirpath)
+    for scope, text in FIXTURES:
+        m.remember(text, scope=scope, source="fixture")
+    with m.lock:
+        for i in range(len(FIXTURES)):
+            m.conn.execute("update memories set created_at = to_timestamp(%s) where id = %s",
+                           (1_700_000_000 + i, i + 1))
+        m.conn.commit()
+    m.close()                                    # the starter's close stops its cluster (R0b law)
 
 
-def run_dry_run(db: str) -> str:
-    out = subprocess.run([sys.executable, str(TOOL), "--db", db], capture_output=True, text=True,
-                         timeout=60)
+def run_dry_run(store: str) -> str:
+    out = subprocess.run([sys.executable, str(TOOL), "--db", store], capture_output=True, text=True,
+                         timeout=120)
     assert out.returncode == 0, f"tool exited {out.returncode}: {out.stderr[-400:]}"
     return out.stdout
 
 
 def main() -> int:
     with tempfile.TemporaryDirectory() as td:
-        db = f"{td}/store.db"
-        make_db(db)
-        out = run_dry_run(db)
+        store = f"{td}/store"
+        Path(store).mkdir()
+        make_store(store)
+        out = run_dry_run(store)
     print(out)
 
     fails = []

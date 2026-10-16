@@ -84,14 +84,23 @@ def main() -> int:
     ap.add_argument("--out", default="", help="optional jsonl: per-question per-floor detail")
     a = ap.parse_args()
 
-    work = Path(a.work); work.mkdir(parents=True, exist_ok=True)
-    lex, hyb = AB.prepare_offline(a.store, a.model, a.threads, work)
-    svc = AB.open_copy(hyb, a.model, a.threads, True)
+    # ADR-002: the probe opens the eval store DIRECTLY. The SQLite-era copy dance (copy_dir,
+    # reveal, husk rules, the --work embedded cache) existed to isolate writes to a single file;
+    # a venue store is disposable by law - it rebuilds in three minutes - and the probe's only
+    # side effect is hits bumps on a store that exists only to be probed. --work stays accepted
+    # so old runbook lines run unchanged; it simply does nothing now.
+    from serve.memory import MemoryService
+    from serve.embedder import Embedder
+    svc = MemoryService(a.store, embedder=Embedder(a.model, a.threads))
     svc.search("warm", limit=1)
 
     maps = H.load_map(a.map_path)
     data = json.load(open(a.data))
-    have = {r[0][4:] for r in svc.conn.execute("select distinct scope from memories where invalid_at is null")}
+    with svc.lock:
+        scopes = svc.conn.execute(
+            "select distinct scope from memories where invalid_at is null").fetchall()
+        svc.conn.commit()
+    have = {r[0][4:] for r in scopes}
     data = [q for q in data if q["question_id"] in maps and q["question_id"] in have]
     print(f"[rule] {len(data)} questions scored against the replay store (scopes present AND mapped); "
           f"floors {a.floors}; shapes {a.shapes}", flush=True)

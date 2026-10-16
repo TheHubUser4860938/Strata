@@ -146,3 +146,46 @@ noise floor. If coverage drops more than the floor, the fix is the tokenizer CON
 normalization) - not the engine - and it is tuned before R7 is accepted. If no config recovers
 parity, that is the falsifier that this rebase stops and re-plan: the decision would then flip
 back to ADR-001's phasing with the shim, and we will know precisely which rows diverged and why.
+
+## Amendment (2026-10-16, the day it landed): the gate fired early, and the named fix was wrong
+
+The venue re-record did not wait for R7. The R4/R5 work rebuilt the venue on Postgres the day
+R1-R3 landed, and the gate's first answer was: NOT YET, for a reason this ADR had guessed wrong.
+
+- What fell was POSITION, not coverage: rowcov 0.817 -> 0.798, sesscov 0.822 -> 0.801 (inside
+  the floor), top1 0.394 -> 0.186 (far outside it). The named-fix clause had bet on the
+  tokenizer; the tokenizer hypothesis predicts the opposite shape - rows that stop MATCHING,
+  not rows that match and lose their seat.
+- The cause was the ranking function. `ts_rank_cd` carries NO inverse document frequency -
+  FTS5's built-in bm25 did - so common words voted as loudly as rare ones and the RRF arm
+  inherited the blindness. The diagnosis was pinned before touching the engine: a same-data
+  Python bm25 recovered 20 of 25 sampled top1 flips (measured), and the ts_rank_cd
+  normalization mask changed nothing (0.186 -> 0.186, measured).
+- What ships is native: GIN `@@` supplies the candidate set; true Lucene bm25 (idf =
+  ln(1+(n-df+0.5)/(df+0.5)), k1=1.2, b=0.75 - FTS5's own constants) ranks it from store-wide
+  stats. df comes from exact-lexeme probes (`@@ to_tsquery('simple', tok)` - the tsvector
+  `?` lexeme-operator family the first draft reached for belongs to jsonb, not core PG,
+  checked against pg_operator on 18.6); (n, avgdl) come from ts_stat's nentry tally, cached
+  and keyed on the row count; tf is read EXACTLY from the tsvector position lists
+  (tsvector_to_array deduplicates - measured - so it cannot serve as tf).
+- The gate then passed on the preview: rowcov 0.813 / sesscov 0.816 / top1 0.370 - deltas
+  -0.004 / -0.006 / -0.024, all inside ±0.05 - and the 23 coverage-changed questions are
+  explained row-by-row, which is what the deterministic clause demands: 20 lose a gold row at
+  MATCH time (the porter -> snowball english_stem boundary; PG 18 has no porter dictionary,
+  see POSTGRES_BUILD.md §2), 3 are pure re-orderings inside the cosine arm's unchanged votes.
+  The 20 losses are offset by 10 gains the other way: churn, not decay. Filed:
+  spikes/lme/blockrule-venue-pg-20261016.jsonl against spikes/lme/blockrule-venue-20261016.jsonl.
+- The falsifier clause stands, narrowed by measurement: the tokenizer config is the named
+  lever for the residual 20 match-losses IF the full R7 re-record - answer-level, on the live
+  server - asks for more than the preview shows. If a deterministic metric breaches the floor
+  at R7 and no config recovers parity, the falsifier stands as written: stop and re-plan with
+  the row-level knowledge.
+- Cost, measured on the live twin (3,347 rows): the lexical arm's internals are 6.3 ms/query
+  (candidate scan 0.9 + df probes 4.5 + scoring 0.9) against FTS5's 1.6 ms - the honest price
+  of computing bm25 from the data rather than from a hidden index; full lexical-only search
+  19.6 ms, hybrid ~79 ms (the embedder dominates, unchanged). The single wide-pass df
+  alternative was tried and measured SLOWER at this scale (26.5 vs 20.7 ms) and reverted the
+  same day. Every recall budget in the tree still clears.
+
+What the preview does NOT settle: the answer-level metrics need the live server on Postgres -
+that is R7's reboot. The deterministic half of the gate is green today.

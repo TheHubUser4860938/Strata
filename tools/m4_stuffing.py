@@ -24,8 +24,11 @@ Reads the db directly (the journal is store data; no engine, no boot, no mute he
 """
 from __future__ import annotations
 
-import argparse, collections, json, sqlite3, sys
+import argparse, collections, json, sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from serve.memory import attach                    # noqa: E402  (ADR-002: the store is Postgres)
 
 ROOT = Path(__file__).resolve().parent.parent
 STOP = set("a an and are as at be by can could did do does for from had has have he her his how i "
@@ -40,16 +43,19 @@ def toks(t: str) -> set:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--db", default=str(ROOT / "Strata-data/memory-eval/memory.db"))
+    ap.add_argument("--db", default=str(ROOT / "Strata-data/memory-eval"),
+                    help="store DIRECTORY (a .../memory.db path still resolves to its dir)")
     ap.add_argument("--turns", type=int, default=12, help="newest N injected turns to analyze")
     ap.add_argument("--df-max", type=int, default=56, help="rare-token bar (m2_merge law)")
     ap.add_argument("--out", default="", help="optional jsonl: per-turn related/zero-overlap detail")
     a = ap.parse_args()
 
-    c = sqlite3.connect(a.db)
-    c.row_factory = sqlite3.Row
+    from psycopg.rows import dict_row
+    _p = Path(a.db)
+    store = str(_p.parent if _p.name.startswith("memory.db") else _p)
+    c = attach(store, autocommit=True, row_factory=dict_row)
     df: collections.Counter = collections.Counter()
-    rows: dict[int, sqlite3.Row] = {}
+    rows: dict[int, dict] = {}
     for r in c.execute("select id, text, class, hits from memories where invalid_at is null"):
         rows[r["id"]] = r
         df.update(set(toks(r["text"])))
@@ -57,8 +63,8 @@ def main() -> int:
     def payload(t):
         return {w for w in toks(t) if w not in STOP and df.get(w, 10 ** 9) <= a.df_max}
 
-    turns = c.execute("select id, user_text, injected, created_at from turns where injected is not "
-                      "not null and injected != '' order by id desc limit ?", (a.turns,)).fetchall()
+    turns = c.execute("select id, user_text, injected, created_at from turns where injected is "
+                      "not null order by id desc limit %s", (a.turns,)).fetchall()
     if not turns:
         print("no injected turns in the journal yet - the column fills on the live server")
         return 2
@@ -66,12 +72,16 @@ def main() -> int:
     tot = rel = 0
     filler: collections.Counter = collections.Counter()
     for t in sorted(turns, key=lambda r: -r["id"]):
-        try:
-            ids = json.loads(t["injected"] or "[]")
-        except json.JSONDecodeError:
-            ids = []
-        if isinstance(ids, dict):
-            ids = ids.get("ids", [])
+        inj = t["injected"]
+        if isinstance(inj, list):
+            ids = inj                                  # jsonb returns the ledger natively
+        elif isinstance(inj, dict):
+            ids = inj.get("ids", [])
+        else:
+            try:
+                ids = json.loads(inj or "[]")          # a TEXT-era value still reads
+            except json.JSONDecodeError:
+                ids = []
         ut = payload(t["user_text"] or "")
         hit, miss, examples = 0, 0, []
         for i in ids:

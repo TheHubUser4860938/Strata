@@ -213,6 +213,28 @@ def memory_dir(value: str, base: str | None = None) -> str:
     return path
 
 
+def store_dbname(store_dir: str) -> str:
+    """The database name a store dir owns inside its cluster - the same derivation MemoryService
+    uses, exposed so tools and importers compute it identically. sha1, not the path text: PG names
+    are 63 bytes and dirs are arbitrary."""
+    return "m" + hashlib.sha1(memory_dir(store_dir).encode("utf-8")).hexdigest()[:16]
+
+
+def attach(store_dir: str, **kw):
+    """A psycopg connection to a store dir's database, ATTACHING to the cluster that lives inside
+    it - the tools' native twin of the old sqlite3.connect(memory.db): one call, same habit. The
+    attach law (measured, ADR-002 R0b): attaching starts nothing when a server already runs the
+    cluster, and an attacher leaving does not stop it - so the curation sweep and the venue
+    harnesses read a live store exactly as they always did. The returned connection is the CALLER's
+    to close. kw passes through to psycopg.connect (autocommit=..., row_factory=...)."""
+    try:
+        import embedded_postgres as _ep
+    except ImportError:
+        import pixeltable_pgserver as _ep          # type: ignore  # the Windows wheel (ADR-002)
+    srv = _ep.get_server(os.path.join(memory_dir(store_dir), "pgdata"))
+    return psycopg.connect(srv.get_uri(), dbname=store_dbname(store_dir), **kw)
+
+
 # The tool in the CHAT TEMPLATE's flat form ({name, description, parameters}) - what MCP's
 # template_tools produce and what the renderer's `tool | tojson` line expects. The OpenAI route
 # flattens the client's nested tools before this is appended, so flat is the only correct shape.
@@ -319,6 +341,10 @@ AUTO_SHELF_CAP = 200      # the most LEARNED sub-drawers one store may auto-mint
                           # taxonomy goes back to human review (m4_shelves propose mode)
 
 FTS_CFG = "strata_fts"    # the store's OWN text-search configuration, created by the schema below.
+_TSV_TOK = re.compile(r"'((?:[^']|'')*)':([0-9,]+)")
+# one tsvector ENTRY: 'lexeme':1,4,7A. The position list is the term frequency - the only exact
+# tf a bare tsvector column offers (tsvector_to_array deduplicates its lexemes; measured,
+# 2026-10-16), and _bm25 reads it straight off the ts::text the candidate select already carries.
                           # PG 18 has no porter dictionary at all (measured, ADR-002 R0: pg_ts_dict
                           # lists only snowball *_stem + simple), so the native answer to FTS5's
                           # 'porter unicode61' is: default parser + english_stem + NO stopword list.
@@ -405,7 +431,8 @@ class MemoryService:
         self.pgdata = os.path.join(self.directory, "pgdata")
         self._pg_uri = pg_uri
         self._srv = None                            # the cluster handle when this store started one
-        self._dbname = "m" + hashlib.sha1(self.directory.encode("utf-8")).hexdigest()[:16]
+        self._dbname = store_dbname(self.directory)  # one derivation, shared with attach() - the
+        # tools and the store must name the database identically or a sweep reads an empty world.
         # RELEVANCE FLOOR (2026-10-16, the everyday-use complaint "it stuffs the budget full of
         # everything it can find"): measured on the journal's own turns.injected record, 8.2% of
         # injected rows shared a payload with the question, and the same rows rode 8 of 12 turns
@@ -475,6 +502,8 @@ class MemoryService:
         self.embedder = embedder if embedder is not None else None
         self._vmeta = None                                  # cached (ids, mat, scope, class, ...) or None
         self._vdirty = True
+        self._bm25_n: int | None = None                     # cached (n, avgdl) for the lexical arm
+        self._bm25_avgdl: float | None = None               # - _bm25_stats() recomputes when n moves
         self._ecount = -1
         self._qc: "OrderedDict[str, object]" = OrderedDict()  # normalized query -> vector, capped at 128
         self._svec: "OrderedDict[str, tuple]" = OrderedDict()  # scope -> (stamp, {row id: vector}), capped at 32
@@ -1215,15 +1244,69 @@ class MemoryService:
             return "", 0, left
         return header + "\n" + "\n".join(lines), len(lines), left
 
+    def _bm25_stats(self) -> tuple[float, float]:
+        """(n, avgdl) for the lexical arm - FTS5 computed document stats over the whole table for
+        every query; a bare Postgres tsvector column carries no hidden equivalent, so the store
+        keeps its own: the active-row count is one cheap probe, and avgdl comes from ts_stat's
+        nentry tally, CACHED and recomputed only when the count moved (the curation timer inserts
+        every ~30 min; keying the cache on n keeps it honest without a restart). Measured on the
+        venue store (11k rows): the full ts_stat pass costs a few tens of ms, once per change."""
+        with self.lock:
+            n = self.conn.execute(
+                "select count(*) from memories where invalid_at is null").fetchone()[0]
+            if self._bm25_n != n or self._bm25_avgdl is None:
+                tot = self.conn.execute(
+                    "select coalesce(sum(st.nentry), 0) from ts_stat("
+                    "'select ts from memories where invalid_at is null', 'ts') st").fetchone()[0]
+                self.conn.commit()
+                self._bm25_avgdl = max(1.0, float(tot) / max(1, n))
+                self._bm25_n = n
+            return float(n), self._bm25_avgdl
+
+    def _bm25(self, rows: list, qtoks: list, dfm: dict, n: float, avgdl: float,
+              limit: int) -> list:
+        """REAL bm25 over the @@ candidates - the venue re-record of 2026-10-16 is why ts_rank_cd
+        is demoted to a candidate FILTER here: coverage survived the rebase (0.817 -> 0.798, inside
+        the floor) but rendered top1 fell 0.394 -> 0.186, and a same-data Python bm25 recovered 20
+        of 25 sampled flips. The cause is structural: ts_rank_cd has no inverse document frequency,
+        so common words vote as loud as rare ones and the RRF arm inherits the blindness. The law
+        here is FTS5's own: Lucene idf = ln(1 + (n-df+0.5)/(df+0.5)), saturation k1=1.2, length
+        norm b=0.75 - tf read EXACTLY from the tsvector position lists (tsvector_to_array
+        deduplicates, so it cannot serve as tf; measured). df and (n, avgdl) are store-wide, as
+        FTS5's table stats were; ties break by id ASC, the same visible-ORDER BY law as before."""
+        if not rows or not qtoks:
+            return []
+        qset = set(qtoks)
+        idfc = {w: math.log(1.0 + (n - dfm.get(w, 0) + 0.5) / (dfm.get(w, 0) + 0.5))
+                for w in qset}
+        k1, b = 1.2, 0.75
+        scored = []
+        for r in rows:
+            tf: dict = {}
+            dl = 0
+            for mt in _TSV_TOK.finditer(r[7]):
+                c = mt.group(2).count(",") + 1        # positions in the list = term frequency
+                dl += c
+                w = mt.group(1).replace("''", "'")
+                if w in qset:
+                    tf[w] = tf.get(w, 0) + c
+            s = 0.0
+            for w, f in tf.items():
+                s += idfc[w] * f * (k1 + 1.0) / (f + k1 * (1.0 - b + b * dl / avgdl))
+            if s > 0.0:
+                scored.append((s, r))
+        scored.sort(key=lambda x: (-x[0], x[1][0]))   # score desc, id asc - the visible tiebreak
+        return [r for _s, r in scored][:limit * 3]
+
     def search(self, query: str, scope: str = DEFAULT_PROJECT, limit: int | None = None,
                classes: list[str] | None = None, since: float | None = None,
                until: float | None = None, semantic: bool = True) -> list[dict]:
         """tsvector/GIN candidates over the user scope plus this request's project scope - the native
-        twin of the SQLite-era bm25 arm (ADR-002): to_tsquery ORs with |, the order is ts_rank_cd
-        DESC with an explicit id tiebreak (SQLite's ties fell to rowid order; PG's are undefined, so
-        the law moves into the ORDER BY where it is visible), and the arm feeds the blend RANK
-        POSITIONS, never rank values - which is what contains the bm25-vs-ts_rank_cd divergence to
-        a few adjacent swaps, with the venue re-record measuring the residue row by row. Then
+        twin of the SQLite-era bm25 arm (ADR-002): to_tsquery ORs with |, the GIN probe supplies the
+        candidate set, _bm25() ranks it with REAL Lucene bm25 (ts_rank_cd was tried and rejected the
+        day it was measured - no IDF, and the venue top1 fell 0.394 -> 0.186), ties break by id ASC
+        in visible code (SQLite's ties fell to rowid order; PG's are undefined), and the arm feeds
+        the blend RANK POSITIONS, never rank values. Then
         re-ordered by a blend: 0.75 rank + 0.25 recency + 0.10 confidence, all in [0,1]-ish.
         Returns at most `limit`.
         classes (PHASE 4.5) filters to shelf subtrees by prefix - a conversation about the engine asks
@@ -1268,16 +1351,42 @@ class MemoryService:
                 bparams.append(self._dt(float(v)))
         rows: list = []
         if match:
+            # bm25 must SEE every candidate to RANK them - the old arm's limit*3 cut the candidate
+            # set BY RANK, which only made sense while the rank was itself the law. The GIN probe
+            # still supplies the set (measured, ADR-002 R0: 1.6 ms at 2,707 rows); order by id
+            # keeps the cap deterministic, and the cap is worst-case honesty: at this store's
+            # scale it never binds; a query matching >4000 rows is a different design conversation.
             with self.lock:
-                rows = self.conn.execute(
+                cand = self.conn.execute(
                     f"select m.id, m.scope, m.text, m.confidence, m.updated_at, m.class, m.hits,"
-                    f" ts_rank_cd(m.ts, q) as r"
+                    f" m.ts::text"
                     f" from memories m, to_tsquery('{FTS_CFG}', %s) q"
                     " where m.ts @@ q and m.invalid_at is null and m.scope in ("
                     + ",".join(["%s"] * len(scopes)) + ")" + shelf + bounds
-                    + " order by r desc, m.id asc limit %s",
-                    [match] + scopes + prefixes + bparams + [limit * 3]).fetchall()
+                    + " order by m.id limit 4000",
+                    [match] + scopes + prefixes + bparams).fetchall()
+                # the query's STEMMED tokens in one round trip: to_tsvector runs the SAME parser and
+                # english_stem as the to_tsquery that matched, so the token sets agree by
+                # construction - and df then probes exactly the lexemes the candidates matched.
+                qtoks = self.conn.execute(
+                    f"select tsvector_to_array(to_tsvector('{FTS_CFG}', %s))",
+                    (" ".join(words),)).fetchone()[0] or []
+                # df per token, one round trip of correlated GIN probes. The exact-lexeme primitive
+                # is @@ at the 'simple' config: no re-stemming (snowball is NOT provably idempotent
+                # on its own stems, and df must count the SAME lexemes the candidates matched),
+                # index-backed, and WORD_RE+stemmer output can carry no tsquery operator character.
+                # (The tsvector ? lexeme operator family I first reached for turned out to be
+                # jsonb's, not core PG's - checked against pg_operator on 18.6, measured.)
+                # Store-wide stats, as FTS5's table stats were. Tried the single wide-pass shape
+                # (one @@ over all tokens, unnest, group): measured SLOWER at this store's scale
+                # (26.5 vs 20.7 ms full search, 2026-10-16) - targeted probes beat one union scan
+                # while the token count is small, and MAX_QUERY_WORDS bounds the worst case.
+                dfm = dict(self.conn.execute(
+                    "select t.tok, (select count(*) from memories mm"
+                    " where mm.invalid_at is null and mm.ts @@ to_tsquery('simple', t.tok))"
+                    " from unnest(%s::text[]) t(tok)", (qtoks,)).fetchall()) if qtoks else {}
                 self.conn.commit()
+            rows = self._bm25(cand, qtoks, dfm, *self._bm25_stats(), limit)
         if not rows and self.embedder is None:
             return []
         k = len(rows)
@@ -1749,7 +1858,9 @@ class MemoryService:
                              if self.embedder is not None else
                              ({"on": True, "loaded": False, "error": self.embedder_error}
                               if self.embedder_error else {"on": False})),
-                "db": self.db_path}
+                "db": self.db_path,
+                "dir": self.directory}    # the store dir - what tools/attach() needs (the tools'
+                                          # native twin of the old stats.db file path)
 
     def close(self) -> None:
         """Close the store connection, then release the cluster handle. The library's own law,

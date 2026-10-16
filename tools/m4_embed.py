@@ -11,7 +11,6 @@ by embedded-count on the next search - no restart needed.
       [--model Strata-data/embeddings/bge-small-en-v1.5] [--threads 4] [--limit N]
 """
 import argparse
-import sqlite3
 import sys
 import time
 from pathlib import Path
@@ -29,39 +28,24 @@ def main() -> int:
     a = ap.parse_args()
 
     src = Path(a.dir)
-    holder = None
-    if (src / "memory.db").exists():
-        conn = sqlite3.connect(str(src / "memory.db"))          # the ordinary case, unchanged
-    elif (src / "memory.db.enc").exists():
-        # A SEALED store has no plaintext to open - plaintext exists only while a service holds it.
-        # The venue runbook tells you to backfill exactly this store before the accuracy arm, so
-        # refusing to open it was a runbook/tool contradiction, not a safety property. MemoryService
-        # reveals it from the key-file beside it; the vectors then go into the revealed db, and the
-        # store re-seals at the next open/close - vectors included, because embeddings live inside
-        # memory.db, which is the whole reason they were put there.
-        from serve.memory import MemoryService
-        holder = MemoryService(str(src), encrypt=True, key_file=str(src / "memory.key"))
-        conn = holder.conn
-        print(f"sealed store revealed for this pass ({holder.stats().get('memories', '?')} active rows);"
-              " it re-seals when this tool exits")
-    else:
-        print(f"no store in {src}")
+    # ADR-002: the store is a Postgres cluster inside the dir - attach() is the one-liner twin of
+    # the old sqlite3.connect, and the sealed-.enc reveal branch retired with the seal law (the
+    # store is never ciphertext-at-rest while a dir holds a cluster; backups are the ciphertext).
+    from serve.memory import attach
+    try:
+        conn = attach(str(src))
+    except Exception as exc:                       # noqa: BLE001 - a clear no beats a traceback
+        print(f"cannot attach {src}: {type(exc).__name__}: {str(exc)[:140]} - is this a Postgres "
+              f"store? import it once: python3 tools/m5_import.py --dir {src}")
         return 2
-    conn.execute("PRAGMA busy_timeout=10000")
-    def done_close():
-        # closing the holder is what re-seals the store; the plain path just closes its connection
-        if holder is not None:
-            holder.close()
-        else:
-            conn.close()
 
-    if not conn.execute("select count(*) from sqlite_master where name='embeddings'").fetchone()[0]:
-        print("store has no embeddings table - start the server once with memory.embedder set")
-        done_close()
-        return 2
+    def done_close():
+        conn.close()
+
     q = ("select id, text from memories where invalid_at is null and id not in"
          " (select id from embeddings) order by id")
-    rows = conn.execute(q + (" limit ?" if a.limit else ""), [a.limit] if a.limit else ()).fetchall()
+    rows = conn.execute(q + (" limit %s" if a.limit else ""),
+                        [a.limit] if a.limit else ()).fetchall()
     print(f"unembedded active rows: {len(rows)}")
     if not rows:
         done_close()
@@ -71,8 +55,10 @@ def main() -> int:
     for i in range(0, len(rows), 64):
         chunk = rows[i:i + 64]
         vecs = emb.embed_docs([r[1] for r in chunk])
-        conn.executemany("insert or replace into embeddings values(?,?)",
-                         [(r[0], v.tobytes()) for r, v in zip(chunk, vecs)])
+        with conn.cursor() as cur:
+            cur.executemany("insert into embeddings values(%s,%s)"
+                            " on conflict (id) do update set vec = excluded.vec",
+                            [(r[0], v.tobytes()) for r, v in zip(chunk, vecs)])
         conn.commit()
         done += len(chunk)
         rate = done / max(time.time() - t0, 1e-6)

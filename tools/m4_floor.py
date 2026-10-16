@@ -23,7 +23,7 @@ coverage the union exists for - and the coverage GUARD is a separate run (replay
 """
 from __future__ import annotations
 
-import argparse, collections, json, sqlite3, sys
+import argparse, collections, json, sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -53,15 +53,16 @@ def main() -> int:
     ap.add_argument("--block-chars", type=int, default=24000)
     a = ap.parse_args()
 
-    c = sqlite3.connect(str(Path(a.db) / "memory.db"))   # the raw reads; MemoryService owns its own conn
-    c.row_factory = sqlite3.Row
-    turns = [dict(r) for r in c.execute(
-        "select id, user_text, scope from turns where injected is not null and injected != '' "
-        "order by id desc limit ?", (a.turns,))]
+    from psycopg.rows import dict_row
+    from serve.memory import attach
+    c = attach(a.db, autocommit=True, row_factory=dict_row)   # the raw reads; MemoryService owns
+    turns = [dict(r) for r in c.execute(                      # its own connection (the attach law,
+        "select id, user_text, scope from turns where injected is not null "
+        "order by id desc limit %s", (a.turns,)).fetchall()]  # R0b, keeps the live server untouched)
     if not turns:
         print("no injected turns in the journal")
         return 2
-    snap = {r[0]: (r[1], r[2]) for r in c.execute(
+    snap = {r["id"]: (r["hits"], r["last_seen_at"]) for r in c.execute(
         "select id, hits, last_seen_at from memories where invalid_at is null")}
     print(f"{len(turns)} real turns replayed; hits/last_seen_at snapshotted for restore "
           f"({len(snap)} rows)")
@@ -70,8 +71,8 @@ def main() -> int:
                       embedder=Embedder(str(ROOT / "Strata-data/embeddings/bge-small-en-v1.5"),
                                         threads=4))
     df = collections.Counter()
-    for (t,) in c.execute("select text from memories where invalid_at is null"):
-        df.update(toks(t))
+    for r in c.execute("select text from memories where invalid_at is null"):
+        df.update(toks(r["text"]))
 
     def payload(t):
         return {w for w in toks(t) if w not in STOP and df.get(w, 10 ** 9) <= a.df_max}
@@ -96,9 +97,10 @@ def main() -> int:
               f"{100 * rel / max(1, tot):>8.1f}%" + (f"   ({empty} turns lost the block)" if empty else ""))
     m.close()
 
-    with c:
-        c.executemany("update memories set hits=?, last_seen_at=? where id=?",
-                      [(h, ls, i) for i, (h, ls) in snap.items()])
+    with c.cursor() as cur:
+        cur.executemany("update memories set hits=%s, last_seen_at=%s where id=%s",
+                        [(h, ls, i) for i, (h, ls) in snap.items()])
+    c.commit()
     print("\nhits/last_seen_at restored - the probe left the store's ranking inputs exactly as found.")
     print("pick the floor here, then prove it on the coverage guard (replayed grounding store):")
     print("gold-row coverage of the 127 temporal questions must NOT fall at that floor.")
