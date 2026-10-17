@@ -1007,6 +1007,13 @@ class MemoryService:
             klass = old[0] if old and old[0] else None
         new = self.remember(text, scope=scope, source=source, confidence=confidence,
                             provenance=provenance, klass=klass)
+        if new.get("id") == int(old_id):
+            # the write-path dedup suppressed this correction INTO the very row it replaces (>=75%
+            # token overlap): the new text added nothing the carrier lacks, so the old row IS the
+            # survivor - invalidating it by itself would bury a live fact under a self-pointer
+            # (measured 2026-10-17: "user's name is Eugene" vs the richer username row, scar 461).
+            new["invalidated"] = None
+            return new
         self.invalidate(old_id, by_id=new["id"])
         new["invalidated"] = int(old_id)
         return new
