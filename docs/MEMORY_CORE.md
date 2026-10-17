@@ -2067,7 +2067,17 @@ all arrive in the saved transcripts - they just do not change outcomes on tasks 
 model's competence floor. So the docs claim steering, not performance; a "mode X beats default
 for task class Y" line would need a round-2 bank with harder shapes (multi-step reasoning,
 longer code, adversarial constraint counts), and the instrument is ready for that rerun the
-moment someone wants the claim.
+moment someone wants the claim. **Round 2, same day** (the owner: don't hand-write harder probes,
+use published suites): the bank now stands on GSM-Symbolic v1, MATH-500, HumanEval, five
+BIG-Bench Hard tasks and GPQA-diamond (gated origin; the owner's HF account was granted access;
+token in a chmod-600 file, never in the store) - 88 probes, 9 shapes, every checker grading its
+published gold 1.00 before the first generation (`tools/m4_bench_fetch.py`, `tools/m4_bank_r2.py`,
+sha256 manifest, fixed-stride sampling). The default-arm calibration then delivered its own
+finding: **seven of eight shapes saturate at 1.00 for this box** - even BBH date_understanding
+and seven-object deduction, whose published headroom was measured on 7-8B models - and only
+MATH-500 (0.83) and GPQA showed real headroom. That is itself the answer to how hard this model
+is: the mode-effect question can only be asked where the model actually struggles, and on this
+box that is competition math and graduate science, nowhere else.
 
 **Still owed, stated before it is claimed:** (2) **the baseline clock reset**:
 every accuracy number on the books (0.761 arm C, the 0.739 Postgres re-record, the grounding
@@ -2080,6 +2090,55 @@ family's shared Q8_0 PLE n-gram table - it is nobody's to ship per-repo - so the
 anything of his to pair against. (4) The in-turn **tool form** shipped the same day as v1.5
 (see the tool bullet above): the API door gives autonomy to any client that can make a request, and
 the tool gives it to models that can only make tool calls - one boolean switch behind both.
+
+## The 2026-10-17 store cleanup: 233 manual operations, and the two write-path laws that stop a third
+
+The owner's order before round 2: go through the store by hand, merge the duplicates, purge the
+junk, fix the weak points found. The dump: 2,885 active rows (3,964 with history). What the
+read-only audit (cosine clustering on the store's own embeddings, threshold 0.90, plus pattern
+scans, plus every flagged row read by eye) found, and what was done about it:
+
+- **31 duplicate clusters, 99 rows - every one a curation-sweep paraphrase.** The Postgres-rebase
+  decision sat eleven times; the supersession rule itself, seven; the Memory-tab bug report,
+  seven across four clusters. All merged: **77 invalidations**, each chained `by` the row chosen
+  to survive (most complete text; dated where dates matter; cross-cluster folds where two
+  clusters described one fact). Kept rows untouched.
+- **~150 ingest shards from the 2026-10-12 SDK-guide import** (1,755 rows in, sentence-split
+  verbatim): citations cut at "U.S." and "Stat.", indented code collapsed to bare statements
+  ("import warnings from mcp import MCPDeprecationWarning"), bare section headings, and Q&A
+  answers whose questions only the document knows ("Straightforward and proven."). All read
+  individually, all retired: **155 invalidations**, history intact.
+- **Six true junk rows forgotten outright**: five quiz-corpus stragglers the 2026-10-16 purge
+  missed (Nebraska radio stations, Minnesota townships, a bench ID) and the one synthetic venue
+  row in the live store ("The bridge of Smokeport is Zivvleax38267-1.").
+- **91 pending turns marked curated** - today's journaled session rounds, every fact of which
+  already stands as a session row; letting the sweep re-extract them would have re-minted the
+  same clusters a third time.
+- Store after: **2,647 active** from 2,885; recall noise down, nothing factual lost.
+
+**The weak points, found by measurement and fixed in the write paths:**
+
+1. *Root cause of the duplicates: turn journaling journaled each API round of a multi-call agent
+   turn as a new exchange* - one OpenCode turn left five rows with identical user_text, the
+   extractor read the same content five times, and five paraphrased memories were minted.
+   `journal_turn` now **updates** the newest same-scope row when the user message is identical
+   (casefolded, whitespace-folded): one row, the LAST round's answer (tool-call rounds are
+   overwritten), re-queued `processed=0` so curation reads the settled conversation. The exposure
+   ledger becomes per-user-turn, not per-API-call - a five-round agent loop is one over-exposure,
+   matching the per-turn recall design. Side effect proven by the tests' own first failure: five
+   ExposureDecay tests that simulated distinct turns with identical text collapsed to one row -
+   the new law working as stated.
+2. *The sweep's paraphrase window*: the supersession law arm (LAW_TH 0.78, judged before store,
+   RESTATED retires the older, CORRECTS lands amended) shipped at 23:34 and its first-live-run
+   fixes at 00:23 on 2026-10-17 - **the 10-17 duplicate clusters predate it**; the sweep log
+   since carries 88 law flags with correct verdicts (cos 0.858-0.914). No code change needed;
+   the cleanup removed what the gate could not prevent before it existed.
+3. *Ingest stored shards it should never have*: `tools/m2_ingest.py` now reunites abbreviation
+   splits before cutting sentences ("8 U.S." + "C. 1101" is one sentence again) and rejects units
+   that cannot stand alone - unbalanced parens, collapsed code, clauses cut mid-sentence,
+   answers-without-questions under 45 chars carrying no digit, determiner or possessive. Every
+   rejected/kept string in `tools/test_m2_ingest.py` is a real shape from the cleanup. Curated
+   documents that want their fragments anyway pass `--no-gate`.
 
 ## Licensing and attribution
 

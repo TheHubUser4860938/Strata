@@ -17,6 +17,12 @@ on purpose:
 
 Idempotent: remember() dedups exact normalized text, so re-ingesting a file updates rather
 than duplicates. Markdown-light: headings, code fences, table rows and bare labels are skipped.
+FRAGMENT-GATED (2026-10-17, after the cleanup counted ~150 shards in the first SDK-guide run):
+abbreviation splits are reunited before sentences are cut ("8 U.S.C." no longer dies mid
+citation), and units that cannot stand alone - unbalanced parens, collapsed code, clauses that
+start with a conjunction, sentences cut by a missed abbreviation, and bare adjective verdicts
+under 45 chars with no data or determiner - are skipped, not stored. A rejected line costs one
+sentence of a document; a stored shard pollutes every recall that passes it.
 
 Usage:
   python3 tools/m2_ingest.py FILE... [--class SHELF] [--scope default] [--unit sentence|line]
@@ -33,6 +39,54 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 from curate_loop import fact_class                        # the map, the cutters, the margin rule
 
 SENT_RE = re.compile(r"(?<=[.!?])\s+")
+
+# The 2026-10-17 manual cleanup measured what sentence-splitting does to a real corpus (the
+# SDK-guide ingest stored 1,755 rows, ~150 of them shards): the splitter cuts at "U.S." and
+# "Stat." (citations die mid-parenthesis), indented code collapses to bare statements, and
+# Q&A documents store answers whose questions the store never sees. The gates below are
+# mechanical - no engine, no judgment - and conservative: a rejected unit costs one line of a
+# document; a stored shard pollutes every recall that passes it.
+
+ABBREV_TAIL = re.compile(r"(?:\b(?:stat|stats|u\.s|u\.s\.c|v|vs|dr|mr|mrs|ms|prof|inc|ltd|jr|sr|"
+                         r"st|e\.g|i\.e|approx|fig|dept|gov|capt|ft|p\.m|a\.m)\.?|"
+                         r"(?:\s+[A-Z]\.)+)\s*\.?$", re.I)
+
+def reunite(parts: list[str]) -> list[str]:
+    """Glue a fragment back onto its continuation when the split landed inside an abbreviation
+    or a single-letter dotted name: 'The act (8 U.S.' + 'C. 1101) covers...' is ONE sentence."""
+    out: list[str] = []
+    for p in parts:
+        if out and ABBREV_TAIL.search(out[-1].rstrip()):
+            out[-1] = (out[-1].rstrip() + " " + p.lstrip()).strip()
+        else:
+            out.append(p)
+    return out
+
+CODE_HEAD = re.compile(r"^(?:import |from \S+ import|def |class |@|await |return |print\(|"
+                       r"with |try |except |raise |yield |async |lambda |\w+\s*=\s*\S|\w+\.\w+\()")
+FRAG_HEAD = re.compile(r"^(?:[,\)\]]|§|\d|\w+[)\]]|Q\d*[:?]|"
+                       r"\band\b|\bbut\b|\bor\b|\bwhich\b|\bthat\b|\bbecause\b|"
+                       r"\bso\b|\bto\b|\bfor\b|\bof\b|\bin\b|\bon\b|\bas\b|\bby\b)", re.I)
+SHORT_INFO = re.compile(r"\d|\b(?:the|a|an|his|her|its|their|your|our)\b|['’]s\b")
+
+def _balanced(s: str) -> bool:
+    return (s.count("(") == s.count(")") and s.count("[") == s.count("]")
+            and s.count("{") == s.count("}"))
+
+def fragment(sent: str, unit: str) -> bool:
+    """True when a unit cannot stand alone as a fact. Termination is enforced for sentence mode
+    only (line mode opts into list items); an unterminated sentence unit after reunite() is a
+    cut the abbreviation law missed."""
+    s = sent.strip()
+    if not _balanced(s) or CODE_HEAD.match(s) or "::" in s or "=>" in s:
+        return True
+    if s[:1].islower() or FRAG_HEAD.match(s):           # lowercase start = a clause cut mid-sentence
+        return True
+    if unit == "sentence" and not re.search(r"[.!?]$", s):
+        return True
+    if len(s) < 45 and not SHORT_INFO.search(s[1:]):   # a bare adjective verdict with no data,
+        return True                                     # no determiner, no possessive: an answer
+    return False                                        # whose question lives only in the document
 
 
 def clean(line: str) -> str:
@@ -66,7 +120,7 @@ def units(text: str, unit: str) -> list[str]:
     for para in re.split(r"\n[ \t]*\n", text):            # prose wraps across lines: rejoin the
         joined = " ".join(c for c in (clean(l) for l in para.splitlines()) if c)   # paragraph first
         if joined:
-            out.extend(SENT_RE.split(joined))             # then split sentences
+            out.extend(reunite(SENT_RE.split(joined)))   # abbreviation splits are glued back first
     return [s.strip() for s in out if s.strip()]
 
 
@@ -82,6 +136,9 @@ def main():
     ap.add_argument("--max", type=int, default=400, help="longest (atomic facts retrieve better; "
                                                          "the store itself caps at 4000 chars)")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--no-gate", action="store_true", help="store every unit that passes min/max - "
+                    "the pre-2026-10-17 behavior - for curated documents whose fragments you want "
+                    "kept verbatim anyway")
     ap.add_argument("--url", default="http://127.0.0.1:8005")
     a = ap.parse_args()
 
@@ -92,7 +149,7 @@ def main():
                             strip_fences(Path(f).read_text(encoding="utf-8", errors="replace"))))
                        for f in a.files]:
         for n, sent in enumerate(units(text, a.unit), 1):
-            if not (a.min <= len(sent) <= a.max):
+            if not (a.min <= len(sent) <= a.max) or (not a.no_gate and fragment(sent, a.unit)):
                 skipped += 1
                 continue
             klass = a.klass or fact_class(sent, a.scope)

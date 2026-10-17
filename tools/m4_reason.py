@@ -34,7 +34,7 @@ Method, and why each piece is what it is:
 """
 from __future__ import annotations
 
-import argparse, json, re, subprocess, sys, time, urllib.request
+import argparse, http.client, json, re, subprocess, sys, time, urllib.request
 from pathlib import Path
 
 HOST = "http://127.0.0.1:8005"
@@ -219,12 +219,24 @@ def ask(host, arm, prompt, max_tokens, timeout):
     text = prompt if arm == "default" else prompt + "\n\n{REASON:" + arm + "}"
     body = json.dumps({"model": "m", "temperature": 0, "max_tokens": max_tokens,
                        "messages": [{"role": "user", "content": text}]}).encode()
-    req = urllib.request.Request(host.rstrip("/") + "/v1/chat/completions", data=body,
-                                 headers={"Content-Type": "application/json",
-                                          "X-Strata-Memory": "off"})
-    t0 = time.time()
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        d = json.loads(r.read().decode())
+    url = host.rstrip("/") + "/v1/chat/completions"
+    # the box is shared: this harness, the operator's own sessions and whatever the engine is
+    # mid-reading. A connection dropped under the queue (measured 2026-10-17: RemoteDisconnected
+    # on probe 2 of a GPQA calibration, engine healthy throughout) is a round to retry, not a
+    # sweep to lose - three tries, 10 s apart, then the exception rides like any other failure.
+    for attempt in range(3):
+        try:
+            t0 = time.time()
+            req = urllib.request.Request(url, data=body,
+                                         headers={"Content-Type": "application/json",
+                                                  "X-Strata-Memory": "off"})
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                d = json.loads(r.read().decode())
+            break
+        except (http.client.RemoteDisconnected, ConnectionError) as ex:
+            if attempt == 2:
+                raise
+            time.sleep(10)
     ch = d["choices"][0]
     m = ch["message"]
     ans = (m.get("content") or "").strip() or (m.get("reasoning_content") or "").strip()

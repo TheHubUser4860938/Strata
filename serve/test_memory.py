@@ -210,6 +210,29 @@ class Store(unittest.TestCase):
         self.mem.mark_processed([tid])
         self.assertEqual(self.mem.pending_turns(), [])
 
+    def test_a_multi_round_agent_turn_journals_one_row_not_five(self):
+        """(2026-10-17, the root cause of the duplicate clusters a manual cleanup retired): a
+        harness that makes N API calls per user message journaled the same user_text N times,
+        the extractor read the same content N times, and N paraphrased memories were minted -
+        five copies of one OpenCode turn sat in the live store. The journal now UPDATES when
+        the newest row in the scope carries the same (casefolded, whitespace-folded) user_text:
+        one row, the LAST round's answer (tool-call rounds are overwritten), re-queued
+        (processed=0) so curation reads the settled answer - the sweep's law arm is what keeps
+        the re-read from duplicating. Different user message, new row."""
+        first = self.mem.journal_turn("fw", "big question?", "calling a tool...", "m")
+        again = self.mem.journal_turn("fw", "big question?", "final answer here", "m")
+        self.assertEqual(again, first, "the next round updates the row, it does not append")
+        pend = self.mem.pending_turns()
+        self.assertEqual([t["id"] for t in pend], [first])
+        self.assertEqual(pend[0]["assistant"], "final answer here",
+                         "the last round is the one that carries the answer")
+        self.mem.mark_processed([first])
+        self.mem.journal_turn("fw", "Big  Question?", "even later answer", "m")
+        self.assertEqual([t["id"] for t in self.mem.pending_turns()], [first],
+                         "the same message re-queues the row so curation sees it settle")
+        other = self.mem.journal_turn("fw", "another question", "a2", "m")
+        self.assertNotEqual(other, first, "a different user message is still a new exchange")
+
     def test_journal_keeps_what_the_server_actually_showed(self):
         """The self-feeding instrument. A curated fact can only be tested against the memory that was on
         screen if the journal recorded what was on screen - request_state has carried the id list in
@@ -1757,7 +1780,12 @@ class ExposureDecay(unittest.TestCase):
 
     def _journal_exposed(self, m, ids, n):
         for _ in range(n):
-            tid = m.journal_turn("default", "question about widgets", "because widgets")
+            # user_text VARIES per journaling: since the 2026-10-17 journaling law, identical
+            # user_text means rounds of ONE conversation (one row, one exposure) - these tests
+            # simulate N distinct turns, so each needs its own question. The number comes from
+            # the store's own row count, so it is unique ACROSS calls, not just inside one.
+            k = m.conn.execute("select count(*) from turns").fetchone()[0]
+            tid = m.journal_turn("default", f"question about widgets number {k}", "because widgets")
             m.conn.execute("update turns set injected = %s::jsonb where id = %s", (json.dumps(ids), tid))
             m.conn.commit()
 

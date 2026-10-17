@@ -1879,15 +1879,37 @@ class MemoryService:
         or any turn before this column existed - while [] means recall ran and showed nothing. Without
         that distinction the self-feeding question ("did this fact come from memory the server itself
         supplied?") cannot be asked, which is the whole reason tools/m4_selffeed.py had to fall back on
-        word overlap and called 42.6% of curated facts unmatchable."""
+        word overlap and called 42.6% of curated facts unmatchable.
+
+        Same user_text as the newest journaled row in this scope = the NEXT ROUND of one multi-call
+        agent turn, not a new exchange (measured 2026-10-17: one OpenCode turn journaled five rows
+        with identical user_text, and the extractor read the same content five times and minted
+        five paraphrased memories - the duplicate clusters a manual cleanup retired that day were
+        exactly that shape). UPDATE the row instead of appending: the newest round carries the
+        real answer where the earlier rounds were tool calls, and re-queue it (processed=0) so
+        curation reads the settled answer - the sweep's law arm (tools/curate_loop.py) is what
+        keeps the re-read from duplicating. A genuinely repeated identical message keeps ONE row:
+        the dedup law the store already lives by, applied at the source."""
         with self.lock:
+            sc = scope_name(scope)
+            inj = (None if injected is None
+                   else Jsonb(sorted({int(i) for i in injected if str(i).strip() != ""})))
+            last = self.conn.execute("select id, user_text, processed from turns where scope=%s"
+                                     " order by id desc limit 1", (sc,)).fetchone()
+            if last and norm_text(last[1]) == norm_text(user_text):
+                self.conn.execute(
+                    "update turns set assistant_text=%s, model=%s, created_at=%s, injected=%s,"
+                    " processed=0 where id=%s",
+                    (assistant_text[:16000], (model or "")[:80] or None,
+                     self._dt(time.time()), inj, last[0]))
+                self.conn.commit()
+                self._touched()
+                return last[0]
             new_id = self.conn.execute(
                 "insert into turns(scope,user_text,assistant_text,model,created_at,injected)"
                 " values(%s,%s,%s,%s,%s,%s) returning id",
-                (scope_name(scope), user_text[:8000], assistant_text[:16000],
-                 (model or "")[:80] or None, self._dt(time.time()),
-                 None if injected is None
-                 else Jsonb(sorted({int(i) for i in injected if str(i).strip() != ""})))).fetchone()[0]
+                (sc, user_text[:8000], assistant_text[:16000],
+                 (model or "")[:80] or None, self._dt(time.time()), inj)).fetchone()[0]
             self.conn.commit()
             self._touched()
             return new_id
