@@ -39,6 +39,13 @@ difference that is not there:
 `--wide-k` scores a second pass at the block's own note budget (e.g. 192), which is where the
 coverage question actually lives: a three-event ordering question cannot be answered from a top-10
 list no matter how good the ranking is.
+
+`--router-ab` (offline) swaps the LEVER without inventing a second table: the arms become the SHIPPED
+search and the PRODUCTION ROUTING LAW - the store's own `_route()` plus block_for's fail-open, called
+rather than re-spelled (RoutedService), over ONE rerank-equipped instance on ONE copy, so the reranker
+is ON in both arms and routing is the only difference. Flat coverage plus moved lists is the mechanism
+half of the gate for flipping `memory.route_shelves`' default; identical lists everywhere exit 2 the
+same way an un-moved reranker does - there, "the router never fired on this store's shelves".
 """
 from __future__ import annotations
 
@@ -108,7 +115,8 @@ def copy_dir(src: Path, dst: Path) -> None:
     _storeclone.clone_store(src, dst)
 
 
-def open_copy(dir_path: Path, model: str, threads: int, embed: bool, dedup: bool = True):
+def open_copy(dir_path: Path, model: str, threads: int, embed: bool, dedup: bool = True,
+              route: bool = False):
     """`dedup=False` turns off the READ-PATH near-dupe collapse only (serve.memory dedup_recall),
     the ranking untouched. It exists for the knowledge-update question raised twice from outside
     on 2026-10-15: Primnox measured that retiring old facts HURTS on real two-person chats (plain
@@ -122,8 +130,34 @@ def open_copy(dir_path: Path, model: str, threads: int, embed: bool, dedup: bool
     if embed:
         from serve.embedder import Embedder
         kw["embedder"] = Embedder(model, threads=threads)
+    if route:
+        kw["route_shelves"] = True      # gives the instance the production _route() - see RoutedService
     return MemoryService(str(dir_path), recall_limit=192, max_block_chars=48000, encrypt=True,
                          dedup_recall=dedup, key_file=str(dir_path / "memory.key"), **kw)
+
+
+class RoutedService:
+    """Duck-typed twin of MemoryService for the --router-ab arm: answers sweep_offline's plain
+    search() call with the PRODUCTION injection law - the store's own _route() (credit-free lexical
+    stage 1 + shelf_vote) and the exact fail-open block_for runs when a pick finds nothing. The law
+    is not spelled out again here; it is CALLED, so this arm measures the machine that answers
+    conversations, not a sketch of it. .embedder rides through so sweep_offline's arm echo keeps
+    its meaning (both arms are the reranker path; the lever here is ROUTING, not the vector arm)."""
+
+    def __init__(self, svc):
+        self.svc, self.embedder = svc, svc.embedder
+        self.fallbacks = 0
+
+    def search(self, query, scope="default", limit=None, **kw):
+        pick = self.svc._route(query, scope)
+        hits = self.svc.search(query, scope=scope, limit=limit, classes=pick)
+        if pick and not hits:                       # the block_for fail-open, spelled by its shape
+            self.fallbacks += 1
+            hits = self.svc.search(query, scope=scope, limit=limit)
+        return hits
+
+    def close(self):
+        pass       # the base instance owns the connection; the loop closes it through the other arm
 
 
 def prepare_offline(store_dir: str, model: str, threads: int, work: Path) -> tuple[Path, Path]:
@@ -196,9 +230,21 @@ def main(argv=None) -> int:
                          "convention. Deterministic: one run is one answer, no sampling.")
     ap.add_argument("--no-dedup", dest="no_dedup", action="store_true",
                     help="offline only: disable the read-path near-dupe collapse in the scoring arms")
+    ap.add_argument("--router-ab", dest="router_ab", action="store_true",
+                    help="offline only: swap the LEVER. Left arm = the shipped search, right arm = "
+                         "the PRODUCTION routing law (serve.memory._route + block_for's fail-open) "
+                         "over the SAME rerank-equipped instance on the same copy. Every 'reranker' "
+                         "wording then names the SHELF ROUTER; coverage flat + lists moved is the "
+                         "mechanism half of the gate for flipping memory.route_shelves' default")
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--types", default="")
     a = ap.parse_args(argv)
+
+    if a.router_ab and not a.offline:
+        print("--router-ab is offline-only: the routed arm is a STORE-side law, and over HTTP both "
+              "arms would hit one live server that either routes or does not for the whole boot - "
+              "that is not an A/B inside one store state", file=sys.stderr)
+        return 2
 
     if a.rrf_k is not None:           # the fusion constant is a module global precisely so a probe can
         import serve.memory as _m     # move it without touching the shipped default (serve.memory.RRF_K)
@@ -226,8 +272,19 @@ def main(argv=None) -> int:
             nd = not a.no_dedup
             if not nd:
                 print("[ab] read-path near-dupe collapse OFF in the scoring arms (write-path laws unchanged)")
-            services = {"lexical": open_copy(lex, a.model, a.threads, False, dedup=nd),
-                        "hybrid": open_copy(hyb, a.model, a.threads, True, dedup=nd)}
+            if a.router_ab:
+                # the LEVER swaps here. Both arms run over the SAME rerank-equipped instance on the
+                # same copy, so the only difference between them is the routing law; the lex copy
+                # (built for the embedder A/B) simply goes unused. "lexical"/"hybrid" stay the arm
+                # KEYS the table code reads - their labels below say what the arms actually are.
+                base = open_copy(hyb, a.model, a.threads, True, dedup=nd, route=True)
+                services = {"lexical": base, "hybrid": RoutedService(base)}
+                print("[ab] router-ab: left arm = the SHIPPED search, right arm = the PRODUCTION "
+                      "ROUTING LAW (serve.memory._route + block_for's fail-open) - reranker ON in "
+                      "both arms, one instance, one copy", flush=True)
+            else:
+                services = {"lexical": open_copy(lex, a.model, a.threads, False, dedup=nd),
+                            "hybrid": open_copy(hyb, a.model, a.threads, True, dedup=nd)}
             for s in services.values():
                 s.search("warm", limit=1)             # build the caches before any timing claim
         for ki, k in enumerate([a.recall_k] + ([a.wide_k] if a.wide_k else [])):
@@ -237,7 +294,10 @@ def main(argv=None) -> int:
                     rows = sweep_offline(services[label], data, maps, k)
                 else:
                     rows = sweep_http(a.url, data, maps, k, mute)
-                want_arm = (label != "lexical")      # the reply's echo: True only for the hybrid arm
+                want_arm = True if a.router_ab else (label != "lexical")
+                # the reply's echo: True only for the hybrid arm - UNLESS the lever is the router,
+                # where BOTH arms are the rerank path and the echo instead catches an embedder that
+                # never loaded (every row would echo False and the run would exit 2, as it should)
                 mismatches += sum(1 for r in rows if r.get("arm") is not None
                                   and bool(r["arm"]) != want_arm)
                 res[label] = rows
@@ -255,11 +315,23 @@ def main(argv=None) -> int:
                        if by_q[r["question_id"]]["ids"][:k] == r["ids"][:k])
             print(f"\n=== k={k} ===  {time.time() - t0:.0f} s for {len(res['lexical']) * 2} recalls",
                   flush=True)
+            if a.router_ab:
+                rs = services["lexical"].stats()["router"]
+                print(f"  router ledger: tries {rs['tries']}, picks {rs['picks']}, "
+                      f"fallbacks {services['hybrid'].fallbacks} "
+                      f"(the fail-open fired on {services['hybrid'].fallbacks} of {len(res['lexical'])} "
+                      "routed questions)", flush=True)
             if same == len(res["lexical"]):
-                print("[ab] both arms returned identical hit lists for EVERY question: the reranker "
-                      "did not move. Check that memory.embedder is configured and the store is "
-                      "embedded (stats -> embedder.vectors). Exiting 2 rather than reporting a null "
-                      "comparison as a result.", file=sys.stderr)
+                if a.router_ab:
+                    print("[ab] both arms returned identical hit lists for EVERY question: the shelf "
+                          "router did not move - no pick changed any list, which on a venue-shaped "
+                          "store reads as shelves too coarse or rows too wild to vote. Exiting 2 "
+                          "rather than reporting a null comparison as a result.", file=sys.stderr)
+                else:
+                    print("[ab] both arms returned identical hit lists for EVERY question: the reranker "
+                          "did not move. Check that memory.embedder is configured and the store is "
+                          "embedded (stats -> embedder.vectors). Exiting 2 rather than reporting a null "
+                          "comparison as a result.", file=sys.stderr)
                 return 2
             print(f"  identical hit lists: {same}/{len(res['lexical'])} "
                   f"(the lever moved on {len(res['lexical']) - same})")
@@ -287,8 +359,9 @@ def main(argv=None) -> int:
                     else:
                         cells += f"{A[key]:.3f}->{B[key]:.3f} {B[key] - A[key]:+.3f}".rjust(18)
                 print(f"  {scope:<26}{n:>4}" + cells)
-        print("\n[ab] read as: the mechanism measurement. The accuracy venue is the outcome; this "
-              "only says whether the reranker moved the evidence, per type, on the store's own search.")
+        lever = "SHELF ROUTER" if a.router_ab else "reranker"
+        print(f"\n[ab] read as: the mechanism measurement. The accuracy venue is the outcome; this "
+              f"only says whether the {lever} moved the evidence, per type, on the store's own search.")
         return 0
     finally:
         for s in services.values():
