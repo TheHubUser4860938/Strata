@@ -2044,10 +2044,18 @@ off; off means every render passes the SAME kwargs dict, byte-identical by const
   installed, verified against the clean tree the same day).
 
 **Still owed, stated before it is claimed:** (1) **the performance gate** - "does it make the
-work better" is measured, not assumed: `tools/m4_reason.py`, stock vs candidate modes on real task
-shapes (debug-the-excerpt, write-the-function, summarize-the-log, explain-the-idea), temp 0, local
-judge, the ±0.05 repeat band as the floor; the modes ship for steering regardless, but any claim
-that mode X beats stock for task class Y waits for that record. (2) **the baseline clock reset**:
+work better" is measured, not assumed: `tools/m4_reason.py` (built 2026-10-17) rides the live
+server at temp 0, 7 task shapes x 16 probes x 2 passes x 8 arms. The arm is chosen by DavidAU's
+own `{REASON:}` tag inside the probe (client tag outranks every server level, so the sweep never
+moves the box's sticky map), memory muted per request, and every probe carries a **deterministic
+checker** - exact-answer match, candidate code exec'd in a subprocess against hidden asserts,
+checklist regexes - no LLM judge, so no self-preference bias and reruns grade identical bytes
+(the graders were self-tested against synthetic good/bad answers before the first generation).
+The instrument calibrates its own noise floor: on this box the no-tag arm and `{REASON:ultra}`
+are the same framing, and their gap is the run-to-run spread at temp 0; a claim that mode X beats
+the default must clear that spread AND the ±0.05 venue band. The modes ship for steering
+regardless; any claim that mode X beats stock for task class Y waits for that record, which lands
+in this paragraph when the sweep finishes. (2) **the baseline clock reset**:
 every accuracy number on the books (0.761 arm C, the 0.739 Postgres re-record, the grounding
 +0.207) was measured on the PRE-swap weights, so any future arm either re-baselines on the same
 model or says so in the line. The modes were measurably active on the stock model too (the persona
