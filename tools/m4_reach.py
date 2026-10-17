@@ -171,7 +171,7 @@ def main() -> int:
             # retrieval failure - say so instead of printing a misleading 0 -> 0.
             with lexical.lock:
                 here = lexical.conn.execute(
-                    "select count(*) from memories where invalid_at is null and lower(text) like ?",
+                    "select count(*) from memories where invalid_at is null and lower(text) like %s",
                     (f"%{needle.lower()}%",)).fetchone()[0]
             if not here:
                 print(f"  target absent from this store, probe skipped: {q[:52]}")

@@ -76,13 +76,11 @@ def main() -> int:
     a = ap.parse_args()
 
     src = Path(a.dir).resolve()
-    if not (src / "memory.db").exists():
-        print("no plaintext store (a sealed one must be revealed first)")
-        return 2
     work = Path(tempfile.mkdtemp(prefix="xref-"))
-    for f in ("memory.db", "memory.db-wal", "memory.db-shm"):
-        if (src / f).exists():
-            shutil.copy2(src / f, work / f)
+    import _storeclone
+    _storeclone.clone_store(src, work)    # R5b: honest dump/restore, works while the store is
+                                          # live; the old plaintext check aborted on PG, and the
+                                          # db+wal+shm loop copied files that no longer exist
     m = MemoryService(str(work), recall_limit=a.notes, max_block_chars=a.chars,
                       embedder=Embedder(str(ROOT / a.model if not Path(a.model).is_absolute() else a.model),
                                         threads=4))
@@ -96,8 +94,9 @@ def main() -> int:
     with m.lock:
         m.conn.execute("drop table if exists xsub")
         m.conn.execute("create table xsub (id integer, term text)")
-        m.conn.executemany("insert into xsub values (?,?)",
-                           [(rid, t) for rid, ts in subs.items() for t in ts])
+        with m.conn.cursor() as cur:
+            cur.executemany("insert into xsub values (%s,%s)",
+                            [(rid, t) for rid, ts in subs.items() for t in ts])
         m.conn.execute("create index if not exists xsub_term on xsub(term)")
         m.conn.commit()
     by_term = collections.defaultdict(list)

@@ -88,7 +88,7 @@ def main() -> int:
     services, xterms = {}, {}
     for lab, embed in arms:
         d = work / ("hyb" if embed else "lex")
-        if not (d / "memory.db.enc").exists() and not (d / "memory.db").exists():
+        if not (d / "pgdata").exists() and not (d / "memory.db.enc").exists():
             print(f"no store copy at {d} - run tools/lme_retrieval_ab.py --offline --work {work} first")
             return 2
         kw = {"embedder": __import__("serve.embedder", fromlist=["Embedder"]).Embedder(a.model, threads=4)} \

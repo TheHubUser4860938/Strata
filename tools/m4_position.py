@@ -115,11 +115,9 @@ def main() -> int:
     tmp = Path("/tmp/opencode/pos-render-store")
     if tmp.exists():
         shutil.rmtree(tmp)
-    tmp.mkdir(parents=True)
     src = ROOT / "Strata-data" / "memory-eval"
-    for f in ("memory.db", "memory.db-wal", "memory.db-shm"):
-        if (src / f).exists():
-            shutil.copy2(src / f, tmp / f)
+    import _storeclone
+    _storeclone.clone_store(src, tmp)     # R5b: honest dump/restore; the old db+wal+shm loop
     renderer = MemoryService(str(tmp), recall_limit=96, max_block_chars=BUDGET, embedder=None)
 
     # stratified sample: round-robin over question types so the answer is not one type's story, and

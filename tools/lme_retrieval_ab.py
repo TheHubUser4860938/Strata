@@ -154,8 +154,10 @@ def prepare_offline(store_dir: str, model: str, threads: int, work: Path) -> tup
             for i in range(0, len(missing), 64):
                 chunk = missing[i:i + 64]
                 vecs = emb.embed_docs([r[1] for r in chunk])
-                m.conn.executemany("insert or replace into embeddings values(?,?)",
-                                   [(r[0], v.tobytes()) for r, v in zip(chunk, vecs)])
+                with m.conn.cursor() as cur:
+                    cur.executemany("insert into embeddings values(%s,%s)"
+                                    " on conflict (id) do update set vec=excluded.vec",
+                                    [(r[0], v.tobytes()) for r, v in zip(chunk, vecs)])
             m.conn.commit()
     with m.lock:
         left = m.conn.execute("select count(*) from memories where invalid_at is null and id not in"

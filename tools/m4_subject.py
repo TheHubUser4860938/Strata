@@ -79,15 +79,12 @@ def main() -> int:
     a = ap.parse_args()
 
     src = Path(a.work) if a.work and Path(a.work).exists() else Path(a.dir)
-    if not (src / "memory.db").exists() and not (src / "memory.db.enc").exists():
-        print(f"no store at {src}")
-        return 2
     work = Path(tempfile.mkdtemp(prefix="subject-"))
-    for f in ("memory.db", "memory.db.enc", "memory.key", "memory.db-wal", "memory.db-shm"):
-        if (src / f).exists():
-            shutil.copy2(src / f, work / f)
+    import _storeclone
+    _storeclone.clone_store(src, work)    # R5b: honest dump/restore; the old file loop copied
+                                          # legacy sqlite files (or nothing) on a PG store
     emb = Embedder(str(ROOT / "Strata-data/embeddings/bge-small-en-v1.5"), threads=4)
-    sealed = (src / "memory.db.enc").exists() and not (src / "memory.db").exists()
+    sealed = False                        # a Postgres-native clone is born readable at rest
     svc = MemoryService(str(work), recall_limit=a.wide, max_block_chars=24000, embedder=emb,
                         encrypt=sealed, key_file=str(work / "memory.key"))
     st = svc.stats()

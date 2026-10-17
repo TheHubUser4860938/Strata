@@ -70,13 +70,11 @@ def main() -> int:
     a = ap.parse_args()
 
     src = Path(a.dir).resolve()
-    if not (src / "memory.db").exists():
-        print("no plaintext store (a sealed one must be revealed first - tools/m4_embed.py opens one)")
-        return 2
     work = Path(tempfile.mkdtemp(prefix="shelfcall-"))
-    for f in ("memory.db", "memory.db-wal", "memory.db-shm"):
-        if (src / f).exists():
-            shutil.copy2(src / f, work / f)
+    import _storeclone
+    _storeclone.clone_store(src, work)    # R5b: honest dump/restore, works while the store is
+                                          # live; the old plaintext check aborted on PG, and the
+                                          # db+wal+shm loop copied files that no longer exist
     m = MemoryService(str(work), recall_limit=384, max_block_chars=96000,
                       embedder=Embedder(str(ROOT / a.model if not Path(a.model).is_absolute() else a.model),
                                         threads=4))
