@@ -31,8 +31,13 @@ Design decisions, recorded where they bite:
   template's delimiter must never re-enter any file a later prompt reads back).
 
 Venue-day protocol: dedicated store (memory.dir to a venue dir, max_memories 0 - the
-oracle set alone is ~6k rows), nothing else on the port, pilot --limit 5 first, then the
-full run backgrounded (resumable: completed questions are skipped from --out).
+oracle set alone is ~6k rows), nothing else on the port, THE CURATION SWEEP STOPPED
+(measured 2026-10-16: a live sweep curated the replay's own journal into 1,103 fresh
+user-scope facts mid-venue-day; user scope rides every search, rows/q went 15.8 -> 63.6
+and the harness's coverage flags fell 0.18 - contamination, not regression: a clean copy
+restored from a mid-run backup reproduced the offline gate numbers exactly), pilot
+--limit 5 first, then the full run backgrounded (resumable: completed questions are
+skipped from --out).
 
 Usage:
   python3 tools/lme_harness.py --data longmemeval_oracle.json --out lme_oracle.jsonl \

@@ -189,3 +189,31 @@ R1-R3 landed, and the gate's first answer was: NOT YET, for a reason this ADR ha
 
 What the preview does NOT settle: the answer-level metrics need the live server on Postgres -
 that is R7's reboot. The deterministic half of the gate is green today.
+
+## Amendment (2026-10-16, evening): venue-day verdict - PASS, and the protocol learned a rule
+
+The answer-level venue day ran on the live server over Postgres - 500 questions x 3 repeats
+plus cold controls, the exact armc2 protocol, 4.5 h wall - while R6 packaged itself around it.
+
+- **Accuracy 0.739 against the 0.761 baseline: -0.022, inside the +-0.05 floor. The gate's
+  answer-level half PASSES.** idk_rate fell 0.189 -> 0.145 (-0.044, inside the floor, toward
+  fewer refusals). Filed: spikes/lme/venuepg-full-20261016.jsonl (+ .metrics.json).
+- The harness's retrieval flags (rowcov 0.700 vs 0.885, top1 0.366 vs 0.504) looked like a
+  regression and were explained the same day, mechanistically: the curation sweep was alive
+  during the venue day and curated the replay's OWN journal - 1,497 turns into 1,103 fresh
+  user-scope facts, and user scope joins every search. Fresh, question-derived facts outrank
+  gold on the recency term and share its words; the rendered block quadrupled (rows/q
+  15.8 -> 63.6) and diluted (related% 23.5 -> 9.3). The test that settles it: the store copied
+  from a backup taken before the bulk of the contamination was restored and re-measured
+  OFFLINE - rowcov 0.813 / sesscov 0.816 / top1 0.370, IDENTICAL to the clean-store gate.
+  The engine's deterministic half passes on a clean store, reproduced across a backup/restore
+  round trip; the venue-day flags carry venue-day contamination, and in the direction that
+  also depresses the accuracy number - the true PG accuracy is 0.739 or better.
+- Protocol law learned (now in lme_harness's docstring): a venue day means the curation
+  sweep STOPPED. The sweep curates whatever store the server holds, and a replay journals
+  1,500 questions - fuel for exactly the contamination above.
+
+**R7 is complete: the dev server runs Postgres-native and the rebase's regression gate is
+green on both halves.** The one reboot that swapped the engine (and the two it took to catch
+the symlink-identity bug and boot the venue) are in the day's journal; the cutover lost
+nothing - the failed boot journaled zero rows and the stray database is gone.
