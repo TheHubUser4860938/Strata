@@ -276,8 +276,18 @@ def supersede_id(url, fact, scope, log, min_created=0.0):
 # server), because the search API answers in fused ranks, not raw cosine, and the law is a
 # cosine law. The verdict model call fires only on a flagged pair - ordinary traffic rarely pays it.
 
-LAW_TH = 0.85   # measured 2026-10-16 (m7_consolidate): paraphrase clusters at this line all
-                # sampled true; loosening folds related-but-different facts together.
+LAW_TH = 0.78   # the FLAG line for the judged arm, measured 2026-10-17 (doc-vs-doc, the
+                # store's own model): a human-obvious restatement pair sits at 0.910, the user's
+                # own correction example ("owns an RTX 4090" vs "sold it for a 5090") at 0.800,
+                # and unrelated/control pairs at 0.379-0.581 - 0.78 sits above the whole unrelated
+                # band and below corrections. Unlike m7_consolidate's BLIND collapse (0.85, no
+                # judge, paraphrases only), every flag here costs one 12-token judgment with a
+                # safe DIFFERENT default, so the arm flags wide and the judge decides.
+# EMBED-SPACE LAW (measured the same night): the store's vectors are embed_DOCS space; bge
+# encodes queries with a different prompt prefix, so embed_QUERY vs stored-doc cosines run
+# ~0.04 low (the RTX pair: 0.871 query-vs-query, 0.910 doc-vs-doc, and a sub-0.85
+# query-vs-doc false negative that minted a live dupe). Fact-vs-fact is passage-vs-passage:
+# the law arm embeds docs. The search arm keeps embed_query - queries ARE queries there.
 
 
 def near_dupe_cos(vec, rows):
@@ -545,8 +555,8 @@ def main():
             cand = [r for r in law_rows if r[2] == scope]
             if not cand:
                 return None
-            cos, row = near_dupe_cos(law_emb.embed_query(fact), cand)
-            if cos < LAW_TH:
+            cos, row = near_dupe_cos(law_emb.embed_docs([fact])[0], cand)   # docs, not query:
+            if cos < LAW_TH:                                                # see EMBED-SPACE LAW
                 return None
             ans, _, _ = ask(
                 "Two memory facts about the same subject. Decide how the NEW relates to the "
@@ -759,6 +769,15 @@ def main():
             if st != 200:
                 rec({"kind": "remember", "turn_id": c["turn_id"], "http": st,
                      "err": str(r)[:120]})
+            if not a.no_law and law_rows is not None and c.get("mem_id") \
+                    and st == 200 and not (r or {}).get("deduped"):
+                try:                                            # keep the matrix current WITHIN
+                    import numpy as _np                         # the run: the manual drain of
+                    sv = law_emb.embed_docs([fields["text"]])[0]  # 2026-10-17 minted two RTX-4090
+                    sv = sv / (_np.linalg.norm(sv) + 1e-9)      # twins 19 s apart that could not
+                    law_rows.append((c["mem_id"], fields["text"], c["scope"], sv))  # see each
+                except Exception:                               # noqa: BLE001 - freshness is a
+                    pass                                        # bonus, never a risk to the store
         stored[cls] = stored.get(cls, 0) + 1
         rec({"kind": "score", "turn_id": c["turn_id"], "cls": cls, "mixed": mixed,
              "fact": c["fact"][:90], "gold": c["gold"][:40], "supersedes": c.get("supersedes"),

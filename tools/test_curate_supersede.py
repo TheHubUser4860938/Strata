@@ -111,7 +111,8 @@ class SupersedeLaw(unittest.TestCase):
         self.assertAlmostEqual(cos, 1.0, places=5)
         self.assertEqual(row[0], 2)
         self.assertEqual(near_dupe_cos(np.array([1.0, 0.0], dtype=np.float32), []), (0.0, None))
-        self.assertEqual(LAW_TH, 0.85)                            # measured, m7_consolidate
+        self.assertEqual(LAW_TH, 0.78)   # judged arm flags wide (measured bands, see curate_loop);
+                                         # m7_consolidate's BLIND collapse stays at 0.85
 
     def test_amend_never_fails_and_skips_noops(self):
         from curate_loop import amend_with_history
