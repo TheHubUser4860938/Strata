@@ -29,6 +29,8 @@ Method, and why each piece is what it is:
 
     python3 tools/m4_reason.py --pilot            # quick smoke: 3 shapes, 4 arms, one pass
     python3 tools/m4_reason.py --json out.json    # the full sweep, 7 shapes x 15 probes x 2 passes
+    python3 tools/m4_bench_fetch.py               # round 2: fetch the published-benchmark bank
+    python3 tools/m4_reason.py --bank r2 --arms default --repeats 1   # calibrate saturation first
 """
 from __future__ import annotations
 
@@ -238,16 +240,28 @@ def main() -> int:
     ap.add_argument("--repeats", type=int, default=2, help="passes over the whole probe bank per arm")
     ap.add_argument("--max-tokens", type=int, default=3072)
     ap.add_argument("--timeout", type=int, default=600)
+    ap.add_argument("--bank", choices=("r1", "r2"), default="r1", help="r1 = the built-in probes; "
+                    "r2 = the published-benchmark bank (tools/m4_bank_r2.py, fetch first with "
+                    "tools/m4_bench_fetch.py)")
+    ap.add_argument("--bench-dir", default="", help="r2 data dir (default Strata-data/bench)")
+    ap.add_argument("--force", action="store_true", help="r2: load even if file hashes moved")
     ap.add_argument("--pilot", action="store_true", help="smoke preset: math,code,plan x "
                     "default,ultra,coder,house x 1 pass")
     ap.add_argument("--json", default="", help="write every record here")
     a = ap.parse_args()
 
+    if a.bank == "r2":
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from m4_bank_r2 import probes as bank_probes
+        bank_all = bank_probes(a.bench_dir or None, force=a.force)
+    else:
+        bank_all = probes()
+    bank_shapes = list(dict.fromkeys(p["shape"] for p in bank_all))
+
     arms = (a.arms or ("default,ultra,coder,house" if a.pilot else
                        "default,ultra,off,xhigh,coder,house,deeptree,socrates")).split(",")
-    all_shapes = ["math", "logic", "code", "debug", "plan", "summarize", "extract"]
-    shapes = (a.shapes or ("math,code,plan" if a.pilot else ",".join(all_shapes))).split(",")
-    bank = [p for p in probes() if p["shape"] in shapes]
+    shapes = (a.shapes or ("math,code,plan" if a.pilot else ",".join(bank_shapes))).split(",")
+    bank = [p for p in bank_all if p["shape"] in shapes]
 
     print(f"m4_reason: {len(arms)} arms x {len(bank)} probes x {a.repeats} passes "
           f"= {len(arms)*len(bank)*a.repeats} generations at temperature 0 on {a.host} "
@@ -259,7 +273,7 @@ def main() -> int:
                 r = ask(a.host, arm, p["prompt"], a.max_tokens, a.timeout)
                 score = p["check"](r["text"])
                 r.update(arm=arm, shape=p["shape"], pass_no=rep, score=round(score, 3),
-                         prompt_chars=len(p["prompt"]))
+                         gold=str(p.get("gold", ""))[:200], prompt_chars=len(p["prompt"]))
                 recs.append(r)
                 print(f"  pass {rep+1} {p['shape']:<10} {arm:<9} {score:.2f} "
                       f"({r['secs']}s, {r['usage'].get('completion_tokens', '?')} tok, {r['finish']})",
