@@ -292,6 +292,42 @@ class ReasonOverHttp(unittest.TestCase):
                       "template's soft literal-text leak")
         self.assertLess(prompt.find("OPERATIONAL AGENT"), prompt.find("PROGRAMMER & UI ARCHITECT"),
                         "b's block lands right after a's, where the template put a's")
+        self.assertIn("wrapper of your previous message does not carry over", prompt,
+                      "the bridge arbitrates the two wrapper claims (the transcript lesson: a "
+                      "curie+teacher answer wrapped in joe's dash-wave, an einstein+coder answer "
+                      "in business's bolt - both carryovers from the PREVIOUS turn's block)")
+        self.assertLess(prompt.find("Pair grammar"), prompt.find("PROGRAMMER & UI ARCHITECT"),
+                        "the bridge sits BETWEEN the halves, where both claims are in earshot")
+
+    def test_pinning_over_auto_says_what_the_pin_freezes(self):
+        # the webui transcript lesson (2026-10-17): the model set auto, then pinned over it EVERY
+        # following turn - each pin correct at pin-time, each stale by the next pivot; a replay of
+        # the picker over the missed turns scores coder for both. A pin that overrides an auto
+        # frame states its cost at the moment of pinning: a judgment assist, not a gate.
+        first = "reason probe freeze zqrk: the first user message"
+        self.svc.reason_default = "auto"
+        st, body = self.http("POST", "/reason", {"mode": "coder", "conversation": first})
+        self.assertEqual(st, 200, body)
+        self.assertIn("auto was reassessing every request", body.get("note", ""),
+                      "unpinned conversation over a default-auto: the freeze is named")
+        st, body = self.http("POST", "/reason", {"mode": "teacher", "conversation": first})
+        self.assertNotIn("freezes the frame", body.get("note", ""), "pin over pin: the cost is named once")
+        st, body = self.http("POST", "/reason", {"mode": "auto", "conversation": first})
+        self.assertNotIn("freezes the frame", body.get("note", ""), "setting auto back is no freeze")
+        st, body = self.http("POST", "/reason", {"mode": "coder", "conversation": first})
+        self.assertIn("auto was reassessing every request", body.get("note", ""),
+                      "auto again, pin again: named again")
+        self.http("POST", "/reason", {"mode": "off", "conversation": first})
+        self.svc.reason_default = None
+        st, body = self.http("POST", "/reason", {"mode": "business", "conversation": first})
+        self.assertNotIn("freezes the frame", body.get("note", ""), "no auto in the ladder: nothing to warn")
+        st, body = self.http("POST", "/reason", {"mode": "coder"})   # session default, no auto under it
+        self.assertNotIn("freezes the frame", body.get("note", ""),
+                         "a session pin over a plain default: nothing was reassessing")
+        st, body = self.http("POST", "/reason", {"mode": "auto"})
+        st, body = self.http("POST", "/reason", {"mode": "coder"})
+        self.assertIn("auto was reassessing every request", body.get("note", ""),
+                      "a default pin over an auto default freezes it for every conversation")
         st, _ = self.http("POST", "/reason", {"mode": "off"})
         prompt = self.turn("reason probe pair zqonq: and now plain")
         self.assertNotIn("OPERATIONAL AGENT", prompt, "off clears a pair like any mode")

@@ -570,7 +570,9 @@ REASON_TOOL = {
                     "next render - plain if none is set). It takes effect from the next render - the "
                     "next tool round of THIS turn - so call it at the START of a hard task and 'off' "
                     "when done. Switching re-reads the conversation prefix once (seconds), so do not "
-                    "thrash it every round. Call with no arguments to get the menu back. A name off "
+                    "thrash it every round - but a pinned mode is a frame, not a fence: when the "
+                    "user's TASK changes, re-pick, because stickiness serves the work, not the chat. "
+                    "Call with no arguments to get the menu back. A name off "
                     "the menu is refused with the list. The optional 'effort' half pins your thinking "
                     "LEVEL for the conversation (low/medium/xhigh, or none to think less; effort:auto "
                     "hands it back): it outranks the harness's own level and lands on the next "
@@ -628,6 +630,7 @@ def reason_tool_result(svc: "Service", messages, arguments) -> dict:
     if mode:
         key = reason_conv_key(messages)
         with svc._reason_lock:
+            prev = svc._reason.get(key)
             if m:
                 svc._reason[key] = m
                 svc._reason.move_to_end(key)
@@ -636,8 +639,17 @@ def reason_tool_result(svc: "Service", messages, arguments) -> dict:
             else:
                 svc._reason.pop(key, None)
         if m:
+            # the webui transcript lesson (2026-10-17, 06:07 onward): the model set auto, then
+            # manually pinned EVERY following turn - each pin correct at pin-time, each stale by
+            # the next pivot (auto alone would have caught both misses of the session). The nudge
+            # makes the pin's cost visible at the moment of pinning: a judgment assist, not a gate.
+            frozen = ""
+            if m != "auto" and (prev == "auto" or (prev is None and reason_feature_on(svc)
+                                                    and svc.reason_default == "auto")):
+                frozen = (" (auto was reassessing every request - this pin freezes the frame until "
+                          "you change it or set auto back)")
             parts.append(f"reason mode set to {m}; it rides this conversation's next render (the next "
-                         f"tool round of this turn)")
+                         f"tool round of this turn){frozen}")
         else:
             # the audit finding (2026-10-17, fresh eyes): "cleared: plain" was only true on a box with no
             # session default. The ladder is sticky > default > template framing, and a conversation-level
@@ -4372,12 +4384,21 @@ class Service:
         self._reason_blocks[mode] = blk
         return blk
 
+    _PAIR_BRIDGE = ("Pair grammar: the block above frames your THINKING only; the block below "
+                    "frames the ANSWER - its voice and its wrapper close every reply, and the "
+                    "wrapper of your previous message does not carry over.")
+
     def splice_reason_pair(self, text: str, mode: str | None) -> str:
         """The mechanical half of the pair grammar (see reason_mode_ok): a single mode renders
         byte-identical to before - the "+" is the only thing that changes the bytes. For "a+b",
         construct b's block lands right after construct a's, where the template put a's: two
         static blocks, one find, one insert. If a's block is not in the rendered text (a template
-        this cannot take apart) the render stands as asked - honest degradation, no half-splice."""
+        this cannot take apart) the render stands as asked - honest degradation, no half-splice.
+        The bridge sentence between the blocks is the transcript lesson of 2026-10-17: two
+        blocks each claiming "WRAPS ALL RESPONSES" left the model arbitrating, and it wrapped a
+        curie+teacher answer in joe's 〰️ and an einstein+coder answer in business's ⚡ - both
+        carryovers from the PREVIOUS turn's block. The answer half wins, and the old wrapper
+        does not ride: say so where both claims are in earshot."""
         if not mode or "+" not in mode:
             return text
         a, _, b = mode.partition("+")
@@ -4385,7 +4406,7 @@ class Service:
         i = text.find(ba) if ba else -1
         if not bb or i < 0:
             return text
-        return text[:i + len(ba)] + "\n\n" + bb + text[i + len(ba):]
+        return text[:i + len(ba)] + "\n\n" + self._PAIR_BRIDGE + "\n\n" + bb + text[i + len(ba):]
 
     def sticky_effort_for_messages(self, messages) -> str | None:
         """The conversation's pinned thinking level, LRU-touched (the mode map's geometry: same
@@ -6585,6 +6606,7 @@ def make_handler(svc: Service):
 
             def pin(key: str):
                 with svc._reason_lock:
+                    prev = svc._reason.get(key)
                     if m:
                         svc._reason[key] = m
                         svc._reason.move_to_end(key)
@@ -6592,8 +6614,22 @@ def make_handler(svc: Service):
                             svc._reason.popitem(last=False)      # LRU like the block pins: steering is
                     else:                                        # conversation-scoped garbage, never
                         svc._reason.pop(key, None)               # a growing table
+                    return prev
 
+            def auto_note(prev):
+                # the webui transcript lesson (2026-10-17): a pin that overrides an auto frame -
+                # sticky auto, or no sticky over a default-auto - freezes the per-request picker
+                # that would have caught the stale-frame misses. The client must know what it just
+                # switched off, at the moment of switching: a judgment assist, not a gate.
+                if m and m != "auto" and (prev == "auto" or (prev is None and reason_feature_on(svc)
+                                                             and svc.reason_default == "auto")):
+                    return ("auto was reassessing every request - this pin freezes the frame until "
+                            "you change it or set auto back")
+                return None
+
+            note = None
             if where in ("", "session", "default"):
+                note = auto_note(svc.reason_default)             # before the write: prev = old default
                 svc.reason_default = m or None
                 level = "session-default"
             elif where == "last":
@@ -6602,7 +6638,7 @@ def make_handler(svc: Service):
                     self._json(409, {"error": {"message": "no conversation has rendered yet - nothing "
                                                           "is 'last'; send the conversation text"}})
                     return
-                pin(key)
+                note = auto_note(pin(key))
                 if effort:
                     svc.pin_sticky_effort_key(key, lvl or None)
                 level = "conversation"
@@ -6613,12 +6649,14 @@ def make_handler(svc: Service):
                 level = "stickies"
             else:
                 key = hashlib.sha1(str(req["conversation"]).encode("utf-8", "replace")).hexdigest()[:16]
-                pin(key)
+                note = auto_note(pin(key))
                 if effort:
                     svc.pin_sticky_effort_key(key, lvl or None)
                 level = "conversation"
             out = {"ok": True, "mode": m or "off", "level": level,
                    "applies": "next render: the next turn, or the next tool round of this one"}
+            if note:
+                out["note"] = note
             if effort:
                 out["effort"] = lvl or "auto"
                 out["effort_applies"] = "next REQUEST (the loop freezes its kwargs at entry; the " \

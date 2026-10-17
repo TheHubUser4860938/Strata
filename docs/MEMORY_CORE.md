@@ -2109,6 +2109,35 @@ off; off means every render passes the SAME kwargs dict, byte-identical by const
   says about its mtime), and a cartridge's APPLIED file (it restores from that name on demand;
   its own GC owns MEM-CRG-* rotation). `test_slots` +2, `test_reason` +1, gate 1009 OK
   (skipped 11, one pass).
+- **The webui transcript audit (v2.0, same day):** the owner ran `auto` through a live chat -
+  roast, vacuum tubes, a cli.py refactor, business advice, a coding ask, a call-out, firmware RE,
+  a RAM startup, philosophy homework, a dark sci-fi chapter - and ported the whole transcript in.
+  Two turns visibly rode a stale frame (the refactor answered in curie+teacher, "I need some
+  coding done" answered in business). A cold replay of the picker over all eleven user messages
+  scores **coder for both missed turns - 2-for-2**: the mechanism was sound; what killed it was
+  the ladder. The agent's turn-2 manual pin froze the frame (sticky outranks default), so the
+  session's `auto` stopped reassessing after turn two - and after re-enabling `auto` at 06:07,
+  the agent pinned over it EVERY following turn. Each pin was correct at pin-time and stale by
+  the next pivot; the picker never got a fair run. Three fixes, all small, all aimed at the
+  moment of the mistake: (1) a pin that overrides an auto frame now says what it froze, at
+  pin-time - the tool text and the POST /reason route gain "auto was reassessing every request -
+  this pin freezes the frame until you change it or set auto back" (a judgment assist, not a
+  gate); (2) the pair splice gained a bridge sentence between the two blocks - "the block above
+  frames your THINKING only; the block below frames the ANSWER - its voice and its wrapper close
+  every reply, and the wrapper of your previous message does not carry over" - because the
+  transcript caught two wrapper bugs (a curie+teacher answer wrapped in joe's 〰️, an
+  einstein+coder answer in business's ⚡), both carryovers from the PREVIOUS turn's block, with
+  each pair half claiming "WRAPS ALL RESPONSES" and nothing arbitrating; (3) the tool
+  description's "do not thrash it every round" gained its counterweight: "a pinned mode is a
+  frame, not a fence: when the user's TASK changes, re-pick, because stickiness serves the work,
+  not the chat." What the transcript proved WORKING: the plumbing (every call landed on the next
+  render), the combos list (the back half's musk+business and einstein+pkd are the recommended
+  pairs, used correctly), and the model's self-audit (factually right about our mechanism, no
+  invented API). Store footnote, same audit: the roast's "2,505 facts" punchline was a STALE
+  row - the store had been purged to 1,051 that very morning - and the roast roasted its owner
+  with pilot-era artifacts (a township test fixture, an empty-lane observation); the two
+  journal-era rows forgotten, the fixture re-shelved MEM/TECH. `test_reason` 35 OK; full gate
+  1010 OK (skipped 11; one keep-awake timing flake, green on rerun - the known class).
 - **The installer now carries the model (`setup.py` "dau" family, 2026-10-17):** `setup --family
   dau --model IQ3_S` installs DavidAU's Turbo-Brilliance re-quant - pinned repo commit, both
   shard SHA-256s from the Hub's LFS pointers, Apache-2.0 stated at install. Two measured facts
