@@ -1,0 +1,13 @@
+# Weekly memory-store janitor: seal an encrypted backup, THEN collapse paraphrase clusters
+# through the live server (invalidate-with-chain). Guarded: if the server is down the whole
+# unit exits 0 - the timer ticks on and next week tries again. Installed 2026-10-17 by Clio
+# under the owner's "refine the memory system" order; remove: systemctl --user disable --now
+# strata-consolidate.timer && rm ~/.config/systemd/user/strata-consolidate.*
+[Unit]
+Description=Strata memory: weekly encrypted backup + paraphrase consolidation
+After=network.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/eugene/Projects/Strata-MAM-cartrige-mod
+ExecStart=/usr/bin/bash -c 'curl -sf --max-time 10 http://127.0.0.1:8005/memory >/dev/null || { echo "server down: skipping this week"; exit 0; }; /home/eugene/Projects/Strata-MAM-cartrige-mod/.venv/bin/python tools/m6_backup.py --dir /home/eugene/Strata-data/memory-eval && /home/eugene/Projects/Strata-MAM-cartrige-mod/.venv/bin/python tools/m7_consolidate.py --dir /home/eugene/Strata-data/memory-eval --threshold 0.85 --go'

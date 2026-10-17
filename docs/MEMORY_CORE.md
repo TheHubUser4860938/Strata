@@ -2140,6 +2140,21 @@ scans, plus every flagged row read by eye) found, and what was done about it:
    rejected/kept string in `tools/test_m2_ingest.py` is a real shape from the cleanup. Curated
    documents that want their fragments anyway pass `--no-gate`.
 
+**The same afternoon proved the store self-heals, and closed the loop on manual cleanup:**
+
+- `m7_consolidate --go` at 0.85, after an encrypted `m6_backup` seal (6.8 MB, 0.4 s): 12 rows
+  retired, **zero residual clusters** - the store is fully merged end to end.
+- The sweep's law arm self-retired ~36 more rows between the 12:28 boot and 14:00 on its own:
+  new paraphrases landing, old ones chained out. The manual pass is now history, not a routine.
+- The journaling law proved live: this multi-round conversation journals as exactly ONE turn row.
+- Curation cadence verified, not assumed: `strata-sweep.timer` (systemd USER timer - a system-level
+  `list-timers` misses it, which briefly produced a wrong "no scheduler" row, corrected in-store)
+  ticks every 30 minutes since 2026-10-12, last tick 14:09.
+- What WAS missing - a backup-and-consolidate cadence - is installed: `strata-consolidate.timer`
+  (units mirrored in `tools/systemd/`), weekly, `Persistent=true`, guarded on the server answering
+  `GET /memory` before it touches anything: `m6_backup` then `m7_consolidate --go`. First tick
+  Mon 2026-10-19 00:56.
+
 ## Licensing and attribution
 
 - Strata (upstream) is MIT © Niko1221 and contributors; this fork's independent code keeps MIT.
