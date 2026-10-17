@@ -314,6 +314,46 @@ REASON_MODE_SET = frozenset(REASON_MODES)
 REASON_CLEAR = ("", "off", "reset", "clear", "default", "none")   # API words that mean "no override"
 
 
+def reason_mode_ok(value: str) -> bool:
+    """A mode name, or a "reason+answer" PAIR whose two halves are both real modes (one "+", no
+    empty half). The pair grammar is the fork's, not the template's: DavidAU's pairing guide
+    documents stacking {REASON:a}{REASON:b} ("both at once" - his own example is
+    {REASON:007}{REASON:coder} for agentic builds), but the shipped template parses ONE tag per
+    message - measured 2026-10-17 on the template embedded in the GGUF metadata itself (range-read
+    from the Hub, no download: after_tag[1] takes only the first split; the pack's copy does the
+    same): the second tag leaks into the message as literal text and steers the model only softly,
+    by imprinting. The server makes the documented combo mechanical: render with a framing the
+    thinking, splice construct b's block right after a's (Service.splice_reason_pair)."""
+    if value in REASON_MODE_SET:
+        return True
+    a, sep, b = value.partition("+")
+    return bool(sep) and "+" not in b and a in REASON_MODE_SET and b in REASON_MODE_SET
+
+
+# The author's use-case map and recommended combos (card: "Mode Pairing Guide", read 2026-10-17),
+# carried into the tool description and GET /reason so the AGENT knows which construct fits which
+# task - the knowledge half of "adapt yourself on the fly". Kept short on purpose: the tool
+# description rides every request's cached head, so every word here is prefix bytes.
+REASON_GUIDE = {
+    "coder": "code work", "house": "debugging (pair with logic)", "stark": "architecture",
+    "007": "agentic multi-step builds", "ultra": "final deliverables, review",
+    "hyper": "audits, deconstruction", "spoon": "research, fact-check",
+    "deeptree": "branching strategy", "omni": "cross-domain synthesis",
+    "socrates": "probing questions", "teacher": "plain explanations",
+    "einstein": "novelty, ideation", "brainstorm": "ideation", "business": "business strategy",
+    "matlock": "legal", "musk": "physics-first sanity", "curie": "science explanation",
+    "story": "narrative", "comedy": "humor", "joe": "plain human voice",
+    "prompt": "prompt engineering", "holodeck": "simulated debate", "vader": "hard decisions",
+    "neo": "question the frame", "joker": "reframe through chaos", "quinn": "bold voice",
+    "logic": "first principles", "xlogic": "first principles at xhigh",
+}
+REASON_PAIRS = ("007+coder agentic builds", "stark+coder architecture", "ultra+coder code review",
+                "house+logic debugging", "deeptree+spoon research", "hyper+socrates thesis work",
+                "logic+spoon fact-checking", "omni+omni synthesis", "musk+business go-to-market",
+                "curie+teacher explanations", "matlock+logic legal analysis", "joe+comedy humor",
+                "einstein+pkd speculative fiction", "prompt+prompt prompt optimization")
+
+
 def reason_conv_key(messages) -> str:
     """Conversation identity for the sticky map: the hash of the FIRST user message - the same anchor
     the memory block pin uses, with the same consequence: 'use a new chat when switching' (DavidAU's
@@ -332,11 +372,13 @@ def apply_reason_mode(kwargs: dict, mode: str | None) -> dict:
     """The template-context copy of a request's render kwargs with reasoning_effort replaced by the
     mode. Returns THE SAME DICT when there is no mode: the default path stays byte-identical by
     construction, not by a copy that happens to look alike. Only reasoning_effort moves -
-    enable_thinking and every other key belong to the engine and the request."""
+    enable_thinking and every other key belong to the engine and the request. A "a+b" pair passes
+    its REASONING half to the template (the answer half rides the rendered text via
+    Service.splice_reason_pair - the template knows no pair value and would raise on one)."""
     if not mode:
         return kwargs
     kw = dict(kwargs)
-    kw["reasoning_effort"] = mode
+    kw["reasoning_effort"] = mode.partition("+")[0]
     return kw
 
 
@@ -368,19 +410,23 @@ def reason_feature_on(svc: "Service") -> bool:
 REASON_TOOL = {
     "name": "reason_mode",
     "description": ("Set your own reasoning mode - a persona and thinking framework built into this "
-                    "model - for the REST of this conversation, to adapt to what the task needs: 'coder' "
-                    "for code work, 'house' for diagnosis, 'socrates' or 'xlogic' for first-principles "
-                    "probing, 'deeptree' for branching plans, 'teacher' for explanations, 'off' to hand "
-                    "the choice back (the session default frames the next render - plain if none is "
-                    "set). It takes effect from the next render - the next tool round of THIS turn - "
-                    "so call it at the START of a hard task and 'off' when done. Switching re-reads the "
-                    "conversation prefix once (seconds), so do not thrash it every round. Call with no "
-                    "arguments to get the menu back. A name off the menu is refused with the list."),
+                    "model - for the REST of this conversation, to adapt to what the task needs. Pick "
+                    "by task: " + "; ".join(f"{k} {v}" for k, v in REASON_GUIDE.items()) + ". "
+                    "DavidAU's recommended combos ride as PAIRS, one string reason+answer: "
+                    + ", ".join(REASON_PAIRS) + " - a pair thinks like the first half and answers "
+                    "like the second. 'off' hands the choice back (the session default frames the "
+                    "next render - plain if none is set). It takes effect from the next render - the "
+                    "next tool round of THIS turn - so call it at the START of a hard task and 'off' "
+                    "when done. Switching re-reads the conversation prefix once (seconds), so do not "
+                    "thrash it every round. Call with no arguments to get the menu back. A name off "
+                    "the menu is refused with the list."),
     "parameters": {
         "type": "object",
         "properties": {"mode": {"type": "string",
                                  "description": "one of: " + ", ".join(REASON_MODES)
-                                                + " - or off/reset/clear to hand the choice back"}},
+                                                + " - or a reason+answer pair like 007+coder (both "
+                                                  "halves from the list) - or off/reset/clear to hand "
+                                                  "the choice back"}},
         "required": []},
 }
 
@@ -399,10 +445,12 @@ def reason_tool_result(svc: "Service", messages, arguments) -> dict:
                 "ms": int((time.perf_counter() - t0) * 1000)}
 
     if not mode:
-        return done(True, "reason modes: " + ", ".join(REASON_MODES) + " - send one as {\"mode\": ...}")
+        return done(True, "reason modes: " + ", ".join(REASON_MODES)
+                    + " - or a reason+answer pair like 007+coder; send one as {\"mode\": ...}")
     m = "" if mode in REASON_CLEAR else mode
-    if m and m not in REASON_MODE_SET:
-        return done(False, f"unknown mode {mode!r}; this template answers to: " + ", ".join(REASON_MODES))
+    if m and not reason_mode_ok(m):
+        return done(False, f"unknown mode {mode!r}; this template answers to: " + ", ".join(REASON_MODES)
+                    + " - pairs are reason+answer, both halves from that list")
     key = reason_conv_key(messages)
     with svc._reason_lock:
         if m:
@@ -3286,6 +3334,7 @@ class Service:
         # takes the untouched kwargs dict, byte-identical to before the feature existed.
         self.reason_default = None
         self._reason = collections.OrderedDict()      # conversation key -> mode (64 conversations)
+        self._reason_blocks = {}                      # mode -> its construct block (extracted once, lazy)
         self._reason_last = None                      # the key of the most recent render (API's "last")
         self._reason_lock = threading.Lock()
         self.reason_flavor = reason_flavor(getattr(self.template, "source", "") or "")
@@ -4049,6 +4098,54 @@ class Service:
                 return mode
         return self.reason_default if reason_feature_on(self) else None
 
+    def reason_block(self, mode: str) -> str:
+        """The construct text a mode injects at the head, isolated ONCE per mode by rendering the
+        template itself: the 2026-10-17 spike measured that reasoning_effort in the render context
+        injects the block with no tag in the conversation, so rendering IS the extraction. The
+        diff partner is a SECOND REAL MODE (xhigh, or medium for xhigh itself), not "off":
+        measured on the fork's template copy, "off" omits the whole system turn (DavidAU's "off
+        turns off all enhancements" is structural, not a text swap), which bleeds the prologue and
+        the message tail into an affix diff - two thinking-ON modes share prologue and tail
+        exactly, so the diff leaves the block alone. "" when there is nothing to isolate ("off"
+        has no block at all, a render that failed, blocks that match); a double-extract race is
+        benign (both write the same string)."""
+        if mode in self._reason_blocks:
+            return self._reason_blocks[mode]
+        blk = ""
+        if mode != "off":
+            probe = [{"role": "user", "content": "x"}]
+            partner = "xhigh" if mode != "xhigh" else "medium"
+            try:
+                a = self.template.render(probe, reasoning_effort=mode, add_generation_prompt=False)
+                o = self.template.render(probe, reasoning_effort=partner, add_generation_prompt=False)
+                if a != o:
+                    p = 0
+                    while p < min(len(a), len(o)) and a[p] == o[p]:
+                        p += 1
+                    s = 0
+                    while s < min(len(a), len(o)) - p and a[len(a) - 1 - s] == o[len(o) - 1 - s]:
+                        s += 1
+                    blk = a[p:len(a) - s] if s else a[p:]
+            except Exception:                           # extraction failure = no splice, never a broken render
+                blk = ""
+        self._reason_blocks[mode] = blk
+        return blk
+
+    def splice_reason_pair(self, text: str, mode: str | None) -> str:
+        """The mechanical half of the pair grammar (see reason_mode_ok): a single mode renders
+        byte-identical to before - the "+" is the only thing that changes the bytes. For "a+b",
+        construct b's block lands right after construct a's, where the template put a's: two
+        static blocks, one find, one insert. If a's block is not in the rendered text (a template
+        this cannot take apart) the render stands as asked - honest degradation, no half-splice."""
+        if not mode or "+" not in mode:
+            return text
+        a, _, b = mode.partition("+")
+        ba, bb = self.reason_block(a), self.reason_block(b)
+        i = text.find(ba) if ba else -1
+        if not bb or i < 0:
+            return text
+        return text[:i + len(ba)] + "\n\n" + bb + text[i + len(ba):]
+
     def render_prompt(self, messages, tools, kwargs) -> str:
         """The template rendered.  #458: with `effort_end`, a request with a non-default effort (low, medium or no
         thinking) is rendered as a default one up to the answer - the same prompt start, so the conversation cache
@@ -4058,15 +4155,17 @@ class Service:
         effort = kwargs.get("reasoning_effort")
         off = kwargs.get("enable_thinking") is False
         if not self.effort_end or (not off and effort in (None, "", "xhigh", "high")):
-            return self.template.render(messages, tools=tools, **apply_reason_mode(kwargs, mode))
+            return self.splice_reason_pair(self.template.render(messages, tools=tools,
+                                                                **apply_reason_mode(kwargs, mode)), mode)
         base = {k: v for k, v in kwargs.items() if k not in ("reasoning_effort", "enable_thinking")}
         if mode:                                # the cached head renders with the mode text too - the mode
-            base["reasoning_effort"] = mode     # replaces the effort text at the top, the tail keeps the level
-        history = self.template.render(messages, tools=tools, add_generation_prompt=False, **base)
-        full = self.template.render(messages, tools=tools, add_generation_prompt=True,
-                                    **apply_reason_mode(kwargs, mode))
-        mine = self.template.render(messages, tools=tools, add_generation_prompt=False,
-                                    **apply_reason_mode(kwargs, mode))
+            base["reasoning_effort"] = mode.partition("+")[0]   #  replaces the effort text at the top (a
+        history = self.splice_reason_pair(      #  pair splices its answer half), the tail keeps the level
+            self.template.render(messages, tools=tools, add_generation_prompt=False, **base), mode)
+        full = self.splice_reason_pair(self.template.render(messages, tools=tools, add_generation_prompt=True,
+                                                            **apply_reason_mode(kwargs, mode)), mode)
+        mine = self.splice_reason_pair(self.template.render(messages, tools=tools, add_generation_prompt=False,
+                                                            **apply_reason_mode(kwargs, mode)), mode)
         if not full.startswith(mine):                  # a template this cannot take apart: rendered as asked
             return full
         tail = "" if off else EFFORT_TURN.format(EFFORT_TEXT.get(effort, EFFORT_TEXT["medium"]))
@@ -4280,10 +4379,11 @@ class Service:
             kw = ({k: v for k, v in kwargs.items() if k not in ("reasoning_effort", "enable_thinking")}
                   if self.effort_end and (off or effort not in (None, "", "xhigh", "high")) else dict(kwargs))
             if mode:
-                kw["reasoning_effort"] = mode
+                kw["reasoning_effort"] = mode.partition("+")[0]     # pair: the reasoning half frames the head
             kw["add_generation_prompt"] = False
-            text = self.template.render(marked, tools=marked_tools, **kw)
-            cut = text.find(self.PREFIX_END)
+            text = self.splice_reason_pair(self.template.render(marked, tools=marked_tools, **kw),
+                                           mode)                    # same splice as render_prompt: the head
+            cut = text.find(self.PREFIX_END)                       #  bytes must match the prompt's exactly
             if cut >= 0:
                 text = text[:cut]
             if changed:
@@ -6129,6 +6229,9 @@ def make_handler(svc: Service):
                 last = svc._reason_last
             self._json(200, {"on": reason_feature_on(svc), "template": svc.reason_flavor,
                              "modes": list(REASON_MODES),
+                             "pairs": "mode strings of the form reason+answer, e.g. 007+coder "
+                                      "(thinks like the first half, answers like the second)",
+                             "guide": REASON_GUIDE, "combos": list(REASON_PAIRS),
                              "default": svc.reason_default, "sticky": sticky,
                              "last_conversation": last})
 
@@ -6157,9 +6260,10 @@ def make_handler(svc: Service):
                 return
             where = str(req.get("conversation") or "").strip().lower()
             m = "" if mode in REASON_CLEAR else mode
-            if m and m not in REASON_MODE_SET:
+            if m and not reason_mode_ok(m):
                 self._json(400, {"error": {"message": f"unknown reason mode {mode!r}; GET /reason "
-                                                      "lists what this template answers to"}})
+                                                      "lists what this template answers to (pairs take "
+                                                      "both halves from that list)"}})
                 return
 
             def pin(key: str):
@@ -7831,7 +7935,8 @@ def main() -> int:
     if cfg.get("reason_modes") is True:
         if svc.reason_flavor == "dau":
             svc.reason_enabled = True
-            print(f"[strata] reason modes on: {len(REASON_MODES)} modes the template answers to; "
+            print(f"[strata] reason modes on: {len(REASON_MODES)} modes the template answers to, "
+                  f"and reason+answer pairs (a+b: think like a, answer like b, e.g. 007+coder); "
                   f"GET|POST /reason and the reason_mode tool (a client's own {{REASON:}} tag "
                   f"still outranks all of it)", flush=True)
         else:
@@ -7843,8 +7948,9 @@ def main() -> int:
     # loudly, and left off: the fail-closed law, applied before any request can carry the mistake.
     rm = str(cfg.get("reason_mode") or "").strip().lower()
     if rm and rm not in REASON_CLEAR:
-        if rm not in REASON_MODE_SET:
-            print(f"[strata] reason_mode {rm!r}: not one of the template's modes - left off", flush=True)
+        if not reason_mode_ok(rm):
+            print(f"[strata] reason_mode {rm!r}: not one of the template's modes (or a pair of two "
+                  f"of them) - left off", flush=True)
         elif not svc.reason_enabled:
             print(f"[strata] reason_mode {rm!r}: set \"reason_modes\": true to turn the feature on "
                   f"first - left off", flush=True)

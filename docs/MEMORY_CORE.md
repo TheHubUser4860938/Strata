@@ -2023,6 +2023,28 @@ off; off means every render passes the SAME kwargs dict, byte-identical by const
   joins the list (proved: the prompt is clean of it). One honest caveat this suite caught red: the
   tool's description lists the 41 mode names, so mode NAMES appear in every prompt that offers the
   tool - proving "no mode is set" means testing for the mode block's title, never the bare name.
+- **Reason+answer pairs (v1.6, same day, the owner's ask):** one mode string `a+b` (`007+coder`)
+  thinks like a and answers like b. The grammar is the fork's, not the template's: DavidAU's
+  pairing guide documents stacking `{REASON:a}{REASON:b}` (his agentic-build example is exactly
+  `007+coder`) but his shipped template parses ONE tag per message - measured without downloading
+  the model by range-reading the GGUF metadata off the Hub (the template rides at the file's head,
+  221,835 chars; its tag scan takes only `after_tag[1]`), so his double tag survives only as
+  literal text in the message, steering softly by imprinting. The server makes the documented
+  combo mechanical: the reasoning half rides the template as any single mode does, and the answer
+  half's construct block is extracted once per mode - rendering IS the extraction, diffed against
+  a SECOND REAL MODE, not against "off": measured, "off" omits the whole system turn, which
+  bleeds the prologue and message tail into an affix diff - and spliced in right after it. The
+  splice sits at all four render sites (prompt, history, full, head ids) so the head bytes still
+  match the prompt's exactly; a single mode renders byte-identical (the "+" is the only thing that
+  moves bytes); both halves validate at every door (tool, POST, boot default). The tool
+  description and GET /reason now carry the author's use-case map and his recommended combos -
+  the knowledge half of "adapt yourself on the fly": the agent knows which construct fits which
+  task without scraping the model card. And the two request-level levers compose with it by
+  design: `effort_position: "end"` keeps per-request effort changes cache-cheap while the pair
+  rides the pinned head (switching a pair still costs one re-read), and `anthropic_thinking`
+  decides whether unasked Anthropic requests think - the pair lands through the template's
+  reasoning branch with thinking on and its instruct branch with thinking off, both injecting the
+  same blocks (measured: it is why a Vader sticky rides a thinking-off request today).
 - **The installer now carries the model (`setup.py` "dau" family, 2026-10-17):** `setup --family
   dau --model IQ3_S` installs DavidAU's Turbo-Brilliance re-quant - pinned repo commit, both
   shard SHA-256s from the Hub's LFS pointers, Apache-2.0 stated at install. Two measured facts

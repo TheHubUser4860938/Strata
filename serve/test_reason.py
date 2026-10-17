@@ -21,7 +21,7 @@ from pathlib import Path
 
 from serve.frontend import ChatTemplate
 from serve.server import (ByteTokenizer, MockEngine, REASON_MODES, Service, serve,
-                          apply_reason_mode, reason_conv_key, reason_tool_result)
+                          apply_reason_mode, reason_conv_key, reason_mode_ok, reason_tool_result)
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -62,6 +62,24 @@ class ModeLaw(unittest.TestCase):
         self.assertEqual(out["reasoning_effort"], "vader")
         self.assertEqual(out["enable_thinking"], False, "engine-side keys ride untouched")
         self.assertEqual(kw["reasoning_effort"], "low", "the request's own kwargs dict is not mutated")
+
+    def test_pair_grammar_is_one_plus_two_real_modes(self):
+        # the owner's ask 2026-10-17: DavidAU documents {REASON:a}{REASON:b} combos (his card's
+        # pairing guide, example {REASON:007}{REASON:coder}) but the shipped template parses ONE
+        # tag - measured on the GGUF-embedded template, range-read from the Hub: after_tag[1] only.
+        # The fork's grammar is the same combo made mechanical server-side: "a+b", both halves real.
+        self.assertTrue(reason_mode_ok("007+coder"))          # his own agentic-build combo
+        self.assertTrue(reason_mode_ok("coder"))              # singles stay valid
+        self.assertFalse(reason_mode_ok("007+"))              # no empty half
+        self.assertFalse(reason_mode_ok("+coder"))
+        self.assertFalse(reason_mode_ok("007+coder+xhigh"))   # one "+": the template knows no triple
+        self.assertFalse(reason_mode_ok("007+nope"))          # both halves must answer
+        self.assertFalse(reason_mode_ok("xultra"))            # the documented-but-dead name stays dead
+
+    def test_apply_reason_mode_takes_the_reasoning_half_of_a_pair(self):
+        out = apply_reason_mode({"reasoning_effort": "xhigh"}, "007+coder")
+        self.assertEqual(out["reasoning_effort"], "007",
+                         "the template answers to single names only - a raw pair value would raise there")
 
     def test_conversation_key_law(self):
         a = [{"role": "system", "content": "s"}, {"role": "user", "content": "first"},
@@ -223,6 +241,36 @@ class ReasonOverHttp(unittest.TestCase):
         st, _ = self.http("POST", "/reason", {"mode": "off"})
         prompt = self.turn("reason probe default zqonx: and now")
         self.assertNotIn("CYNICAL DIAGNOSTICIAN", prompt)
+
+    def test_a_pair_thinks_like_a_and_answers_like_b(self):
+        # the block TITLES are the markers, never the bare mode names (the tool menu lesson above):
+        # "OPERATIONAL AGENT v1" is the 007 construct's heading, "PROGRAMMER & UI ARCHITECT" the
+        # coder's - both must be in the prompt the engine actually saw, a's before b's.
+        st, body = self.http("POST", "/reason", {"mode": "007+coder"})   # pairs validate at every door
+        self.assertEqual(st, 200, body)
+        prompt = self.turn("reason probe pair zqonp: build the rate limiter")
+        self.assertIn("OPERATIONAL AGENT", prompt, "the reasoning half frames the head like a single mode")
+        self.assertIn("PROGRAMMER & UI ARCHITECT", prompt,
+                      "the answer half's construct rides too - mechanically spliced, not the shipped "
+                      "template's soft literal-text leak")
+        self.assertLess(prompt.find("OPERATIONAL AGENT"), prompt.find("PROGRAMMER & UI ARCHITECT"),
+                        "b's block lands right after a's, where the template put a's")
+        st, _ = self.http("POST", "/reason", {"mode": "off"})
+        prompt = self.turn("reason probe pair zqonq: and now plain")
+        self.assertNotIn("OPERATIONAL AGENT", prompt, "off clears a pair like any mode")
+        self.assertNotIn("PROGRAMMER & UI ARCHITECT", prompt)
+        st, body = self.http("POST", "/reason", {"mode": "007+nope"})
+        self.assertEqual(st, 400, body)
+        st, body = self.http("POST", "/reason", {"mode": "007+coder+xhigh"})
+        self.assertEqual(st, 400, body)
+
+    def test_get_reason_carries_the_guide_and_the_pair_grammar(self):
+        # the knowledge half of "adapt on the fly": the author's use-case map rides the API too,
+        # so any agent can read what each construct is FOR without scraping the model card.
+        st, body = self.http("GET", "/reason")
+        self.assertIn("coder", body["guide"])
+        self.assertTrue(any(p.startswith("007+coder") for p in body["combos"]))
+        self.assertIn("reason+answer", body["pairs"])
 
     def test_last_before_any_render_is_a_clean_409(self):
         with self.svc._reason_lock:
