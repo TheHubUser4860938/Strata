@@ -212,12 +212,12 @@ def probes():
 
 # ---------------------------------------------------------------- the instrument
 
-def ask(host, arm, prompt, max_tokens, timeout):
+def ask(host, arm, prompt, max_tokens, timeout, temperature=0.0):
     """One generation. The tag arm rides the message; 'default' sends the bare probe. Returns the
     final-answer text (content; reasoning_content only if the writer put the answer in its
     thinking), plus finish_reason and usage for the truncation column."""
     text = prompt if arm == "default" else prompt + "\n\n{REASON:" + arm + "}"
-    body = json.dumps({"model": "m", "temperature": 0, "max_tokens": max_tokens,
+    body = json.dumps({"model": "m", "temperature": temperature, "max_tokens": max_tokens,
                        "messages": [{"role": "user", "content": text}]}).encode()
     url = host.rstrip("/") + "/v1/chat/completions"
     # the box is shared: this harness, the operator's own sessions and whatever the engine is
@@ -250,6 +250,11 @@ def main() -> int:
                     "The shipped set: default,ultra,off,xhigh,coder,house,deeptree,socrates")
     ap.add_argument("--shapes", default="", help="comma list of shapes (default: all seven)")
     ap.add_argument("--repeats", type=int, default=2, help="passes over the whole probe bank per arm")
+    ap.add_argument("--temperature", type=float, default=0.0,
+                    help="0 keeps mode comparisons deterministic (measured noise floor 0.000 at "
+                         "temp 0); Qwen recommends 1.0 for production use and DavidAU 0.6-0.7 for "
+                         "tool calling - a temp-1.0 sweep needs --repeats >=3 and claims only over "
+                         "the +/-0.05 band, the venue protocol's discipline")
     ap.add_argument("--max-tokens", type=int, default=3072)
     ap.add_argument("--timeout", type=int, default=600)
     ap.add_argument("--bank", choices=("r1", "r2"), default="r1", help="r1 = the built-in probes; "
@@ -276,13 +281,13 @@ def main() -> int:
     bank = [p for p in bank_all if p["shape"] in shapes]
 
     print(f"m4_reason: {len(arms)} arms x {len(bank)} probes x {a.repeats} passes "
-          f"= {len(arms)*len(bank)*a.repeats} generations at temperature 0 on {a.host} "
+          f"= {len(arms)*len(bank)*a.repeats} generations at temperature {a.temperature} on {a.host} "
           f"(memory muted per request)")
     recs, t_start = [], time.time()
     for rep in range(a.repeats):
         for p in bank:
             for arm in arms:                       # interleaved: every arm sees the same hour of the box
-                r = ask(a.host, arm, p["prompt"], a.max_tokens, a.timeout)
+                r = ask(a.host, arm, p["prompt"], a.max_tokens, a.timeout, a.temperature)
                 score = p["check"](r["text"])
                 r.update(arm=arm, shape=p["shape"], pass_no=rep, score=round(score, 3),
                          gold=str(p.get("gold", ""))[:200], prompt_chars=len(p["prompt"]))
@@ -321,6 +326,7 @@ def main() -> int:
 
     if a.json:
         Path(a.json).write_text(json.dumps({"arms": arms, "shapes": shapes, "repeats": a.repeats,
+                                            "temperature": a.temperature,
                                             "table": table, "records": recs}, indent=1))
         print(f"wrote {a.json}")
     return 0
