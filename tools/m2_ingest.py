@@ -176,7 +176,11 @@ def whole_doc(name: str, docs_dir: str) -> dict:
     sha = hashlib.sha256(raw.encode("utf-8", errors="replace")).hexdigest()[:16]
     title = doc_title(name, raw)
     safe = re.sub(r"[^A-Za-z0-9 ._-]", "", title)[:60].strip() or p.stem
-    dest = Path(docs_dir) / f"{safe}-{sha[:8]}{p.suffix.lower() or '.txt'}"
+    docs = Path(docs_dir).resolve()
+    dest = docs / f"{safe}-{sha[:8]}{p.suffix.lower() or '.txt'}"
+    if p.resolve().parent == docs:
+        dest = p.resolve()          # already filed where it belongs: point at the original,
+                                    # no duplicate copy - the pointer IS the filing
     words = len(raw.split())
     topics = doc_topics(raw)
     pointer = (f"Document '{title}' ({p.suffix.lower() or '.txt'}, {words:,} words, sha256 {sha}) "
@@ -228,7 +232,8 @@ def main():
                 print(f"  would file {info['dest']}\n  would store: {info['pointer'][:140]}...")
                 stored += 1
                 continue
-            shutil.copyfile(name, info["dest"])
+            if Path(name).resolve() != Path(info["dest"]).resolve():
+                shutil.copyfile(name, info["dest"])     # in-place files need no copy
             body = {"op": "remember", "text": info["pointer"], "scope": a.scope, "source": src,
                     "provenance": {"file": Path(name).name, "sha256": info["sha"],
                                    "path": info["dest"]}}

@@ -105,13 +105,24 @@ class WholeDoc(unittest.TestCase):
     def test_content_named_and_idempotent(self):
         import tempfile, pathlib
         with tempfile.TemporaryDirectory() as d:
-            a = self._doc(d, "a.md", "# Same\n\nbody text here. " * 20)
-            b = self._doc(d, "b.md", "# Same\n\nbody text here. " * 20)
-            ia, ib = whole_doc(str(a), d), whole_doc(str(b), d)
+            src = pathlib.Path(d, "src")
+            src.mkdir()
+            docs = pathlib.Path(d, "Documents")
+            a = self._doc(src, "a.md", "# Same\n\nbody text here. " * 20)
+            b = self._doc(src, "b.md", "# Same\n\nbody text here. " * 20)
+            ia, ib = whole_doc(str(a), str(docs)), whole_doc(str(b), str(docs))
             self.assertEqual(ia["dest"], ib["dest"], "identical content files to the same name")
-            c = self._doc(d, "c.md", "# Same\n\nchanged body. " * 20)
-            self.assertNotEqual(whole_doc(str(c), d)["dest"], ia["dest"],
+            c = self._doc(src, "c.md", "# Same\n\nchanged body. " * 20)
+            self.assertNotEqual(whole_doc(str(c), str(docs))["dest"], ia["dest"],
                                 "changed content refiles honestly - the sha is the identity")
+
+    def test_file_already_in_docs_dir_points_at_the_original(self):
+        import tempfile, pathlib
+        with tempfile.TemporaryDirectory() as d:
+            f = self._doc(pathlib.Path(d), "inplace.md", "# In Place\n\nreal text. " * 10)
+            info = whole_doc(str(f), d)
+            self.assertEqual(info["dest"], str(f.resolve()),
+                             "no duplicate copy: the pointer IS the filing")
 
     def test_title_falls_back_to_first_line_then_filename(self):
         import tempfile
