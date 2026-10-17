@@ -83,7 +83,7 @@ function showTab(name) {
   if (tab === "about") loadConfig();
   if (lastMetrics) render(lastMetrics);
 }
-for (const b of document.querySelectorAll(".st-tab")) b.onclick = () => showTab(b.dataset.tab);
+for (const b of document.querySelectorAll(".st-tab")) if (!b.getAttribute("href")) b.onclick = () => showTab(b.dataset.tab);
 window.addEventListener("hashchange", () => showTab(location.hash.slice(1)));
 
 // ------------------------------------------------------------------ server access
@@ -106,6 +106,8 @@ async function loadHealth() {
     $("chat-empty-sub").textContent = `${health.model} runs on this PC. Nothing leaves it.`;
     $("tab-btn-images").hidden = !health.image_generation;
     if (location.hash === "#images" && health.image_generation) showTab("images");
+    // the Memory tab rides the store: /memory-ui 404s when memory is off, and the tab stays hidden
+    fetch("memory-ui").then(r => { $("tab-btn-memory").hidden = !r.ok; }).catch(() => {});
   } catch (e) {
     setTimeout(loadHealth, 2000);
   }
