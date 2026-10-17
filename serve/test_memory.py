@@ -1052,6 +1052,128 @@ class ClassAxis(unittest.TestCase):
         self.assertNotIn("Itasca", out3[0]["content"], "junk in the header never breaks the request")
 
 
+class ShelfRouter(unittest.TestCase):
+    """THE QUERY->SHELF ROUTER (2026-10-17). The law and its numbers are filed (docs/MEMORY_CORE.md,
+    "Shelf isolation": the bm25 vote cuts leak 2-5x with routed reach IDENTICAL to unscoped reach);
+    these tests pin the PRODUCTION wiring, not the measurement: the vote math, who may route, who may
+    not, the fail-open guard, and the no-credit rule the cheap pass depends on."""
+
+    def _seed(self, mem):
+        # one RIGHT row (three query tokens) and four decoys that match only "records" - the probe
+        # shape compressed: with shelves POL..HW the vote's top-3 keeps POL+TECH+MEM and filters
+        # EVAL+HW, so contamination falls while the gold row stays in.
+        mem.remember("the arsa citizenship act governs federal birth records", scope="ops", klass="POL")
+        mem.remember("the scheduler records kernel timings per launch", scope="ops", klass="TECH")
+        mem.remember("recall hygiene records which facts were shown", scope="ops", klass="MEM")
+        mem.remember("the venue ledger records every answered question", scope="ops", klass="EVAL")
+        mem.remember("the soldering station records tip temperature curves", scope="ops", klass="HW")
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.off = MemoryService(self.tmp.name + "/off")
+        self.on = MemoryService(self.tmp.name + "/on", route_shelves=True)
+        self._seed(self.off)
+        self._seed(self.on)
+
+    def tearDown(self):
+        self.off.close()
+        self.on.close()
+        self.tmp.cleanup()
+
+    MSGS = [{"role": "user", "content": "arsa citizenship records"}]
+
+    def test_vote_law(self):
+        from serve.memory import ROUTE_W, shelf_vote
+        self.assertEqual(shelf_vote([{"class": "TECH"}, {"class": ""}, {"class": None}]), ["TECH"],
+                         "wild hits vote for NOTHING - no invented 'no shelf' shelf")
+        self.assertEqual(shelf_vote([{"class": ""}, {"class": None}]), [],
+                         "a pass that landed only on wild rows names no shelf")
+        self.assertEqual(shelf_vote([{"class": "POL"}, {"class": "POL"}]), ["POL"],
+                         "rank weights ACCUMULATE per shelf")
+        self.assertEqual(shelf_vote([{"class": c} for c in ("B", "A", "TECH", "MEM", "EVAL")]),
+                         ["B", "A", "TECH"], "top 3 kept, rank order decides")
+        self.assertEqual(shelf_vote([{"class": ""}] * 11 + [{"class": "M"}, {"class": "K"}]),
+                         ["K", "M"], "TIES break by shelf name ASC - the probe sorted this way, "
+                                     "the store must pick the same shelves from the same votes")
+        self.assertEqual(shelf_vote([{"class": "A"}] * len(ROUTE_W) + [{"class": "ZZZ"}]), ["A"],
+                         "only the first len(ROUTE_W) positions vote - the rest of the pass is noise")
+
+    def test_router_cuts_contamination_and_keeps_the_gold(self):
+        b_off, shown_off, _ = self.off.block_for(self.MSGS, "ops")
+        b_on, shown_on, _ = self.on.block_for(self.MSGS, "ops")
+        self.assertIn("arsa citizenship", b_on, "routed reach: the right fact is STILL shown")
+        self.assertIn("arsa citizenship", b_off)
+        texts_on = {h["id"] for h in shown_on}
+        texts_off = {h["id"] for h in shown_off}
+        self.assertTrue(texts_on < texts_off,
+                        "the routed block must be a strict subset - routing narrows, never adds")
+        self.assertLess(len(texts_on), len(texts_off), "contamination fell")
+        r = self.on.stats()["router"]
+        self.assertTrue(r["on"] and r["tries"] == 1 and r["picks"] == 1, r)
+        self.assertFalse(self.off.stats()["router"]["on"])
+        b_again, _, _ = self.on.block_for(self.MSGS, "ops")
+        self.assertEqual(b_again, b_on, "the routed block pins byte-stable like any other")
+        self.assertEqual(self.on.stats()["router"]["tries"], 1,
+                         "a pin hit must not re-ask the router")
+
+    def test_explicit_address_never_routes(self):
+        # the caller's address is the decision (purity-1.000 law): the router speaks ONLY where
+        # nobody addressed anything, and a pin hit costs no vote either
+        b, _, _ = self.on.block_for(self.MSGS, "ops", classes=["EVAL"])
+        self.assertIn("venue ledger", b)
+        self.assertNotIn("arsa citizenship", b,
+                         "an explicit address must survive the router untouched - the caller chose")
+        self.assertEqual(self.on.stats()["router"]["tries"], 0,
+                         "an explicit classes= must not spend a stage-1 pass")
+        b2, _, _ = self.on.block_for(self.MSGS, "ops", classes=[])
+        self.assertIsNone(b2, "the names-no-shelf sentinel stays FAIL CLOSED - the router must not "
+                              "rescue an address that holds nothing with an unscoped block")
+        self.assertEqual(self.on.stats()["router"]["tries"], 0)
+
+    def test_all_wild_store_abstains_byte_identically(self):
+        wild = MemoryService(self.tmp.name + "/wild", route_shelves=True)
+        wild.remember("the completely unshelved fact about flurbow stats", scope="ops")
+        b, shown, _ = wild.block_for([{"role": "user", "content": "flurbow stats"}], "ops")
+        self.assertIn("flurbow", b, "a wild-only store routes to NOTHING and behaves exactly as before")
+        r = wild.stats()["router"]
+        self.assertEqual((r["tries"], r["picks"]), (1, 0), r)
+        wild.close()
+
+    def test_fail_open_on_the_tail(self):
+        # the routed arm can come back EMPTY where unscoped would not: the head block already
+        # carries every row inside the pick, and the tail dedups against it. The guard then falls
+        # back to the unscoped search the pre-router store ran - outside-shelf rows arrive, and
+        # without the guard this message would have pinned an empty tail.
+        msgs = [{"role": "user", "content": "opening the workshop conversation"},
+                {"role": "user", "content": "arsa citizenship records"}]
+        _, head_hits, _ = self.on.block_for(msgs, "ops")
+        inside = [h["id"] for h in head_hits]      # the routed head's ids = the whole pick subtree
+        tb, thits = self.on.turn_block_for(msgs, "ops", inside)
+        self.assertIsNotNone(tb, "the fallback must have run: the tail shows what unscoped would")
+        self.assertIn("venue ledger", tb)
+        self.assertEqual(self.on.stats()["router"]["fallbacks"], 1)
+        tb_off, _ = self.off.turn_block_for(msgs, "ops", inside)
+        self.assertEqual(tb, tb_off, "fail-open lands EXACTLY on the pre-router bytes for this case")
+
+    def test_stage1_does_not_credit_hits(self):
+        # hits/last_seen_at are the budget eviction's "never touch a served fact" guard and what
+        # the memory_search tool reports: the vote PROPOSES, only shown rows CREDIT
+        rid = self.on.remember("a lone shelved fact about the zephyr turbine", scope="ops",
+                               klass="OPS")["id"]
+        before = self.on.conn.execute("select hits, last_seen_at from memories where id=%s",
+                                      (rid,)).fetchone()
+        self.on.search("zephyr turbine", scope="ops", limit=3, semantic=False, credit=False)
+        mid = self.on.conn.execute("select hits, last_seen_at from memories where id=%s",
+                                   (rid,)).fetchone()
+        self.assertEqual((before[0], before[1]), (mid[0], mid[1]),
+                         "credit=False must not move the counters")
+        self.on.search("zephyr turbine", scope="ops", limit=3, semantic=False)
+        after = self.on.conn.execute("select hits, last_seen_at from memories where id=%s",
+                                     (rid,)).fetchone()
+        self.assertGreater(after[0], mid[0], "the default still credits - every old call site "
+                                             "byte-identical")
+
+
 class AtRestKeyMaterial(unittest.TestCase):
     """ADR-002 retired the seal/reveal FILE mechanics - they were one-file rules and a Postgres
     data dir is many files. What survives the rebase is the 0600 key-file beside the store (the

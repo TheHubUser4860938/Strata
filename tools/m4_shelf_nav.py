@@ -37,7 +37,8 @@ from serve.memory import MemoryService, STOP, norm_text          # noqa: E402
 from serve.embedder import Embedder                              # noqa: E402
 
 K = 96                       # the shipped note budget: the size a shelf has to fit under to navigate
-W = [1.0, 0.85, 0.7, 0.6, 0.5, 0.45, 0.4, 0.35, 0.3, 0.25] + [0.2] * 3   # router rank weights
+from serve.memory import ROUTE_W, shelf_vote       # noqa: E402  (line above imports the module already)
+W = ROUTE_W                  # THE store's law object, not the probe's copy - see vote()
 
 
 def probes_for(m, n):
@@ -95,12 +96,11 @@ def dense_taxonomy(m, max_shelf):
 def vote(hits):
     """The router: rank-weighted vote over the shelves the cheap pass landed on, top 3 kept. A hit on
     a WILD row votes for nothing - inventing a "no shelf" shelf would let unclassified rows out-vote
-    classified ones."""
-    tally = {}
-    for pos, (_rid, klass) in enumerate(hits[:len(W)]):
-        if klass:
-            tally[klass] = tally.get(klass, 0) + W[pos]
-    return [s for s, _ in sorted(tally.items(), key=lambda kv: (-kv[1], kv[0]))[:3]]
+    classified ones. SINCE 2026-10-17 this is a thin wrapper over serve.memory.shelf_vote, the code
+    the SERVER now runs on every unaddressed block: the probe measures the shipped law, so the filed
+    numbers and production cannot drift into different machines. The numbers filed 2026-10-14/15 were
+    produced by the probe-local copy of this function, byte-identical in weights, slice, and tie law."""
+    return shelf_vote([{"class": klass} for (_rid, klass) in hits])
 
 
 def score(m, probes, shelf_of, arm):

@@ -7279,6 +7279,8 @@ def main() -> int:
                 expose_window=int(mcfg.get("expose_window") or 0),
                 expose_step=float(mcfg.get("expose_step") or 0.0),
                 expose_cap=int(mcfg.get("expose_cap") or 3),
+                route_shelves=mcfg.get("route_shelves") is True
+                              or str(mcfg.get("route_shelves") or "").lower() in ("1", "on", "true"),
                 embedder=ed or None)
         except (ValueError, OSError, TypeError) as e:
             raise SystemExit(f"[strata] memory: {e}")
@@ -7293,6 +7295,7 @@ def main() -> int:
               f"auto-shelve {svc.memory.auto_shelve and 'on (sub-shelves only)' or 'off'}; "
               f"block floor {svc.memory.block_min_score or 'off (quota)'}; "
               f"exposure decay {svc.memory.expose_step and f'on ({svc.memory.expose_window} turns, step {svc.memory.expose_step}, cap {svc.memory.expose_cap})' or 'off'}; "
+              f"shelf router {svc.memory.route_shelves and 'on (bm25 vote, unaddressed blocks only)' or 'off'}; "
               f"at-rest {at_rest_line}; "
               f"tool {svc.memory.tool and 'on' or 'off'} (X-Strata-Memory-Tool: 1 per request); "
               f"embedder {svc.memory.embedder and 'on: ' + getattr(svc.memory.embedder, 'model_name', '?') + ' (CPU, hybrid rerank)' or (svc.memory.embedder_error and 'FAILED - lexical only: ' + svc.memory.embedder_error or 'off')}; "

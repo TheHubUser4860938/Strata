@@ -169,6 +169,39 @@ def shelf_key(classes) -> str:
     return ",".join(sorted(set(ok))) if ok else "-"
 
 
+# THE QUERY->SHELF ROUTER (2026-10-17; law ported verbatim from the filed measurement -
+# tools/m4_shelf_nav.vote + the router arm of tools/m4_shelfcall.py, docs/MEMORY_CORE.md
+# "Shelf isolation" 2026-10-15). Routing as a RECALL lever is dead (m4_shelf_nav: an oracle shelf
+# scored exactly the unfiltered baseline, and the two-stage router measured -0.031). It was reborn
+# on the metric the same probe family named: CONTAMINATION. At the shipped 96/24k budget the bm25-vote
+# router cut leak 2-5x (MEM 69.1 -> 14.2%, EVAL 41.4 -> 4.9%) with routed reach IDENTICAL to unscoped
+# reach in every row. The deferral trigger has fired: the venue store is 10,973 rows, past the 10k
+# floor at which RESEARCH.md parked this ("return only at 10k-100k rows").
+#   The law, because both halves of the trade were measured: a RIGHT shelf pick gains ~nothing for
+# recall and a WRONG one filters the gold out of the candidate pool ENTIRELY. So the router only ever
+# speaks where nobody addressed anything (an explicit classes= wins, always), it votes only on shelves
+# the CHEAP lexical pass actually landed on (no LLM - the "never add an LLM call without an
+# unambiguous signal" rule RESEARCH.md took from Cognee), and it fails OPEN: a pick that finds nothing
+# falls back to the unscoped search, which can only ADD what unscoped would have shown, never hide it.
+ROUTE_W = [1.0, 0.85, 0.7, 0.6, 0.5, 0.45, 0.4, 0.35, 0.3, 0.25] + [0.2] * 3  # rank weights, top 13
+ROUTE_STAGE1 = 12      # cheap-pass hits the vote reads - the probe's number, kept for parity
+ROUTE_TOP = 3          # shelves kept - the probe's number, kept for parity
+
+
+def shelf_vote(hits: list[dict]) -> list[str]:
+    """The router's vote: rank-weighted over the shelves the cheap pass landed on, top ROUTE_TOP kept.
+    A hit on a WILD (unclassified) row votes for NOTHING - inventing a "no shelf" shelf would let
+    unclassified rows out-vote classified ones (m4_shelf_nav's law, and the dev store keeps ~20% wild).
+    Ties break by shelf name ASC, exactly as the probe sorted, so the tools and the store pick the same
+    shelves from the same votes."""
+    tally: dict[str, float] = {}
+    for pos, h in enumerate(hits[:len(ROUTE_W)]):
+        klass = str(h.get("class") or "")
+        if klass:
+            tally[klass] = tally.get(klass, 0.0) + ROUTE_W[pos]
+    return [s for s, _ in sorted(tally.items(), key=lambda kv: (-kv[1], kv[0]))[:ROUTE_TOP]]
+
+
 def scope_name(value, fallback: str = DEFAULT_PROJECT) -> str:
     """A scope as stored: kept when it looks like a plain name, else the fallback. Never raises - a request
     header may carry anything."""
@@ -425,7 +458,8 @@ class MemoryService:
                  encrypt: bool = False, key_file: str = "", passphrase_env: str = "",
                  tool: bool = False, embedder=None, floor_cosine: float = 0.0,
                  auto_shelve: bool = False, block_min_score: float = 0.0,
-                 expose_window: int = 0, expose_step: float = 0.0, expose_cap: int = 3):
+                 expose_window: int = 0, expose_step: float = 0.0, expose_cap: int = 3,
+                 route_shelves: bool = False):
         self.directory = memory_dir(directory)      # absolute, created 0700 - same rules as slot_save_path
         # STORAGE (ADR-002 native rebase, 2026-10-16): PostgreSQL, no SQLite anywhere. Production
         # OWNS its cluster under <dir>/pgdata - a unix socket inside the data dir, so the store
@@ -456,6 +490,13 @@ class MemoryService:
         # every write path byte-identical until a config turns it on. See auto_classify for the
         # rules and why ONLY sub-shelves are auto-mintable.
         self.auto_shelve = bool(auto_shelve)
+        # SHELF ROUTER (2026-10-17): the auto-injection path votes the cheap lexical pass into shelves
+        # when NOBODY addressed anything (see shelf_vote for the law and why it only fights
+        # contamination, never recall). Off = the injection path byte-identical to every earlier
+        # release; on = the m4_shelfcall routed arm (leak 2-5x down, reach identical) runs on every
+        # unscoped block and tail. The default flips only when the venue re-record says so.
+        self.route_shelves = bool(route_shelves)
+        self._route_stats = {"tries": 0, "picks": 0, "fallbacks": 0}  # observability, see stats()
         # BLOCK FLOOR (cap-not-quota, m4_blockrule 2026-10-16): _render_block stops taking
         # candidates once the fused RRF score falls below this floor - the budget stays as the
         # hard ceiling, but a full block of weak rows no longer beats an honest short one.
@@ -1315,7 +1356,8 @@ class MemoryService:
 
     def search(self, query: str, scope: str = DEFAULT_PROJECT, limit: int | None = None,
                classes: list[str] | None = None, since: float | None = None,
-               until: float | None = None, semantic: bool = True) -> list[dict]:
+               until: float | None = None, semantic: bool = True,
+               credit: bool = True) -> list[dict]:
         """tsvector/GIN candidates over the user scope plus this request's project scope - the native
         twin of the SQLite-era bm25 arm (ADR-002): to_tsquery ORs with |, the GIN probe supplies the
         candidate set, _bm25() ranks it with REAL Lucene bm25 (ts_rank_cd was tried and rejected the
@@ -1334,7 +1376,12 @@ class MemoryService:
         keeps the ranking byte-identical to before. With an embedder configured (PHASE 4) the bm25 set
         is UNIONed with a cosine pass over every embedded active row - see _semantic. `semantic=False`
         (the per-request embedder mute, X-Strata-Memory-Embedder: off) skips that pass and ranks exactly
-        as the lexical store does - the A/B within one boot, on one store and one vector set."""
+        as the lexical store does - the A/B within one boot, on one store and one vector set.
+        `credit=False` (the router's cheap stage-1 pass, 2026-10-17) skips the _seen bookkeeping: those
+        rows were PROPOSED to a vote, never SHOWN to a model, and hits/last_seen_at are the budget
+        eviction's "never touch a served fact" guard and what the memory_search tool reports - a router
+        that credited its candidates would quietly make every popular shelf's rows eviction-proof
+        without ever injecting one. Default True: every existing call site byte-identical."""
         limit = self.recall_limit if limit is None else max(1, min(240, int(limit)))
         # PHASE 4: with an embedder configured, a query bm25 CANNOT serve is exactly the case the
         # cosine pass exists for (spikes/lme/TEMPORAL_DIAG.md: multi-evidence rows that share no rare
@@ -1434,7 +1481,7 @@ class MemoryService:
         if self.dedup_recall:
             out = self._dedupe(out)
         hits = out[:limit]
-        if hits:
+        if hits and credit:
             self._seen([h["id"] for h in hits])
         return hits
 
@@ -1690,6 +1737,23 @@ class MemoryService:
             shown.append(h)
         return "\n".join([head(len(shown)), instruction] + trimmed + [lines[-1]]), shown
 
+    def _route(self, query: str, scope: str) -> list[str] | None:
+        """The query->shelf router for the AUTO-INJECTION path (see shelf_vote for the law, the
+        measured role, and why contamination is the only job it ever had). Runs only where nobody
+        addressed anything - an explicit classes= is the caller's decision and always wins, the
+        same law that made purity 1.000 at every shelf. One cheap bm25-only pass (no embedder ask,
+        no LLM, no _seen credit), then the rank-weighted shelf vote. None = no signal, stay
+        unscoped, byte-identical to the old path. The pick is RETURNED, never applied here: each
+        caller knows its own fallback law (see block_for / turn_block_for)."""
+        if not self.route_shelves:
+            return None
+        self._route_stats["tries"] += 1
+        stage1 = self.search(query, scope=scope, limit=ROUTE_STAGE1, semantic=False, credit=False)
+        pick = shelf_vote(stage1)
+        if pick:
+            self._route_stats["picks"] += 1
+        return pick or None
+
     def block_for(self, messages: list[dict], scope: str,
                   classes: list[str] | None = None,
                   semantic: bool = True) -> tuple[str | None, list[dict], str]:
@@ -1720,7 +1784,22 @@ class MemoryService:
             self._blocks.move_to_end(key)
             block, ids = pinned
             return block, [{"id": i} for i in ids], query
-        hits = self.search(query, scope=scope, classes=classes, semantic=semantic)
+        want = classes if classes is not None else self._route(query, scope)
+        #  ^ 2026-10-17, the shelf router: only an UNADDRESSED request gets routed. The pick does NOT
+        # ride the pin key - it is a property of the block (computed once at miss, sticky like the
+        # facts themselves), not a property of the request; two conversations with the same first
+        # message and no header can never disagree on a pick within one store state.
+        hits = self.search(query, scope=scope, classes=want, semantic=semantic)
+        if classes is None and want and not hits:
+            # FAIL OPEN (2026-10-17): the wrong pick hides the gold ENTIRELY - that is routing's
+            # measured downside (docs/MEMORY_CORE.md, "Shelf isolation"). A pick that finds NOTHING
+            # therefore falls back to the unscoped search the store ran before routing existed, which
+            # can only ADD what the old path would have shown: without the fallback this request
+            # would have injected NO bytes at all. It cannot undo the leak cut on blocks that DID
+            # fill, and a caller that named a shelf gets no fallback - its address holds what it
+            # holds, fail closed, exactly as the 2026-10-15 bad-address law decided.
+            self._route_stats["fallbacks"] += 1
+            hits = self.search(query, scope=scope, classes=None, semantic=semantic)
         if not hits:
             return None, [], query
         block, shown = self._render_block(hits, self.max_block_chars, scope)
@@ -1758,8 +1837,16 @@ class MemoryService:
             self._blocks.move_to_end(key)
             block, ids = pinned
             return (block or None), [{"id": i} for i in ids]
-        hits = [h for h in self.search(users[-1][:400], scope=scope, classes=classes, semantic=semantic)
+        q = users[-1][:400]
+        want = classes if classes is not None else self._route(q, scope)   # see block_for: the router
+        hits = [h for h in self.search(q, scope=scope, classes=want, semantic=semantic)
                 if h["id"] not in set(seen)]
+        if classes is None and want and not hits:
+            # FAIL OPEN, the same law as block_for's (see there): a tail pick that finds nothing NEW
+            # falls back to unscoped recall rather than pinning an empty tail for this message.
+            self._route_stats["fallbacks"] += 1
+            hits = [h for h in self.search(q, scope=scope, classes=None, semantic=semantic)
+                    if h["id"] not in set(seen)]
         hits = hits[:self.turn_recall_limit]
         if not hits:
             self._blocks[key] = ("", [])            # the miss is pinned too: same message, same nothing
@@ -1868,6 +1955,12 @@ class MemoryService:
                 "per_turn": self.per_turn, "turn_recall_limit": self.turn_recall_limit,
                 "turn_block_chars": self.turn_block_chars,
                 "pinned_blocks": len(self._blocks),
+                # the router's own ledger (2026-10-17): tries = unaddressed blocks that asked for a
+                # pick, picks = votes that named >=1 shelf, fallbacks = picks that found NOTHING and
+                # fail-opened to unscoped. picks/tries is not accuracy (that needs a gold shelf) - it
+                # is the "did the router actually run, and how often does it abstain/hit the floor"
+                # pair the venue replay reads beside the leak numbers.
+                "router": {"on": self.route_shelves, **self._route_stats},
                 "embedder": ({"on": True, "loaded": True,
                               "model": getattr(self.embedder, "model_name", type(self.embedder).__name__),
                               "vectors": embedded, "active": memories,

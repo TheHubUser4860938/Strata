@@ -1431,6 +1431,55 @@ mechanism is a wrong claim waiting to be published.
 the early pilots. They cannot pollute recall (recall reads `user` + the request's own scope) but they are
 benchmark evidence sitting in the everyday store, and they inflate the stats and the UI.
 
+**The router shipped as production code (2026-10-17, `serve/memory.py` `shelf_vote` / `_route`, wired into
+`block_for` and `turn_block_for`).** The deferral trigger named above fired - the venue store is 10,973
+rows, past the 10k floor at which RESEARCH.md parked the query router - and the routed arm's numbers
+(leak 2-5x down, reach identical) say the job is worth wiring. What ships is exactly the measured arm, no
+invented improvements:
+
+- **One law, one implementation.** `m4_shelf_nav.vote` is now a thin wrapper over `serve.memory.shelf_vote`
+  (the rank weights, the 13-position slice, the wild-abstains rule, and the tie-by-shelf-name law are the
+  store's, not the probe's), so the venue replay measures the machine that actually answers conversations.
+  The filed 2026-10-14/15 numbers came from the probe-local copy, byte-identical in all four rules.
+- **It speaks only where nobody addressed anything.** An explicit `classes=` (the MCP tool's `class`
+  argument, `X-Strata-Memory-Class`, the API's `?class=`) is the caller's decision and bypasses the router
+  entirely - the purity-1.000 law stays the caller's, and the router never spends a stage-1 pass on a
+  request that already named its shelf. The names-no-shelf sentinel stays FAIL CLOSED (the 2026-10-15
+  bad-address law), and the all-wild case abstains: `None` pick means the old unscoped path, byte-for-byte.
+- **Cheap, and it pays for its own votes in the right currency.** Stage 1 is one bm25-only `search`
+  (no embedder ask, no LLM - the Cognee law RESEARCH.md quotes: no LLM call without an unambiguous
+  signal), ~the lexical arm's cost, once per pin miss and once per fresh tail. `search()` grew
+  `credit=False` for exactly this call: stage-1 rows were PROPOSED to a vote, not SHOWN to a model, and
+  `hits`/`last_seen_at` are the budget eviction's served-fact guard and what `memory_search` reports.
+  Without the flag, routing would quietly make every voted row eviction-proof.
+- **Fail-open where the arm's measurement could not.** The probe skipped probes whose routed list came
+  back empty; production may not silently inject nothing. A pick that finds NOTHING falls back to the
+  unscoped search - which can only ADD what the pre-router path showed, never hide a fact that unscoped
+  would have surfaced. The tail case is real and tested: the head block carries the whole pick subtree,
+  the tail dedups against it, so the routed tail legitimately comes back empty and the guard lands the
+  fallback on the pre-router bytes exactly.
+- **Config, default OFF until measured:** `"memory": {"route_shelves": true}` (or `"on"`/`"1"`); the
+  banner line says `shelf router on (bm25 vote, unaddressed blocks only)`. Off, every path is
+  byte-identical to the last release - the opt-out law survives. `stats()["router"]` carries the ledger
+  (`tries` / `picks` / `fallbacks`): picks/tries is NOT routing accuracy (that needs a gold shelf), it is
+  the "did it run, how often does it abstain, how often does it fail open" pair the replay reads beside
+  the leak numbers.
+- **How it was checked:** six unit tests (`serve/test_memory.py::ShelfRouter`): the vote math against the
+  probe's law, contamination falls while the gold row stays and the block pins byte-stable, explicit
+  addresses never route, the sentinel stays fail closed, all-wild abstains byte-identically, the tail
+  fail-open lands on the router-off bytes, and `credit=False` moves no counters.
+  **The first wiring got the ternary backwards** (`None if classes is not None else route`) and silently
+  threw AWAY explicit caller addresses - the `classes=[]` sentinel resurfaced the show-everything
+  behaviour the 2026-10-15 fix buried. The contamination tests passed anyway, because the classes=None
+  branch was the one that worked; the test that caught it was the strengthened explicit-address test,
+  which now asserts CONTENT, not just that the router abstained. Third lesson of the probe-hygiene
+  family, and it went into the test rather than only into this paragraph.
+- **What is still owed before the default flips:** the leak/reach numbers above are measured with probes
+  built from a row's own words - the easy case (the doc's own caveat: on vague or short queries the pick
+  is the risk). The venue re-record and the S-split (10k-100k rows) run with `route_shelves` as an arm,
+  answer-level at plus/minus 0.05 and the retrieval flags row-by-row; the default flips only if accuracy
+  does not move and leak falls. That is the same gate that decided every other tier-3 lever.
+
 ## Two external systems arrived the same evening; measurement handled both (2026-10-15 evening)
 
 The user dropped two Reddit posts in as PDFs (the model cannot take PDF input, so both were read by

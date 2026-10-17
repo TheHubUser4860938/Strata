@@ -289,3 +289,10 @@ rows — today's numbers are scoped to 600-2,655 and the venue store is the plac
 communities/hyper-edges/BFS expansion need a graph DB; anything needing an LLM per write or per read is
 out while the single GPU serves the engine.
 
+**Trigger fired and the first half returned (2026-10-17):** the venue store is 10,973 rows, and the router
+shipped behind `memory.route_shelves` (off until the venue re-record gate) — reborn not as the recall lever
+this table killed but as the contamination lever `m4_shelfcall.py` measured (leak 2–5× down, reach
+identical). See docs/MEMORY_CORE.md, "The router shipped as production code". Shelf densification is still
+deferred: the cosine-cut probe showed the cut only pays once something calls it, and that something now
+exists.
+
