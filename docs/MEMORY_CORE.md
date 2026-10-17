@@ -2045,6 +2045,35 @@ off; off means every render passes the SAME kwargs dict, byte-identical by const
   decides whether unasked Anthropic requests think - the pair lands through the template's
   reasoning branch with thinking on and its instruct branch with thinking off, both injecting the
   same blocks (measured: it is why a Vader sticky rides a thinking-off request today).
+- **The hybrid mode gets a Settings switch, and the agent picks its depth too (v1.7, same day,
+  the owner's "can you do this on the fly?" + "a switch in the settings menu"):**
+  - **Agent-pinned thinking LEVEL.** `reason_mode` takes an `effort` half (`{"mode": "007+coder",
+    "effort": "xhigh"}`), `POST /reason` takes an `effort` field (conversation-level only - the
+    session-wide knob stays the shared Chat settings), and `GET /reason` reports the pins. The
+    ladder is sticky > request > shared > config: the agent outranks the harness until it hands
+    the level back (`effort:auto`). It lands on the conversation's NEXT REQUEST, not the next tool
+    round (the loop freezes its kwargs at entry) - the tool's answer says so. Levels are the stock
+    Qwen knobs (none/low/medium/xhigh, "high" the alias), not DavidAU's names; per-conversation
+    LRU 64 like every other piece; no pin = the same request dict, byte-identical by construction.
+  - **The measured cache shape** (the tests pin both halves of the owner's `effort_position`
+    question): with a mode pinned, the mode block OWNS the head slot the level sentence would use,
+    so low/medium/xhigh change **no prompt bytes at all** - the level rides the engine beside the
+    block (test: same conversation, two levels, byte-identical prompts). With no mode pinned the
+    level sentence lives in the head and every level change re-reads the prefix - which is exactly
+    what `effort_position: end` exists to avoid (test: the level rides the short tail turn right
+    before the answer while the mode block holds the head). The position itself is an engine
+    launch arg (`--tail-role-token`, boot-frozen); the level and the mode are the live levers.
+  - **The Settings menu.** `runconfig.EDITABLE` gains **`reason_modes`** (a bool row the page
+    labels "Hybrid mode for DavidAU's Turbo-Brilliance models") and **`reason_mode`** (a dropdown
+    of the 41 constructs plus the 14 recommended pairs plus empty = no default; the web app
+    renders any enum row from its choices, so `app.js` needed no change). Both apply **live** on
+    `POST /config` - the exception to the config's "next start" rule, because the render ladder
+    reads this process's live state every request - and persist in the file for the starts after;
+    the response says so. The flavor gate outranks the switch live too: a plain-template box keeps
+    the feature off whatever the menu says. The mode list moved to `runconfig.py` (the menu is its
+    other owner) and `server.py` re-exports it - one source, the drift lock unchanged.
+    `test_runconfig` 10 OK, `test_reason` 30 OK, full gate 1002 OK (skipped 11; one first-run
+    flake was the 62 GB box OOM-killing a mock engine mid-suite, exit -9 - the rerun passed).
 - **The installer now carries the model (`setup.py` "dau" family, 2026-10-17):** `setup --family
   dau --model IQ3_S` installs DavidAU's Turbo-Brilliance re-quant - pinned repo commit, both
   shard SHA-256s from the Hub's LFS pointers, Apache-2.0 stated at install. Two measured facts

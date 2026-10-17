@@ -76,6 +76,26 @@ class Apply(unittest.TestCase):
         self.assertNotIn("api_key", got)
         self.assertNotIn("mcp_servers", got)
 
+    def test_the_hybrid_mode_rows(self):
+        # the owner's ask 2026-10-17: DavidAU's Turbo-Brilliance system as a Settings switch. The
+        # enum takes the author's constructs AND the fork's reason+answer pairs (the grammar
+        # reason_mode_ok validates); "" is "no default"; the documented-but-dead names stay out.
+        new, changed = runconfig.apply(CFG, {"reason_modes": True, "reason_mode": "007+coder"})
+        self.assertEqual(changed, ["reason_modes", "reason_mode"])
+        self.assertIs(new["reason_modes"], True)
+        self.assertEqual(new["reason_mode"], "007+coder")
+        for ok in ("", "ultra", "house+logic", "off"):
+            self.assertEqual(runconfig.apply(CFG, {"reason_mode": ok})[0].get("reason_mode"), ok)
+        for bad in ("xultra", "007+nope", "Coder", "ultra+coder+xhigh", "007+"):
+            with self.subTest(bad=bad), self.assertRaises(ValueError):
+                runconfig.apply(CFG, {"reason_mode": bad})
+        with self.assertRaises(ValueError):
+            runconfig.apply(CFG, {"reason_modes": "yes"})
+        v = runconfig.view(CFG, "strata-q2_0.json")
+        rows = {k["key"]: k for k in v["keys"]}
+        self.assertIn("007+coder", rows["reason_mode"]["choices"])
+        self.assertIn("ultra", rows["reason_mode"]["choices"])
+
 
 class Http(unittest.TestCase):
     def setUp(self):

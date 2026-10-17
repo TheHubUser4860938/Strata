@@ -20,8 +20,9 @@ import unittest
 from pathlib import Path
 
 from serve.frontend import ChatTemplate
-from serve.server import (ByteTokenizer, MockEngine, REASON_MODES, Service, serve,
-                          apply_reason_mode, reason_conv_key, reason_mode_ok, reason_tool_result)
+from serve.server import (REASON_EFFORTS, ByteTokenizer, MockEngine, REASON_MODES, Service, serve,
+                          apply_reason_mode, clean_reason_effort, reason_conv_key, reason_mode_ok,
+                          reason_tool_result)
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -80,6 +81,16 @@ class ModeLaw(unittest.TestCase):
         out = apply_reason_mode({"reasoning_effort": "xhigh"}, "007+coder")
         self.assertEqual(out["reasoning_effort"], "007",
                          "the template answers to single names only - a raw pair value would raise there")
+
+    def test_clean_reason_effort_law(self):
+        # the thinking LEVEL an agent pins (2026-10-17, the owner's dynamic-effort ask): the stock
+        # levels, not DavidAU's constructs - a mode name is not a level and fails closed.
+        self.assertEqual(clean_reason_effort("low"), "low")
+        self.assertEqual(clean_reason_effort("HIGH"), "xhigh",
+                         "high is xhigh's alias, the frontend EFFORT map's law")
+        self.assertEqual(clean_reason_effort("auto"), "", "hand-back words clear the pin")
+        self.assertIsNone(clean_reason_effort("ultra"), "a mode name is not a level")
+        self.assertIsNone(clean_reason_effort("very"), "and prose is not either")
 
     def test_conversation_key_law(self):
         a = [{"role": "system", "content": "s"}, {"role": "user", "content": "first"},
@@ -142,6 +153,7 @@ class ReasonOverHttp(unittest.TestCase):
         self.svc.reason_default = None
         with self.svc._reason_lock:
             self.svc._reason.clear()
+            self.svc._reason_effort.clear()
 
     def http(self, verb, path, body=None):
         conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=30)
@@ -162,6 +174,16 @@ class ReasonOverHttp(unittest.TestCase):
         st, body = self.http("POST", "/v1/chat/completions",
                              {"model": "m", "messages": msgs, "max_tokens": 8,
                               "reasoning_effort": "none", "strata_checkpoint": False})
+        self.assertEqual(st, 200, body)
+        return prompt_text(self.svc.tok, self.engine.last_prompt)
+
+    def turn_effort(self, text, effort):
+        """One turn naming its own thinking level (turn_msgs pins "none"): the level/mode
+        interaction tests need requests that disagree with the pin on purpose."""
+        st, body = self.http("POST", "/v1/chat/completions",
+                             {"model": "m", "messages": [{"role": "user", "content": text}],
+                              "max_tokens": 8, "reasoning_effort": effort,
+                              "strata_checkpoint": False})
         self.assertEqual(st, 200, body)
         return prompt_text(self.svc.tok, self.engine.last_prompt)
 
@@ -271,6 +293,130 @@ class ReasonOverHttp(unittest.TestCase):
         self.assertIn("coder", body["guide"])
         self.assertTrue(any(p.startswith("007+coder") for p in body["combos"]))
         self.assertIn("reason+answer", body["pairs"])
+
+    def test_a_pinned_level_outranks_the_request_and_auto_hands_it_back(self):
+        # the request asks for thinking OFF ("none"); the agent's pin says low - the pin wins,
+        # and the framing sentence is the proof the whole engine-side shape moved, not just text.
+        self.turn("reason probe lvl zqon1: warm the conversation")
+        st, body = self.http("POST", "/reason", {"effort": "low", "conversation": "last"})
+        self.assertEqual(st, 200, body)
+        self.assertEqual(body["effort"], "low")
+        conv = [{"role": "user", "content": "reason probe lvl zqon1: warm the conversation"},
+                {"role": "assistant", "content": "the mock answer"},
+                {"role": "user", "content": "and now?"}]
+        prompt = self.turn_msgs(conv)                       # the request still says "none"
+        self.assertIn("Reasoning effort is set to low", prompt,
+                      "the pinned level outranks the request's own - the agent adapts its session")
+        st, body = self.http("POST", "/reason", {"effort": "auto", "conversation": "last"})
+        self.assertEqual(st, 200, body)
+        self.assertEqual(body["effort"], "auto")
+        conv = conv + [{"role": "assistant", "content": "the mock answer"},
+                       {"role": "user", "content": "and after handing back?"}]
+        prompt = self.turn_msgs(conv)
+        self.assertNotIn("Reasoning effort is set to low", prompt,
+                         "auto drops the pin and the request's own level frames again")
+
+    def test_with_a_mode_pinned_the_level_changes_no_prompt_bytes(self):
+        # the measurement behind the tool description's claim - and the answer to the owner's
+        # effort_position question: with a mode pinned, the mode block OWNS the head slot the
+        # level sentence would use, so low and xhigh ride the engine beside it byte-identically.
+        st, body = self.http("POST", "/reason", {"mode": "vader"})           # session default
+        self.assertEqual(st, 200, body)
+        p_low = self.turn_effort("reason probe lvl zqon2: one line", "low")
+        p_xh = self.turn_effort("reason probe lvl zqon2: one line", "xhigh")  # same conversation
+        self.assertIn("DARK LORD", p_low.upper())
+        self.assertEqual(p_low, p_xh, "same first message, same mode, different levels: identical bytes")
+        self.http("POST", "/reason", {"mode": "off"})
+        q_low = self.turn_effort("reason probe lvl zqon3: one line", "low")
+        q_xh = self.turn_effort("reason probe lvl zqon3: one line", "xhigh")
+        self.assertNotEqual(q_low, q_xh, "with no mode pinned the level sentence lives in the head - "
+                                         "that is the byte move effort_position end exists to avoid")
+
+    def test_effort_end_and_a_pinned_mode_compose(self):
+        # the #458 lever and the modes, together, on one mock: the mode owns the head, the level
+        # rides the short tail turn right before the answer - the cache-cheap shape the owner asked
+        # about, proven on the render path (the engine arg is boot-time; the flag is honored here).
+        self.svc.effort_end = True
+        try:
+            st, body = self.http("POST", "/reason", {"mode": "vader"})
+            self.assertEqual(st, 200, body)
+            prompt = self.turn_effort("reason probe end zqon4: diagnose this", "low")
+            self.assertIn("DARK LORD", prompt.upper(), "the mode block holds the head")
+            self.assertIn("Reasoning effort is set to low", prompt, "the level rides the tail turn")
+            self.assertLess(prompt.index("reason probe end zqon4"),
+                            prompt.index("Reasoning effort is set to low"),
+                            "the effort turn sits after the conversation, right before the answer")
+        finally:
+            self.svc.effort_end = False
+            self.http("POST", "/reason", {"mode": "off"})
+
+    def test_the_tool_pins_and_hands_back_the_level_in_one_shape_as_the_mode(self):
+        msgs = [{"role": "user", "content": "reason probe toolvl zqon5: warm"}]
+        self.turn_msgs(msgs)
+        r = reason_tool_result(self.svc, msgs, {"effort": "high"})
+        self.assertTrue(r["ok"], r["text"])
+        self.assertIn("xhigh", r["text"], "high canonicalizes to xhigh, and the answer says so")
+        self.assertIn("NEXT REQUEST", r["text"].upper(),
+                      "the level is a request-side knob - the answer is honest about the lag")
+        prompt = self.turn_msgs(msgs + [{"role": "assistant", "content": "x"},
+                                        {"role": "user", "content": "and now"}])
+        self.assertIn("Reasoning effort is set to xhigh", prompt,
+                      "the pinned level outranks the request's none on the next turn")
+        r = reason_tool_result(self.svc, msgs, {"effort": "ultra"})
+        self.assertFalse(r["ok"], "a mode name is not a level: fail closed with the list")
+        self.assertIn("ultra", r["text"])
+        reason_tool_result(self.svc, msgs, {"effort": "auto"})
+
+    def test_levels_are_per_conversation_and_bad_ones_are_400(self):
+        self.turn("reason probe lvlz qon6: conversation one")
+        st, body = self.http("POST", "/reason", {"effort": "medium", "conversation": "last"})
+        self.assertEqual(st, 200, body)
+        fresh = self.turn("reason probe lvlz qon7: a different conversation")
+        self.assertNotIn("Reasoning effort is set to medium", fresh,
+                         "the level pins per conversation, never ambient")
+        st, body = self.http("POST", "/reason", {"effort": "ultra", "conversation": "last"})
+        self.assertEqual(st, 400, body)
+        st, body = self.http("POST", "/reason", {"effort": "low"})     # no conversation = session level
+        self.assertEqual(st, 400, body)
+        self.assertIn("Chat settings", body["error"]["message"],
+                      "the session-wide knob is the shared Chat settings, and the 400 says so")
+        st, body = self.http("GET", "/reason")
+        self.assertEqual(set(body["efforts"]), set(REASON_EFFORTS))
+        self.assertEqual(len(body["sticky_efforts"]), 1, "the pin shows on the inspection route")
+
+    def test_the_settings_menu_switches_hybrid_mode_live(self):
+        # the owner's ask: the hybrid mode as a switch in the Settings menu. The two reason rows
+        # are the exception to the config's "next start" rule - the render ladder reads this
+        # process's live state every request - so the menu applies at once and persists to file.
+        import tempfile, pathlib
+        with tempfile.TemporaryDirectory() as d:
+            p = pathlib.Path(d, "strata-test.json")
+            p.write_text(json.dumps({"model": "m"}), encoding="utf-8")
+            saved, self.svc.config_path = self.svc.config_path, p
+            try:
+                st, body = self.http("POST", "/config", {"set": {"reason_mode": "007+coder"}})
+                self.assertEqual(st, 200, body)
+                self.assertIn("reason_mode", body["changed"])
+                self.assertIn("next request", body.get("applies", ""), "the response says no restart")
+                self.assertEqual(json.loads(p.read_text(encoding="utf-8")).get("reason_mode"), "007+coder",
+                                 "and the choice persists in the file for the next start")
+                prompt = self.turn("reason probe menu zqpa: build the limiter")
+                self.assertIn("OPERATIONAL AGENT", prompt, "the menu choice frames new conversations at once")
+                self.assertIn("PROGRAMMER & UI ARCHITECT", prompt, "the pair half rides too - no restart")
+                st, body = self.http("POST", "/config", {"set": {"reason_modes": False}})
+                self.assertEqual(st, 200, body)
+                prompt = self.turn("reason probe menu zqpb: and with hybrid off")
+                self.assertNotIn("OPERATIONAL AGENT", prompt, "the master row turns the hybrid off live")
+                st, body = self.http("POST", "/config", {"set": {"reason_mode": "xultra"}})
+                self.assertEqual(st, 400, body)      # the documented-but-dead name: refused, nothing moved
+                self.assertEqual(json.loads(p.read_text(encoding="utf-8")).get("reason_mode"), "007+coder")
+                st, body = self.http("GET", "/config")
+                rows = {k["key"]: k for k in body["keys"]}
+                self.assertIn("007+coder", rows["reason_mode"]["choices"], "the dropdown offers the pairs")
+            finally:
+                self.svc.config_path = saved
+                self.svc.reason_enabled = True
+                self.svc.reason_default = None
 
     def test_last_before_any_render_is_a_clean_409(self):
         with self.svc._reason_lock:

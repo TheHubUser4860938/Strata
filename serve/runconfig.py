@@ -14,6 +14,27 @@ import os
 import shutil
 from pathlib import Path
 
+# The hybrid-mode menu data (2026-10-17, the owner's ask: DavidAU's Turbo-Brilliance system as a
+# Settings switch): the mode list and the recommended pairs live HERE because the Settings view is
+# their other owner, and serve/server.py imports them back - ONE source, the drift lock in
+# serve/test_reason.py still guards the list against DavidAU's template file. The pairs are the
+# fork's grammar (reason+answer, both halves real modes): the author's pairing guide recommends
+# them and the server makes them mechanical, since his shipped template parses only one tag per
+# message (measured on the GGUF-embedded template). "" is "no default": the agent's own
+# reason_mode calls and the client's {REASON:} tags still choose per conversation.
+REASON_MODES = ("xomni", "xdeeptree", "xhyper", "xsocrates", "xlogic", "xhelp", "xeinstein",
+                "xspoon", "omni", "deeptree", "hyper", "socrates", "logic", "off", "help",
+                "einstein", "spoon", "ultra", "xhigh", "medium", "low", "holodeck", "prompt",
+                "pkd", "musk", "joker", "vader", "quinn", "joe", "neo", "curie", "brainstorm",
+                "comedy", "business", "story", "teacher", "007", "coder", "stark", "matlock",
+                "house")
+REASON_PAIRS = ("007+coder agentic builds", "stark+coder architecture", "ultra+coder code review",
+                "house+logic debugging", "deeptree+spoon research", "hyper+socrates thesis work",
+                "logic+spoon fact-checking", "omni+omni synthesis", "musk+business go-to-market",
+                "curie+teacher explanations", "matlock+logic legal analysis", "joe+comedy humor",
+                "einstein+pkd speculative fiction", "prompt+prompt prompt optimization")
+REASON_MODE_CHOICES = [""] + list(REASON_MODES) + [p.split()[0] for p in REASON_PAIRS]
+
 # (key, kind, help).  kind: "bool", "int>=0", "num>=0", ("enum", values), "names", or ("sampling", check) for a key
 # of the "sampling" block, ("arg", flag) for an engine option kept in "args".
 EDITABLE = [
@@ -28,6 +49,16 @@ EDITABLE = [
      "Anthropic requests that do not ask for thinking: think as the model does (model) or not (on_request)"),
     ("effort_position", ("enum", ["start", "end"]),
      "Where a non-default reasoning effort goes: start (the default) or end (keeps the cache when it changes)"),
+    ("reason_modes", "bool",
+     "Hybrid mode for DavidAU's Turbo-Brilliance models: his thinking constructs (personas) ride the "
+     "server - new conversations start with the construct below, the agent switches itself with the "
+     "reason_mode tool, and your own {REASON:} tags outrank all of it. Stays off on other models "
+     "(their template raises on a construct name, measured). Applies on the next request, no restart; "
+     "persists in this file"),
+    ("reason_mode", ("enum", REASON_MODE_CHOICES),
+     "The construct new conversations start with in hybrid mode: a name (coder code work, house "
+     "debugging, ultra final deliverables, spoon research...), a reason+answer pair (007+coder: "
+     "thinks like 007, answers like coder), or empty for no default"),
     ("aliases", "names", "Other model names the server lists and answers to (comma-separated)"),
     ("idle_unload_s", "num>=0", "Unload the model after this many seconds without requests (0 or empty: never)"),
     ("lazy_load", "bool", "Start without loading the model; the first request loads it (text only)"),

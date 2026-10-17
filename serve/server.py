@@ -303,13 +303,10 @@ class Engine(Protocol):
 # its own "Unexpected reasoning effort" template error when the value is unknown to it (with
 # thinking off it ignores the value entirely) - a mode name is unknown to it. So modes exist only
 # on templates that answer to them, decided once per boot by reason_flavor() below; the /reason
-# routes, the config default and the render substitution all follow that verdict.
-REASON_MODES = ("xomni", "xdeeptree", "xhyper", "xsocrates", "xlogic", "xhelp", "xeinstein",
-                "xspoon", "omni", "deeptree", "hyper", "socrates", "logic", "off", "help",
-                "einstein", "spoon", "ultra", "xhigh", "medium", "low", "holodeck", "prompt",
-                "pkd", "musk", "joker", "vader", "quinn", "joe", "neo", "curie", "brainstorm",
-                "comedy", "business", "story", "teacher", "007", "coder", "stark", "matlock",
-                "house")
+# routes, the config default and the render substitution all follow that verdict. The list lives
+# in serve/runconfig.py (the Settings view is its other owner) and rides back as a re-export -
+# one source; the drift lock in serve/test_reason.py still guards it against the template file.
+REASON_MODES = runconfig.REASON_MODES
 REASON_MODE_SET = frozenset(REASON_MODES)
 REASON_CLEAR = ("", "off", "reset", "clear", "default", "none")   # API words that mean "no override"
 
@@ -330,10 +327,12 @@ def reason_mode_ok(value: str) -> bool:
     return bool(sep) and "+" not in b and a in REASON_MODE_SET and b in REASON_MODE_SET
 
 
-# The author's use-case map and recommended combos (card: "Mode Pairing Guide", read 2026-10-17),
-# carried into the tool description and GET /reason so the AGENT knows which construct fits which
-# task - the knowledge half of "adapt yourself on the fly". Kept short on purpose: the tool
-# description rides every request's cached head, so every word here is prefix bytes.
+# The author's use-case map (card: "Mode Pairing Guide", read 2026-10-17), carried into the tool
+# description and GET /reason so the AGENT knows which construct fits which task - the knowledge
+# half of "adapt yourself on the fly". Kept short on purpose: the tool description rides every
+# request's cached head, so every word here is prefix bytes. The recommended pairs next to it are
+# the author's too, and live in runconfig.py beside the mode list (the Settings menu is their
+# other owner; the fork makes them mechanical - see reason_mode_ok).
 REASON_GUIDE = {
     "coder": "code work", "house": "debugging (pair with logic)", "stark": "architecture",
     "007": "agentic multi-step builds", "ultra": "final deliverables, review",
@@ -347,11 +346,28 @@ REASON_GUIDE = {
     "neo": "question the frame", "joker": "reframe through chaos", "quinn": "bold voice",
     "logic": "first principles", "xlogic": "first principles at xhigh",
 }
-REASON_PAIRS = ("007+coder agentic builds", "stark+coder architecture", "ultra+coder code review",
-                "house+logic debugging", "deeptree+spoon research", "hyper+socrates thesis work",
-                "logic+spoon fact-checking", "omni+omni synthesis", "musk+business go-to-market",
-                "curie+teacher explanations", "matlock+logic legal analysis", "joe+comedy humor",
-                "einstein+pkd speculative fiction", "prompt+prompt prompt optimization")
+REASON_PAIRS = runconfig.REASON_PAIRS
+
+# The thinking LEVEL an agent can pin for its own conversation (the dynamic half of the owner's
+# "adapt on the fly", 2026-10-17): the stock Qwen levels, not DavidAU's constructs - the level is
+# an engine-side knob (thinking on/off, the framing sentence, the #458 tail), so it rides the
+# REQUEST, and the sticky map lets the agent outrank the harness's own level until it hands the
+# choice back. "high" is accepted as xhigh's alias, the frontend EFFORT map's law; the budgets are
+# the Anthropic-dialect shape and round-trip through budget_effort's bands (2K/8K) exactly.
+REASON_EFFORTS = ("none", "low", "medium", "xhigh")
+REASON_EFFORT_CLEAR = ("", "reset", "clear", "default", "auto")   # words that hand the level back
+EFFORT_BUDGET = {"low": 1024, "medium": 4096, "xhigh": 16384}
+
+
+def clean_reason_effort(value: str) -> str | None:
+    """The level a door will accept: canonical name, "" for a hand-back word, None for anything
+    else (fail closed, the doors answer with the list - the mode validator's law)."""
+    v = str(value or "").strip().lower()
+    if v in REASON_EFFORT_CLEAR:
+        return ""
+    if v == "high":                                   # the OpenAI-dialect alias, per the EFFORT map
+        v = "xhigh"
+    return v if v in REASON_EFFORTS else None
 
 
 def reason_conv_key(messages) -> str:
@@ -419,57 +435,86 @@ REASON_TOOL = {
                     "next tool round of THIS turn - so call it at the START of a hard task and 'off' "
                     "when done. Switching re-reads the conversation prefix once (seconds), so do not "
                     "thrash it every round. Call with no arguments to get the menu back. A name off "
-                    "the menu is refused with the list."),
+                    "the menu is refused with the list. The optional 'effort' half pins your thinking "
+                    "LEVEL for the conversation (low/medium/xhigh, or none to think less; effort:auto "
+                    "hands it back): it outranks the harness's own level and lands on the next "
+                    "request; with a mode set, low/medium/xhigh change no prompt bytes at all (the "
+                    "mode block owns the head slot, the level rides the engine beside it)."),
     "parameters": {
         "type": "object",
         "properties": {"mode": {"type": "string",
                                  "description": "one of: " + ", ".join(REASON_MODES)
                                                 + " - or a reason+answer pair like 007+coder (both "
                                                   "halves from the list) - or off/reset/clear to hand "
-                                                  "the choice back"}},
+                                                  "the choice back"},
+                       "effort": {"type": "string",
+                                  "description": "optional thinking LEVEL for the conversation: none "
+                                                 "(no thinking), low, medium or xhigh (high is the "
+                                                 "alias) - it outranks the harness's own level until "
+                                                 "you hand it back with effort:auto, and it lands on "
+                                                 "the NEXT REQUEST, not the next tool round"}},
         "required": []},
 }
 
 
 def reason_tool_result(svc: "Service", messages, arguments) -> dict:
     """Run one reason_mode call from the model: validate (fail closed, the menu comes back with the
-    error), pin the mode to this conversation in the sticky map (LRU 64 like the block pins), and
-    answer in the dict shape run_with_mcp expects (ok/text/chars/truncated/ms - run_with_mcp treats
-    both local executors alike, as with memory_search). The mode lands at the NEXT render, and the
-    loop re-renders every round: the model that steers itself is answered in the same turn."""
+    error), pin the mode AND/OR the thinking LEVEL to this conversation in the sticky maps (LRU 64
+    like the block pins), and answer in the dict shape run_with_mcp expects (ok/text/chars/truncated/
+    ms - run_with_mcp treats both local executors alike, as with memory_search). The MODE lands at
+    the NEXT RENDER, and the loop re-renders every round: the model that steers itself is answered
+    in the same turn. The LEVEL is a request-side knob - the loop froze its kwargs at entry - so it
+    lands at the conversation's NEXT REQUEST (the next turn), and the answer says which is which."""
     t0 = time.perf_counter()
-    mode = str((arguments or {}).get("mode") or "").strip().lower()
+    args = arguments or {}
+    mode = str(args.get("mode") or "").strip().lower()
+    effort = str(args.get("effort") or "").strip().lower()
 
     def done(ok: bool, text: str) -> dict:
         return {"ok": ok, "text": text, "chars": len(text), "truncated": False,
                 "ms": int((time.perf_counter() - t0) * 1000)}
 
-    if not mode:
+    if not mode and not effort:
         return done(True, "reason modes: " + ", ".join(REASON_MODES)
-                    + " - or a reason+answer pair like 007+coder; send one as {\"mode\": ...}")
+                    + " - or a reason+answer pair like 007+coder; effort takes "
+                    + ", ".join(REASON_EFFORTS) + " (auto hands the level back)")
     m = "" if mode in REASON_CLEAR else mode
     if m and not reason_mode_ok(m):
         return done(False, f"unknown mode {mode!r}; this template answers to: " + ", ".join(REASON_MODES)
                     + " - pairs are reason+answer, both halves from that list")
-    key = reason_conv_key(messages)
-    with svc._reason_lock:
+    lvl = clean_reason_effort(effort) if effort else None
+    if effort and lvl is None:
+        return done(False, f"unknown effort {effort!r}; the levels are: " + ", ".join(REASON_EFFORTS)
+                    + " (high is xhigh's alias) - or auto/reset/clear to hand the level back")
+    parts = []
+    if mode:
+        key = reason_conv_key(messages)
+        with svc._reason_lock:
+            if m:
+                svc._reason[key] = m
+                svc._reason.move_to_end(key)
+                while len(svc._reason) > 64:
+                    svc._reason.popitem(last=False)          # conversation-scoped state, never a growing table
+            else:
+                svc._reason.pop(key, None)
         if m:
-            svc._reason[key] = m
-            svc._reason.move_to_end(key)
-            while len(svc._reason) > 64:
-                svc._reason.popitem(last=False)          # conversation-scoped state, never a growing table
+            parts.append(f"reason mode set to {m}; it rides this conversation's next render (the next "
+                         f"tool round of this turn)")
         else:
-            svc._reason.pop(key, None)
-    if not m:
-        # the audit finding (2026-10-17, fresh eyes): "cleared: plain" was only true on a box with no
-        # session default. The ladder is sticky > default > template framing, and a conversation-level
-        # clear drops to the NEXT level, not to the bottom of it - on a DavidAU install that defaults
-        # to ultra, handing the choice back means ULTRA, and the message must say what will render.
-        back = (f"the session default {svc.reason_default!r} frames the next render"
-                if svc.reason_default else "plain from the next render")
-        return done(True, "reason mode cleared for this conversation: " + back)
-    return done(True, f"reason mode set to {m}; it rides this conversation's next render (the next "
-                      f"tool round of this turn)")
+            # the audit finding (2026-10-17, fresh eyes): "cleared: plain" was only true on a box with no
+            # session default. The ladder is sticky > default > template framing, and a conversation-level
+            # clear drops to the NEXT level, not to the bottom of it - on a DavidAU install that defaults
+            # to ultra, handing the choice back means ULTRA, and the message must say what will render.
+            back = (f"the session default {svc.reason_default!r} frames the next render"
+                    if svc.reason_default else "plain from the next render")
+            parts.append("reason mode cleared for this conversation: " + back)
+    if effort:
+        svc.pin_sticky_effort(messages, lvl or None)
+        parts.append(f"thinking level pinned to {lvl} for this conversation: it outranks the request's "
+                     f"own level and rides its NEXT request (the next turn, not this loop)"
+                     if lvl else "thinking level handed back: the request's own (or the shared "
+                                 "settings') frames the next turn")
+    return done(True, "; ".join(parts))
 
 
 class MockEngine:
@@ -3334,6 +3379,7 @@ class Service:
         # takes the untouched kwargs dict, byte-identical to before the feature existed.
         self.reason_default = None
         self._reason = collections.OrderedDict()      # conversation key -> mode (64 conversations)
+        self._reason_effort = collections.OrderedDict()   # conversation key -> pinned thinking level
         self._reason_blocks = {}                      # mode -> its construct block (extracted once, lazy)
         self._reason_last = None                      # the key of the most recent render (API's "last")
         self._reason_lock = threading.Lock()
@@ -4145,6 +4191,61 @@ class Service:
         if not bb or i < 0:
             return text
         return text[:i + len(ba)] + "\n\n" + bb + text[i + len(ba):]
+
+    def sticky_effort_for_messages(self, messages) -> str | None:
+        """The conversation's pinned thinking level, LRU-touched (the mode map's geometry: same
+        conversation key, same lock, same 64-conversation bound). The feature's gates front the
+        whole ladder like they front the modes - and the level is deliberately NOT gated on the
+        dau FLAVOR (a stock box has thinking levels too), only on the master switch the tool and
+        the route already require... which IS reason_enabled; the flavor gate stays with modes."""
+        if not self.reason_enabled:
+            return None
+        key = reason_conv_key(messages)
+        with self._reason_lock:
+            level = self._reason_effort.get(key)
+            if level is not None:
+                self._reason_effort.move_to_end(key)
+        return level
+
+    def apply_sticky_effort(self, req: dict, api: str) -> dict:
+        """The agent-pinned level OUTRANKS the request's own - the whole point is that the agent
+        adapts its session's depth mid-task without the harness reconfiguring (the mode ladder's
+        shape, one rung lower: the client's tag still beats all of it, and clearing hands the
+        level straight back to the request). No pin (the state of every box that never calls the
+        tool or the route): THE SAME DICT, so the default path stays byte-identical by
+        construction. Unlike the mode, the level is a request-side knob - the tool loop freezes
+        kwargs at entry - so a pin lands at the conversation's NEXT REQUEST, not the next round."""
+        level = self.sticky_effort_for_messages((req or {}).get("messages") or [])
+        if level is None:
+            return req
+        req = dict(req)
+        if api == "openai":
+            req["reasoning_effort"] = level
+            req.pop("reasoning", None)                # the Responses-style block would outrank the field
+            ctk = req.get("chat_template_kwargs")
+            if isinstance(ctk, dict) and ("reasoning_effort" in ctk or "enable_thinking" in ctk):
+                req["chat_template_kwargs"] = {k: v for k, v in ctk.items()
+                                               if k not in ("reasoning_effort", "enable_thinking")}
+        elif api == "anthropic":
+            req.pop("output_config", None)
+            req["thinking"] = ({"type": "disabled"} if level == "none"
+                               else {"type": "enabled", "budget_tokens": EFFORT_BUDGET[level]})
+        return req
+
+    def pin_sticky_effort_key(self, key: str, level: str | None):
+        """Set (or clear, with None) a conversation's pinned level by KEY - the tool and the route's
+        shared hand, LRU 64 like every other conversation-scoped piece of this feature."""
+        with self._reason_lock:
+            if level is None:
+                self._reason_effort.pop(key, None)
+            else:
+                self._reason_effort[key] = level
+                self._reason_effort.move_to_end(key)
+                while len(self._reason_effort) > 64:
+                    self._reason_effort.popitem(last=False)
+
+    def pin_sticky_effort(self, messages, level: str | None):
+        self.pin_sticky_effort_key(reason_conv_key(messages), level)
 
     def render_prompt(self, messages, tools, kwargs) -> str:
         """The template rendered.  #458: with `effort_end`, a request with a non-default effort (low, medium or no
@@ -6226,22 +6327,28 @@ def make_handler(svc: Service):
             it off rather than inert-and-one-misconfiguration away from breaking every render."""
             with svc._reason_lock:
                 sticky = [[k, m] for k, m in list(svc._reason.items())[-16:]]
+                sticky_eff = [[k, e] for k, e in list(svc._reason_effort.items())[-16:]]
                 last = svc._reason_last
             self._json(200, {"on": reason_feature_on(svc), "template": svc.reason_flavor,
                              "modes": list(REASON_MODES),
                              "pairs": "mode strings of the form reason+answer, e.g. 007+coder "
                                       "(thinks like the first half, answers like the second)",
                              "guide": REASON_GUIDE, "combos": list(REASON_PAIRS),
+                             "efforts": list(REASON_EFFORTS), "level_default": svc.effort_default(),
                              "default": svc.reason_default, "sticky": sticky,
+                             "sticky_efforts": sticky_eff,
                              "last_conversation": last})
 
         def _reason_post(self, req):
-            """{"mode": <name>, "conversation"?: <"last" | "all" | the conversation's first user
-            message as the server gets it | omitted for the SESSION DEFAULT>}; off/reset/clear
-            clears at the addressed level. The mode lands at the next RENDER: the next turn - or,
-            because a tool loop re-renders each round, the next tool round of the same turn, which
-            is what makes self-steering useful to an agent mid-task. A client's own {REASON:} tag
-            in a message still wins over all of this: that is the template's own l_car rule."""
+            """{"mode": <name>, "effort"?: <level>, "conversation"?: <"last" | "all" | the
+            conversation's first user message as the server gets it | omitted for the SESSION
+            DEFAULT>}; off/reset/clear clears at the addressed level (the level pins per
+            conversation only - the session-wide knob is the Chat settings). The mode lands at the
+            next RENDER: the next turn - or, because a tool loop re-renders each round, the next
+            tool round of the same turn, which is what makes self-steering useful to an agent
+            mid-task; the level lands at the next REQUEST (the loop freezes its kwargs). A client's
+            own {REASON:} tag in a message still wins over all of this: that is the template's own
+            l_car rule."""
             if not svc.reason_enabled:
                 self._json(409, {"error": {"message": "reason modes are off: set \"reason_modes\": true "
                                                       "in this server's config and restart (setup writes "
@@ -6255,8 +6362,10 @@ def make_handler(svc: Service):
                                                       "them (setup --family dau)"}})
                 return
             mode = str(req.get("mode") or "").strip().lower()
-            if not mode:
-                self._json(400, {"error": {"message": 'send {"mode": ...} - GET /reason lists them'}})
+            effort = str(req.get("effort") or "").strip().lower()
+            if not mode and not effort:
+                self._json(400, {"error": {"message": 'send {"mode": ...} and/or {"effort": ...} - '
+                                                      "GET /reason lists them"}})
                 return
             where = str(req.get("conversation") or "").strip().lower()
             m = "" if mode in REASON_CLEAR else mode
@@ -6264,6 +6373,18 @@ def make_handler(svc: Service):
                 self._json(400, {"error": {"message": f"unknown reason mode {mode!r}; GET /reason "
                                                       "lists what this template answers to (pairs take "
                                                       "both halves from that list)"}})
+                return
+            lvl = clean_reason_effort(effort) if effort else None
+            if effort and lvl is None:
+                self._json(400, {"error": {"message": f"unknown effort {effort!r}; the levels are: "
+                                                      + ", ".join(REASON_EFFORTS)
+                                                      + " (high is xhigh's alias) - or auto/reset/clear "
+                                                        "to hand the level back"}})
+                return
+            if effort and where in ("", "session", "default"):
+                self._json(400, {"error": {"message": "the thinking level pins per conversation (or "
+                                                      "conversation:last); the session-wide level is "
+                                                      "the Chat settings shared with apps"}})
                 return
 
             def pin(key: str):
@@ -6286,16 +6407,27 @@ def make_handler(svc: Service):
                                                           "is 'last'; send the conversation text"}})
                     return
                 pin(key)
+                if effort:
+                    svc.pin_sticky_effort_key(key, lvl or None)
                 level = "conversation"
             elif where == "all":
                 with svc._reason_lock:
                     svc._reason.clear()
+                    svc._reason_effort.clear()                   # both conversation-scoped hands, one word
                 level = "stickies"
             else:
-                pin(hashlib.sha1(str(req["conversation"]).encode("utf-8", "replace")).hexdigest()[:16])
+                key = hashlib.sha1(str(req["conversation"]).encode("utf-8", "replace")).hexdigest()[:16]
+                pin(key)
+                if effort:
+                    svc.pin_sticky_effort_key(key, lvl or None)
                 level = "conversation"
-            self._json(200, {"ok": True, "mode": m or "off", "level": level,
-                             "applies": "next render: the next turn, or the next tool round of this one"})
+            out = {"ok": True, "mode": m or "off", "level": level,
+                   "applies": "next render: the next turn, or the next tool round of this one"}
+            if effort:
+                out["effort"] = lvl or "auto"
+                out["effort_applies"] = "next REQUEST (the loop freezes its kwargs at entry; the " \
+                                        "level outranks the request's own until handed back)"
+            self._json(200, out)
 
         def _memory_post(self, req):
             """memory-core: POST /memory - manage the store over HTTP: {"op": "remember", "text": ..., "scope"?,
@@ -6504,7 +6636,22 @@ def make_handler(svc: Service):
             if changed:
                 print(f"[strata] the Settings view changed {', '.join(changed)} in {Path(svc.config_path).name} "
                       f"(the earlier file: {bak.name}); used from the next start", flush=True)
-            self._json(200, {**runconfig.view(new, svc.config_path), "changed": changed})
+            out = {**runconfig.view(new, svc.config_path), "changed": changed}
+            if changed and ({"reason_modes", "reason_mode"} & set(changed)):
+                # The hybrid mode is the exception to the "next start" rule (2026-10-17, the owner's
+                # ask for a switch in the menu): both reason keys are runtime state this process
+                # already owns - the render ladder reads them every request - so the menu applies on
+                # the NEXT REQUEST and the file persists it for the starts after. The flavor gate
+                # outranks the switch live too: on a plain-template box reason_modes stays off (its
+                # template raises on a construct name, measured at boot).
+                if "reason_modes" in changed:
+                    svc.reason_enabled = new.get("reason_modes") is True and svc.reason_flavor == "dau"
+                if "reason_mode" in changed:
+                    rm = str(new.get("reason_mode") or "").strip().lower()
+                    svc.reason_default = rm if rm and reason_mode_ok(rm) else None
+                out["applies"] = "the reason keys take effect on the next request of any conversation " \
+                                 "(no restart); they persist in the file for the next start"
+            self._json(200, out)
         def _foreign_origin(self) -> bool:
             """A web page of another origin sent this.  The Origin must be this server's own address (host and port),
             or an origin the config trusts (trusted_origins: the web app behind a reverse proxy or tunnel); no Origin
@@ -6595,7 +6742,7 @@ def make_handler(svc: Service):
                 items.close()
 
         def _openai(self, req):
-            req = svc.with_shared(req, "openai")
+            req = svc.apply_sticky_effort(svc.with_shared(req, "openai"), "openai")
             bias_api.normalize(req.get("logit_bias"), len(getattr(svc.tok, "tokens", ())) or None)
             messages, tools, kw = openai_to_messages(req)
             self._no_local_images(messages)
@@ -6819,6 +6966,13 @@ def make_handler(svc: Service):
             messages = responses_api.input_messages(req)
             tools, names, skipped = responses_api.request_tools(req)
             kw = responses_api.template_kwargs(req, {"reasoning_effort": svc.effort_default()})
+            pinned = svc.sticky_effort_for_messages(messages)   # the agent's level outranks the request,
+            if pinned is not None:                              #  same ladder as the chat routes
+                if pinned == "none":
+                    kw.pop("reasoning_effort", None)
+                    kw["enable_thinking"] = False
+                else:
+                    kw["reasoning_effort"] = pinned
             try:
                 self._no_local_images(messages)              # as on the chat route: no file read for a foreign page
             except ValueError as e:
@@ -6906,7 +7060,7 @@ def make_handler(svc: Service):
         def _count_tokens(self, req):
             """Anthropic's token count, which Claude Code asks for its context figures: the prompt this server would
             read for the same request, rendered and tokenized - the model does not run."""
-            req = svc.with_shared(req, "anthropic")
+            req = svc.apply_sticky_effort(svc.with_shared(req, "anthropic"), "anthropic")
             messages, tools, kw = anthropic_to_messages(req, svc.anthropic_think_unasked)
             # memory-core fork (beta item B): the count must reflect the prompt this server ACTUALLY
             # reads - with memory on, the injected block is bytes in that prompt, and a client that
@@ -6918,7 +7072,7 @@ def make_handler(svc: Service):
 
         def _anthropic(self, req):
             svc.load()
-            req = svc.with_shared(req, "anthropic")
+            req = svc.apply_sticky_effort(svc.with_shared(req, "anthropic"), "anthropic")
             messages, tools, kw = anthropic_to_messages(req, svc.anthropic_think_unasked)
             self._no_local_images(messages)
             # memory-core fork (beta item B, 2026-10-12): the injection and journaling that
