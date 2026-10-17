@@ -28,8 +28,9 @@ the missing loop, end to end:
   -> print the review list grouped by class.
 
 Modes: default = one-shot drain of everything pending (--limit caps turns this run).
---sweep = the hot-loop shape: batches gated on engine idle (GET /v1/status not busy) so the
-loop never interrupts work; --interval seconds between checks. --extract-only stops after
+--sweep = the hot-loop shape: batches gated on SUSTAINED engine quiet (activity.last_request_at
+aged --idle-window seconds, default 240) so a human working the port never loses a checkpoint
+to a curation ask; --interval seconds between checks. --extract-only stops after
 extraction (smoke the extractor before burning cold-score asks). --dry-run renders and counts
 asks, touches no engine.
 
@@ -385,6 +386,11 @@ def main():
     ap.add_argument("--max-facts", type=int, default=2, help="candidate facts extracted per turn")
     ap.add_argument("--sweep", action="store_true", help="idle-gated batches (hot-loop shape)")
     ap.add_argument("--interval", type=int, default=60, help="--sweep: seconds between idle checks")
+    ap.add_argument("--idle-window", type=int, default=240,
+                    help="--sweep: seconds the engine must go with NO request at all (server's "
+                         "activity.last_request_at) before a batch may start - sustained quiet, "
+                         "not quiet-at-the-instant (2026-10-16: the instant version fired into "
+                         "every conversational gap and cost the real turns their KV reuse)")
     ap.add_argument("--batches", type=int, default=0, help="--sweep: stop after N batches (0 = forever)")
     ap.add_argument("--extract-only", action="store_true", help="smoke the extractor, skip cold-score")
     ap.add_argument("--no-date", action="store_true",
@@ -455,13 +461,26 @@ def main():
     batch_start = time.time()     # sibling protection for supersede: a correction's target must
     while True:                   # predate this batch - candidates from one sweep must not eat
                                   # each other's fresh rows (the 2026-10-12 turn-565-ate-564 bug)
-        # idle gate (hot-loop shape): never extract into the middle of someone's request
-        if a.sweep and batch:
-            time.sleep(a.interval)
+        # idle gate (hot-loop shape): never extract into the middle of someone's request - and
+        # "idle" means SUSTAINED quiet, not quiet-at-the-instant. Measured the failure of the
+        # instant check the day it shipped its successor (2026-10-16): between interactive turns
+        # the engine reads idle for 10-60 s at a time, the sweep fired into every gap, and each
+        # small ask shredded the conversation checkpoint - the real turns came back REUSED 0
+        # and re-read 246k tokens every time. activity.last_request_at is the server's own
+        # record of the last byte it served; requiring it to age --idle-window seconds lets a
+        # human work uninterrupted and drains the journal when the machine is truly left.
+        # (And the keys this gate first read - top-level "busy"/"queued" - do not exist in
+        # /v1/status at all, so the gate never actually blocked: activity.in_flight does.)
         if a.sweep:
             st, svc = http(url + "/v1/status", timeout=15)
-            if svc.get("busy") or (svc.get("queued") or 0) > 0:
-                print("engine busy - sweep waits", flush=True)
+            act = svc.get("activity") or {}
+            busy = ((act.get("in_flight") or 0) > 0 or bool(svc.get("busy"))
+                    or (svc.get("queued") or 0) > 0)
+            quiet = time.time() - (act.get("last_request_at") or 0)
+            if busy or quiet < a.idle_window:
+                print(f"engine busy or only {quiet:.0f}s quiet (wants {a.idle_window}) "
+                      f"- sweep waits", flush=True)
+                time.sleep(a.interval)
                 continue
         st, r = http(url + "/memory", {"op": "turns", "limit": 1000}, timeout=60)
         # limit 1000 = the endpoint's cap (memory.py:368): marking lands only at run end, so a
