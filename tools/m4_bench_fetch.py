@@ -29,10 +29,11 @@ LongMemEval corpus got eaten by a /tmp cleanup once and the venue work lost a da
                            think step by step" was discovered - the mode-effect question in its
                            original habitat.
 
-GPQA (graduate science MCQ, the hardest open multiple choice) is DROPPED: the original dataset is
-gated behind HF login and the open mirrors are parquet-only or unindexed. If it is ever wanted,
-one token from the owner's HF account unlocks it; the line here records that rather than hiding
-it. Every file lands with a sha256 in manifest.json: a rerun that reads different bytes says so.
+GPQA (graduate science MCQ, the hardest open multiple choice) joined 2026-10-17: the origin is
+gated (the owner's HF account was granted access) and CC BY-NC 4.0 - internal measurement, the CSV
+never enters git. The access token lives in .hf_token next to the data (chmod 600); it is NEVER
+stored in the memory store, where it would sit in plaintext and ride back into every recall.
+Every file lands with a sha256 in manifest.json: a rerun that reads different bytes says so.
 
     python3 tools/m4_bench_fetch.py            # fetch what is missing, verify what is present
     python3 tools/m4_bench_fetch.py --verify   # re-hash only, no network
@@ -55,11 +56,20 @@ FILES = {
                                 "main/test.jsonl", "MIT (derived from Hendrycks MATH)"),
     "humaneval.jsonl.gz":      ("https://raw.githubusercontent.com/openai/human-eval/master/"
                                 "data/HumanEval.jsonl.gz", "MIT (openai/human-eval)"),
+    # GPQA diamond: gated at the origin (the owner's HF account was granted access 2026-10-17) and
+    # CC BY-NC 4.0 - internal measurement only, the CSV itself never enters git. The token lives in
+    # .hf_token (chmod 600, inside the git-ignored data dir) and is NEVER stored in the memory
+    # store, where it would sit in plaintext and ride back into recall.
+    "gpqa_diamond.csv":        ("https://huggingface.co/datasets/Idavidrein/gpqa/resolve/"
+                                "main/gpqa_diamond.csv", "CC BY-NC 4.0 (Idavidrein/GPQA, gated)"),
 }
 
 
-def get(url, binary=False, timeout=300):
-    req = urllib.request.Request(url, headers={"User-Agent": "m4_bench_fetch/1.0"})
+def get(url, binary=False, timeout=300, token=None):
+    headers = {"User-Agent": "m4_bench_fetch/1.0"}
+    if token:
+        headers["Authorization"] = "Bearer " + token
+    req = urllib.request.Request(url, headers=headers)
     with urllib.request.urlopen(req, timeout=timeout) as r:
         data = r.read()
     return data if binary else data.decode("utf-8")
@@ -98,8 +108,10 @@ def main() -> int:
         if a.verify or (p.exists() and name in man):
             print(f"  {name}: {'re-hash' if a.verify else 'present'} -> {sha256(p)[:16]}")
             continue
-        print(f"  fetching {name} ...")
-        p.write_bytes(get(url, binary=True))
+        tok_file = d / ".hf_token"
+        tok = tok_file.read_text().strip() if tok_file.exists() else None
+        print(f"  fetching {name}{' (gated, token file)' if 'gpqa' in name and tok else ''} ...")
+        p.write_bytes(get(url, binary=True, token=tok if "huggingface.co/datasets/Idavidrein" in url else None))
         man[name] = {"url": url, "license": lic, "sha256": sha256(p), "bytes": p.stat().st_size}
         print(f"  {name}: {man[name]['bytes']:,} bytes, sha {man[name]['sha256'][:16]}")
 
@@ -125,6 +137,12 @@ def main() -> int:
         if name.startswith("bbh_"):
             rows = json.loads(p.read_text())
             print(f"  read {name}: {len(rows)} rows, first target {rows[0]['target'][:20]!r}")
+        elif name.endswith(".csv"):
+            import csv
+            with open(p, newline="", encoding="utf-8") as f:
+                rows = list(csv.DictReader(f))
+            assert rows and "Question" in rows[0] and "Correct Answer" in rows[0], "bad gpqa csv"
+            print(f"  read {name}: {len(rows)} questions")
         else:
             print(f"  read {name}: {n_lines(p)} lines")
     man_path.write_text(json.dumps(man, indent=1))

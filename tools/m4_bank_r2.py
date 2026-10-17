@@ -19,11 +19,13 @@ Sampling is a FIXED STRIDE over file order (no RNG, no seed drift): a rerun read
 76 probes. The bank refuses to load files whose sha256 differs from manifest.json unless --force,
 so a silently-changed corpus cannot move the numbers between runs.
 
-GPQA is absent on purpose: gated behind HF login, CC BY-NC (tools/m4_bench_fetch.py records it).
+GPQA diamond joined on 2026-10-17: the origin is gated and CC BY-NC 4.0, the owner's HF account was
+granted access, and the token sits in a chmod-600 file in the data dir - NEVER in the memory store,
+where a secret would sit plaintext and ride back into every recall.
 """
 from __future__ import annotations
 
-import gzip, hashlib, json, re, subprocess, sys
+import csv, gzip, hashlib, json, random, re, subprocess, sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -85,6 +87,13 @@ def _check_humaneval(prompt, test, entry):
             return 1.0 if "m4ok" in r.stdout else 0.0
         except subprocess.TimeoutExpired:
             return 0.0
+    return f
+
+def _check_mcq(letter):
+    """GPQA-style letter answer: the LAST standalone A-D in the reply is what the model committed to."""
+    def f(t):
+        hits = re.findall(r"\b([A-D])\b", (t or "").upper())
+        return 1.0 if hits and hits[-1] == letter.upper() else 0.0
     return f
 
 def _check_bbh(target, kind):
@@ -152,6 +161,25 @@ def probes(bench_dir=None, force=False):
                   "\nComplete the function. Reply with only the Python code.",
                   "check": _check_humaneval(row["prompt"], row["test"], row["entry_point"]),
                   "gold": row["canonical_solution"], "exec_prompt": row["prompt"]})
+    # GPQA diamond: the hardest open multiple choice (graduate science, expert-verified). Options
+    # are shuffled with a FIXED RNG keyed to the row's index - placement bias is real in MCQ, and
+    # a rerun must see the same letters too. Gold is a letter; scored as last A-D in the reply.
+    if (d / "gpqa_diamond.csv").exists():
+        with open(d / "gpqa_diamond.csv", newline="", encoding="utf-8") as f:
+            gpqa = [r for r in csv.DictReader(f)
+                    if (r.get("Question") or "").strip() and (r.get("Correct Answer") or "").strip()]
+        for i, row in enumerate(_stride(gpqa, 12)):
+            opts = [row["Correct Answer"], row["Incorrect Answer 1"],
+                    row["Incorrect Answer 2"], row["Incorrect Answer 3"]]
+            order = list(range(4))
+            random.Random(4860938 + i).shuffle(order)
+            opts = [opts[k] for k in order]
+            gold = "ABCD"[opts.index(row["Correct Answer"])]
+            P.append({"shape": "gpqa",
+                      "prompt": (row["Question"].strip() + "\n\n"
+                                 + "\n".join(f"{L}. {o.strip()}" for L, o in zip("ABCD", opts))
+                                 + "\nAnswer with just the letter."),
+                      "check": _check_mcq(gold), "gold": gold})
     for task, (shape, instr, kind) in BBH.items():
         rows = json.loads((d / f"bbh_{task}.json").read_text())
         for row in _stride(rows, 8):
