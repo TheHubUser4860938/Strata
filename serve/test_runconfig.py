@@ -79,12 +79,13 @@ class Apply(unittest.TestCase):
     def test_the_hybrid_mode_rows(self):
         # the owner's ask 2026-10-17: DavidAU's Turbo-Brilliance system as a Settings switch. The
         # enum takes the author's constructs AND the fork's reason+answer pairs (the grammar
-        # reason_mode_ok validates); "" is "no default"; the documented-but-dead names stay out.
+        # reason_mode_ok validates) AND "auto" (autonomous mode: the server picks per task); the
+        # documented-but-dead names stay out.
         new, changed = runconfig.apply(CFG, {"reason_modes": True, "reason_mode": "007+coder"})
         self.assertEqual(changed, ["reason_modes", "reason_mode"])
         self.assertIs(new["reason_modes"], True)
         self.assertEqual(new["reason_mode"], "007+coder")
-        for ok in ("", "ultra", "house+logic", "off"):
+        for ok in ("auto", "ultra", "house+logic", "off"):
             self.assertEqual(runconfig.apply(CFG, {"reason_mode": ok})[0].get("reason_mode"), ok)
         for bad in ("xultra", "007+nope", "Coder", "ultra+coder+xhigh", "007+"):
             with self.subTest(bad=bad), self.assertRaises(ValueError):
@@ -94,7 +95,16 @@ class Apply(unittest.TestCase):
         v = runconfig.view(CFG, "strata-q2_0.json")
         rows = {k["key"]: k for k in v["keys"]}
         self.assertIn("007+coder", rows["reason_mode"]["choices"])
+        self.assertIn("auto", rows["reason_mode"]["choices"], "the menu offers the autonomous mode")
         self.assertIn("ultra", rows["reason_mode"]["choices"])
+
+    def test_help_texts_fit_the_settings_grid(self):
+        # the grid sizes its label column to the longest help (max-content); a paragraph-length
+        # help on the hybrid rows collapsed every control into a circle the day they shipped
+        # (2026-10-17, the owner's screenshot) - app.css caps the column now, and this caps the
+        # strings: the law in both places, because either alone was proven one mistake away.
+        for key, _kind, help_ in runconfig.EDITABLE:
+            self.assertLessEqual(len(help_), 240, f"{key}: help text too long for the grid")
 
 
 class Http(unittest.TestCase):

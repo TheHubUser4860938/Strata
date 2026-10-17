@@ -20,8 +20,12 @@ from pathlib import Path
 # serve/test_reason.py still guards the list against DavidAU's template file. The pairs are the
 # fork's grammar (reason+answer, both halves real modes): the author's pairing guide recommends
 # them and the server makes them mechanical, since his shipped template parses only one tag per
-# message (measured on the GGUF-embedded template). "" is "no default": the agent's own
-# reason_mode calls and the client's {REASON:} tags still choose per conversation.
+# message (measured on the GGUF-embedded template). "auto" is the autonomous mode (v1.8): the
+# server picks the construct per request from the author's use-case map (serve/server.py
+# REASON_AUTO) - no confident pick, no change. HELP TEXTS: the Settings grid sizes its label
+# column to the longest help (max-content), so a paragraph-length help collapses every control on
+# the page into a circle (measured the same day it shipped) - keep them short, test_runconfig
+# caps the length now.
 REASON_MODES = ("xomni", "xdeeptree", "xhyper", "xsocrates", "xlogic", "xhelp", "xeinstein",
                 "xspoon", "omni", "deeptree", "hyper", "socrates", "logic", "off", "help",
                 "einstein", "spoon", "ultra", "xhigh", "medium", "low", "holodeck", "prompt",
@@ -33,7 +37,7 @@ REASON_PAIRS = ("007+coder agentic builds", "stark+coder architecture", "ultra+c
                 "logic+spoon fact-checking", "omni+omni synthesis", "musk+business go-to-market",
                 "curie+teacher explanations", "matlock+logic legal analysis", "joe+comedy humor",
                 "einstein+pkd speculative fiction", "prompt+prompt prompt optimization")
-REASON_MODE_CHOICES = [""] + list(REASON_MODES) + [p.split()[0] for p in REASON_PAIRS]
+REASON_MODE_CHOICES = ["auto"] + list(REASON_MODES) + [p.split()[0] for p in REASON_PAIRS]
 
 # (key, kind, help).  kind: "bool", "int>=0", "num>=0", ("enum", values), "names", or ("sampling", check) for a key
 # of the "sampling" block, ("arg", flag) for an engine option kept in "args".
@@ -50,15 +54,12 @@ EDITABLE = [
     ("effort_position", ("enum", ["start", "end"]),
      "Where a non-default reasoning effort goes: start (the default) or end (keeps the cache when it changes)"),
     ("reason_modes", "bool",
-     "Hybrid mode for DavidAU's Turbo-Brilliance models: his thinking constructs (personas) ride the "
-     "server - new conversations start with the construct below, the agent switches itself with the "
-     "reason_mode tool, and your own {REASON:} tags outrank all of it. Stays off on other models "
-     "(their template raises on a construct name, measured). Applies on the next request, no restart; "
-     "persists in this file"),
+     "Hybrid mode for DavidAU's Turbo-Brilliance models: his thinking constructs (personas) ride "
+     "the server and the agent switches them itself; stays off on other models. Applies at once, "
+     "no restart; persists here"),
     ("reason_mode", ("enum", REASON_MODE_CHOICES),
-     "The construct new conversations start with in hybrid mode: a name (coder code work, house "
-     "debugging, ultra final deliverables, spoon research...), a reason+answer pair (007+coder: "
-     "thinks like 007, answers like coder), or empty for no default"),
+     "Starting construct in hybrid mode: a name (coder, house, ultra...), a reason+answer pair "
+     "(007+coder), auto (the server picks per task), or empty for none"),
     ("aliases", "names", "Other model names the server lists and answers to (comma-separated)"),
     ("idle_unload_s", "num>=0", "Unload the model after this many seconds without requests (0 or empty: never)"),
     ("lazy_load", "bool", "Start without loading the model; the first request loads it (text only)"),

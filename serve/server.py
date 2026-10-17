@@ -323,6 +323,8 @@ def reason_mode_ok(value: str) -> bool:
     thinking, splice construct b's block right after a's (Service.splice_reason_pair)."""
     if value in REASON_MODE_SET:
         return True
+    if value == "auto":                               # autonomous mode: the server picks per task
+        return True
     a, sep, b = value.partition("+")
     return bool(sep) and "+" not in b and a in REASON_MODE_SET and b in REASON_MODE_SET
 
@@ -345,6 +347,7 @@ REASON_GUIDE = {
     "prompt": "prompt engineering", "holodeck": "simulated debate", "vader": "hard decisions",
     "neo": "question the frame", "joker": "reframe through chaos", "quinn": "bold voice",
     "logic": "first principles", "xlogic": "first principles at xhigh",
+    "auto": "the server picks per task (autonomous mode)",
 }
 REASON_PAIRS = runconfig.REASON_PAIRS
 
@@ -368,6 +371,137 @@ def clean_reason_effort(value: str) -> str | None:
     if v == "high":                                   # the OpenAI-dialect alias, per the EFFORT map
         v = "xhigh"
     return v if v in REASON_EFFORTS else None
+
+
+# AUTONOMOUS MODE (v1.8, 2026-10-17, the owner's "switch them on the fly based on the task - an
+# autonomous mode as well"): "auto" as a construct name - the server picks per request from the
+# author's use-case map, no model call, no hub. The corpus below is that map made computable:
+# one vocabulary per construct (and per recommended pair), the guide's words plus task nouns.
+# Tokens are weighted 1/df - how many constructs claim the word - so "crispr" moves curie alone
+# while "explain" (claimed by teacher and two pairs) barely moves the ranking; a word no
+# construct claims is noise and drops out, which is the whole stopword problem solved for free.
+# Best score wins; a tie, or no claimed word at all, is NO pick: the conversation keeps whatever
+# framing the ladder gives it next. Deterministic, microseconds, and the same message always
+# picks the same construct - so the pinned head stays cached while the task stays the same.
+REASON_AUTO = {
+    "coder": {"code", "coding", "program", "python", "javascript", "typescript", "rust", "golang",
+              "java", "swift", "api", "endpoint", "implement", "refactor", "function", "class",
+              "library", "package", "dependency", "frontend", "backend", "css", "html", "react",
+              "vue", "database", "sql", "docker", "kubernetes", "deploy", "compile", "schema",
+              "json", "regex", "script", "module", "bug", "fix", "stack", "trace", "exception",
+              "null", "undefined", "leak", "latency", "throughput", "cache", "caching", "redis",
+              "queue", "concurrency", "async", "race", "distributed", "server", "microservice",
+              "grpc", "websocket", "git", "merge", "rebase", "cli", "venv", "pip", "build",
+              "unittest", "pytest", "lint", "typescript"},
+    "house": {"debug", "debugging", "crash", "bug", "error", "exception", "stack", "trace",
+              "symptom", "symptoms", "diagnose", "diagnosis", "root", "cause", "failure",
+              "broken", "fails", "failing", "hypothesis", "regression", "intermittent", "mystery",
+              "worked", "suddenly", "logs", "coredump", "segfault", "oom", "timeout", "heisenbug",
+              "differential", "eliminate", "elimination"},
+    "stark": {"architecture", "architect", "design", "systems", "scalable", "scaling",
+              "infrastructure", "platform", "blueprint", "foresight", "tradeoff", "capacity",
+              "redundancy", "failover", "cluster", "service", "solutions", "visionary"},
+    "007": {"orchestrate", "orchestration", "pipeline", "workflow", "automation", "autonomous",
+            "agent", "agentic", "batch", "job", "schedule", "retry", "fallback", "execute",
+            "runbook", "monitor", "fleet", "multi-step", "tool-calls", "deterministic"},
+    "ultra": {"final", "deliverable", "deliverables", "ship", "polish", "perfect", "perfection",
+              "flawless", "complete", "production", "release", "careful", "verify", "validation",
+              "review", "reviews"},
+    "hyper": {"audit", "deconstruct", "deconstruction", "mece", "outline", "breakdown",
+              "categorize", "taxonomy", "frameworks", "sections", "structure"},
+    "spoon": {"research", "study", "studies", "sources", "facts", "evidence", "citation", "cite",
+              "paper", "papers", "survey", "literature", "fact-checking", "panel", "experts",
+              "rigor", "claims"},
+    "deeptree": {"plan", "planning", "strategy", "strategic", "roadmap", "options", "alternative",
+                 "branch", "scenarios", "path", "prune", "contingency", "tree", "stages",
+                 "decision", "decisions"},
+    "omni": {"interdisciplinary", "domains", "synthesis", "synthesize", "connections", "analogy",
+             "metaphor", "parallel", "culture", "fields", "unified", "across", "everything"},
+    "socrates": {"question", "questions", "probe", "meaning", "assumption", "assumptions",
+                 "examine", "clarify", "definition", "define", "socratic", "gaps", "critique"},
+    "teacher": {"explain", "simply", "plain", "teach", "teaching", "learn", "tutorial", "beginner",
+                "understand", "intro", "introduction", "lesson", "eli5", "guide", "learned"},
+    "einstein": {"novel", "novelty", "creative", "creativity", "imagine", "what-if", "invention",
+                 "invent", "unusual", "surprising", "original", "speculative", "ideas", "ideation"},
+    "brainstorm": {"brainstorm", "ideate", "generate", "solutions", "quickly", "many", "list"},
+    "business": {"business", "market", "marketing", "startup", "revenue", "pricing", "customer",
+                 "customers", "go-to-market", "gtm", "investor", "funding", "pitch", "sales",
+                 "growth", "profit", "company", "competitor", "competitors"},
+    "matlock": {"legal", "law", "lawyer", "court", "contract", "contracts", "regulation",
+                "regulations", "compliance", "liability", "litigation", "gdpr", "privacy",
+                "statute", "precedent", "brief", "advocacy", "procedural"},
+    "musk": {"physics", "first-principles", "manufacturing", "physical", "feasible", "fundamental",
+             "rocket", "battery", "material", "materials", "energy", "costs"},
+    "curie": {"science", "scientific", "experiment", "experiments", "chemistry", "biology",
+              "gene", "genes", "crispr", "molecule", "molecules", "atom", "atoms", "radioactivity",
+              "measurement", "laboratory", "truth"},
+    "story": {"story", "stories", "narrative", "fiction", "novel", "tale", "writing", "character",
+              "characters", "plot", "scene", "dialogue", "prose", "poem", "poetry", "screenplay",
+              "chapter", "ending", "twist"},
+    "comedy": {"joke", "jokes", "funny", "humor", "humorous", "humour", "comedian", "laugh",
+               "laughing", "stand-up", "satire", "witty", "pun", "meme", "silly", "amuse", "bit"},
+    "joe": {"everyday", "casual", "regular", "folks", "honestly", "relatable", "friend"},
+    "prompt": {"prompt", "prompts", "prompting", "system-prompt", "llm", "gpt", "claude",
+               "instruct", "few-shot", "chain-of-thought"},
+    "holodeck": {"debate", "debates", "argue", "perspectives", "discuss", "discussion", "opposing",
+                 "versus", "simulate", "panelists"},
+    "vader": {"decide", "decision", "decisions", "choose", "choice", "commit", "command", "order",
+              "leadership", "authority", "ultimatum", "irreversible", "duty", "empire"},
+    "neo": {"reality", "illusion", "matrix", "awake", "belief", "believe", "control", "doubt",
+            "skeptical", "reframe", "consciousness"},
+    "joker": {"chaos", "anarchy", "absurd", "upend", "invert", "paradox", "irony", "disrupt",
+              "unconventional", "mad", "trick", "fragile"},
+    "quinn": {"bold", "confident", "personality", "flair", "edgy", "playful", "daring",
+              "unapologetic", "opinion", "opinions"},
+    "logic": {"logic", "logical", "prove", "proof", "proving", "deduce", "deduction", "validity",
+              "fallacy", "theorem", "mathematics", "formal", "axiom", "consistent",
+              "contradiction", "first", "principles"},
+    "007+coder": {"agentic", "builds", "rate-limiter", "circuit-breaker", "workers", "idempotent",
+                  "orchestration"},
+    "stark+coder": {"apis", "microservices", "frontends"},
+    "ultra+coder": {"refactoring", "code-review", "linting", "clean"},
+    "deeptree+spoon": {"roadmaps", "thesis"},
+    "hyper+socrates": {"dissertation", "essay", "structuring"},
+    "musk+business": {"manufacturing", "fundamentals"},
+    "curie+teacher": {"crispr", "lessons"},
+    "joe+comedy": {"relatable"},
+    "einstein+pkd": {"scifi", "paranoid", "what-if"},
+    "prompt+prompt": {"optimize", "tune"},
+}
+_AUTO_DF: dict = {}
+for _auto_words in REASON_AUTO.values():
+    for _auto_t in _auto_words:
+        _AUTO_DF[_auto_t] = _AUTO_DF.get(_auto_t, 0) + 1
+REASON_AUTO_W = {name: {t: 1.0 / _AUTO_DF[t] for t in words} for name, words in REASON_AUTO.items()}
+
+
+def last_user_text(messages) -> str:
+    """The conversation's latest user text across dialects (parts lists concatenate) - the task
+    description autonomous mode reads. The LAST message, not the first: autonomy follows the task
+    at hand; the conversation KEY stays the first message (the sticky map's geometry)."""
+    for m in reversed(messages or []):
+        if isinstance(m, dict) and m.get("role") == "user":
+            c = m.get("content")
+            if isinstance(c, list):
+                c = " ".join(str(p.get("text", "")) for p in c if isinstance(p, dict))
+            return str(c or "")
+    return ""
+
+
+def reason_auto_pick(text: str) -> str | None:
+    """Autonomous mode's verdict for one request (see REASON_AUTO): the construct with the highest
+    1/df-weighted token score. None when nothing is confident: no claimed token, or a tie - the
+    conversation then keeps the next rung's framing (the ladder's own rule, applied to a pick).
+    Pure and deterministic: the same task text always picks the same construct."""
+    hits = {t for t in re.findall(r"[a-z0-9][a-z0-9+#'-]{1,}", (text or "").lower())}
+    best, best_s, tied = None, 0.0, False
+    for name, weights in REASON_AUTO_W.items():
+        s = sum(weights[t] for t in hits if t in weights)
+        if s > best_s:
+            best, best_s, tied = name, s, False
+        elif s == best_s and s > 0 and name != best:
+            tied = True
+    return best if (best is not None and best_s >= 0.4 and not tied) else None
 
 
 def reason_conv_key(messages) -> str:
@@ -430,7 +564,9 @@ REASON_TOOL = {
                     "by task: " + "; ".join(f"{k} {v}" for k, v in REASON_GUIDE.items()) + ". "
                     "DavidAU's recommended combos ride as PAIRS, one string reason+answer: "
                     + ", ".join(REASON_PAIRS) + " - a pair thinks like the first half and answers "
-                    "like the second. 'off' hands the choice back (the session default frames the "
+                    "like the second. 'auto' runs the autonomous mode: the server picks the "
+                    "construct per request from this map (no confident match, no change). 'off' "
+                    "hands the choice back (the session default frames the "
                     "next render - plain if none is set). It takes effect from the next render - the "
                     "next tool round of THIS turn - so call it at the START of a hard task and 'off' "
                     "when done. Switching re-reads the conversation prefix once (seconds), so do not "
@@ -445,8 +581,9 @@ REASON_TOOL = {
         "properties": {"mode": {"type": "string",
                                  "description": "one of: " + ", ".join(REASON_MODES)
                                                 + " - or a reason+answer pair like 007+coder (both "
-                                                  "halves from the list) - or off/reset/clear to hand "
-                                                  "the choice back"},
+                                                  "halves from the list) - or auto for "
+                                                  "server-picked-per-task - or off/reset/clear to "
+                                                  "hand the choice back"},
                        "effort": {"type": "string",
                                   "description": "optional thinking LEVEL for the conversation: none "
                                                  "(no thinking), low, medium or xhigh (high is the "
@@ -476,7 +613,8 @@ def reason_tool_result(svc: "Service", messages, arguments) -> dict:
 
     if not mode and not effort:
         return done(True, "reason modes: " + ", ".join(REASON_MODES)
-                    + " - or a reason+answer pair like 007+coder; effort takes "
+                    + " - or auto (the server picks per task) or a reason+answer pair like "
+                    "007+coder; effort takes "
                     + ", ".join(REASON_EFFORTS) + " (auto hands the level back)")
     m = "" if mode in REASON_CLEAR else mode
     if m and not reason_mode_ok(m):
@@ -4134,15 +4272,26 @@ class Service:
         store's "last" so an agent steering its OWN session can post to /reason with
         {"conversation": "last"} without knowing its first-message hash. The flavor gate sits in
         front of all of it: on a plain template the answer is always None, so the substitution
-        that would raise there never happens."""
+        that would raise there never happens. "auto" (v1.8, autonomous mode) resolves HERE, per
+        render, from the conversation's LATEST user message (reason_auto_pick): the same task text
+        always picks the same construct, so the pinned head stays cached while the task holds.
+        A sticky auto with no confident pick drops to the session default - the audit finding's
+        law, the clear drops to the NEXT rung, not the bottom - and an auto over an auto is no
+        recursion: the template's own framing rides."""
         key = reason_conv_key(messages)
         with self._reason_lock:
             self._reason_last = key
-            mode = self._reason.get(key) if reason_feature_on(self) else None
-            if mode is not None:
+            sticky = self._reason.get(key) if reason_feature_on(self) else None
+            if sticky is not None:
                 self._reason.move_to_end(key)
-                return mode
-        return self.reason_default if reason_feature_on(self) else None
+        mode = sticky if sticky is not None else (self.reason_default if reason_feature_on(self) else None)
+        if mode == "auto":
+            mode = reason_auto_pick(last_user_text(messages))
+            if mode is None and sticky == "auto":
+                mode = self.reason_default if reason_feature_on(self) else None
+                if mode == "auto":
+                    mode = None                          # auto over auto: the template frames
+        return mode
 
     def reason_block(self, mode: str) -> str:
         """The construct text a mode injects at the head, isolated ONCE per mode by rendering the
@@ -8090,7 +8239,8 @@ def main() -> int:
         if svc.reason_flavor == "dau":
             svc.reason_enabled = True
             print(f"[strata] reason modes on: {len(REASON_MODES)} modes the template answers to, "
-                  f"and reason+answer pairs (a+b: think like a, answer like b, e.g. 007+coder); "
+                  f"reason+answer pairs (a+b: think like a, answer like b, e.g. 007+coder), and "
+                  f"auto (the construct picked per task from the author's use-case map); "
                   f"GET|POST /reason and the reason_mode tool (a client's own {{REASON:}} tag "
                   f"still outranks all of it)", flush=True)
         else:

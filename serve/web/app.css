@@ -127,7 +127,10 @@ main { flex: 1; min-height: 0; display: flex; }
 .cc-note { margin: 0; }
 .cc-note:empty { display: none; }
 .mcp-card { display: flex; flex-direction: column; gap: var(--st-s-3); }
-.cfg-form { display: grid; grid-template-columns: minmax(180px, max-content) minmax(0, 1fr); gap: var(--st-s-3) var(--st-s-4);
+/* the label column hugs the longest help text (max-content) but CAPPED at 58%: one paragraph-length
+   help once pushed the column past the card and collapsed every control into a circle (2026-10-17);
+   the cap keeps the control column alive whatever a future help says (test_runconfig caps the length too) */
+.cfg-form { display: grid; grid-template-columns: minmax(180px, min(max-content, 58%)) minmax(0, 1fr); gap: var(--st-s-3) var(--st-s-4);
             align-items: center; }
 .cfg-form label { font-size: var(--st-fs-sm); font-weight: var(--st-fw-medium); }
 .cfg-form label code { font: 400 12px var(--st-font-mono); color: var(--st-ink-muted); display: block; }

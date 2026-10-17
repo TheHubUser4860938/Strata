@@ -2074,6 +2074,27 @@ off; off means every render passes the SAME kwargs dict, byte-identical by const
     other owner) and `server.py` re-exports it - one source, the drift lock unchanged.
     `test_runconfig` 10 OK, `test_reason` 30 OK, full gate 1002 OK (skipped 11; one first-run
     flake was the 62 GB box OOM-killing a mock engine mid-suite, exit -9 - the rerun passed).
+- **Autonomous mode, and the menu healed (v1.8, same day):** the owner's screenshot showed every
+  Settings control collapsed into a circle - the grid sizes its label column to the LONGEST help
+  text (`max-content`, unwrapped), and my paragraph-length hybrid help pushed the control column
+  to zero. Fixed on both sides, because either alone is one mistake away from a broken page: the
+  help texts are short now (`test_runconfig` caps every EDITABLE help at 240 chars as law) and
+  `app.css` caps the column at `min(max-content, 58%)`. Then the owner's "switch on the fly based
+  on the task - an autonomous mode as well": **`auto`** is a construct value everywhere the
+  construct goes - the menu dropdown, the boot default, `POST /reason`, the tool, the stickies.
+  Per request the server scores the conversation's LATEST user message against the author's
+  use-case map made computable (`REASON_AUTO`: one vocabulary per construct and per recommended
+  pair; tokens weighted 1/df - how many constructs claim the word - so "crispr" moves curie alone
+  while "explain" barely moves the ranking, and words no construct claims drop out, which solves
+  the stopword problem for free). Best score wins; a tie, or no claimed word at all, is NO pick -
+  never a guess: a pick-less sticky auto drops to the session default (the audit finding's law,
+  the NEXT rung not the bottom) and a default auto drops to the template's own framing. Pure,
+  deterministic, microseconds, no model call - and the same task text always picks the same
+  construct, so the pinned head stays cached while the task holds. The stored references the
+  owner asked for now serve BOTH drivers: the tool description and `GET /reason` carry the map
+  and the combos for the agent's own choosing, and `REASON_AUTO` is the same knowledge made
+  computable for the server's. `test_runconfig` 11 OK, `test_reason` 33 OK, gate 1006 OK
+  (skipped 11, one pass).
 - **The installer now carries the model (`setup.py` "dau" family, 2026-10-17):** `setup --family
   dau --model IQ3_S` installs DavidAU's Turbo-Brilliance re-quant - pinned repo commit, both
   shard SHA-256s from the Hub's LFS pointers, Apache-2.0 stated at install. Two measured facts

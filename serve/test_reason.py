@@ -21,8 +21,8 @@ from pathlib import Path
 
 from serve.frontend import ChatTemplate
 from serve.server import (REASON_EFFORTS, ByteTokenizer, MockEngine, REASON_MODES, Service, serve,
-                          apply_reason_mode, clean_reason_effort, reason_conv_key, reason_mode_ok,
-                          reason_tool_result)
+                          apply_reason_mode, clean_reason_effort, reason_auto_pick, reason_conv_key,
+                          reason_mode_ok, reason_tool_result)
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -91,6 +91,20 @@ class ModeLaw(unittest.TestCase):
         self.assertEqual(clean_reason_effort("auto"), "", "hand-back words clear the pin")
         self.assertIsNone(clean_reason_effort("ultra"), "a mode name is not a level")
         self.assertIsNone(clean_reason_effort("very"), "and prose is not either")
+
+    def test_auto_pick_follows_the_task(self):
+        # autonomous mode (v1.8, the owner's "switch on the fly based on the task"): the author's
+        # use-case map made computable - 1/df weights so rare task words steer and common claimed
+        # words barely move the ranking; no claimed word or a tie is NO pick, never a guess.
+        self.assertEqual(reason_auto_pick("fix the python bug and refactor the parser module"), "coder")
+        self.assertEqual(reason_auto_pick("tell me a funny joke about my job"), "comedy")
+        self.assertEqual(reason_auto_pick("we must decide whether to commit to the acquisition"),
+                         "vader", "the hard-decision construct answers to decide/commit")
+        self.assertEqual(reason_auto_pick("research the sources and cite the papers"), "spoon")
+        self.assertIsNone(reason_auto_pick("flurb the wibbit qzpzz"), "no claimed word: no pick")
+        self.assertIsNone(reason_auto_pick(""), "and nothing to read is nothing to choose")
+        self.assertTrue(reason_mode_ok("auto"), "auto is a value every door answers to")
+        self.assertFalse(reason_mode_ok("auto+coder"), "but it is not a pair half")
 
     def test_conversation_key_law(self):
         a = [{"role": "system", "content": "s"}, {"role": "user", "content": "first"},
@@ -417,6 +431,43 @@ class ReasonOverHttp(unittest.TestCase):
                 self.svc.config_path = saved
                 self.svc.reason_enabled = True
                 self.svc.reason_default = None
+
+    def test_auto_mode_switches_the_construct_per_task(self):
+        # the owner's autonomous mode (v1.8): one server, one conversation stream, the construct
+        # follows the task at hand - no client calls between turns, no restart, no model call.
+        st, body = self.http("POST", "/reason", {"mode": "auto"})       # session default: every conv
+        self.assertEqual(st, 200, body)
+        p1 = self.turn("reason probe auto zqrc: fix the python bug and refactor the parser module")
+        self.assertIn("PROGRAMMER & UI ARCHITECT", p1, "the code task wears coder")
+        self.assertNotIn("SUPER COMEDIAN", p1)
+        p2 = self.turn("reason probe auto zqrd: tell me a funny joke about my job")
+        self.assertIn("SUPER COMEDIAN", p2, "the joke task wears comedy - next request, no steering")
+        self.assertNotIn("PROGRAMMER & UI ARCHITECT", p2, "and the coder block is gone, not stacked")
+        p3 = self.turn("reason zqre: flurb the wibbit qzpzz")   # no "probe": socrates claims it
+        self.assertNotIn("PROGRAMMER & UI ARCHITECT", p3, "no confident pick: the template frames")
+        self.assertNotIn("SUPER COMEDIAN", p3)
+        st, body = self.http("POST", "/reason", {"mode": "off"})
+        self.assertEqual(st, 200, body)
+
+    def test_sticky_auto_falls_to_the_session_default_not_the_bottom(self):
+        # the audit finding's law, applied to autonomous mode: a pick-less sticky auto drops to
+        # the NEXT rung (the session default), not to plain - on a box defaulting to ultra.
+        st, body = self.http("POST", "/reason", {"mode": "ultra"})
+        self.assertEqual(st, 200, body)
+        msgs = [{"role": "user", "content": "reason probe auto2 zqrf: hello there"}]
+        self.turn_msgs(msgs)                                            # creates the conversation
+        st, body = self.http("POST", "/reason", {"mode": "auto", "conversation": "last"})
+        self.assertEqual(st, 200, body)
+        conv = msgs + [{"role": "assistant", "content": "the mock answer"},
+                       {"role": "user", "content": "flurb the wibbit qzpzz"}]
+        prompt = self.turn_msgs(conv)
+        self.assertIn("flawless perfection", prompt,
+                      "pick-less sticky auto lands on the ultra default, not on plain")
+        conv = conv + [{"role": "assistant", "content": "the mock answer"},
+                       {"role": "user", "content": "and now fix the python bug and refactor it"}]
+        prompt = self.turn_msgs(conv)
+        self.assertIn("PROGRAMMER & UI ARCHITECT", prompt, "and the same sticky auto picks coder "
+                                                           "the moment a task word lands")
 
     def test_last_before_any_render_is_a_clean_409(self):
         with self.svc._reason_lock:
