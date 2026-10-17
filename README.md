@@ -140,11 +140,23 @@ Everything below is what shipped the day the pause began:
   (technical disclosures: [10.5281/zenodo.23127434](https://doi.org/10.5281/zenodo.23127434),
   [10.5281/zenodo.23143605](https://doi.org/10.5281/zenodo.23143605),
   [10.5281/zenodo.23146475](https://doi.org/10.5281/zenodo.23146475),
-  [10.5281/zenodo.23311350](https://doi.org/10.5281/zenodo.23311350)).
+  [10.5281/zenodo.23311350](https://doi.org/10.5281/zenodo.23311350)), and since 2026-10-17 two new
+  records: **Record II** — the procedure ported to Mistral-7B (CUT6, per-model adaptation, honest
+  strict-match scoring kept, parity-with-sealed-record 198/198 claimed as *outputs identical*, not
+  *answers correct*: [10.5281/zenodo.23381336](https://doi.org/10.5281/zenodo.23381336),
+  [titan-cognitive-core-v3](https://github.com/ceceli33/titan-cognitive-core-v3)) — and **Record
+  III**, first scale beyond 7B: Qwen2.5-72B on one A100-80GB (NF4), three 10k-token cartridges
+  assembled append-only to 30,031 positions, K/V bitwise-identical across all 80 layers under
+  appends, reconstruction 17.6 s / 46 s / 74 s for 1/2/3 cartridges (~9.16 GiB state):
+  [10.5281/zenodo.23434686](https://doi.org/10.5281/zenodo.23434686). The authors' own stated
+  boundary governs how we read all of it: semantic transfer is **not** claimed — the demo books
+  are pretraining data — and the open question they raise, extension "to architectures with
+  substantially different attention mechanisms," is precisely this fork's blocker. A DeepSeek
+  port is announced, unclaimed.
 
 On this fork's target model (Qwen3.8-Flash-Next, the 120B MoE: 36 Gated DeltaNet layers + 12 Qwen Sparse Attention layers,
 quantized KV) the state-without-text port is **open research, not an established result**: MAM's published
-evidence covers dense full-attention BF16 models and seals a scaling ceiling (22/80 at 80 cartridges). This
+evidence covers dense full-attention models - now up to 72B (NF4 weights, BF16 compute), still never a hybrid-attention or quantized-KV engine - and seals a scaling ceiling (22/80 at 80 cartridges). This
 fork documents positive *and* negative results as they land, in `docs/MEMORY_CORE.md`.
 
 Engine and server changes live on the `memory-core` branch; `main` stays a near-mirror of
