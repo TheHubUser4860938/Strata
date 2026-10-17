@@ -1921,6 +1921,69 @@ conversation turn), not an algorithm. All three knobs ship in the tree, each mea
 default off; if the block should shrink, the honest lever is the budget the owner sets, with
 the venue replay as the standing coverage guard.
 
+**Server-native reason modes - the {REASON:} system made harness-independent (2026-10-17, measured
+first, then built: `serve/server.py` REASON MODES block, `GET|POST /reason`, `serve/test_reason.py`
+10 tests).** Two questions opened this: whether DavidAU's mode system is real (it is - the live A/B
+above, and the model swap to his weights the same night means the box now runs the intended pairing,
+template AND tuned weights; the replaced SC117 file is kept as `.SC1171` and the pre-swap template
+as `.bak`), and whether the harness could switch it as he does by hand. The spike that decided the
+design: his template resolves its system-block text from the RENDER CONTEXT's `reasoning_effort`
+- passing `reasoning_effort="vader"` injects the Vader block with **no tag anywhere in the
+conversation** (measured, three modes plus the instruct variant, plus a byte-identical control);
+his `{REASON:}` tag is the chat UI for that same value, and his `l_car` branch keeps a client's tag
+outranking the context value, so the precedence order is his template's design, not a fork choice:
+**client tag > conversation sticky > config default > template default** (which, note, is `xhigh`
+framing injected whenever no effort is passed - measured, pre-existing, now visible).
+
+What ships (off unless used - every render with no mode passes the SAME kwargs dict, byte-identical
+by construction):
+
+- **`GET /reason`** - what THIS template answers to (it reports `"plain"` if a stock template is
+  loaded, so an inert feature is stated, not assumed), the session default, and the sticky table.
+- **`POST /reason {"mode": ..., "conversation": "last" | "all" | <first-message text> | omitted}`** -
+  the steering door. `conversation:"last"` is what makes SELF-steering practical: an agent steering
+  its own live session is, by construction, the last conversation rendered, so it can switch without
+  knowing its first-message hash. Unknown mode = 400 - the fail-closed answer to the leak-as-text
+  quirk measured above.
+- **The sticky map keys on the first user message** - the same anchor the block pin uses, with the
+  same consequence: DavidAU's "use a new chat when switching" advice became geometry. A turn that
+  doesn't carry the conversation IS a new conversation and inherits nothing (a mid-session test of
+  mine tripped exactly this law and passed it into the suite as a named assertion).
+- **The mode lands at the next RENDER - and a tool loop re-renders every round**, so an agent that
+  steers mid-turn gets its mode in the NEXT TOOL ROUND of the same turn. That is the difference
+  between a chat feature and an agent capability, and it is the half DavidAU's design (human picks
+  a mode per chat) does not have.
+- **The engine never sees a mode name.** `reasoning_effort` in the API request stays the server's
+  own vocabulary (none/low/medium/high - the ValueError at the request gate is untouched); the mode
+  is a template-context substitution at the two render chokepoints only. Thinking on/off, sampling
+  and #458's effort_end tail keep the request's effort; `head_ids` (the prefix-reuse judge) injects
+  identically or it would misjudge at token 0 - the mode text lives at the head, which is also why
+  a switch mid-conversation costs one full prefix re-read, the honest price of the feature, and the
+  reason the recommended moment to switch is a thread's first turn.
+- **`REASON_MODES` is a drift-locked mirror** of the template's own `reason_mods` set -
+  `test_reason.py` parses the list out of the template file and asserts set-equality, the same
+  law-moves-into-code trick as `shelf_vote`: a DavidAU V2 that renames a mode trips a test, not a
+  silent literal leak.
+- **Config `"reason_mode": "<name>"`** sets the session default at boot (a profile-level pin - the
+  "coding box, always coder" case); a name outside the list is refused loudly at boot and left off.
+
+**Still owed, stated before it is claimed:** (1) **the performance gate** - "does it make the
+work better" is measured, not assumed: `tools/m4_reason.py`, stock vs candidate modes on real task
+shapes (debug-the-excerpt, write-the-function, summarize-the-log, explain-the-idea), temp 0, local
+judge, the ±0.05 repeat band as the floor; the modes ship for steering regardless, but any claim
+that mode X beats stock for task class Y waits for that record. (2) **the baseline clock reset**:
+every accuracy number on the books (0.761 arm C, the 0.739 Postgres re-record, the grounding
++0.207) was measured on the PRE-swap weights, so any future arm either re-baselines on the same
+model or says so in the line. The modes were measurably active on the stock model too (the persona
+answers, the menu printed), so "his tuned weights make the difference" is a comparison the
+measurement will settle, not this paragraph. (3) **the MTP/PLE
+pairing**: shard 00002 and the `--mtp` path predate his pack; if his repo ships its own drafter and
+n-gram table, running his weights against the old ones costs spec acceptance and PLE quality - one
+inspection away, unjudged until asked. (4) The in-turn **tool form** (`reason_mode(name)` served by
+the same loop as `memory_search`, all three dialects) is the small next increment behind it - the
+API door already gives autonomy to any client that can make a request; the tool gives it to models
+that can only make tool calls.
+
 ## Licensing and attribution
 
 - Strata (upstream) is MIT © Niko1221 and contributors; this fork's independent code keeps MIT.

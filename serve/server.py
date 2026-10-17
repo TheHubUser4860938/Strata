@@ -275,6 +275,58 @@ class Engine(Protocol):
     def generate(self, ids: list[int], max_new: int, sampling: dict, cancel: threading.Event) -> Iterator[int]: ...
 
 
+# REASON MODES (the fork's answer to DavidAU's Turbo-Brilliance {REASON:} system, 2026-10-17): the
+# template resolves its system-block text from the reasoning_effort value in the RENDER CONTEXT -
+# measured, not read: passing reasoning_effort="vader" injects his Vader block with no tag anywhere
+# in the conversation, and his own tag path is just the chat UI for the same value (his template's
+# l_car branch prefers a message tag OVER the context value, so the hierarchy is the template's
+# design: client tag > conversation sticky > config default > template default). That makes the mode
+# a SERVER-side, harness-independent thing - the memory-system pattern (item C) applied to the
+# template: one small store the server consults on every render, steerable over an API by an agent
+# or by the operator, across all three dialects at once. The ENGINE never sees a mode name:
+# reasoning_effort here is a template-context value only - thinking on/off, sampling and the #458
+# effort_end tail keep the request's own effort. The list mirrors the template's own reason_mods
+# set exactly (serve/test_reason.py asserts set-equality against the template file, the same
+# law-moves-into-code trick as the shelf router's shelf_vote), so a bad name is a 400 here rather
+# than DavidAU's documented-but-unvalidated leak-as-literal-text behaviour. A stock (non-DAU)
+# template ignores the extra context value; GET /reason reports the template as "plain" so the
+# feature being inert here is visible rather than assumed.
+REASON_MODES = ("xomni", "xdeeptree", "xhyper", "xsocrates", "xlogic", "xhelp", "xeinstein",
+                "xspoon", "omni", "deeptree", "hyper", "socrates", "logic", "off", "help",
+                "einstein", "spoon", "ultra", "xhigh", "medium", "low", "holodeck", "prompt",
+                "pkd", "musk", "joker", "vader", "quinn", "joe", "neo", "curie", "brainstorm",
+                "comedy", "business", "story", "teacher", "007", "coder", "stark", "matlock",
+                "house")
+REASON_MODE_SET = frozenset(REASON_MODES)
+REASON_CLEAR = ("", "off", "reset", "clear", "default", "none")   # API words that mean "no override"
+
+
+def reason_conv_key(messages) -> str:
+    """Conversation identity for the sticky map: the hash of the FIRST user message - the same anchor
+    the memory block pin uses, with the same consequence: 'use a new chat when switching' (DavidAU's
+    own advice) is not advice here but geometry. A harness that compresses or rewrites history moves
+    the key, and a stale mode never haunts a fresh conversation; a mode a conversation set, it keeps."""
+    for m in messages or []:
+        if isinstance(m, dict) and m.get("role") == "user":
+            c = m.get("content")
+            if isinstance(c, list):        # dialect parts: concatenate the text items only
+                c = "".join(str(p.get("text", "")) for p in c if isinstance(p, dict))
+            return hashlib.sha1(str(c or "").encode("utf-8", "replace")).hexdigest()[:16]
+    return hashlib.sha1(b"").hexdigest()[:16]
+
+
+def apply_reason_mode(kwargs: dict, mode: str | None) -> dict:
+    """The template-context copy of a request's render kwargs with reasoning_effort replaced by the
+    mode. Returns THE SAME DICT when there is no mode: the default path stays byte-identical by
+    construction, not by a copy that happens to look alike. Only reasoning_effort moves -
+    enable_thinking and every other key belong to the engine and the request."""
+    if not mode:
+        return kwargs
+    kw = dict(kwargs)
+    kw["reasoning_effort"] = mode
+    return kw
+
+
 class MockEngine:
     """Replays a scripted completion (text) as token ids, one per step, then the end-of-turn token.  Given a list of
     scripts, each request gets the next one and the last one repeats (a tool call, then the answer after it)."""
@@ -3061,6 +3113,13 @@ class Service:
         # #458 (opt-in, the config's "effort_position": "end"): a non-default reasoning effort goes in a short system
         # turn before the answer instead of the top of the prompt, so switching it keeps the cached conversation
         self.effort_end = False
+        # REASON MODES (see the module block): sticky per-conversation template modes (LRU like the
+        # memory block pins) and the config default. Nothing set = nothing consulted: every render
+        # takes the untouched kwargs dict, byte-identical to before the feature existed.
+        self.reason_default = None
+        self._reason = collections.OrderedDict()      # conversation key -> mode (64 conversations)
+        self._reason_last = None                      # the key of the most recent render (API's "last")
+        self._reason_lock = threading.Lock()
         self.conv_log = ConvCacheLog()                  # #596: the parked conversations, from the engine's log
         self.config_path = None                         # #564: the run config the web page's Settings view edits
         self.config_lock = threading.Lock()
@@ -3784,19 +3843,39 @@ class Service:
                 "ram": {"used_gib": scaled(hw.get("ram_used"), 2 ** 30, 1),
                         "total_gib": scaled(hw.get("ram_total"), 2 ** 30, 1)} if hw.get("ram_total") else None}}
 
+    def _reason_for(self, messages) -> str | None:
+        """The sticky REASON mode for this conversation (see the module block): the per-conversation
+        entry if one is set, else the config default, else None - and None means render_prompt and
+        head_ids pass the kwargs dict through untouched. Records the conversation key as the
+        store's "last" so an agent steering its OWN session can post to /reason with
+        {"conversation": "last"} without knowing its first-message hash."""
+        key = reason_conv_key(messages)
+        with self._reason_lock:
+            self._reason_last = key
+            mode = self._reason.get(key)
+            if mode is not None:
+                self._reason.move_to_end(key)
+                return mode
+        return self.reason_default
+
     def render_prompt(self, messages, tools, kwargs) -> str:
         """The template rendered.  #458: with `effort_end`, a request with a non-default effort (low, medium or no
         thinking) is rendered as a default one up to the answer - the same prompt start, so the conversation cache
         keeps it - and its effort follows in a short system turn right before the answer (thinking off: the template's
         empty thinking block).  The engine (--tail-role-token) checkpoints in front of that turn."""
+        mode = self._reason_for(messages)       # REASON MODES: the mode names the template's system block
         effort = kwargs.get("reasoning_effort")
         off = kwargs.get("enable_thinking") is False
         if not self.effort_end or (not off and effort in (None, "", "xhigh", "high")):
-            return self.template.render(messages, tools=tools, **kwargs)
+            return self.template.render(messages, tools=tools, **apply_reason_mode(kwargs, mode))
         base = {k: v for k, v in kwargs.items() if k not in ("reasoning_effort", "enable_thinking")}
+        if mode:                                # the cached head renders with the mode text too - the mode
+            base["reasoning_effort"] = mode     # replaces the effort text at the top, the tail keeps the level
         history = self.template.render(messages, tools=tools, add_generation_prompt=False, **base)
-        full = self.template.render(messages, tools=tools, add_generation_prompt=True, **kwargs)
-        mine = self.template.render(messages, tools=tools, add_generation_prompt=False, **kwargs)
+        full = self.template.render(messages, tools=tools, add_generation_prompt=True,
+                                    **apply_reason_mode(kwargs, mode))
+        mine = self.template.render(messages, tools=tools, add_generation_prompt=False,
+                                    **apply_reason_mode(kwargs, mode))
         if not full.startswith(mine):                  # a template this cannot take apart: rendered as asked
             return full
         tail = "" if off else EFFORT_TURN.format(EFFORT_TEXT.get(effort, EFFORT_TEXT["medium"]))
@@ -3991,10 +4070,13 @@ class Service:
         def head_ids(msgs):
             """The ids the rendered `msgs` start with (a message's trailing marker cut at PREFIX_END when it is there)."""
             marked, marked_tools, changed = mark_think_literals(msgs, tools, self.literals)
-            effort = kwargs.get("reasoning_effort")
+            mode = self._reason_for(msgs)       # REASON MODES: the head IS the mode text's home - a prefix
+            effort = kwargs.get("reasoning_effort")   #   reuse that ignores it would misjudge at token 0
             off = kwargs.get("enable_thinking") is False        # render_prompt's rule for #458's effort_end
             kw = ({k: v for k, v in kwargs.items() if k not in ("reasoning_effort", "enable_thinking")}
                   if self.effort_end and (off or effort not in (None, "", "xhigh", "high")) else dict(kwargs))
+            if mode:
+                kw["reasoning_effort"] = mode
             kw["add_generation_prompt"] = False
             text = self.template.render(marked, tools=marked_tools, **kw)
             cut = text.find(self.PREFIX_END)
@@ -5556,6 +5638,9 @@ def make_handler(svc: Service):
             elif path == "/memory":
                 if self._authorized():                # memory-core: stats, the stored facts, or a ?q= recall
                     self._memory_get()
+            elif path == "/reason":
+                if self._authorized():                # the fork's reason modes: what the template supports,
+                    self._reason_get()                #   and what is sticky where
             elif path == "/slots":
                 if self._authorized():
                     loaded = not hasattr(svc.engine, "alive") or svc.engine.alive()
@@ -5632,6 +5717,9 @@ def make_handler(svc: Service):
                     raise ValueError("send a JSON object")
                 if path == "/memory":                     # memory-core: {"op": "remember|forget|search|turn|turns"}
                     self._memory_post(req)
+                    return
+                if path == "/reason":                     # the fork's reason modes: {"mode": ..., "conversation"?}
+                    self._reason_post(req)
                     return
                 if path.startswith("/v1/responses/"):        # retrieve/delete/cancel/compact: nothing is stored
                     self._json(404, responses_error_body("this server keeps no responses (stateless); send the "
@@ -5790,6 +5878,68 @@ def make_handler(svc: Service):
                              "memories": svc.memory.list_memories(scope=memory_api.scope_name(scope, "") or None,
                                                                   limit=limit, include_invalid=inv not in ("", "0"),
                                                                   klass=(prefixes or [None])[0])})
+
+        def _reason_get(self):
+            """The fork's reason modes (server-side steering of the DavidAU template): what THIS
+            template supports, the session default, and the per-conversation stickies. template:
+            "plain" says the mode machinery is inert here - a stock template ignores the context
+            value, and the control page says so instead of assuming his is loaded."""
+            dau = "{REASON:" in (getattr(svc.template, "source", "") or "")
+            with svc._reason_lock:
+                sticky = [[k, m] for k, m in list(svc._reason.items())[-16:]]
+                last = svc._reason_last
+            self._json(200, {"template": "dau" if dau else "plain", "modes": list(REASON_MODES),
+                             "default": svc.reason_default, "sticky": sticky,
+                             "last_conversation": last})
+
+        def _reason_post(self, req):
+            """{"mode": <name>, "conversation"?: <"last" | "all" | the conversation's first user
+            message as the server gets it | omitted for the SESSION DEFAULT>}; off/reset/clear
+            clears at the addressed level. The mode lands at the next RENDER: the next turn - or,
+            because a tool loop re-renders each round, the next tool round of the same turn, which
+            is what makes self-steering useful to an agent mid-task. A client's own {REASON:} tag
+            in a message still wins over all of this: that is the template's own l_car rule."""
+            mode = str(req.get("mode") or "").strip().lower()
+            if not mode:
+                self._json(400, {"error": {"message": 'send {"mode": ...} - GET /reason lists them'}})
+                return
+            where = str(req.get("conversation") or "").strip().lower()
+            m = "" if mode in REASON_CLEAR else mode
+            if m and m not in REASON_MODE_SET:
+                self._json(400, {"error": {"message": f"unknown reason mode {mode!r}; GET /reason "
+                                                      "lists what this template answers to"}})
+                return
+
+            def pin(key: str):
+                with svc._reason_lock:
+                    if m:
+                        svc._reason[key] = m
+                        svc._reason.move_to_end(key)
+                        while len(svc._reason) > 64:
+                            svc._reason.popitem(last=False)      # LRU like the block pins: steering is
+                    else:                                        # conversation-scoped garbage, never
+                        svc._reason.pop(key, None)               # a growing table
+
+            if where in ("", "session", "default"):
+                svc.reason_default = m or None
+                level = "session-default"
+            elif where == "last":
+                key = svc._reason_last
+                if key is None:
+                    self._json(409, {"error": {"message": "no conversation has rendered yet - nothing "
+                                                          "is 'last'; send the conversation text"}})
+                    return
+                pin(key)
+                level = "conversation"
+            elif where == "all":
+                with svc._reason_lock:
+                    svc._reason.clear()
+                level = "stickies"
+            else:
+                pin(hashlib.sha1(str(req["conversation"]).encode("utf-8", "replace")).hexdigest()[:16])
+                level = "conversation"
+            self._json(200, {"ok": True, "mode": m or "off", "level": level,
+                             "applies": "next render: the next turn, or the next tool round of this one"})
 
         def _memory_post(self, req):
             """memory-core: POST /memory - manage the store over HTTP: {"op": "remember", "text": ..., "scope"?,
@@ -7330,6 +7480,18 @@ def main() -> int:
         raise SystemExit(f"[strata] config \"repeat_stop_tokens\" must be a whole number >= 0 (0 = off), not {rs!r}")
     svc.repeat_stop_tokens = rs
     svc.effort_end = bool(effort_end)                   # #458: "effort_position": "end" with an engine that has it
+    # REASON MODES: the config's "reason_mode" = a session default (the profile-level pin DavidAU's
+    # design gives a human; here it is just a default - conversation stickies and client tags still
+    # outrank it). A name the template would not answer to is refused at boot, loudly, and left off:
+    # the fail-closed law, applied before any request can carry the mistake.
+    rm = str(cfg.get("reason_mode") or "").strip().lower()
+    if rm and rm not in REASON_CLEAR:
+        if rm in REASON_MODE_SET:
+            svc.reason_default = rm
+            print(f"[strata] reason mode default: {rm} (per-conversation stickies and a client's own "
+                  f"{{REASON:}} tag outrank it; GET /reason)", flush=True)
+        else:
+            print(f"[strata] reason_mode {rm!r}: not one of the template's modes - left off", flush=True)
     if cfg.get("reasoning_budget_tokens") is not None:  # #123: a default thinking budget for every request
         try:
             svc.reasoning_budget_tokens = cfg["reasoning_budget_tokens"]
