@@ -1935,11 +1935,23 @@ outranking the context value, so the precedence order is his template's design, 
 **client tag > conversation sticky > config default > template default** (which, note, is `xhigh`
 framing injected whenever no effort is passed - measured, pre-existing, now visible).
 
-What ships (off unless used - every render with no mode passes the SAME kwargs dict, byte-identical
+What ships (gated and quiet: the feature **does not exist on a non-DavidAU template at all** - the
+flavor gate below - and with no mode set every render passes the SAME kwargs dict, byte-identical
 by construction):
 
-- **`GET /reason`** - what THIS template answers to (it reports `"plain"` if a stock template is
-  loaded, so an inert feature is stated, not assumed), the session default, and the sticky table.
+- **The flavor gate (measured first, 2026-10-17).** The stock template consumes `reasoning_effort`
+  itself and **raises its own "Unexpected reasoning effort" template error** on a value off its
+  list when thinking is on - a mode name is exactly that - while with thinking off it ignores the
+  value. So "inert on a stock box" was the wrong (too kind) model: a stray `reason_mode` there
+  would kill every thinking render. `reason_flavor(template source)` decides once per boot -
+  "dau" only for a template carrying both the `reason_mods` set and the `{REASON` machinery - and
+  the config default, both routes (POST answers 409 on plain) and the render substitution all
+  defer to it. `serve/test_reason.py`'s plain-template class mimics the measured stock behavior
+  with a synthetic template that raises on purpose, so removing the gate fails a test, not a box.
+  The config default refuses to set, `POST /reason` answers 409, and the render substitution never
+  fires - while `GET /reason` still answers 200 so an operator can read the verdict.
+- **`GET /reason`** - what THIS template answers to (`"dau"` / `"plain"` - the gate's verdict,
+  stated, not assumed), the session default, and the sticky table.
 - **`POST /reason {"mode": ..., "conversation": "last" | "all" | <first-message text> | omitted}`** -
   the steering door. `conversation:"last"` is what makes SELF-steering practical: an agent steering
   its own live session is, by construction, the last conversation rendered, so it can switch without
@@ -1965,7 +1977,22 @@ by construction):
   law-moves-into-code trick as `shelf_vote`: a DavidAU V2 that renames a mode trips a test, not a
   silent literal leak.
 - **Config `"reason_mode": "<name>"`** sets the session default at boot (a profile-level pin - the
-  "coding box, always coder" case); a name outside the list is refused loudly at boot and left off.
+  "coding box, always coder" case); a name outside the list - or any name at all on a plain-
+  flavored template - is refused loudly at boot and left off.
+- **The installer now carries the model (`setup.py` "dau" family, 2026-10-17):** `setup --family
+  dau --model IQ3_S` installs DavidAU's Turbo-Brilliance re-quant - pinned repo commit, both
+  shard SHA-256s from the Hub's LFS pointers, Apache-2.0 stated at install. Two measured facts
+  shape the entry: his GGUF **embeds his chat template** (226,745 bytes, its mode list set-equal
+  to `REASON_MODES`), and setup's tokenizer export writes it to `pack/tokenizer/chat_template.jinja`
+  which the server prefers over its shipped file - so the modes' template rides the download with
+  nothing extra fetched and the shipped default template stays stock; and **his shard 2 is the
+  original IQ3_S's file byte for byte** (SHA-256 `316b46f3...` equal against ISTA's tree), so he
+  joins the shard-2 sharing the qwen and coder sizes already do - an owner of the original IQ3_S
+  switching to this family downloads only his first shard. The family sits after the coder in the
+  menu (same-size variants of the original first): the menu snapshots in
+  `tools/test_setup_menu.py`/`test_setup_unsloth.py` moved with it, and the whole 40-test setup
+  battery passes (engine_hash's 2 failures pre-date this change on a box without the engine
+  installed, verified against the clean tree the same day).
 
 **Still owed, stated before it is claimed:** (1) **the performance gate** - "does it make the
 work better" is measured, not assumed: `tools/m4_reason.py`, stock vs candidate modes on real task

@@ -288,9 +288,12 @@ class Engine(Protocol):
 # effort_end tail keep the request's own effort. The list mirrors the template's own reason_mods
 # set exactly (serve/test_reason.py asserts set-equality against the template file, the same
 # law-moves-into-code trick as the shelf router's shelf_vote), so a bad name is a 400 here rather
-# than DavidAU's documented-but-unvalidated leak-as-literal-text behaviour. A stock (non-DAU)
-# template ignores the extra context value; GET /reason reports the template as "plain" so the
-# feature being inert here is visible rather than assumed.
+# than DavidAU's documented-but-unvalidated leak-as-literal-text behaviour. A stock template must
+# NOT be handed a mode name: measured 2026-10-17, it consumes reasoning_effort itself and RAISES
+# its own "Unexpected reasoning effort" template error when the value is unknown to it (with
+# thinking off it ignores the value entirely) - a mode name is unknown to it. So modes exist only
+# on templates that answer to them, decided once per boot by reason_flavor() below; the /reason
+# routes, the config default and the render substitution all follow that verdict.
 REASON_MODES = ("xomni", "xdeeptree", "xhyper", "xsocrates", "xlogic", "xhelp", "xeinstein",
                 "xspoon", "omni", "deeptree", "hyper", "socrates", "logic", "off", "help",
                 "einstein", "spoon", "ultra", "xhigh", "medium", "low", "holodeck", "prompt",
@@ -325,6 +328,20 @@ def apply_reason_mode(kwargs: dict, mode: str | None) -> dict:
     kw = dict(kwargs)
     kw["reasoning_effort"] = mode
     return kw
+
+
+def reason_flavor(source: str) -> str:
+    """What this chat template answers to: "dau" (the Turbo-Brilliance template - it carries the
+    reason_mods set AND the {REASON:} tag machinery) or "plain" (every other template, the stock
+    one included). A gate, not a label, and measured rather than tasted: the stock template reads
+    reasoning_effort for itself and raises "Unexpected reasoning effort" on a value off its own
+    list (2026-10-17: the render dies when thinking is on; with thinking off it ignores the value
+    entirely), so a mode on a plain-template box is not inert but a per-request template error.
+    The verdict is taken once per boot at Service setup, and every door - the config default, the
+    two routes, the render substitution - defers to it, so the feature simply does not exist for
+    anyone not running DavidAU's model."""
+    src = source or ""
+    return "dau" if "reason_mods" in src and "{REASON" in src else "plain"
 
 
 class MockEngine:
@@ -3120,6 +3137,7 @@ class Service:
         self._reason = collections.OrderedDict()      # conversation key -> mode (64 conversations)
         self._reason_last = None                      # the key of the most recent render (API's "last")
         self._reason_lock = threading.Lock()
+        self.reason_flavor = reason_flavor(getattr(self.template, "source", "") or "")
         self.conv_log = ConvCacheLog()                  # #596: the parked conversations, from the engine's log
         self.config_path = None                         # #564: the run config the web page's Settings view edits
         self.config_lock = threading.Lock()
@@ -3848,15 +3866,17 @@ class Service:
         entry if one is set, else the config default, else None - and None means render_prompt and
         head_ids pass the kwargs dict through untouched. Records the conversation key as the
         store's "last" so an agent steering its OWN session can post to /reason with
-        {"conversation": "last"} without knowing its first-message hash."""
+        {"conversation": "last"} without knowing its first-message hash. The flavor gate sits in
+        front of all of it: on a plain template the answer is always None, so the substitution
+        that would raise there never happens."""
         key = reason_conv_key(messages)
         with self._reason_lock:
             self._reason_last = key
-            mode = self._reason.get(key)
+            mode = self._reason.get(key) if self.reason_flavor == "dau" else None
             if mode is not None:
                 self._reason.move_to_end(key)
                 return mode
-        return self.reason_default
+        return self.reason_default if self.reason_flavor == "dau" else None
 
     def render_prompt(self, messages, tools, kwargs) -> str:
         """The template rendered.  #458: with `effort_end`, a request with a non-default effort (low, medium or no
@@ -5882,13 +5902,13 @@ def make_handler(svc: Service):
         def _reason_get(self):
             """The fork's reason modes (server-side steering of the DavidAU template): what THIS
             template supports, the session default, and the per-conversation stickies. template:
-            "plain" says the mode machinery is inert here - a stock template ignores the context
-            value, and the control page says so instead of assuming his is loaded."""
-            dau = "{REASON:" in (getattr(svc.template, "source", "") or "")
+            "plain" says the feature does not exist on this box at all - the stock template
+            raises on a mode name in its render context (measured 2026-10-17), so the gate keeps
+            it off rather than inert-and-one-misconfiguration away from breaking every render."""
             with svc._reason_lock:
                 sticky = [[k, m] for k, m in list(svc._reason.items())[-16:]]
                 last = svc._reason_last
-            self._json(200, {"template": "dau" if dau else "plain", "modes": list(REASON_MODES),
+            self._json(200, {"template": svc.reason_flavor, "modes": list(REASON_MODES),
                              "default": svc.reason_default, "sticky": sticky,
                              "last_conversation": last})
 
@@ -5899,6 +5919,13 @@ def make_handler(svc: Service):
             because a tool loop re-renders each round, the next tool round of the same turn, which
             is what makes self-steering useful to an agent mid-task. A client's own {REASON:} tag
             in a message still wins over all of this: that is the template's own l_car rule."""
+            if svc.reason_flavor != "dau":
+                self._json(409, {"error": {"message": "this template does not answer to reason modes "
+                                                      f"(GET /reason reports {svc.reason_flavor!r}): a mode "
+                                                      "name in its render context raises when thinking is "
+                                                      "on (measured 2026-10-17); run DavidAU's model to get "
+                                                      "them (setup --family dau)"}})
+                return
             mode = str(req.get("mode") or "").strip().lower()
             if not mode:
                 self._json(400, {"error": {"message": 'send {"mode": ...} - GET /reason lists them'}})
@@ -7486,12 +7513,16 @@ def main() -> int:
     # the fail-closed law, applied before any request can carry the mistake.
     rm = str(cfg.get("reason_mode") or "").strip().lower()
     if rm and rm not in REASON_CLEAR:
-        if rm in REASON_MODE_SET:
+        if rm not in REASON_MODE_SET:
+            print(f"[strata] reason_mode {rm!r}: not one of the template's modes - left off", flush=True)
+        elif svc.reason_flavor != "dau":
+            print(f"[strata] reason_mode {rm!r}: this chat template does not answer to reason modes "
+                  f"(it raises on one, measured) - left off; setup --family dau installs one that does",
+                  flush=True)
+        else:
             svc.reason_default = rm
             print(f"[strata] reason mode default: {rm} (per-conversation stickies and a client's own "
                   f"{{REASON:}} tag outrank it; GET /reason)", flush=True)
-        else:
-            print(f"[strata] reason_mode {rm!r}: not one of the template's modes - left off", flush=True)
     if cfg.get("reasoning_budget_tokens") is not None:  # #123: a default thinking budget for every request
         try:
             svc.reasoning_budget_tokens = cfg["reasoning_budget_tokens"]

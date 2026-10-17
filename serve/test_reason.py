@@ -13,6 +13,7 @@ template's design: client tag > conversation sticky > config default > template 
 """
 import http.client
 import json
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -201,6 +202,74 @@ class ReasonOverHttp(unittest.TestCase):
             self.assertEqual(st, 409, body)
         finally:
             self.svc._reason_last = saved
+
+
+class ReasonPlainTemplate(unittest.TestCase):
+    """The flavor gate: on a template that does not answer to modes the feature must not exist at
+    all. Measured 2026-10-17 against the stock template: a mode name in its render context raises
+    its own "Unexpected reasoning effort" error when thinking is on (with thinking off it ignores
+    the value) - so a stray config there is not "inert", it is every render dying. The synthetic
+    template below mimics exactly that measured behaviour, so this suite catches the gate being
+    removed: it is not a test of a template that could not tell the difference."""
+
+    PLAIN = ('{% if enable_thinking is not defined or enable_thinking %}'
+             '{% if reasoning_effort is defined and reasoning_effort not in '
+             '("none", "low", "medium", "high", "xhigh") %}'
+             '{{ raise_exception("Unexpected reasoning effort: " ~ reasoning_effort) }}'
+             '{% endif %}{% endif %}'
+             '{% for m in messages %}[{{ m.role }}] {{ m.content }}\n'
+             '{% endfor %}{% if add_generation_prompt %}[assistant] {% endif %}')
+
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = tempfile.TemporaryDirectory()
+        tpl = Path(cls.tmp.name) / "chat_template.jinja"
+        tpl.write_text(cls.PLAIN, encoding="utf-8")
+        tok = ByteTokenizer()
+        cls.engine = MockEngine(tok, "the mock answer", max_context=131072)
+        cls.svc = Service(cls.engine, tok, ChatTemplate(tpl))
+        cls.httpd = serve(cls.svc, port=0)
+        cls.port = cls.httpd.server_address[1]
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.httpd.shutdown()
+        cls.httpd.server_close()
+        cls.tmp.cleanup()
+
+    def http(self, verb, path, body=None):
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=30)
+        conn.request(verb, path, json.dumps(body) if body is not None else None,
+                     {"Content-Type": "application/json"})
+        r = conn.getresponse()
+        data = r.read().decode()
+        conn.close()
+        try:
+            return r.status, json.loads(data)
+        except ValueError:
+            return r.status, data
+
+    def test_the_control_page_says_plain_and_steering_is_refused(self):
+        st, body = self.http("GET", "/reason")
+        self.assertEqual(st, 200)
+        self.assertEqual(body["template"], "plain")
+        for mode in ("vader", "off"):              # even clearing is refused: nothing was ever set
+            st, body = self.http("POST", "/reason", {"mode": mode, "conversation": "last"})
+            self.assertEqual(st, 409, body)
+            self.assertIn("does not answer", body["error"]["message"])
+
+    def test_the_gate_holds_even_against_a_template_that_raises(self):
+        # bypass the boot gate (which refuses a config default on plain): this is the defense in
+        # the substitution itself. With the gate removed, "vader" would reach this template's
+        # raise_exception and the request would die - the measured stock failure, on purpose.
+        self.svc.reason_default = "vader"
+        st, body = self.http("POST", "/v1/chat/completions",
+                             {"model": "m", "messages": [{"role": "user", "content": "hi there"}],
+                              "max_tokens": 8, "reasoning_effort": "medium"})
+        self.assertEqual(st, 200, body)            # thinking on, effort validated by the template: only
+        prompt = prompt_text(self.svc.tok, self.engine.last_prompt)   # the gate keeps "vader" out of it
+        self.assertIn("[user] hi there", prompt)
+        self.assertNotIn("vader", prompt.lower())
 
 
 if __name__ == "__main__":
