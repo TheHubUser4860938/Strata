@@ -21,7 +21,7 @@ from pathlib import Path
 
 from serve.frontend import ChatTemplate
 from serve.server import (ByteTokenizer, MockEngine, REASON_MODES, Service, serve,
-                          apply_reason_mode, reason_conv_key)
+                          apply_reason_mode, reason_conv_key, reason_tool_result)
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -370,6 +370,100 @@ class ReasonToolLoop(unittest.TestCase):
         self.assertEqual(st, 200, body)              # the scripted call round never runs: with the tool
         prompt = prompt_text(self.svc.tok, self.engine.last_prompt)   # not offered, round 1 IS the only round
         self.assertNotIn("reason_mode", prompt, "switch off: no tool joins the list, the prompt is clean")
+
+
+class ReasonClearAndPrecedence(unittest.TestCase):
+    """The audit suite (2026-10-17, fresh eyes on the merged feature): the ladder is
+    sticky > session default > the template's own framing, and 'off' hands the choice back to the
+    NEXT level - not to plain. On a DavidAU install that defaults to ultra, a conversation-level
+    clear means ULTRA next render, and the tool's message now says exactly that (the message and
+    the description said 'plain' before the audit; the behavior was always right). Pinned beside
+    it: a client's own {REASON:} tag outranks every server level (the template's l_car rule), a
+    request's own reason_mode tool shadows the server's (one name, one owner), and #458's split
+    render carries the mode at the head while the tail keeps the request's own effort."""
+
+    def _boot(self, default=None):
+        self.engine = MockEngine(ByteTokenizer(), ["ok"], max_context=131072)
+        self.svc = Service(self.engine, self.engine.tok,
+                           ChatTemplate(ROOT / "serve/chat_template.dau.jinja"))
+        self.svc.reason_enabled = True
+        self.svc.reason_default = default
+        self.httpd = serve(self.svc, port=0)
+        self.port = self.httpd.server_address[1]
+
+    def tearDown(self):
+        self.httpd.shutdown()
+        self.httpd.server_close()
+
+    def http(self, verb, path, body=None):
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=30)
+        conn.request(verb, path, json.dumps(body) if body is not None else None,
+                     {"Content-Type": "application/json"})
+        r = conn.getresponse()
+        data = r.read().decode()
+        conn.close()
+        try:
+            return r.status, json.loads(data)
+        except ValueError:
+            return r.status, data
+
+    def render(self, text="a question about the zibble tariff"):
+        return self.svc.render_prompt([{"role": "user", "content": text}], [], {})
+
+    def test_off_at_conversation_level_falls_to_the_session_default(self):
+        self._boot(default="house")
+        text = "which widget factory beats the zibble tariff"
+        st, r = self.http("POST", "/reason", {"mode": "vader", "conversation": text})
+        self.assertEqual(st, 200, r)
+        out = self.render(text).upper()
+        self.assertIn("DARK LORD", out)
+        self.assertNotIn("CYNICAL DIAGNOSTICIAN", out)
+        st, r = self.http("POST", "/reason", {"mode": "off", "conversation": text})
+        self.assertEqual(st, 200, r)
+        out = self.render(text).upper()
+        self.assertIn("CYNICAL DIAGNOSTICIAN", out,
+                      "clearing the sticky hands the choice to the session default - not to plain")
+        self.assertNotIn("DARK LORD", out)
+        st, r = self.http("POST", "/reason", {"mode": "off"})      # session level: the default goes too
+        self.assertEqual(st, 200, r)
+        out = self.render(text)
+        self.assertNotIn("CYNICAL DIAGNOSTICIAN", out.upper())
+        self.assertNotIn("DARK LORD", out.upper())
+        self.assertIn("Reasoning effort is set to xhigh", out,
+                      "both levels cleared is the ONLY way to the template's own framing (measured: xhigh)")
+
+    def test_the_tool_clear_message_names_what_will_actually_render(self):
+        self._boot(default="house")
+        msgs = [{"role": "user", "content": "steer me then let me go back"}]
+        r = reason_tool_result(self.svc, msgs, {"mode": "vader"})
+        self.assertTrue(r["ok"])
+        r = reason_tool_result(self.svc, msgs, {"mode": "off"})
+        self.assertIn("house", r["text"], "the message names the default that now frames the render")
+        self.assertNotIn("plain", r["text"], "no false promise of plain on a box that defaults to a mode")
+        self.svc.reason_default = None                              # only a bare box really returns to plain
+        reason_tool_result(self.svc, msgs, {"mode": "vader"})
+        r = reason_tool_result(self.svc, msgs, {"mode": "off"})
+        self.assertIn("plain", r["text"])
+
+    def test_the_client_tag_beats_the_sticky(self):
+        self._boot()                                                # no default: sticky vs tag, clean fight
+        text = "answer with the house method {REASON:house}"
+        st, r = self.http("POST", "/reason", {"mode": "vader", "conversation": text})
+        self.assertEqual(st, 200, r)
+        out = self.render(text).upper()
+        self.assertIn("CYNICAL DIAGNOSTICIAN", out)
+        self.assertNotIn("DARK LORD", out,
+                         "the tag is the template's own mechanism and outranks the context value "
+                         "(the l_car rule): client tag > server stickies, always")
+
+    def test_the_split_render_carries_mode_at_head_and_effort_at_tail(self):
+        self._boot(default="vader")
+        self.svc.effort_end = True
+        out = self.svc.render_prompt([{"role": "user", "content": "solve the platt transform"}], [],
+                                     {"reasoning_effort": "low", "enable_thinking": True})
+        self.assertIn("DARK LORD", out.upper(), "the checkpoint head renders with the mode text")
+        self.assertIn("Reasoning effort is set to low", out,
+                      "#458 keeps the request's own level in the tail - a mode never steals the effort")
 
 
 if __name__ == "__main__":

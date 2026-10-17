@@ -370,8 +370,9 @@ REASON_TOOL = {
     "description": ("Set your own reasoning mode - a persona and thinking framework built into this "
                     "model - for the REST of this conversation, to adapt to what the task needs: 'coder' "
                     "for code work, 'house' for diagnosis, 'socrates' or 'xlogic' for first-principles "
-                    "probing, 'deeptree' for branching plans, 'teacher' for explanations, 'off' to return "
-                    "to plain. It takes effect from the next render - the next tool round of THIS turn - "
+                    "probing, 'deeptree' for branching plans, 'teacher' for explanations, 'off' to hand "
+                    "the choice back (the session default frames the next render - plain if none is "
+                    "set). It takes effect from the next render - the next tool round of THIS turn - "
                     "so call it at the START of a hard task and 'off' when done. Switching re-reads the "
                     "conversation prefix once (seconds), so do not thrash it every round. Call with no "
                     "arguments to get the menu back. A name off the menu is refused with the list."),
@@ -411,8 +412,16 @@ def reason_tool_result(svc: "Service", messages, arguments) -> dict:
                 svc._reason.popitem(last=False)          # conversation-scoped state, never a growing table
         else:
             svc._reason.pop(key, None)
-    return done(True, f"reason mode set to {m}; it rides this conversation's next render (the next tool "
-                      f"round of this turn)" if m else "reason mode cleared: plain from the next render")
+    if not m:
+        # the audit finding (2026-10-17, fresh eyes): "cleared: plain" was only true on a box with no
+        # session default. The ladder is sticky > default > template framing, and a conversation-level
+        # clear drops to the NEXT level, not to the bottom of it - on a DavidAU install that defaults
+        # to ultra, handing the choice back means ULTRA, and the message must say what will render.
+        back = (f"the session default {svc.reason_default!r} frames the next render"
+                if svc.reason_default else "plain from the next render")
+        return done(True, "reason mode cleared for this conversation: " + back)
+    return done(True, f"reason mode set to {m}; it rides this conversation's next render (the next "
+                      f"tool round of this turn)")
 
 
 class MockEngine:
