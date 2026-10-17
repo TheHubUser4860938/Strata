@@ -1,6 +1,7 @@
-"""Server-side REASON modes (the fork's DavidAU-template steering, 2026-10-17): the mode list is
-the template's law, the sticky map is per-conversation, /reason steers it, and off is silent and
-byte-identical.  No GPU, mock engine.
+"""Server-side REASON modes (the fork's DavidAU-template steering, 2026-10-17): one config switch
+("reason_modes") turns the feature on, a template gate keeps it off where the template would raise,
+the sticky map is per-conversation, /reason steers it over HTTP and reason_mode steers it from
+inside the model's own tool loop, and off is silent and byte-identical.  No GPU, mock engine.
 
     python -m unittest serve.test_reason -v
 
@@ -9,7 +10,8 @@ text from the RENDER CONTEXT's reasoning_effort (passing reasoning_effort="vader
 Vader block with no tag in the conversation), which is what makes server-side, harness-independent
 modes possible at all - the {REASON:} tag is his chat UI for the same value, and the template's
 own l_car branch keeps the tag outranking the context value. The hierarchy, all of it the
-template's design: client tag > conversation sticky > config default > template default.
+template's design: client tag > conversation sticky > config default > template default - with
+"off unless the switch AND the template say yes" in front of the whole ladder.
 """
 import http.client
 import json
@@ -83,7 +85,7 @@ class RenderInjection(unittest.TestCase):
     def test_context_mode_injects_the_block_with_no_tag_anywhere(self):
         out = self.tpl.render([{"role": "user", "content": "what is a git rebase?"}],
                               reasoning_effort="vader")
-        self.assertIn("VADER", out.upper())
+        self.assertIn("DARK LORD", out.upper())
         self.assertNotIn("Reasoning effort is set to xhigh", out,
                          "the mode REPLACES the effort text at the head - it does not stack beside it")
 
@@ -98,13 +100,18 @@ class RenderInjection(unittest.TestCase):
 
 
 class ReasonOverHttp(unittest.TestCase):
-    """The whole path: HTTP control surface, mock engine, the prompt the engine actually saw."""
+    """The whole path: HTTP control surface, mock engine, the prompt the engine actually saw.
+    Persona checks test for the mode block's TITLE ("DARK LORD...", "CYNICAL DIAGNOSTICIAN"), never
+    the bare mode name: since v1.5 the offered reason_mode tool lists every mode name in its
+    description, so a plain "VADER" in a prompt proves only that the tool menu exists - a lesson
+    this suite learned from its own red run."""
 
     @classmethod
     def setUpClass(cls):
         tok = ByteTokenizer()
         cls.engine = MockEngine(tok, "the mock answer", max_context=131072)
         cls.svc = Service(cls.engine, tok, ChatTemplate(ROOT / "serve/chat_template.jinja"))
+        cls.svc.reason_enabled = True          # the config's "reason_modes": true, as boot would set it
         cls.httpd = serve(cls.svc, port=0)
         cls.port = cls.httpd.server_address[1]
 
@@ -144,11 +151,34 @@ class ReasonOverHttp(unittest.TestCase):
         st, body = self.http("GET", "/reason")
         self.assertEqual(st, 200)
         self.assertEqual(body["template"], "dau")
+        self.assertTrue(body["on"])
         self.assertIsNone(body["default"])
         self.assertEqual(set(body["modes"]), set(REASON_MODES))
         prompt = self.turn("reason probe plain zqinx: one line about rebases")
-        self.assertNotIn("VADER", prompt.upper())
+        self.assertNotIn("DARK LORD", prompt.upper())
         self.assertNotIn("CYNICAL DIAGNOSTICIAN", prompt)
+
+    def test_the_master_switch_outranks_everything_and_stickies_survive_it(self):
+        # "reason_modes": false (the default) outranks even a set sticky: the feature does not run.
+        self.turn("reason probe switch zqon0: plan the refactor")
+        st, body = self.http("POST", "/reason", {"mode": "vader", "conversation": "last"})
+        self.assertEqual(st, 200, body)
+        conv = [{"role": "user", "content": "reason probe switch zqon0: plan the refactor"},
+                {"role": "assistant", "content": "the mock answer"},
+                {"role": "user", "content": "and now?"}]
+        self.assertIn("DARK LORD", self.turn_msgs(conv).upper())
+        self.svc.reason_enabled = False                  # the toggle, mid-session, as a config edit + restart would
+        try:
+            st, body = self.http("GET", "/reason")
+            self.assertFalse(body["on"])
+            st, body = self.http("POST", "/reason", {"mode": "house"})
+            self.assertEqual(st, 409, body)
+            self.assertIn("off", body["error"]["message"])
+            prompt = self.turn_msgs(conv)
+            self.assertNotIn("DARK LORD", prompt.upper(), "switch off = sticky ignored, render untouched")
+        finally:
+            self.svc.reason_enabled = True
+        self.assertIn("DARK LORD", self.turn_msgs(conv).upper(), "and switch on again: the sticky was never lost")
 
     def test_sticky_last_conversation_sets_clears_and_persists_one_turn_later(self):
         conv = [{"role": "user", "content": "reason probe sticky zqiny: what is a rebase?"}]
@@ -159,20 +189,20 @@ class ReasonOverHttp(unittest.TestCase):
         conv = conv + [{"role": "assistant", "content": "the mock answer"},
                        {"role": "user", "content": "and does it rewrite history?"}]
         prompt = self.turn_msgs(conv)
-        self.assertIn("VADER", prompt.upper(), "the sticky lands on the conversation's next render")
+        self.assertIn("DARK LORD", prompt.upper(), "the sticky lands on the conversation's next render")
         st, body = self.http("POST", "/reason", {"mode": "off", "conversation": "last"})
         self.assertEqual(st, 200)
         conv = conv + [{"role": "assistant", "content": "the mock answer"},
                        {"role": "user", "content": "and after clearing?"}]
         prompt = self.turn_msgs(conv)
-        self.assertNotIn("VADER", prompt.upper(), "off clears at the conversation level")
+        self.assertNotIn("DARK LORD", prompt.upper(), "off clears at the conversation level")
         # and the law the first version of this test tripped itself: a turn WITHOUT the first
         # message is a NEW conversation and inherits nothing - DavidAU's "switch means new chat"
         # became geometry here, not advice. Steered "last" then, fresh first message: no carryover.
         self.http("POST", "/reason", {"mode": "vader", "conversation": "last"})
         no_conv = [{"role": "user", "content": "reason probe sticky zqiny2: fresh first message"}]
         prompt = self.turn_msgs(no_conv)
-        self.assertNotIn("VADER", prompt.upper(), "steering is per-conversation, never ambient")
+        self.assertNotIn("DARK LORD", prompt.upper(), "steering is per-conversation, never ambient")
 
     def test_unknown_mode_is_a_400_not_a_text_leak(self):
         # DavidAU's own docs advertise xultra, which his template does NOT answer to (measured: an
@@ -228,7 +258,8 @@ class ReasonPlainTemplate(unittest.TestCase):
         tok = ByteTokenizer()
         cls.engine = MockEngine(tok, "the mock answer", max_context=131072)
         cls.svc = Service(cls.engine, tok, ChatTemplate(tpl))
-        cls.httpd = serve(cls.svc, port=0)
+        cls.svc.reason_enabled = True          # enabled on purpose: these tests police the FLAVOR gate,
+        cls.httpd = serve(cls.svc, port=0)     #   which is the second gate and only reachable past the first
         cls.port = cls.httpd.server_address[1]
 
     @classmethod
@@ -253,10 +284,16 @@ class ReasonPlainTemplate(unittest.TestCase):
         st, body = self.http("GET", "/reason")
         self.assertEqual(st, 200)
         self.assertEqual(body["template"], "plain")
+        self.assertFalse(body["on"], "a true switch on a plain template: the flavor gate still says off")
         for mode in ("vader", "off"):              # even clearing is refused: nothing was ever set
             st, body = self.http("POST", "/reason", {"mode": mode, "conversation": "last"})
             self.assertEqual(st, 409, body)
             self.assertIn("does not answer", body["error"]["message"])
+        self.svc.reason_enabled = False            # and the switch-off message outranks the flavor one
+        st, body = self.http("POST", "/reason", {"mode": "vader"})
+        self.assertEqual(st, 409, body)
+        self.assertIn("reason modes are off", body["error"]["message"])
+        self.svc.reason_enabled = True
 
     def test_the_gate_holds_even_against_a_template_that_raises(self):
         # bypass the boot gate (which refuses a config default on plain): this is the defense in
@@ -270,6 +307,69 @@ class ReasonPlainTemplate(unittest.TestCase):
         prompt = prompt_text(self.svc.tok, self.engine.last_prompt)   # the gate keeps "vader" out of it
         self.assertIn("[user] hi there", prompt)
         self.assertNotIn("vader", prompt.lower())
+
+
+class ReasonToolLoop(unittest.TestCase):
+    """v1.5 (2026-10-17), the user's ask made real: the model calls reason_mode and the SERVER runs
+    it - the memory_search pattern - so a mode change lands in the NEXT TOOL ROUND of the same
+    turn, with no HTTP call and no client wiring, on any harness whose tools the server executes.
+    Mock engine scripts the two rounds: a tool call, then the answer after it."""
+
+    def setUp(self):
+        tok = ByteTokenizer()
+        call = ("<tool_call>\n<function=reason_mode>\n<parameter=mode>\nvader\n</parameter>\n"
+                "</function>\n</tool_call>")
+        self.engine = MockEngine(tok, [call, "the mock answer after steering"], max_context=131072)
+        self.svc = Service(self.engine, tok, ChatTemplate(ROOT / "serve/chat_template.jinja"))
+        self.svc.reason_enabled = True
+        self.httpd = serve(self.svc, port=0)
+        self.port = self.httpd.server_address[1]
+
+    def tearDown(self):
+        self.httpd.shutdown()
+        self.httpd.server_close()
+
+    def http(self, verb, path, body=None):
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=30)
+        conn.request(verb, path, json.dumps(body) if body is not None else None,
+                     {"Content-Type": "application/json"})
+        r = conn.getresponse()
+        data = r.read().decode()
+        conn.close()
+        try:
+            return r.status, json.loads(data)
+        except ValueError:
+            return r.status, data
+
+    def test_the_model_steers_itself_and_the_next_round_lands_in_the_same_turn(self):
+        st, body = self.http("POST", "/v1/chat/completions",
+                             {"model": "m", "max_tokens": 256, "reasoning_effort": "off",
+                              "messages": [{"role": "user",
+                                            "content": "reason probe loop zqoa: plan this refactor"}]})
+        self.assertEqual(st, 200, body)
+        ch = body["choices"][0]
+        self.assertEqual(ch["message"]["content"], "the mock answer after steering",
+                         "the round-2 answer is the reply; the steering round stays internal")
+        self.assertEqual(ch["finish_reason"], "stop")
+        trace = ch["message"].get("strata_mcp") or []
+        ran = [e for e in trace if e.get("event") == "call" and e.get("name") == "reason_mode"]
+        res = [e for e in trace if e.get("event") == "result" and e.get("ok")]
+        self.assertTrue(ran and res, "the server ran the mode change itself (the trace carries the round)")
+        st, body = self.http("GET", "/reason")      # pinned to THIS conversation, no "last" race: the
+        self.assertTrue(any(m == "vader" for _, m in body["sticky"]),   # loop held the messages
+                        "the self-steered mode is the same sticky the HTTP door would have set")
+        prompt = prompt_text(self.svc.tok, self.engine.last_prompt)     # round 2's actual prompt
+        self.assertIn("DARK LORD", prompt.upper(), "the mode rode the very next render: same turn")
+        self.assertIn("reason_mode", prompt, "and the tool was offered to the model in the first place")
+
+    def test_the_tool_is_never_offered_with_the_switch_off(self):
+        self.svc.reason_enabled = False
+        st, body = self.http("POST", "/v1/chat/completions",
+                             {"model": "m", "max_tokens": 64, "reasoning_effort": "off",
+                              "messages": [{"role": "user", "content": "reason probe no-tool zqob: hi"}]})
+        self.assertEqual(st, 200, body)              # the scripted call round never runs: with the tool
+        prompt = prompt_text(self.svc.tok, self.engine.last_prompt)   # not offered, round 1 IS the only round
+        self.assertNotIn("reason_mode", prompt, "switch off: no tool joins the list, the prompt is clean")
 
 
 if __name__ == "__main__":

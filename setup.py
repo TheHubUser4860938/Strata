@@ -246,12 +246,14 @@ NVFP4_REPOS = {
 NVFP4_ENGINE = (0, 1, 44)
 
 # DavidAU's Turbo-Brilliance IQ3_S (the {REASON:} reason-mode build; the "dau" family): sizes and SHA-256 are the
-# Hub's LFS pointers, checked 2026-10-17.  Measured against ISTA's own tree the same day: his shard 2 is the
-# ORIGINAL's file, byte for byte (28,800,138,432 bytes, 316b46f3... equal) - the abliteration, his naming and his
-# chat template all live in shard 1 - so his files join the shard-2 sharing the qwen and coder families do (at
-# its site below), and an owner of the original IQ3_S who switches to this family downloads only his first shard.
-# The file embeds his chat template (tokenizer.chat_template, 226,745 bytes, carrying all 41 reason modes:
-# checked set-equal against this checkout's REASON_MODES 2026-10-17), and setup's tokenizer export
+# Hub's LFS pointers, checked 2026-10-17.  Measured against ISTA's own tree the same day, his shard 2 is the
+# ORIGINAL's file byte for byte (28,800,138,432 bytes, 316b46f3... equal) - shard 2 is the family's shared Q8_0
+# PLE n-gram table (the file sleepyeldrazi/Qwen3.8-Flash-Next-GSQ-RCO-Q8_0-PLE-GGUF exists to publish; the coder
+# note below has always said shard 2 is that table, not weights), so it is the same in every GSQ-RCO family and
+# his files join the shard-2 sharing the qwen and coder families do (at its site below) - an owner of the
+# original IQ3_S who switches to this family downloads only his first shard, which carries all his weights, his
+# naming and his chat template: the file embeds it (tokenizer.chat_template, 226,745 bytes, carrying all 41
+# reason modes: checked set-equal against this checkout's REASON_MODES 2026-10-17), and setup's tokenizer export
 # (tools/strata_tokenizer.py) writes it out to <pack>/tokenizer/chat_template.jinja, which the server prefers
 # over its shipped one - so the modes' template rides the download; nothing extra is fetched for it.
 DAU_IQ3_S_SHARDS = {
@@ -6578,8 +6580,9 @@ def main() -> int:
             if s.exists() and done(s):
                 ok(f"{s.name} already downloaded")
                 continue
-            # the original's shard 2 is the same file for all its sizes, the Coder and DavidAU's Turbo-Brilliance
-            # (the latter measured 2026-10-17: his 00002's SHA-256 equals the original's; his edits are in shard 1)
+            # the original's shard 2 is the shared n-gram table, the same file for all its sizes, the Coder and
+            # DavidAU's Turbo-Brilliance (his measured 2026-10-17: SHA-256 equal to the original's - it is the
+            # Q8_0 PLE table, never model weights, so sharing it is right and not a lucky accident)
             other = [p for p in Path(a.models_dir).glob("*/Qwen3.8-Flash-Next-GSQ-RCO-*-00002-of-00002.gguf") if done(p)]
             if family in ("qwen", "coder", "dau") and s.name.endswith("00002-of-00002.gguf") and other and not s.exists():
                 try:
@@ -6838,6 +6841,11 @@ def main() -> int:
            "model_name": f"{fam['name']}-{model.lower()}", "log": str(ROOT / f"strata-{tag.lower()}.log"),
            "lib_dirs": lib_dirs, "port": port}
     cfg["memory"] = fork_memory_cfg(ROOT)          # memory-core fork: on every time, opt-out by config
+    if family == "dau":
+        # the {REASON:} master switch (the one boolean the user asked for): a DavidAU install arrives
+        # with its reason modes ON - the /reason door, the reason_mode tool, the sticky modes; every
+        # other family leaves the key absent, which is off, and the server never consults any of it.
+        cfg["reason_modes"] = True
     fetch_embedder(ROOT)
     if cuda_tk == 12:                                  # the experimental CUDA 12 engine (engine-cuda12/)
         cfg["cuda"] = 12

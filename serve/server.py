@@ -344,6 +344,67 @@ def reason_flavor(source: str) -> str:
     return "dau" if "reason_mods" in src and "{REASON" in src else "plain"
 
 
+def reason_feature_on(svc: "Service") -> bool:
+    """The one truth every door consults: the config's master switch AND a template that answers.
+    Either half alone leaves the feature off - which is the whole point of both gates."""
+    return svc.reason_enabled and svc.reason_flavor == "dau"
+
+
+# The tool in the CHAT TEMPLATE's flat form, like MEMORY_TOOL: every dialect's tool list is flat
+# by the time the loop sees it. v1.5 (2026-10-17): the model steering ITSELF - the user's ask,
+# "switch to help yourself adapt", made available without an HTTP call so harnesses that can only
+# do tool calls get it too. The loop executes it locally (milliseconds, no hub) and pins the mode
+# to THIS conversation - the loop holds the messages, so there is no "last" race to race.
+REASON_TOOL = {
+    "name": "reason_mode",
+    "description": ("Set your own reasoning mode - a persona and thinking framework built into this "
+                    "model - for the REST of this conversation, to adapt to what the task needs: 'coder' "
+                    "for code work, 'house' for diagnosis, 'socrates' or 'xlogic' for first-principles "
+                    "probing, 'deeptree' for branching plans, 'teacher' for explanations, 'off' to return "
+                    "to plain. It takes effect from the next render - the next tool round of THIS turn - "
+                    "so call it at the START of a hard task and 'off' when done. Switching re-reads the "
+                    "conversation prefix once (seconds), so do not thrash it every round. Call with no "
+                    "arguments to get the menu back. A name off the menu is refused with the list."),
+    "parameters": {
+        "type": "object",
+        "properties": {"mode": {"type": "string",
+                                 "description": "one of: " + ", ".join(REASON_MODES)
+                                                + " - or off/reset/clear to hand the choice back"}},
+        "required": []},
+}
+
+
+def reason_tool_result(svc: "Service", messages, arguments) -> dict:
+    """Run one reason_mode call from the model: validate (fail closed, the menu comes back with the
+    error), pin the mode to this conversation in the sticky map (LRU 64 like the block pins), and
+    answer in the dict shape run_with_mcp expects (ok/text/chars/truncated/ms - run_with_mcp treats
+    both local executors alike, as with memory_search). The mode lands at the NEXT render, and the
+    loop re-renders every round: the model that steers itself is answered in the same turn."""
+    t0 = time.perf_counter()
+    mode = str((arguments or {}).get("mode") or "").strip().lower()
+
+    def done(ok: bool, text: str) -> dict:
+        return {"ok": ok, "text": text, "chars": len(text), "truncated": False,
+                "ms": int((time.perf_counter() - t0) * 1000)}
+
+    if not mode:
+        return done(True, "reason modes: " + ", ".join(REASON_MODES) + " - send one as {\"mode\": ...}")
+    m = "" if mode in REASON_CLEAR else mode
+    if m and m not in REASON_MODE_SET:
+        return done(False, f"unknown mode {mode!r}; this template answers to: " + ", ".join(REASON_MODES))
+    key = reason_conv_key(messages)
+    with svc._reason_lock:
+        if m:
+            svc._reason[key] = m
+            svc._reason.move_to_end(key)
+            while len(svc._reason) > 64:
+                svc._reason.popitem(last=False)          # conversation-scoped state, never a growing table
+        else:
+            svc._reason.pop(key, None)
+    return done(True, f"reason mode set to {m}; it rides this conversation's next render (the next tool "
+                      f"round of this turn)" if m else "reason mode cleared: plain from the next render")
+
+
 class MockEngine:
     """Replays a scripted completion (text) as token ids, one per step, then the end-of-turn token.  Given a list of
     scripts, each request gets the next one and the last one repeats (a tool call, then the answer after it)."""
@@ -3138,6 +3199,8 @@ class Service:
         self._reason_last = None                      # the key of the most recent render (API's "last")
         self._reason_lock = threading.Lock()
         self.reason_flavor = reason_flavor(getattr(self.template, "source", "") or "")
+        self.reason_enabled = False       # the master switch: config "reason_modes" is True (setup writes
+                                          # it for --family dau installs; absent = the feature never runs)
         self.conv_log = ConvCacheLog()                  # #596: the parked conversations, from the engine's log
         self.config_path = None                         # #564: the run config the web page's Settings view edits
         self.config_lock = threading.Lock()
@@ -3872,11 +3935,11 @@ class Service:
         key = reason_conv_key(messages)
         with self._reason_lock:
             self._reason_last = key
-            mode = self._reason.get(key) if self.reason_flavor == "dau" else None
+            mode = self._reason.get(key) if reason_feature_on(self) else None
             if mode is not None:
                 self._reason.move_to_end(key)
                 return mode
-        return self.reason_default if self.reason_flavor == "dau" else None
+        return self.reason_default if reason_feature_on(self) else None
 
     def render_prompt(self, messages, tools, kwargs) -> str:
         """The template rendered.  #458: with `effort_end`, a request with a non-default effort (low, medium or no
@@ -4732,7 +4795,7 @@ def _debug_req(api, req, messages, tools, max_new, thinking, prompt_tokens):
 
 # ------------------------------------------------------------------------------------------------ MCP tool loop
 def run_with_mcp(svc: Service, hub, messages, tools, kw, ids, thinking, max_new, max_req, sampling, cancel,
-                 mcp_names, memory_name=None, memory_ctx=None):
+                 mcp_names, memory_name=None, memory_ctx=None, reason_name=None):
     """Service.run with the MCP tools executed here: the model writes a call to an MCP tool, the server runs it, adds
     the call and its result to the conversation and lets the model continue - up to `max_rounds` times.  Yields what
     Service.run yields (text, thinking, the request's own tool calls) plus ("mcp", {...}) for the tool activity, and
@@ -4744,10 +4807,16 @@ def run_with_mcp(svc: Service, hub, messages, tools, kw, ids, thinking, max_new,
 
     `memory_name`/`memory_ctx` (C, agentic recall 2026-10-12): when set, the memory_search tool is served HERE too -
     the same loop, the same client-visible trace, but the executor is the local store (no hub, no thread: an FTS
-    search is milliseconds).  `hub` may be None when only the memory tool runs."""
+    search is milliseconds).  `hub` may be None when only the memory tool runs.
+
+    `reason_name` (v1.5, 2026-10-17): the same local-executor deal for the reason_mode tool - the model steers its
+    own mode, the answer pins to `messages`' conversation (the loop holds the conversation, so the HTTP door's
+    "last" race does not exist here).  Both local tools can ride one loop at once."""
     max_rounds = int(hub.settings["max_rounds"]) if hub is not None else 3
     if memory_name:
         mcp_names = set(mcp_names) | {memory_name}
+    if reason_name:
+        mcp_names = set(mcp_names) | {reason_name}
     total, rounds, done = 0, 0, None
     messages = list(messages)
     while True:
@@ -4794,6 +4863,17 @@ def run_with_mcp(svc: Service, hub, messages, tools, kw, ids, thinking, max_new,
                                            (memory_ctx or {}).get("classes"))
                 print(f"[strata] tool {c.name}: {'ok' if r['ok'] else 'error'}, {r['chars']:,} characters in "
                       f"{r['ms']} ms", flush=True)
+                results.append(r["text"])
+                yield "mcp", {"event": "result", "id": c.id, **{k: r[k] for k in ("ok", "text", "chars", "truncated", "ms")}}
+                continue
+            if reason_name and c.name == reason_name:
+                # and the mode tool likewise: microseconds, no hub - the model just chose how it will
+                # think from the next round on, and the loop re-renders between rounds to let it
+                yield "mcp", {"event": "call", "id": c.id, "name": c.name, "server": "reason",
+                              "tool": "mode", "arguments": c.arguments, "round": rounds}
+                r = reason_tool_result(svc, messages, c.arguments)
+                print(f"[strata] tool {c.name}: {'ok' if r['ok'] else 'error'}: {r['text'].split(chr(10))[0][:80]}",
+                      flush=True)
                 results.append(r["text"])
                 yield "mcp", {"event": "result", "id": c.id, **{k: r[k] for k in ("ok", "text", "chars", "truncated", "ms")}}
                 continue
@@ -5908,7 +5988,8 @@ def make_handler(svc: Service):
             with svc._reason_lock:
                 sticky = [[k, m] for k, m in list(svc._reason.items())[-16:]]
                 last = svc._reason_last
-            self._json(200, {"template": svc.reason_flavor, "modes": list(REASON_MODES),
+            self._json(200, {"on": reason_feature_on(svc), "template": svc.reason_flavor,
+                             "modes": list(REASON_MODES),
                              "default": svc.reason_default, "sticky": sticky,
                              "last_conversation": last})
 
@@ -5919,6 +6000,11 @@ def make_handler(svc: Service):
             because a tool loop re-renders each round, the next tool round of the same turn, which
             is what makes self-steering useful to an agent mid-task. A client's own {REASON:} tag
             in a message still wins over all of this: that is the template's own l_car rule."""
+            if not svc.reason_enabled:
+                self._json(409, {"error": {"message": "reason modes are off: set \"reason_modes\": true "
+                                                      "in this server's config and restart (setup writes "
+                                                      "it for --family dau installs)"}})
+                return
             if svc.reason_flavor != "dau":
                 self._json(409, {"error": {"message": "this template does not answer to reason modes "
                                                       f"(GET /reason reports {svc.reason_flavor!r}): a mode "
@@ -6303,6 +6389,13 @@ def make_handler(svc: Service):
                 if "memory_search" not in own:                    # the request's own tool wins the name (MCP rule)
                     tools = (tools or []) + [memory_api.MEMORY_TOOL]
                     memory_name = "memory_search"
+            # the fork's reason modes v1.5 (2026-10-17): reason_mode as a tool the MODEL calls and the SERVER
+            # runs - offered only when the config's "reason_modes" switch is on and the template answers to
+            # modes (both halves, always).  Off (the default): no tool joins the list, the prompt bytes as before.
+            reason_name = None
+            if reason_feature_on(svc) and not no_tools and "reason_mode" not in own:
+                tools = (tools or []) + [REASON_TOOL]
+                reason_name = "reason_mode"
             if svc.cartridges is not None:                        # M3b: standing text first, recall block after
                 if mem_ctx is not None:
                     svc.cartridges.ensure()                       # seed once or restore ~0.1 s; best-effort
@@ -6321,8 +6414,8 @@ def make_handler(svc: Service):
             _debug_req("openai", req, messages, tools, max_new, thinking, len(ids))
             run = run_with_mcp(svc, svc.mcp, messages, tools, kw, ids, thinking, max_new, max_req, req, cancel,
                                {t["name"] for t in extra} if use_mcp else set(),
-                               memory_name=memory_name, memory_ctx=mem_ctx) \
-                if (use_mcp or memory_name) else None
+                               memory_name=memory_name, memory_ctx=mem_ctx, reason_name=reason_name) \
+                if (use_mcp or memory_name or reason_name) else None
             chunks = openai_chunks(svc, req, ids, thinking, tools, max_new, cancel, run=run, force=force)
             if mem_ctx is not None:                       # memory-core: journal this exchange when it completes
                 chunks = memory_api.journal_chunks(chunks, svc.memory, mem_ctx)
@@ -6383,7 +6476,8 @@ def make_handler(svc: Service):
             cancel = threading.Event()
             self._watch_client(cancel)                       # #430 #431 (#1999: before prepare, which can take long)
             try:
-                ids, thinking, tools, max_new, asm, validator, req, mem_ctx, messages, kw = self._responses_prepare(req, cancel)
+                ids, thinking, tools, max_new, asm, validator, req, mem_ctx, messages, kw, reason_name = \
+                    self._responses_prepare(req, cancel)
             except ClientGone:
                 self._note(outcome="disconnected")
                 return
@@ -6397,10 +6491,12 @@ def make_handler(svc: Service):
             # memory-core C parity: the server-side browse loop on this dialect too - the tool joined the
             # render in _responses_prepare (mem_ctx says so), and the loop feeds results back internally.
             run = None
-            if mem_ctx is not None and mem_ctx.get("memory_tool"):
+            mem_tool = mem_ctx is not None and bool(mem_ctx.get("memory_tool"))
+            if mem_tool or reason_name:                          # either local tool, either alone, both together
                 run = run_with_mcp(svc, None, messages, tools, kw, ids, thinking, max_new,
                                    int(req.get("max_output_tokens") or 0), req, cancel, set(),
-                                   memory_name="memory_search", memory_ctx=mem_ctx)
+                                   memory_name="memory_search" if mem_tool else None,
+                                   memory_ctx=mem_ctx if mem_tool else None, reason_name=reason_name)
 
             def check(text, finish):
                 return validated_json(text, validator, finish)
@@ -6509,6 +6605,14 @@ def make_handler(svc: Service):
                 if "memory_search" not in {t.get("name") for t in tools or [] if isinstance(t, dict)}:
                     tools = (tools or []) + [memory_api.MEMORY_TOOL]
                     mem_ctx["memory_tool"] = True
+            # reason modes v1.5 parity (2026-10-17): Codex gets the self-steering tool too, and INDEPENDENT
+            # of mem_ctx - the memory store may be off on this box while the modes are on (or the reverse);
+            # the flag rides the return tuple beside mem_ctx, which is exactly how memory_tool travels.
+            reason_name = None
+            if reason_feature_on(svc) and "reason_mode" not in {t.get("name") for t in tools or []
+                                                                if isinstance(t, dict)}:
+                tools = (tools or []) + [REASON_TOOL]
+                reason_name = "reason_mode"
             noted = svc.__dict__.setdefault("hosted_tools_noted", set())   # said once per tool, not per request
             if set(skipped) - noted:
                 print(f"[strata] /v1/responses: left out the hosted tools {', '.join(sorted(set(skipped) - noted))} "
@@ -6554,7 +6658,7 @@ def make_handler(svc: Service):
             asm = responses_api.Assembler(req, svc.model_for(req), len(ids), names,
                                           "reasoning.encrypted_content" in include, validator is not None)
             # the request is also the sampling dict, as on the chat path (temperature, top_p, top_k, seed, ...)
-            return ids, thinking, tools, max_new, asm, validator, req, mem_ctx, messages, kw
+            return ids, thinking, tools, max_new, asm, validator, req, mem_ctx, messages, kw, reason_name
 
         def _count_tokens(self, req):
             """Anthropic's token count, which Claude Code asks for its context figures: the prompt this server would
@@ -6601,6 +6705,13 @@ def make_handler(svc: Service):
                 if "memory_search" not in {t.get("name") for t in tools or [] if isinstance(t, dict)}:
                     tools = (tools or []) + [memory_api.MEMORY_TOOL]
                     memory_name = "memory_search"
+            # reason modes v1.5 parity (2026-10-17): Claude Code and every Anthropic-shape client gets the
+            # self-steering tool too - tools here are already flat, which is what REASON_TOOL carries.
+            reason_name = None
+            if reason_feature_on(svc) and not no_tools and \
+                    "reason_mode" not in {t.get("name") for t in tools or [] if isinstance(t, dict)}:
+                tools = (tools or []) + [REASON_TOOL]
+                reason_name = "reason_mode"
             svc.reasoning_budget(req)                         # a bad value is a 400 before anything is sent
             stop_strings(req)                                 # ... and so is a bad stop / stop_sequences
             check_request_sampling(req)                       # ... and a sampling field of the wrong type
@@ -6609,7 +6720,8 @@ def make_handler(svc: Service):
             ids, thinking, max_new = svc.prepare(messages, tools, kw, max_new, force=force, req=req, cancel=cancel)
             _debug_req("anthropic", req, messages, tools, max_new, thinking, len(ids))
             run = run_with_mcp(svc, None, messages, tools, kw, ids, thinking, max_new, max_req, req, cancel,
-                               set(), memory_name=memory_name, memory_ctx=mem_ctx) if memory_name else None
+                               set(), memory_name=memory_name, memory_ctx=mem_ctx, reason_name=reason_name) \
+                if (memory_name or reason_name) else None
             events = anthropic_events(svc, req, ids, thinking, tools, max_new, cancel, force=force, run=run)
             events = self._capture(events, "anthropic")
             if mem_ctx is not None:                       # memory-core: journal this exchange when it completes
@@ -7507,18 +7619,32 @@ def main() -> int:
         raise SystemExit(f"[strata] config \"repeat_stop_tokens\" must be a whole number >= 0 (0 = off), not {rs!r}")
     svc.repeat_stop_tokens = rs
     svc.effort_end = bool(effort_end)                   # #458: "effort_position": "end" with an engine that has it
-    # REASON MODES: the config's "reason_mode" = a session default (the profile-level pin DavidAU's
-    # design gives a human; here it is just a default - conversation stickies and client tags still
-    # outrank it). A name the template would not answer to is refused at boot, loudly, and left off:
-    # the fail-closed law, applied before any request can carry the mistake.
+    # REASON MODES, the master switch (2026-10-17, the user's law: "a simple toggle, true or false,
+    # like the other things we built into Strata"): config "reason_modes": true turns the whole
+    # feature on - the /reason routes, the mode tool, the render substitution - and setup writes it
+    # into the config when the family picked is DavidAU's.  Absent or false: the feature never runs,
+    # every render byte-identical.  True on a stock-template box is a no-op WITH a message: that
+    # template raises on a mode name (measured), so the flavor gate outranks even an explicit true.
+    if cfg.get("reason_modes") is True:
+        if svc.reason_flavor == "dau":
+            svc.reason_enabled = True
+            print(f"[strata] reason modes on: {len(REASON_MODES)} modes the template answers to; "
+                  f"GET|POST /reason and the reason_mode tool (a client's own {{REASON:}} tag "
+                  f"still outranks all of it)", flush=True)
+        else:
+            print("[strata] reason_modes: true in the config, but this chat template does not answer "
+                  "to modes (it raises on one, measured) - stays off; setup --family dau installs "
+                  "the model and template that do", flush=True)
+    # the config's "reason_mode" = a session default on top of the switch (the profile-level pin:
+    # "coding box, always coder").  A name the template would not answer to is refused at boot,
+    # loudly, and left off: the fail-closed law, applied before any request can carry the mistake.
     rm = str(cfg.get("reason_mode") or "").strip().lower()
     if rm and rm not in REASON_CLEAR:
         if rm not in REASON_MODE_SET:
             print(f"[strata] reason_mode {rm!r}: not one of the template's modes - left off", flush=True)
-        elif svc.reason_flavor != "dau":
-            print(f"[strata] reason_mode {rm!r}: this chat template does not answer to reason modes "
-                  f"(it raises on one, measured) - left off; setup --family dau installs one that does",
-                  flush=True)
+        elif not svc.reason_enabled:
+            print(f"[strata] reason_mode {rm!r}: set \"reason_modes\": true to turn the feature on "
+                  f"first - left off", flush=True)
         else:
             svc.reason_default = rm
             print(f"[strata] reason mode default: {rm} (per-conversation stickies and a client's own "

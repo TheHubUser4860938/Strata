@@ -1923,7 +1923,7 @@ the venue replay as the standing coverage guard.
 
 **Server-native reason modes - the {REASON:} system made harness-independent (2026-10-17, measured
 first, then built: `serve/server.py` REASON MODES block, `GET|POST /reason`, `serve/test_reason.py`
-10 tests).** Two questions opened this: whether DavidAU's mode system is real (it is - the live A/B
+15 tests).** Two questions opened this: whether DavidAU's mode system is real (it is - the live A/B
 above, and the model swap to his weights the same night means the box now runs the intended pairing,
 template AND tuned weights; the replaced SC117 file is kept as `.SC1171` and the pre-swap template
 as `.bak`), and whether the harness could switch it as he does by hand. The spike that decided the
@@ -1935,10 +1935,19 @@ outranking the context value, so the precedence order is his template's design, 
 **client tag > conversation sticky > config default > template default** (which, note, is `xhigh`
 framing injected whenever no effort is passed - measured, pre-existing, now visible).
 
-What ships (gated and quiet: the feature **does not exist on a non-DavidAU template at all** - the
-flavor gate below - and with no mode set every render passes the SAME kwargs dict, byte-identical
-by construction):
+What ships (two gates in front of everything: the master toggle **`"reason_modes": true`** in the
+server's JSON - one boolean, true or false, "like the other things we built into Strata" (the
+user's law, 2026-10-17), which **setup writes automatically when the family chosen is DavidAU's** -
+AND a template that answers to modes (the flavor gate below). Either half alone leaves the feature
+off; off means every render passes the SAME kwargs dict, byte-identical by construction):
 
+- **The master switch** is `"reason_modes": true` (top level of `strata-<name>.json`, shaped like
+  every other config key). True **and** an answering template lights the whole feature: the
+  `/reason` routes, the `reason_mode` tool, the sticky map, the boot banner naming the modes.
+  True on a plain-template box is a no-op **with a message** - the flavor gate outranks even an
+  explicit true. Absent anywhere: silence, byte-identical, and `POST /reason` answers 409 naming
+  the key to set. `setup --family dau` writes `"reason_modes": true` into the config it generates,
+  so a DavidAU install arrives with its feature already on; no other family ever sees the key.
 - **The flavor gate (measured first, 2026-10-17).** The stock template consumes `reasoning_effort`
   itself and **raises its own "Unexpected reasoning effort" template error** on a value off its
   list when thinking is on - a mode name is exactly that - while with thinking off it ignores the
@@ -1977,8 +1986,20 @@ by construction):
   law-moves-into-code trick as `shelf_vote`: a DavidAU V2 that renames a mode trips a test, not a
   silent literal leak.
 - **Config `"reason_mode": "<name>"`** sets the session default at boot (a profile-level pin - the
-  "coding box, always coder" case); a name outside the list - or any name at all on a plain-
-  flavored template - is refused loudly at boot and left off.
+  "coding box, always coder" case); it requires the master switch (without it: a refusal message
+  naming the key), and a name outside the list - or any name at all on a plain-flavored template -
+  is refused loudly at boot and left off.
+- **The `reason_mode` tool (v1.5, same day):** the model steering itself with no HTTP call. Offered
+  on all three dialects under the same conditions as `memory_search` - the server-side tool loop,
+  so harnesses that run no MCP of their own get it too - with the same `strata_mcp` trace shape and
+  a local executor (microseconds, no hub). The mode pins from the loop's own message list, so the
+  HTTP door's "last" race does not exist here: the conversation running the tool is by construction
+  the one steered. It lands at the next render - the next TOOL ROUND of the same turn (a test
+  proves it: round two's prompt carried the mode block). No arguments returns the menu; a name off
+  the menu errors with the menu (fail closed, as everywhere). With either gate shut the tool never
+  joins the list (proved: the prompt is clean of it). One honest caveat this suite caught red: the
+  tool's description lists the 41 mode names, so mode NAMES appear in every prompt that offers the
+  tool - proving "no mode is set" means testing for the mode block's title, never the bare name.
 - **The installer now carries the model (`setup.py` "dau" family, 2026-10-17):** `setup --family
   dau --model IQ3_S` installs DavidAU's Turbo-Brilliance re-quant - pinned repo commit, both
   shard SHA-256s from the Hub's LFS pointers, Apache-2.0 stated at install. Two measured facts
@@ -1986,9 +2007,12 @@ by construction):
   to `REASON_MODES`), and setup's tokenizer export writes it to `pack/tokenizer/chat_template.jinja`
   which the server prefers over its shipped file - so the modes' template rides the download with
   nothing extra fetched and the shipped default template stays stock; and **his shard 2 is the
-  original IQ3_S's file byte for byte** (SHA-256 `316b46f3...` equal against ISTA's tree), so he
-  joins the shard-2 sharing the qwen and coder sizes already do - an owner of the original IQ3_S
-  switching to this family downloads only his first shard. The family sits after the coder in the
+  original IQ3_S's file byte for byte** (SHA-256 `316b46f3...` equal against ISTA's tree) - because
+  shard 2 is not model weights at all: it is the family's shared Q8_0 PLE n-gram table (the file
+  sleepyeldrazi/Qwen3.8-Flash-Next-GSQ-RCO-Q8_0-PLE-GGUF exists to publish, the same in every
+  GSQ-RCO family - the coder note in setup.py has always said so), so he joins the shard-2 sharing
+  the qwen and coder sizes already do - an owner of the original IQ3_S switching to this family
+  downloads only his first shard, which carries all his weights. The family sits after the coder in the
   menu (same-size variants of the original first): the menu snapshots in
   `tools/test_setup_menu.py`/`test_setup_unsloth.py` moved with it, and the whole 40-test setup
   battery passes (engine_hash's 2 failures pre-date this change on a box without the engine
@@ -2003,13 +2027,12 @@ every accuracy number on the books (0.761 arm C, the 0.739 Postgres re-record, t
 +0.207) was measured on the PRE-swap weights, so any future arm either re-baselines on the same
 model or says so in the line. The modes were measurably active on the stock model too (the persona
 answers, the menu printed), so "his tuned weights make the difference" is a comparison the
-measurement will settle, not this paragraph. (3) **the MTP/PLE
-pairing**: shard 00002 and the `--mtp` path predate his pack; if his repo ships its own drafter and
-n-gram table, running his weights against the old ones costs spec acceptance and PLE quality - one
-inspection away, unjudged until asked. (4) The in-turn **tool form** (`reason_mode(name)` served by
-the same loop as `memory_search`, all three dialects) is the small next increment behind it - the
-API door already gives autonomy to any client that can make a request; the tool gives it to models
-that can only make tool calls.
+measurement will settle, not this paragraph. (3) **MTP/PLE pairing**: closed 2026-10-17 by the
+user (he maintains the build): his model uses Strata's default MTP draft, and shard 2 is the
+family's shared Q8_0 PLE n-gram table - it is nobody's to ship per-repo - so there was never
+anything of his to pair against. (4) The in-turn **tool form** shipped the same day as v1.5
+(see the tool bullet above): the API door gives autonomy to any client that can make a request, and
+the tool gives it to models that can only make tool calls - one boolean switch behind both.
 
 ## Licensing and attribution
 
