@@ -1925,8 +1925,12 @@ the venue replay as the standing coverage guard.
 first, then built: `serve/server.py` REASON MODES block, `GET|POST /reason`, `serve/test_reason.py`
 15 tests).** Two questions opened this: whether DavidAU's mode system is real (it is - the live A/B
 above, and the model swap to his weights the same night means the box now runs the intended pairing,
-template AND tuned weights; the replaced SC117 file is kept as `.SC1171` and the pre-swap template
-as `.bak`), and whether the harness could switch it as he does by hand. The spike that decided the
+template AND tuned weights: the replaced weights file is kept as `.SC1171`, and his template loads
+from the tokenizer pack, `Strata-data/packs/.../tokenizer/chat_template.jinja`, where the server
+prefers the model's own export - so the shipped default template can stay the stock one, and the
+fork carries his as the named asset `serve/chat_template.dau.jinja` (229,184 bytes, its mode list
+set-equal to `REASON_MODES`) for the tests and for operators), and whether the harness could switch
+it as he does by hand. The spike that decided the
 design: his template resolves its system-block text from the RENDER CONTEXT's `reasoning_effort`
 - passing `reasoning_effort="vader"` injects the Vader block with **no tag anywhere in the
 conversation** (measured, three modes plus the instruct variant, plus a byte-identical control);

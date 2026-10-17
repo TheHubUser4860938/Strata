@@ -44,7 +44,7 @@ class ModeLaw(unittest.TestCase):
     """The pure parts: one list, one dict contract, one conversation key."""
 
     def test_the_mode_list_is_the_templates_exactly(self):
-        src = (ROOT / "serve/chat_template.jinja").read_text(encoding="utf-8")
+        src = (ROOT / "serve/chat_template.dau.jinja").read_text(encoding="utf-8")
         i = src.find("set reason_mods")
         if i < 0:
             self.skipTest("a stock template: the drift lock guards the DavidAU one")
@@ -80,7 +80,7 @@ class RenderInjection(unittest.TestCase):
     """The spike, pinned as a test: the real template, the real file, context only."""
 
     def setUp(self):
-        self.tpl = ChatTemplate(ROOT / "serve/chat_template.jinja")
+        self.tpl = ChatTemplate(ROOT / "serve/chat_template.dau.jinja")
 
     def test_context_mode_injects_the_block_with_no_tag_anywhere(self):
         out = self.tpl.render([{"role": "user", "content": "what is a git rebase?"}],
@@ -110,7 +110,7 @@ class ReasonOverHttp(unittest.TestCase):
     def setUpClass(cls):
         tok = ByteTokenizer()
         cls.engine = MockEngine(tok, "the mock answer", max_context=131072)
-        cls.svc = Service(cls.engine, tok, ChatTemplate(ROOT / "serve/chat_template.jinja"))
+        cls.svc = Service(cls.engine, tok, ChatTemplate(ROOT / "serve/chat_template.dau.jinja"))
         cls.svc.reason_enabled = True          # the config's "reason_modes": true, as boot would set it
         cls.httpd = serve(cls.svc, port=0)
         cls.port = cls.httpd.server_address[1]
@@ -320,7 +320,7 @@ class ReasonToolLoop(unittest.TestCase):
         call = ("<tool_call>\n<function=reason_mode>\n<parameter=mode>\nvader\n</parameter>\n"
                 "</function>\n</tool_call>")
         self.engine = MockEngine(tok, [call, "the mock answer after steering"], max_context=131072)
-        self.svc = Service(self.engine, tok, ChatTemplate(ROOT / "serve/chat_template.jinja"))
+        self.svc = Service(self.engine, tok, ChatTemplate(ROOT / "serve/chat_template.dau.jinja"))
         self.svc.reason_enabled = True
         self.httpd = serve(self.svc, port=0)
         self.port = self.httpd.server_address[1]
