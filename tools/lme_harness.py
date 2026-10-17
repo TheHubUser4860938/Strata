@@ -226,7 +226,8 @@ def ask(url: str, q: dict, scope: str, muted: bool, style: str = "direct",
             else {"X-Strata-Memory-Scope": scope}
                  | ({"X-Strata-Memory-Embedder": "off"} if no_embedder else {}))
     body = {"model": "", "messages": [{"role": "user",
-                                       "content": f"{q['question']}\n\n{ANSWER_RULES[style]}"}],
+                                       "content": "{REASON:off}\n\n"
+                                                  f"{q['question']}\n\n{ANSWER_RULES[style]}"}],
             "max_tokens": 500, "temperature": 0.8, "reasoning_effort": "off"}
     r = post(url, "/v1/chat/completions", body, headers=hdrs)
     return (r["choices"][0]["message"].get("content") or "").strip()
@@ -295,7 +296,7 @@ def judge(url: str, q: dict, hypothesis: str) -> bool:
                              hypothesis or "(empty)", q["question_id"].endswith("_abs"))
     try:
         r = post(url, "/v1/chat/completions",
-                 {"model": "", "messages": [{"role": "user", "content": prompt}],
+                 {"model": "", "messages": [{"role": "user", "content": "{REASON:off}\n\n" + prompt}],
                   "max_tokens": 10, "temperature": 0, "reasoning_effort": "off"},
                  headers={"X-Strata-Memory": "off"})
         out = (r["choices"][0]["message"].get("content") or "").strip().lower()

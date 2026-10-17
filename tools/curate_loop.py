@@ -535,7 +535,7 @@ def main():
 
     def ask(text, maxtok, want_geom=None, kind=""):
         """one muted generation; returns (answer, ptok, geom_ok) - transport failure -> (None,..)."""
-        body = {"model": model, "messages": [{"role": "user", "content": text}],
+        body = {"model": model, "messages": [{"role": "user", "content": "{REASON:off}\n\n" + text}],
                 "temperature": 0.8, "reasoning_effort": "off", "max_tokens": maxtok,
                 "stream": False}
         st, r = http(url + "/v1/chat/completions", body, headers={"X-Strata-Memory": "off"})
