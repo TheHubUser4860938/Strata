@@ -465,7 +465,10 @@ REASON_AUTO = {
     "musk+business": {"manufacturing", "fundamentals"},
     "curie+teacher": {"crispr", "lessons"},
     "joe+comedy": {"relatable"},
-    "einstein+pkd": {"scifi", "paranoid", "what-if"},
+    "socrates+teacher": {"homework", "philosophy", "philosophical", "ethics", "tutor", "tutoring",
+                         "rebuttal", "argument", "position"},
+    "einstein+pkd": {"scifi", "sci-fi", "paranoid", "what-if", "fantasy", "dystopia", "dystopian",
+                     "android", "cyberpunk", "worldbuilding", "simulation"},
     "prompt+prompt": {"optimize", "tune"},
 }
 _AUTO_DF: dict = {}
@@ -486,6 +489,21 @@ def last_user_text(messages) -> str:
                 c = " ".join(str(p.get("text", "")) for p in c if isinstance(p, dict))
             return str(c or "")
     return ""
+
+
+def reason_client_tag(text: str) -> str | None:
+    """The {REASON:} tag in one user message, as the template reads it (the FIRST tag wins - the
+    measured one-tag-per-message law), validated: "off" is the template's own no-frame word and
+    an unknown tag names no frame either way (its activation branches ignore it, and the ladder's
+    verdict stands). Observability v2.1: the picker's verdict used to be recorded even when a
+    client tag outranked it - the sweep's {REASON:off} prompts logged 'socrates' verdicts while
+    rendering no block at all. A recorded verdict that did not frame the render is a lie by
+    omission; this is how the effective frame is known."""
+    m = re.search(r"\{REASON:([a-z0-9+#_-]+)\}", text or "")   # the template's own case: literal
+    if not m:
+        return None
+    name = m.group(1)
+    return name if (name == "off" or reason_mode_ok(name)) else None
 
 
 def reason_auto_pick(text: str) -> str | None:
@@ -4339,15 +4357,21 @@ class Service:
                 self._reason.move_to_end(key)
         mode = sticky if sticky is not None else (self.reason_default if reason_feature_on(self) else None)
         if mode == "auto":
-            mode = reason_auto_pick(last_user_text(messages))
-            if mode is None and sticky == "auto":
-                mode = self.reason_default if reason_feature_on(self) else None
-                if mode == "auto":
-                    mode = None                          # auto over auto: the template frames
-            with self._reason_lock:                      # observability (v1.9): the sticky says
-                self._reason_auto[key] = mode or "none"  #  "auto" and told you nothing - GET
-                self._reason_auto.move_to_end(key)       #  /reason now shows the verdict behind
-                while len(self._reason_auto) > 64:       #  the wheel ("none" = no confident pick)
+            text = last_user_text(messages)
+            tag = reason_client_tag(text)
+            if tag:
+                mode = tag                                   # the template's l_car rule, mirrored
+            else:                                            # here so the record tells the truth
+                mode = reason_auto_pick(text)
+                if mode is None and sticky == "auto":
+                    mode = self.reason_default if reason_feature_on(self) else None
+                    if mode == "auto":
+                        mode = None                          # auto over auto: the template frames
+            with self._reason_lock:                      # observability (v1.9; v2.1: a tag path
+                self._reason_auto[key] = (                   #  records "tag:x" so a client tag
+                    ("tag:" + mode) if tag else (mode or "none"))  #  outranking the picker reads
+                self._reason_auto.move_to_end(key)           #  as such, not as a phantom verdict
+                while len(self._reason_auto) > 64:
                     self._reason_auto.popitem(last=False)
         return mode
 

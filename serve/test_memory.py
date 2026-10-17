@@ -1768,6 +1768,23 @@ class MatrixStaleness(unittest.TestCase):
         self.assertEqual(meta2["class"][0], "MEM/GRAPH",
                          "classify must dirty the matrix: the cosine arm's shelf_mask reads its class column")
 
+    def test_invalidate_retires_the_vector_with_the_row(self):
+        # v2.1, the owner's dead-weight ruling (2026-10-17): no path un-invalidates and every
+        # reader filters on active rows, so a vector on a retired row is never read again - it
+        # goes the moment the row does (943 had silently piled up on half the table; the purge
+        # left the invariant embeddings == active rows, 1051 == 1051). The TEXT history stays.
+        m = self._svc()
+        m.remember("a fact to retire", scope="fw")
+        i = int(m._vec_matrix()["ids"][0])
+        self.assertEqual(m.conn.execute("select count(*) from embeddings where id = %s",
+                                        (i,)).fetchone()[0], 1, "remember wrote the vector")
+        self.assertTrue(m.invalidate(i))
+        self.assertEqual(m.conn.execute("select count(*) from embeddings where id = %s",
+                                        (i,)).fetchone()[0], 0,
+                         "invalidate retires the vector: recall never reads it again")
+        self.assertIs(m.conn.execute("select text from memories where id = %s", (i,)).fetchone()[0]
+                      is not None, True, "the honest ledger keeps the text")
+
     def test_invalidate_drops_the_row_from_the_matrix(self):
         m = self._svc()
         m.remember("first fact stands", scope="fw")

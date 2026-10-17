@@ -526,6 +526,40 @@ class ReasonOverHttp(unittest.TestCase):
         self.assertEqual(dict(body["auto_picks"]).get(reason_conv_key(fresh)), "none",
                          "a no-pick turn records none, not a stale guess")
 
+    def test_a_client_tag_records_the_effective_frame(self):
+        # v2.1, the sweep lesson: auto_picks used to record the picker's verdict even when a
+        # {REASON:off} tag outranked it at template level - tagged curation prompts logged
+        # phantom "socrates" verdicts while rendering no block. The record now names the tag
+        # that framed ("tag:x"); and mirroring the tag into the ladder carries the fork's pair
+        # grammar through the client's own tag, which the template (one tag, single branches)
+        # cannot do alone. An unknown tag names no frame: the picker's verdict stands, recorded
+        # as itself.
+        self.svc.reason_default = "auto"
+        msgs = [{"role": "user", "content": "{REASON:coder} why is the sky blue zqrl probe"}]
+        prompt = self.turn_msgs(msgs)
+        self.assertIn("PROGRAMMER & UI ARCHITECT", prompt, "the tag frames the render")
+        st, body = self.http("GET", "/reason")
+        self.assertEqual(dict(body["auto_picks"]).get(reason_conv_key(msgs)), "tag:coder",
+                         "the record names the tag that framed, not the verdict that lost")
+        pair = [{"role": "user", "content": "{REASON:007+coder} build the rate limiter zqro probe"}]
+        p2 = self.turn_msgs(pair)
+        self.assertIn("OPERATIONAL AGENT", p2, "a tagged pair splices mechanically - both blocks")
+        self.assertIn("PROGRAMMER & UI ARCHITECT", p2)
+        st, body = self.http("GET", "/reason")
+        self.assertEqual(dict(body["auto_picks"]).get(reason_conv_key(pair)), "tag:007+coder")
+        off = [{"role": "user", "content": "{REASON:off} which memories are durable facts zqrr"}]
+        self.turn_msgs(off)
+        st, body = self.http("GET", "/reason")
+        self.assertEqual(dict(body["auto_picks"]).get(reason_conv_key(off)), "tag:off",
+                         "the sweep's own case: tagged, framed by nothing, recorded honestly")
+        bogus = [{"role": "user", "content": "{REASON:banana} fix the python bug zqrp probe"}]
+        p3 = self.turn_msgs(bogus)
+        self.assertIn("PROGRAMMER & UI ARCHITECT", p3,
+                      "an unknown tag names no frame - the picker reads the text around it")
+        st, body = self.http("GET", "/reason")
+        self.assertEqual(dict(body["auto_picks"]).get(reason_conv_key(bogus)), "coder",
+                         "the picker's own verdict, recorded as itself - no tag: prefix")
+
     def test_last_before_any_render_is_a_clean_409(self):
         with self.svc._reason_lock:
             saved, self.svc._reason_last = self.svc._reason_last, None

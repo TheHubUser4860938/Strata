@@ -1047,6 +1047,13 @@ class MemoryService:
                 " where id=%s and invalid_at is null",
                 (self._dt(time.time()), int(by_id) if by_id else None,
                  self._dt(time.time()), int(memory_id)))
+            # the vector goes with the recall (v2.1, the owner's dead-weight ruling 2026-10-17):
+            # search, recall, budget and the similarity matrix all filter on active rows, and no
+            # path un-invalidates - a vector on a retired row is never read again, and 943 of
+            # them proved it (half the table, accumulating silently since the first merge). The
+            # row and its text stay: the honest ledger is the TEXT, and a re-minted near-duplicate
+            # gets a fresh vector anyway.
+            self.conn.execute("delete from embeddings where id = %s", (int(memory_id),))
             self._bump()
             self.conn.commit()
             self._touched()

@@ -2138,6 +2138,33 @@ off; off means every render passes the SAME kwargs dict, byte-identical by const
   with pilot-era artifacts (a township test fixture, an empty-lane observation); the two
   journal-era rows forgotten, the fixture re-shelved MEM/TECH. `test_reason` 35 OK; full gate
   1010 OK (skipped 11; one keep-awake timing flake, green on rerun - the known class).
+- **The owner's four rulings (v2.1, same evening):** (1) the installer's dau-family default moves
+  from `ultra` to **`auto`** - the picker replaces the top-mode guess for new installs (setup test
+  green). (2) The dead-weight purge: the 128 MB `embeddings` dir turned out to be the bge MODEL
+  cache (my menu item aimed at the wrong file, corrected in place) - the vectors live in the DB
+  table, where `forget` had already cleaned perfectly (zero orphans from the 1,549-row purge), but
+  `invalidate` silently kept vectors on retired rows: 943 of them, half the table, never read by
+  any path (every reader filters active rows; nothing un-invalidates). One-time purge done - the
+  store now holds the invariant **vectors == active rows, 1,051 == 1,051** - and `invalidate`
+  retires the vector with the row from now on (the text history stays; the honest ledger is the
+  text). (3) Client-tag observability: `auto_picks` recorded the picker's verdict even when a
+  `{REASON:}` tag outranked it at template level - the sweep's tagged prompts logged phantom
+  "socrates" verdicts while rendering no block. A client tag now mirrors into the ladder
+  (`reason_client_tag`, first tag wins, validated; unknown tags name no frame): the record reads
+  **`tag:x`** when a tag framed, bare when the picker did - and the mirror makes a tagged PAIR
+  (`{REASON:007+coder}`) splice mechanically, which the template alone cannot do (it parses one
+  tag, single modes only); measured in the suite, not asserted. (4) The picker's context
+  vocabulary: the replay of the owner's live chat showed philosophy homework scoring NONE - zero
+  philosophy words in the corpus - so **`socrates+teacher`** joins REASON_AUTO (homework,
+  philosophy, ethics, tutor, rebuttal, argument...) and `einstein+pkd` grows (sci-fi, fantasy,
+  dystopia, android, cyberpunk, worldbuilding, simulation). The 12-message replay is the
+  acceptance test: both new targets HIT, all ten pre-existing verdicts byte-identical, and turn
+  11 ("fifth chapter of my book") stays `story` on purpose - story legitimately outscores the
+  pair on chapter-of-a-book text, and the speculative pair fires on speculative text (probe 12
+  proves it); forcing the flip would be teaching the scorer to lie. The tag regex bug the suite
+  caught: matching a lower-cased text against a literal `{REASON:}` pattern - the template's own
+  case, proven by the sweep's own tags working in production. `test_reason` +1, `test_memory` +1,
+  gate OK one pass (skipped 11).
 - **The installer now carries the model (`setup.py` "dau" family, 2026-10-17):** `setup --family
   dau --model IQ3_S` installs DavidAU's Turbo-Brilliance re-quant - pinned repo commit, both
   shard SHA-256s from the Hub's LFS pointers, Apache-2.0 stated at install. Two measured facts
