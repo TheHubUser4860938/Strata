@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
 """tools/m2_ingest.py - import text or documents into the memory store as shelved facts.
 
-The knowledge-pack path for the LCC system (the user's framing: shelves are how the model's
-knowledge grows without retraining or LoRA - vetted data, addressed by call number, pulled by
-the conversations that need it). Two properties make this different from the curation loop,
-on purpose:
+WHOLE-DOC MODE IS THE DEFAULT (2026-10-17, the owner's redesign: "I don't want it to turn one
+document into hundreds of little pieces"): the document is COPIED to --docs-dir (default
+~/Documents), named by title + content hash, and ONE pointer fact is filed - title, size,
+sha256, path, topics. The store keeps the address; the disk keeps the text; the model reads
+the file when the subject matters. Re-ingesting an unchanged file dedups onto its own pointer
+(the sha rides the text); a changed file hashes differently and refiles honestly.
+
+FRAGMENT MODE (--mode fragments) is the original path, kept for knowledge-pack corpora where
+sentence-level facts are the point (the lore-bible case). Its properties, recorded where they
+bite:
 
   NO ENGINE CALLS. Sentences are stored VERBATIM with source=ingest-<date>. The extractor's
     over-inference disease ("asked for tips" -> "is learning a language", the township quiz ->
@@ -31,7 +37,7 @@ Usage:
 """
 from __future__ import annotations
 
-import argparse, datetime, json, re, sys, urllib.request as U
+import argparse, datetime, hashlib, json, re, shutil, sys, urllib.request as U
 from collections import Counter
 from pathlib import Path
 
@@ -124,9 +130,72 @@ def units(text: str, unit: str) -> list[str]:
     return [s.strip() for s in out if s.strip()]
 
 
+TOPIC_STOP = frozenset("""the and for that with this from they have been will your about into
+other some more than when there their which what where while because should could would these
+those then them here was were are you our out get just like also much many most even only over
+under again each same very really thing things something anything nothing know think going want
+need needs used using use upon per via among within without between first second every any all
+""".split())
+
+
+def doc_title(name: str, text: str) -> str:
+    """The document's own first heading wins; else its first non-fence line; else the filename."""
+    in_fence = False
+    for line in text.splitlines():
+        s = line.strip()
+        if s.startswith("```"):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        if s.startswith("#"):
+            t = s.lstrip("#").strip(" *\t")
+            if t:
+                return t[:120]
+        if s:
+            return s[:120]
+    return Path(name).stem
+
+
+def doc_topics(text: str, k: int = 12) -> str:
+    """Top frequency tokens minus the stop list - mechanical, no engine, and what makes the
+    pointer findable by bm25 and cosine when the conversation turns to the document's subject."""
+    words = [w.lower() for w in re.findall(r"[A-Za-z][A-Za-z0-9'-]{3,}", text)
+             if w.lower() not in TOPIC_STOP]
+    return ", ".join(w for w, _ in Counter(words).most_common(k))
+
+
+def whole_doc(name: str, docs_dir: str) -> dict:
+    """One document, one memory: the file is copied to docs_dir (content-named, collision-safe)
+    and the pointer fact carries title, size, hash, path and topics. The store keeps the
+    address; the disk keeps the text. Idempotent by content: the sha rides the pointer, so
+    re-ingesting an unchanged file updates the pointer (exact-text dedup) instead of doubling
+    it, and a changed file hashes differently and refiles honestly."""
+    p = Path(name)
+    raw = p.read_text(encoding="utf-8", errors="replace")
+    sha = hashlib.sha256(raw.encode("utf-8", errors="replace")).hexdigest()[:16]
+    title = doc_title(name, raw)
+    safe = re.sub(r"[^A-Za-z0-9 ._-]", "", title)[:60].strip() or p.stem
+    dest = Path(docs_dir) / f"{safe}-{sha[:8]}{p.suffix.lower() or '.txt'}"
+    words = len(raw.split())
+    topics = doc_topics(raw)
+    pointer = (f"Document '{title}' ({p.suffix.lower() or '.txt'}, {words:,} words, sha256 {sha}) "
+               f"is filed at {dest} (source: {p.resolve()}). Topics: {topics}. The store keeps this "
+               f"pointer and the disk keeps the whole text: read {dest.name} when this subject "
+               f"matters instead of answering from the pointer alone.")
+    return {"pointer": pointer, "dest": str(dest), "sha": sha, "raw": raw, "words": words}
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("files", nargs="+", help="text/markdown files to ingest ('-' = stdin)")
+    ap.add_argument("--mode", choices=("whole", "fragments"), default="whole",
+                    help="whole (default, 2026-10-17 redesign): copy the WHOLE document to "
+                         "--docs-dir and file ONE pointer fact - the store keeps the address, "
+                         "the disk keeps the text, and one document stops becoming hundreds of "
+                         "shards. fragments: the pre-2026-10-17 sentence-splitting path")
+    ap.add_argument("--docs-dir", default=str(Path.home() / "Documents"),
+                    help="where whole documents are filed (default ~/Documents)")
     ap.add_argument("--class", dest="klass", default="", help="shelf for the whole file, e.g. "
                                                               "FIC/KREVV (overrides the map)")
     ap.add_argument("--scope", default="default")
@@ -145,6 +214,37 @@ def main():
     src = f"ingest-{datetime.date.today().isoformat()}"
     stored = deduped = skipped = evicted = 0
     by_class: Counter = Counter()
+    if a.mode == "whole":
+        # one document, one memory: copy to --docs-dir, file ONE pointer fact. No sentence
+        # splitting, no fragment gate - the whole text lives on disk, the store keeps the address.
+        for name in a.files:
+            if name == "-":
+                raise SystemExit("whole mode needs files on disk (the copy is the point); "
+                                 "use --mode fragments for stdin")
+            info = whole_doc(name, a.docs_dir)
+            klass = a.klass or fact_class(info["pointer"], a.scope)
+            by_class[klass or "wild"] += 1
+            if a.dry_run:
+                print(f"  would file {info['dest']}\n  would store: {info['pointer'][:140]}...")
+                stored += 1
+                continue
+            shutil.copyfile(name, info["dest"])
+            body = {"op": "remember", "text": info["pointer"], "scope": a.scope, "source": src,
+                    "provenance": {"file": Path(name).name, "sha256": info["sha"],
+                                   "path": info["dest"]}}
+            if klass:
+                body["class"] = klass
+            req = U.Request(a.url.rstrip("/") + "/memory", method="POST",
+                            data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
+            r = json.loads(U.urlopen(req, timeout=30).read())
+            if r.get("deduped"):
+                deduped += 1
+            else:
+                stored += 1
+            print(f"  filed {info['dest']} -> pointer id {r.get('id')}"
+                  f"{' (deduped: unchanged content)' if r.get('deduped') else ''}")
+        print(f"{a.mode}: pointers {stored}, deduped {deduped}; shelves: {dict(by_class)}")
+        return
     for name, text in [(f, (sys.stdin.read() if f == "-" else
                             strip_fences(Path(f).read_text(encoding="utf-8", errors="replace"))))
                        for f in a.files]:

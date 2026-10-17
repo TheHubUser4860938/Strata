@@ -13,7 +13,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from m2_ingest import fragment, reunite
+from m2_ingest import doc_title, fragment, reunite, whole_doc
 
 REJECT = [  # real shards the store carried until the cleanup retired them
     "The Immigration Act of 1924 (43 Stat.",
@@ -77,6 +77,48 @@ class FragmentGate(unittest.TestCase):
     def test_reunite_does_not_glue_normal_sentences(self):
         got = reunite(["Rania saw a 210-foot whale.", "What percentage of it is remora?"])
         self.assertEqual(len(got), 2, "a real sentence boundary stays a boundary")
+
+
+class WholeDoc(unittest.TestCase):
+    """The 2026-10-17 redesign: one document, one memory. The file is copied, the store keeps
+    a pointer - title, size, content hash, path, topics - and nothing is split."""
+
+    def _doc(self, d, name, body):
+        import pathlib
+        src = pathlib.Path(d, name)
+        src.write_text(body, encoding="utf-8")
+        return src
+
+    def test_pointer_carries_title_hash_path_and_topics(self):
+        import tempfile, pathlib
+        with tempfile.TemporaryDirectory() as d:
+            src = self._doc(d, "guide.md", "# Zephyr Migration Guide\n\n"
+                            + "The zephyr client handles streamable transports and ziggurat auth flows. " * 30)
+            info = whole_doc(str(src), str(pathlib.Path(d, "Documents")))
+            self.assertIn("Zephyr Migration Guide", info["pointer"])
+            self.assertIn("sha256", info["pointer"])
+            self.assertIn(str(pathlib.Path(d, "Documents")), info["pointer"])
+            self.assertIn("read ", info["pointer"], "the pointer tells the model to read the file")
+            self.assertTrue(info["dest"].endswith(".md"))
+            self.assertLess(len(info["pointer"]), 4000, "the pointer is one fact, store-capped")
+
+    def test_content_named_and_idempotent(self):
+        import tempfile, pathlib
+        with tempfile.TemporaryDirectory() as d:
+            a = self._doc(d, "a.md", "# Same\n\nbody text here. " * 20)
+            b = self._doc(d, "b.md", "# Same\n\nbody text here. " * 20)
+            ia, ib = whole_doc(str(a), d), whole_doc(str(b), d)
+            self.assertEqual(ia["dest"], ib["dest"], "identical content files to the same name")
+            c = self._doc(d, "c.md", "# Same\n\nchanged body. " * 20)
+            self.assertNotEqual(whole_doc(str(c), d)["dest"], ia["dest"],
+                                "changed content refiles honestly - the sha is the identity")
+
+    def test_title_falls_back_to_first_line_then_filename(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(doc_title("x.md", "# Head\n\ntext"), "Head")
+            self.assertEqual(doc_title("x.md", "No heading here.\n\nmore"), "No heading here.")
+            self.assertEqual(doc_title(str(Path(d) / "plainfile.md"), ""), "plainfile")
 
 
 if __name__ == "__main__":

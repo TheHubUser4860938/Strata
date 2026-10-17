@@ -1710,6 +1710,23 @@ class AutoShelve(unittest.TestCase):
         self.assertEqual(self._classes(m)[-1], "",
                          "Parent/CUTTER exists anchored to another entity: do not hijack, stay wild")
 
+    def test_reuse_before_mint_joins_the_family_drawer(self):
+        """(2026-10-17 shelving audit): once an entity's family has a DRAWER of >= 2 rows, a
+        fact whose entity token neighbours it joins the drawer instead of minting a new cutter
+        from a passing word. TECH/CALLN is what minting-without-looking made: one MCP-SDK fact
+        beside 708 TECH/MCP rows opened a second drawer beside its own subject. One neighbour
+        still mints (the FIC/KLORN law above) - two is a family."""
+        m = self._svc(auto_shelve=True)
+        m.remember("The Zephyrbus protocol handles streamable sessions", scope="fw", klass="DOC/MCPD")
+        m.remember("The Zephyrbus auth flow uses oauth tokens", scope="fw", klass="DOC/MCPD")
+        m.remember("The Zephyrbus protocol retries dropped streams", scope="fw")
+        self.assertEqual(self._classes(m)[-1], "DOC/MCPD",
+                         "the third fact joins the two-row family drawer its entity neighbours, "
+                         "instead of minting DOC/ZEPHY beside it")
+        self.assertEqual(m.conn.execute("select count(*) from shelves where name='DOC/ZEPHY' "
+                                        "and source='learned'").fetchone()[0], 0,
+                         "and no new drawer was minted for it")
+
 
     def test_rarest_subject_wins_over_a_passing_mention(self):
         m = self._svc(auto_shelve=True)

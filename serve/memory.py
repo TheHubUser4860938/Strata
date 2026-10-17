@@ -790,6 +790,21 @@ class MemoryService:
                 rows = counts[w]
                 if not rows:
                     continue                                            # first mention: no drawer yet
+                fulls = [r[0] for r in rows if "/" in r[0]]
+                if fulls:
+                    drawer: dict[str, int] = {}
+                    for f in fulls:
+                        drawer[f] = drawer.get(f, 0) + 1
+                    top, n = max(drawer.items(), key=lambda kv: kv[1])
+                    if n >= 2:
+                        # REUSE BEFORE MINT (2026-10-17 audit): the entity's family already has
+                        # a DRAWER with >= 2 rows in it - join it instead of naming a new cutter
+                        # after a passing token (TECH/CALLN: one MCP-SDK fact minted a second
+                        # drawer beside the 708-row TECH/MCP its sentence belonged to). ONE
+                        # neighbour is not a family: the entity-named law still opens drawers on
+                        # second mention (the FIC/KLORN test is that law, and the collision test
+                        # proves a stranger's drawer must not hijack).
+                        return top
                 parents = [r[0].split("/")[0].split(".")[0] for r in rows if r[0]]
                 if not parents:
                     continue                                            # family never shelved: stays wild

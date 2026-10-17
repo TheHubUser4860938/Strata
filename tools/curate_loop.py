@@ -175,6 +175,25 @@ def _norm(text):
     return " ".join("".join(c if c.isalnum() or c.isspace() else " " for c in str(text).casefold()).split())
 
 
+# WORK-STATE FILTER (2026-10-17 shelving audit, the owner's "that belongs in the journal, not
+# the store"): row counters, commit snapshots, session-local narration and in-progress plans
+# are true when journaled and lies within the hour - the store-381 fossil, the 2,655-row
+# counter and the mid-audit "95% too coarse" were all filed as facts and retired by hand the
+# same day. Mechanical, no engine, deliberately narrow: DECISIONS ("decided", "the user
+# instructed") and dated past events stay facts; only present-continuous state and
+# self-referential bookkeeping are refused. Every string here is a real shape from the census
+# (tools/test_curate_workstate.py keeps both sides honest).
+WORK_STATE = re.compile(
+    r"\b(store|memory|memories)\b[^.]{0,25}\b\d{2,4}\b"          # counters: "store 381", "memory 2,655 rows"
+    r"|\b\d{2,4}\b[^.]{0,25}\b(rows|active|vectors|pending|turns)\b"
+    r"|commit [0-9a-f]{7,8}|remote head|pushed as commit|head at commit"
+    r"|during this session|current conversation|at the moment|right now"
+    r"|\b(is|are|was|were)\s+(building|coding|developing|working on|planning|scheduled|preparing)\b"
+    r"|\b(plans|planning|going)\s+to\s|\bwill\s+(be\s+)?(build|implement|ship)\w*\b"
+    r"|\barm\s+[abc]\s+(test|run|result|configuration)\b|\bre-record\b|\bqueued behind\b",
+    re.I)
+
+
 # words that never carry a fact's payload, whatever the corpus says - copied from serve/memory.py
 # (same standalone-script reason as _norm above): without this, a small fetched store makes "the"
 # look rare (df 1) and two unrelated sentences "share" it; the live store hides the bug only
@@ -716,7 +735,16 @@ def main():
             rec({"kind": "probe_demote", "turn_id": c["turn_id"], "fact": c["fact"][:80]})
             cls = "FILL"
             c["demoted"] = "probe"
-        if cls not in ("UNSCORED", "DONT-STORE") and not a.no_store:
+        # JOURNAL, NOT STORE (2026-10-17 shelving audit): counters, commit snapshots and
+        # in-progress analysis are work-state - the journal already carries them, and stored
+        # they become tomorrow's stale "facts": the store-381 fossil, the 2,655-row counter,
+        # the "95% too coarse" claim extracted from this audit's own mid-flight words, all
+        # retired by hand the day they were filed. The turn still counts as curated and the
+        # review line still shows the candidate - it just does not become durable memory.
+        work_state = cls not in ("UNSCORED", "DONT-STORE") and bool(WORK_STATE.search(c["fact"]))
+        if work_state:
+            rec({"kind": "work_state_skip", "turn_id": c["turn_id"], "fact": c["fact"][:90]})
+        if cls not in ("UNSCORED", "DONT-STORE") and not a.no_store and not work_state:
             # §11: DONT-STORE is "log noise, not memory" - the review list carries it, the
             # store does not. (drain409e audit found 5 DONT-STOREs stored by the pre-fix
             # code; they were forgotten by hand the same night, source-tag verified.)
