@@ -6,7 +6,8 @@ store, and no harness ever re-sends conversation history — the server remember
 way no matter which app is knocking.
 
 **Naming (settled 2026-10-16).** The project is **Strata**. Its built-in memory system is **Strata
-Mnemosyne** — the store: subject shelves, SQLite + FTS5 + pinned embeddings, the journal, the sweep.
+Mnemosyne** — the store: subject shelves, native PostgreSQL (FTS + float32 vectors in one database,
+ADR-002 2026-10-16, superseding the original SQLite base), the journal, the sweep.
 The assistant that recalls it — the chat voice and the coding agent's hands — is **Clio** (KLEE-oh),
 who in the mythology is Mnemosyne's daughter: the retriever descends from the store. The split is
 architectural, not decoration: storage is passive and curated; recall is the part with rules,
@@ -54,9 +55,35 @@ Before reporting done, verify the boot banner says "memory core on" and /memory-
 
 The agent can also drive install/start/stop through Strata's [MCP server](docs/MCP_SERVER.md).
 
-Status, October 16, 2026 — **beta-1 (Linux)**: the claim list, with what each measurement was run on
-and what beta-1 refuses to claim, is [`docs/BETA1.md`](docs/BETA1.md). The text tier is live on
-the dev server and the K/V tier is in code:
+Status, October 17, 2026 — **beta-1 (Linux), development paused**: the claim list, with what each
+measurement was run on and what beta-1 refuses to claim, is [`docs/BETA1.md`](docs/BETA1.md). The
+text tier is live on the dev server and the K/V tier is in code. **The pause is hardware, not
+code:** the dev box now runs DavidAU's 120B Qwen3.8-Flash-Next at IQ3_S (~52 GB of weights) on a
+62 GB machine, so the engine pages ~30 GB of experts to swap; a 128 GB upgrade lands ~2026-10-22
+and development resumes behind it. The memory system itself is not the pressure — measured:
+Postgres holds 20 MiB resident, the embedder ~130 MiB, and the engine RSS is flat (no leak).
+Everything below is what shipped the day the pause began:
+
+- **Reason modes (live, measured twice):** 41 persona/effort framings the DAU template answers to,
+  steered by a `{REASON:name}` tag or the `reason_mode` tool, per-conversation sticky. Two sweeps
+  measured whether any of them *score*: round 1 on a hand-built bank (256 generations), round 2 on
+  published suites — GSM-Symbolic, MATH-500, HumanEval, five BIG-Bench Hard tasks, GPQA-diamond
+  (88 probes, 8 arms, records saved with gold so checker fixes never need regeneration). Verdict:
+  **no mode beats default/plain beyond the ±0.05 band, and coder, deeptree and house measurably
+  cost accuracy on the only shapes with headroom** (GPQA 0.62, MATH-500 0.83 for default). The
+  docs claim steering, never performance; the sweeps ran at temp 0 by instrument design, which is
+  not the model's recommended setting — a temp-1.0 × 3-repeat rerun is one flag (`--temperature`),
+  owned and queued.
+- **Store hygiene, proven by a 233-operation manual cleanup and now enforced in the write paths:**
+  multi-call agent turns journal as ONE row, not one per API round (the root cause of the duplicate
+  clusters — five rounds, five extractor passes, five paraphrased memories); the curation sweep's
+  supersession-law arm judges every landing fact against the store before it is stored (RESTATED
+  retires the older, CORRECTS amends the survivor to carry the history — 88 flags with correct
+  verdicts in the first live hours); ingest reunites abbreviation splits ("8 U.S.C." no longer dies
+  mid-citation) and refuses shards that cannot stand alone; and a weekly systemd timer seals an
+  encrypted backup then collapses paraphrase clusters — the store woke at 2,885 active rows, was
+  hand-merged to 2,595, and now **self-heals**: zero residual clusters, and the sweep retired ~36
+  more on its own the same afternoon.
 
 - **Tier 3, curated text memory (running):** ~2,700 facts on subject shelves, recalled server-side and
   injected as one hidden system block that rides all three dialects (OpenAI, Anthropic, Responses). A
@@ -101,7 +128,10 @@ the dev server and the K/V tier is in code:
   model is local (same engine, paper's decoding shape, disclosed); the doubled head costs ~2.3 s at
   conversation start and zero per follow-up (pinned prefix). Full protocol, caveats, and records:
   `docs/MEMORY_CORE.md` (F venue section) + `spikes/lme/oracle-20261013-full.jsonl` (12k) and
-  `spikes/lme/budget24k-20261014-full.jsonl` (24k).
+  `spikes/lme/budget24k-20261014-full.jsonl` (24k). These baselines were recorded on the previous
+  weights; the re-record on the DavidAU build (oracle re-fetched, runbook ready) sits queued behind
+  the RAM pause, and until it runs every comparison against these numbers is cross-model — said out
+  loud wherever the numbers are used.
 - **Phase 2, state-without-text (open research):** porting the *AKBASCORE MAM / NIRVANA cognitive
   cartridge* idea — knowledge stored as model-produced K/V (v1.3.0 "CUT3": 56 tensors per fact, one
   file each, SHA-256 manifested) and read back with no source text in the prompt, which on this
@@ -112,7 +142,7 @@ the dev server and the K/V tier is in code:
   [10.5281/zenodo.23146475](https://doi.org/10.5281/zenodo.23146475),
   [10.5281/zenodo.23311350](https://doi.org/10.5281/zenodo.23311350)).
 
-On this fork's target model (Qwen3.8-Flash-Next: 36 Gated DeltaNet layers + 12 Qwen Sparse Attention layers,
+On this fork's target model (Qwen3.8-Flash-Next, the 120B MoE: 36 Gated DeltaNet layers + 12 Qwen Sparse Attention layers,
 quantized KV) the state-without-text port is **open research, not an established result**: MAM's published
 evidence covers dense full-attention BF16 models and seals a scaling ceiling (22/80 at 80 cartridges). This
 fork documents positive *and* negative results as they land, in `docs/MEMORY_CORE.md`.
@@ -123,7 +153,8 @@ attribution and license terms of the AkbasCore repository (Copyright © 2026 Mus
 
 **Who wrote this code:** most of it was typed by AI coding agents under a human's direction. The human
 picks the direction, owns the claims, and runs every measurement on real hardware (RTX 4090,
-Ryzen 7 9800X3D, 64 GB RAM); each number in this fork links to the script and raw output that
+Ryzen 7 9800X3D, 64 GB RAM class — 128 GB arriving ~2026-10-22); each number in this fork links
+to the script and raw output that
 produced it, so anyone can re-check it whether or not an AI typed the driver.
 
 ---
