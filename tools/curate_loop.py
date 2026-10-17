@@ -240,25 +240,86 @@ def _pick_target(fact, rows, min_created=0.0):
 
 
 def supersede_id(url, fact, scope, log, min_created=0.0):
-    """The id of the active fact this CORRECT-class candidate replaces, or None (see _pick_target
-    for the matching rules). Prefers the row with the most hits - the one recall actually serves,
-    so the fix lands where the wrong fact was winning. None on any lookup trouble: a correction
-    that cannot find its target still stores as a plain new fact (op=remember), never fails."""
+    """The (id, text) of the active fact this CORRECT-class candidate replaces, or (None, None)
+    (see _pick_target for the matching rules). Prefers the row with the most hits - the one
+    recall actually serves, so the fix lands where the wrong fact was winning. The TEXT comes
+    along for the supersession law (fact 3820): a landing correction amends the survivor to
+    carry the trail, and the amend prompt needs the old words. None on any lookup trouble: a
+    correction that cannot find its target still stores as a plain new fact (op=remember),
+    never fails."""
     try:
         st, r = http(f"{url}/memory?scope={urllib.parse.quote(scope)}&limit=500")
         rows = [(m["id"], m["text"], m.get("hits", 0), m.get("created_at", 0))
                 for m in (r or {}).get("memories", [])] if st == 200 else []
     except Exception as e:                                    # noqa: BLE001 - a lookup is never worth losing a fact
         log({"kind": "supersede_lookup", "err": str(e)[:100]})
-        return None
+        return None, None
     if not rows:
-        return None
+        return None, None
     old, shared, amb = _pick_target(fact, rows, min_created)
     if old is None and shared:
         log({"kind": "supersede_ambiguous", "shared": shared, "ids": amb})
     elif old is not None:
         log({"kind": "supersede", "old_id": old, "shared": shared})
-    return old
+        return old, next((t for i, t, _, _ in rows if i == old), None)
+    return None, None
+
+
+# ---- the supersession law (fact 3820, the user's decision 2026-10-16) -------------------------
+# "when a memory that is newer says something very similar to an older one, the NEWER gets more
+#  careful scrutiny: does it supersede/correct the older? pure restatement -> newer stands, older
+#  retires; correction -> older retires AND the survivor is amended to carry the trail ('user had
+#  an RTX 4090, sold it for X')." Tonight's m7_consolidate proved the mechanics retroactively
+# (210 clusters, 421 retired at cos>=0.85, every sampled cluster a true paraphrase); this is the
+# law written forward, into the sweep that mints facts. The vector arm runs LOCALLY against the
+# store's own embeddings (the sweep already attaches; the attach law keeps it safe beside a live
+# server), because the search API answers in fused ranks, not raw cosine, and the law is a
+# cosine law. The verdict model call fires only on a flagged pair - ordinary traffic rarely pays it.
+
+LAW_TH = 0.85   # measured 2026-10-16 (m7_consolidate): paraphrase clusters at this line all
+                # sampled true; loosening folds related-but-different facts together.
+
+
+def near_dupe_cos(vec, rows):
+    """(best_cos, row) of rows = (id, text, scope, L2-normalized float32 vec) against a query
+    vec. Pure numpy, no I/O - the caller embeds and attaches. Empty rows -> (0.0, None)."""
+    if not rows:
+        return 0.0, None
+    import numpy as np
+    M = np.stack([r[3] for r in rows])
+    v = np.asarray(vec, dtype=np.float32)
+    v = v / (np.linalg.norm(v) + 1e-9)
+    s = M @ v
+    i = int(np.argmax(s))
+    return float(s[i]), rows[i]
+
+
+def law_verdict(answer):
+    """One word in, one of RESTATED / CORRECTS / DIFFERENT out. Unparseable -> DIFFERENT: the
+    safe reading, both facts survive, nothing is retired on a misread."""
+    a = (answer or "").strip().upper()
+    for w in ("RESTATED", "CORRECTS", "DIFFERENT"):
+        if w in a[:40]:
+            return w
+    return "DIFFERENT"
+
+
+def amend_with_history(ask, new_fact, old_text):
+    """The survivor's rewrite: state the current truth AND keep what the old row recorded. One
+    muted generation; None on any failure (empty, absurd length) and the raw new text stores -
+    the never-fails law the lexical supersede route already lives by."""
+    if not old_text:
+        return None
+    ans, _, _ = ask(
+        "The NEW fact replaces the OLD fact about the same subject. Rewrite NEW so it states "
+        "the current truth AND keeps what OLD recorded, as one plain fact of at most 45 words "
+        "(shape: 'user had X, now Y' or 'X was replaced by Z because W'). If OLD adds nothing "
+        "worth keeping, copy NEW exactly. No preamble, no quotes.\n"
+        f"OLD: {old_text[:500]}\nNEW: {new_fact[:500]}", 160, kind="law_amend")
+    ans = (ans or "").strip()
+    if not ans or len(ans) > 900:
+        return None
+    return ans if ans != new_fact.strip() else None
 
 
 # Top-class keyword map for the v1 shelf mark (PHASE 4.5). Deliberately small and distinctive:
@@ -401,6 +462,11 @@ def main():
                          "diagnostic names multi-event ORDERING as the mechanism - while a rendered "
                          "memory line carries no date at all, so the fact has to name its own day.")
     ap.add_argument("--no-store", action="store_true", help="score but do not remember/mark")
+    ap.add_argument("--no-law", action="store_true",
+                    help="skip the supersession law's vector scrutiny (fact 3820): a new fact "
+                         "cos>=0.85 from an active same-scope row normally gets a RESTATED/"
+                         "CORRECTS/DIFFERENT judgment before storing; the lexical CORRECT route "
+                         "and its amend step are unaffected")
     ap.add_argument("--dry-run", action="store_true", help="render + count, no engine asks")
     ap.add_argument("--tag", default=datetime.date.today().isoformat())
     a = ap.parse_args()
@@ -450,6 +516,51 @@ def main():
         ptok = (r.get("usage") or {}).get("prompt_tokens")
         geom = None if want_geom is None else (ptok == want_geom)
         return ans, ptok, geom
+
+    # ---- the supersession law's vector arm (see LAW_TH above) ------------------------------
+    law_emb = None
+    law_rows = None       # (id, text, scope, L2-normalized vec), fetched once per sweep run
+
+    def law_check(fact, scope):
+        """(verdict, old_id, old_text, cos) when a fact-to-store sits LAW_TH+ cosine from an
+        active SAME-SCOPE row (corrections live where the old claim lives), else None. Any
+        trouble -> None: the law never loses a fact and never stops a sweep."""
+        nonlocal law_emb, law_rows
+        try:
+            if law_rows is None:
+                import numpy as np
+                from serve import memory as _M
+                from serve.embedder import Embedder
+                law_emb = Embedder(str(ROOT / "Strata-data/embeddings/bge-small-en-v1.5"), threads=4)
+                sdir = stats.get("dir") or (os.path.dirname(db_path) if db_path else "")
+                with _M.attach(sdir) as con:
+                    raw = con.execute("select m.id, m.text, m.scope, e.vec from memories m "
+                                      "join embeddings e on e.id = m.id"
+                                      " where m.invalid_at is null").fetchall()
+                V = np.stack([np.frombuffer(r[3], dtype=np.float32) for r in raw]) if raw \
+                    else np.zeros((0, 384), dtype=np.float32)
+                V = V / (np.linalg.norm(V, axis=1, keepdims=True) + 1e-9)
+                law_rows = [(r[0], r[1], r[2], V[i]) for i, r in enumerate(raw)]
+                rec({"kind": "law_matrix", "rows": len(law_rows)})
+            cand = [r for r in law_rows if r[2] == scope]
+            if not cand:
+                return None
+            cos, row = near_dupe_cos(law_emb.embed_query(fact), cand)
+            if cos < LAW_TH:
+                return None
+            ans, _, _ = ask(
+                "Two memory facts about the same subject. Decide how the NEW relates to the "
+                "OLD: RESTATED if they say the same thing in different words; CORRECTS if the "
+                "NEW contradicts or updates the OLD (a change of state, place, decision or "
+                "fact); DIFFERENT if they are separate facts that merely share words. Answer "
+                f"with one word.\nOLD: {(row[1] or '')[:500]}\nNEW: {fact[:500]}", 12,
+                kind="law_judge")
+            verdict = law_verdict(ans)
+            rec({"kind": "law_flag", "cos": round(cos, 3), "old_id": row[0], "verdict": verdict})
+            return verdict, row[0], row[1], cos
+        except Exception as e:                        # noqa: BLE001 - the law never loses a fact
+            rec({"kind": "law_err", "err": str(e)[:120]})
+            return None
 
     # ---- extraction ----------------------------------------------------------------------
     processed_ids: list[int] = []
@@ -605,18 +716,46 @@ def main():
                       "provenance": {"turn_id": c["turn_id"], "probe": c["probe"], "gold": c["gold"],
                                      "cls": cls, "mixed": mixed, "passes": cold, "model": model}}
             body = {"op": "remember", **fields}
+            stored_now = False
             if cls == "CORRECT":
                 # job 7 routing: a correction SUPERSEDES the fact it contradicts (found by content
-                # address) instead of parking a 121st near-dupe beside it in recall
-                old = supersede_id(url, c["fact"], c["scope"], rec, min_created=batch_start)
+                # address) instead of parking a 121st near-dupe beside it in recall. The supersession
+                # law's second half (fact 3820): the survivor is AMENDED to carry the trail.
+                old, old_text = supersede_id(url, c["fact"], c["scope"], rec, min_created=batch_start)
                 if old:
+                    amended = amend_with_history(ask, c["fact"], old_text)
+                    if amended:
+                        fields = {**fields, "text": amended}
+                        c["amended"] = True
                     body = {"op": "correct", "id": old, **fields}
                     c["supersedes"] = old
-            st, r = http(url + "/memory", body, timeout=60)
-            if st == 400 and body["op"] == "correct":         # server predates op=correct: plain store
-                st, r = http(url + "/memory", {"op": "remember", **fields}, timeout=60)
-                c["supersedes"] = "deferred:server-predates-correct"
-            c["mem_id"] = (r or {}).get("id")
+            elif not a.no_law and not c.get("turn_probe"):
+                # the law's first half: a NEW fact near-identical (cos >= LAW_TH) to an active row
+                # gets a judgment BEFORE it stores - restatements retire the older, corrections
+                # land amended, DIFFERENT verdicts store both. Probe-shaped traffic is exempt (the
+                # 2026-10-12 cascade law: quiz echoes do not correct the world).
+                law = law_check(c["fact"], c["scope"])
+                if law and law[0] == "CORRECTS":
+                    amended = amend_with_history(ask, c["fact"], law[2])
+                    if amended:
+                        fields = {**fields, "text": amended}
+                        c["amended"] = True
+                    body = {"op": "correct", "id": law[1], **fields}
+                    c["supersedes"] = law[1]
+                elif law and law[0] == "RESTATED":
+                    st, r = http(url + "/memory", body, timeout=60)
+                    stored_now = True
+                    c["mem_id"] = (r or {}).get("id")
+                    if c["mem_id"] and c["mem_id"] != law[1] and not (r or {}).get("deduped"):
+                        http(url + "/memory", {"op": "invalidate", "id": law[1], "by": c["mem_id"]},
+                             timeout=60)
+                        c["supersedes"] = law[1]      # newer stands; older retires into the chain
+            if not stored_now:
+                st, r = http(url + "/memory", body, timeout=60)
+                if st == 400 and body["op"] == "correct":     # server predates op=correct: plain store
+                    st, r = http(url + "/memory", {"op": "remember", **fields}, timeout=60)
+                    c["supersedes"] = "deferred:server-predates-correct"
+                c["mem_id"] = (r or {}).get("id")
             if st != 200:
                 rec({"kind": "remember", "turn_id": c["turn_id"], "http": st,
                      "err": str(r)[:120]})

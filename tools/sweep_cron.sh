@@ -32,7 +32,10 @@ read -r pressure pending <<<"$nums"
 
 if [ "${pressure:-0}" = "1" ] || [ "${pending:-0}" -gt "$PENDING_MAX" ]; then
     echo "$(date '+%F %T') sweep: pressure=$pressure pending=$pending"
-    python3 tools/curate_loop.py --sweep --batches 2 --tag cron >> tools/state/cron.log 2>&1
+    # VENV python, not bare python3: the system interpreter has no psycopg (measured
+    # 2026-10-16), so the PG processed-marking crashes under it - turns stay pending and get
+    # re-curated, the exact duplication amplifier the venue day filed as a law.
+    .venv/bin/python tools/curate_loop.py --sweep --batches 2 --tag cron >> tools/state/cron.log 2>&1
 else
     echo "$(date '+%F %T') idle: pending=$pending"
 fi

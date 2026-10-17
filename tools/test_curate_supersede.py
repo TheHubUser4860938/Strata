@@ -87,5 +87,47 @@ class ProbeShape(unittest.TestCase):
         self.assertFalse(_probe_shape("", ""))
 
 
+class SupersedeLaw(unittest.TestCase):
+    """The law written forward (fact 3820): verdict parsing, the cosine picker, the amend
+    fallback. Pure functions - no HTTP, no store, no embedder."""
+
+    def test_verdict_parses_and_defaults_safe(self):
+        from curate_loop import law_verdict
+        self.assertEqual(law_verdict("RESTATED."), "RESTATED")
+        self.assertEqual(law_verdict("corrects — the user sold the card"), "CORRECTS")
+        self.assertEqual(law_verdict("DIFFERENT facts that share words"), "DIFFERENT")
+        self.assertEqual(law_verdict(""), "DIFFERENT")            # unparseable: both survive
+        self.assertEqual(law_verdict("I think they are DIFFERENT."), "DIFFERENT")
+
+    def test_near_dupe_cos_picks_the_parallel_row(self):
+        import numpy as np
+        from curate_loop import near_dupe_cos, LAW_TH
+        rows = [(1, "old fact", "default", np.array([1.0, 0.0], dtype=np.float32)),
+                (2, "other", "user", np.array([0.0, 1.0], dtype=np.float32))]
+        cos, row = near_dupe_cos(np.array([2.0, 0.0], dtype=np.float32), rows)   # parallel to 1
+        self.assertAlmostEqual(cos, 1.0, places=5)
+        self.assertEqual(row[0], 1)
+        cos, row = near_dupe_cos(np.array([0.0, 5.0], dtype=np.float32), rows)   # parallel to 2
+        self.assertAlmostEqual(cos, 1.0, places=5)
+        self.assertEqual(row[0], 2)
+        self.assertEqual(near_dupe_cos(np.array([1.0, 0.0], dtype=np.float32), []), (0.0, None))
+        self.assertEqual(LAW_TH, 0.85)                            # measured, m7_consolidate
+
+    def test_amend_never_fails_and_skips_noops(self):
+        from curate_loop import amend_with_history
+        ok = lambda *a, **k: ("user had an RTX 4090, sold it for an RTX 5090", 0, False)
+        self.assertEqual(amend_with_history(ok, "user has an RTX 5090", "user has an RTX 4090"),
+                         "user had an RTX 4090, sold it for an RTX 5090")
+        dead = lambda *a, **k: (None, None, False)
+        self.assertIsNone(amend_with_history(dead, "new fact", "old fact"))   # transport failure
+        blank = lambda *a, **k: ("", 0, False)
+        self.assertIsNone(amend_with_history(blank, "new fact", "old fact"))
+        ramble = lambda *a, **k: ("x" * 950, 0, False)
+        self.assertIsNone(amend_with_history(ramble, "new fact", "old fact"))  # absurd length
+        verbatim = lambda *a, **k: ("new fact", 0, False)
+        self.assertIsNone(amend_with_history(verbatim, "new fact", "old fact"))  # nothing added
+        self.assertIsNone(amend_with_history(ok, "new fact", None))             # no old text
+
+
 if __name__ == "__main__":
     unittest.main()
