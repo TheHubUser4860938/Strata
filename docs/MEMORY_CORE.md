@@ -415,7 +415,16 @@ free. Dialect reach, measured at boot 14 (2026-10-13): the loop rides **all thre
 /v1/messages (Claude Code) and /v1/responses (Codex CLI) answered a browse-only question 2/2 each,
 no tool item leaked, and `input_tokens` reported the final round's prompt (the accounting fix in
 the same commit); the trace field rides the chat route only (v1, documented). Opt-in twice over: config
-`"tool": true` for every conversation, or the `X-Strata-Memory-Tool: 1` header for one. Off (the
+`"tool": true` for every conversation, or the `X-Strata-Memory-Tool: 1` header for one — a SWITCH,
+not a count: `1`/`on`/`true` turns the tool on for that request (the banner said "1 per request"
+and got read as one search per request; it now says what is true). The per-request browse budget
+is `memory.tool_rounds` (2026-10-17, the owner's ask so "the model can research the store at will
+while thinking"): default **3** rounds — the bare constant that used to hide in the loop, so every
+existing install reads byte-identical — and **0 = unlimited**: rounds end when the model stops
+writing calls, when the context fills, or when the request is cancelled; each round re-renders and
+spends, so the cost of free browsing is token-bounded by the window, not by a guard. The loop's cap
+is the widest tool family it serves, so an MCP hub's own `max_rounds` never throttles the browse
+tool below its configured budget. This box runs `0`. Off (the
 default): no tool joins the request's list and the prompt bytes are as before. A muted request
 gets no tool - memory off means off. Scoping: the call searches the request's scope pair; a call
 naming `class` browses to those shelves **on purpose** (the header filter says what rides every

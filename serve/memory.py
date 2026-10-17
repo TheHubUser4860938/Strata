@@ -456,7 +456,7 @@ class MemoryService:
                  turn_recall_limit: int = 8, turn_block_chars: int = 2000,
                  max_memories: int = 0, dedup_recall: bool = True,
                  encrypt: bool = False, key_file: str = "", passphrase_env: str = "",
-                 tool: bool = False, embedder=None, floor_cosine: float = 0.0,
+                 tool: bool = False, tool_rounds: int = 3, embedder=None, floor_cosine: float = 0.0,
                  auto_shelve: bool = False, block_min_score: float = 0.0,
                  expose_window: int = 0, expose_step: float = 0.0, expose_cap: int = 3,
                  route_shelves: bool = False):
@@ -535,6 +535,15 @@ class MemoryService:
         # executed by the SERVER (run_with_mcp) - every harness gets browsing with zero client wiring.
         # Off by default: no tool joins the request's list, the prompt bytes stay as they were.
         self.tool = bool(tool)
+        # per-request rounds the tool loop runs for THIS store (2026-10-17, the owner's ask after he
+        # read the banner's "X-Strata-Memory-Tool: 1 per request" as a count - it is not, 1 is the
+        # header's ON value: the count was a bare 3 in run_with_mcp, invisible, until now). 0 =
+        # unlimited: the model browses its own store at will while it thinks, and stops when the
+        # thinking is done - every round re-renders and spends tokens, and the context window is the
+        # only wall left, so a runaway loop is slow, never endless. Default 3 keeps every existing
+        # install byte-identical; out of range (negative, > 240) reads as the default.
+        _tr = int(tool_rounds)
+        self.tool_rounds = _tr if 0 <= _tr <= 240 else 3
         # PHASE 4 semantic layer (opt-in, 2026-10-14): an embedder INSTANCE (duck-typed on
         # embed_query/embed_docs - tests inject stubs) or a config object {"dir": ..., "threads": ...}
         # that builds serve.embedder.Embedder here. Absent = lexical-only recall, byte-identical to

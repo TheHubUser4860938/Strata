@@ -4920,7 +4920,8 @@ def _debug_req(api, req, messages, tools, max_new, thinking, prompt_tokens):
 def run_with_mcp(svc: Service, hub, messages, tools, kw, ids, thinking, max_new, max_req, sampling, cancel,
                  mcp_names, memory_name=None, memory_ctx=None, reason_name=None):
     """Service.run with the MCP tools executed here: the model writes a call to an MCP tool, the server runs it, adds
-    the call and its result to the conversation and lets the model continue - up to `max_rounds` times.  Yields what
+    the call and its result to the conversation and lets the model continue - up to `max_rounds` times (0: no
+    round limit at all; the rounds end when the model stops writing calls, when the context fills or on cancel).
     Service.run yields (text, thinking, the request's own tool calls) plus ("mcp", {...}) for the tool activity, and
     one ("done", ...) at the very end with the output tokens of every round.
 
@@ -4938,6 +4939,12 @@ def run_with_mcp(svc: Service, hub, messages, tools, kw, ids, thinking, max_new,
     max_rounds = int(hub.settings["max_rounds"]) if hub is not None else 3
     if memory_name:
         mcp_names = set(mcp_names) | {memory_name}
+        # the memory tool's own per-request budget (config memory.tool_rounds, 2026-10-17): the
+        # loop's cap is the WIDEST family it serves, so an MCP hub's number never throttles the
+        # local search tool below its own, and 0 (unlimited) lets the model browse its store at
+        # will - rounds end when it stops calling, when the context fills, or when cancelled.
+        if svc.memory is not None:
+            max_rounds = 0 if svc.memory.tool_rounds == 0 else max(max_rounds, svc.memory.tool_rounds)
     if reason_name:
         mcp_names = set(mcp_names) | {reason_name}
     total, rounds, done = 0, 0, None
@@ -4965,8 +4972,8 @@ def run_with_mcp(svc: Service, hub, messages, tools, kw, ids, thinking, max_new,
             yield kind, x
         total += done["completion_tokens"]
         run_them = calls and not own_calls and done["finish"] == "stop" and not cancel.is_set()
-        if run_them and rounds >= max_rounds:
-            yield "mcp", {"event": "limit", "max_rounds": max_rounds}
+        if run_them and max_rounds and rounds >= max_rounds:     # max_rounds 0: unlimited, the rounds
+            yield "mcp", {"event": "limit", "max_rounds": max_rounds}   # end when the model stops calling
             run_them = False
         if not run_them:
             for c in calls:                              # announced, never run: close them in the client's view
@@ -7744,6 +7751,7 @@ def main() -> int:
                 passphrase_env=str(mcfg.get("passphrase_env") or ""),
                 inject=mcfg.get("inject") is not False,
                 tool=mcfg.get("tool") is True or str(mcfg.get("tool") or "").lower() in ("1", "on", "true"),
+                tool_rounds=int(mcfg.get("tool_rounds") if mcfg.get("tool_rounds") is not None else 3),
                 floor_cosine=float(mcfg.get("floor_cosine") or 0.0),
                 auto_shelve=mcfg.get("auto_shelve") is True
                             or str(mcfg.get("auto_shelve") or "").lower() in ("1", "on", "true"),
@@ -7769,7 +7777,10 @@ def main() -> int:
               f"exposure decay {svc.memory.expose_step and f'on ({svc.memory.expose_window} turns, step {svc.memory.expose_step}, cap {svc.memory.expose_cap})' or 'off'}; "
               f"shelf router {svc.memory.route_shelves and 'on (bm25 vote, unaddressed blocks only)' or 'off'}; "
               f"at-rest {at_rest_line}; "
-              f"tool {svc.memory.tool and 'on' or 'off'} (X-Strata-Memory-Tool: 1 per request); "
+              f"tool {svc.memory.tool and 'on' or 'off'} "
+              f"({svc.memory.tool_rounds and f'{svc.memory.tool_rounds} rounds' or 'unlimited rounds'} per "
+              f"request; the header X-Strata-Memory-Tool: 1/on/true turns the tool ON for one request - it "
+              f"is a switch, not a count); "
               f"embedder {svc.memory.embedder and 'on: ' + getattr(svc.memory.embedder, 'model_name', '?') + ' (CPU, hybrid rerank)' or (svc.memory.embedder_error and 'FAILED - lexical only: ' + svc.memory.embedder_error or 'off')}; "
               f"GET /memory to inspect)", flush=True)
         # M3b: the tier-2 standing cartridge rides the same config - {"cartridges": {"enabled": true,

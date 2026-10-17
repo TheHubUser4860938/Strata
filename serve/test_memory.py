@@ -703,6 +703,90 @@ class MemoryTool(unittest.TestCase):
         self.assertFalse(empty["ok"], "q is required")
 
 
+class MemoryToolRounds(unittest.TestCase):
+    """memory.tool_rounds (2026-10-17, the owner's ask): the per-request budget for the server-side
+    browse loop is config, not a bare constant - the banner's "X-Strata-Memory-Tool: 1 per request"
+    read as a count, but 1 is the header's ON value; the real cap was 3 rounds, invisible. It ships
+    as 0 = unlimited (browse the store at will while thinking; the model stops when it is done, and
+    the context window plus per-round token cost are the only walls), with the default staying 3 so
+    every other install reads byte-identically. The scripted engine writes four browse rounds and
+    then the answer - five generations - so the cap is visible in what the reply is."""
+
+    CALL = ('<tool_call>\n<function=memory_search>\n<parameter=q>\nzygost calibration round %d\n'
+            '</parameter>\n</function>\n</tool_call>')
+
+    def boot(self, rounds_cfg):
+        self.tmp = tempfile.TemporaryDirectory()
+        tok = ByteTokenizer()
+        scripts = [self.CALL % i for i in range(1, 5)] + ["the answer after four browses"]
+        self.engine = MockEngine(tok, scripts, max_context=131072)
+        self.svc = Service(self.engine, tok, ChatTemplate(ROOT / "serve/chat_template.jinja"))
+        self.svc.memory = MemoryService(self.tmp.name, tool=True, **rounds_cfg)
+        self.httpd = serve(self.svc, port=0)
+        self.port = self.httpd.server_address[1]
+
+    def tearDown(self):
+        if not hasattr(self, "httpd"):       # the bounds test never boots a server
+            return
+        self.httpd.shutdown()
+        self.httpd.server_close()
+        self.svc.memory.close()
+        self.tmp.cleanup()
+
+    def http(self, verb, path, body=None):
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=30)
+        conn.request(verb, path, json.dumps(body) if body is not None else None,
+                     {"Content-Type": "application/json"})
+        r = conn.getresponse()
+        data = r.read().decode()
+        conn.close()
+        try:
+            return r.status, json.loads(data)
+        except ValueError:
+            return r.status, data
+
+    def browse(self):
+        st, body = self.http("POST", "/v1/chat/completions",
+                             {"model": "m", "max_tokens": 256, "reasoning_effort": "off",
+                              "messages": [{"role": "user",
+                                            "content": "what does memory say, browse deep?"}]})
+        self.assertEqual(st, 200, body)
+        return body["choices"][0]["message"]
+
+    def test_default_three_rounds_stops_the_fourth(self):
+        self.boot({})                          # no tool_rounds in the config: today's 3, byte-identical
+        msg = self.browse()
+        trace = msg.get("strata_mcp") or []
+        ran = [e for e in trace if e.get("event") == "call"]
+        self.assertEqual(len(ran), 3, "the default budget is exactly the old bare constant")
+        self.assertTrue([e for e in trace if e.get("event") == "limit"])
+        self.assertTrue([e for e in trace if e.get("event") == "result" and e.get("skipped")],
+                        "the fourth call is announced, never run - and says so in the trace")
+
+    def test_unlimited_browses_until_the_model_is_satisfied(self):
+        self.boot({"tool_rounds": 0})          # the box's setting, the owner's law
+        msg = self.browse()
+        self.assertEqual(msg["content"], "the answer after four browses",
+                         "no round guard fired: the loop ran on until the model stopped calling")
+        trace = msg.get("strata_mcp") or []
+        self.assertEqual(len([e for e in trace if e.get("event") == "call"]), 4)
+        self.assertFalse([e for e in trace if e.get("event") == "limit"])
+
+    def test_five_rounds_is_the_owners_floor_and_clears_the_same_four(self):
+        self.boot({"tool_rounds": 5})
+        msg = self.browse()
+        self.assertEqual(msg["content"], "the answer after four browses")
+
+    def test_the_config_bounds_are_dumbproof(self):
+        for raw, want in ((3, 3), (0, 0), (7, 7), ("9", 9), (241, 3), (-4, 3)):
+            with tempfile.TemporaryDirectory() as d:      # out of range reads as the default, never a hang
+                m = MemoryService(d, tool_rounds=raw)
+                try:
+                    self.assertEqual(m.tool_rounds, want)
+                finally:
+                    m.close()
+
+
 class Cartridge(unittest.TestCase):
     """M3b tier-2 standing cartridge (2026-10-12): the standing shelves ride every prompt as its
     FIRST system bytes, and their K/V comes back from the engine session file instead of being
