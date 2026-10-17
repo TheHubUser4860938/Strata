@@ -1946,8 +1946,13 @@ off; off means every render passes the SAME kwargs dict, byte-identical by const
   `/reason` routes, the `reason_mode` tool, the sticky map, the boot banner naming the modes.
   True on a plain-template box is a no-op **with a message** - the flavor gate outranks even an
   explicit true. Absent anywhere: silence, byte-identical, and `POST /reason` answers 409 naming
-  the key to set. `setup --family dau` writes `"reason_modes": true` into the config it generates,
-  so a DavidAU install arrives with its feature already on; no other family ever sees the key.
+  the key to set. `setup --family dau` writes `"reason_modes": true` **and** `"reason_mode":
+  "ultra"` into the config it generates - ultra being the generalist high-thinking default (the
+  user, 2026-10-17), the top mode that actually exists: his README advertises `xultra`, which the
+  template does not answer to (measured: it leaks as literal prompt text) and the server refuses
+  (400) - so a DavidAU install arrives with its feature on, framing every conversation as the
+  exhaustive-perfection engine until something steers it elsewhere. No other family ever sees
+  either key.
 - **The flavor gate (measured first, 2026-10-17).** The stock template consumes `reasoning_effort`
   itself and **raises its own "Unexpected reasoning effort" template error** on a value off its
   list when thinking is on - a mode name is exactly that - while with thinking off it ignores the

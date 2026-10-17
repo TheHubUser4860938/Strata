@@ -6850,6 +6850,12 @@ def main() -> int:
         # with its reason modes ON - the /reason door, the reason_mode tool, the sticky modes; every
         # other family leaves the key absent, which is off, and the server never consults any of it.
         cfg["reason_modes"] = True
+        # and its generalist default (the user, 2026-10-17): "ultra" - the highest-thinking real mode.
+        # His README advertises xultra, which this template does NOT answer to (measured: it leaks as
+        # literal prompt text), so ultra is the top mode that exists; a conversation steers away from
+        # it with the tool or /reason, and a client's own tag outranks it as always.  Injects with
+        # thinking on and off both (measured), so every harness dialect gets the framing.
+        cfg["reason_mode"] = "ultra"
     fetch_embedder(ROOT)
     if cuda_tk == 12:                                  # the experimental CUDA 12 engine (engine-cuda12/)
         cfg["cuda"] = 12
