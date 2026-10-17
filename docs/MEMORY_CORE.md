@@ -1,10 +1,16 @@
 # Memory Core — server-side, harness-independent memory (this fork's track)
 
-**Status: Stage 0 complete (dev build verified on :8005). Phase 1 memory service implemented AND
-live-verified on the real model with real client shapes (merge fix `8b1826cd`; 702-test suite green).
-Phase 2: Spike C mechanism replication PASS across 0.5B/1.5B/3B; Spike D0 PLE-addressing spec closed
-(oracle-exact mirror, `0d325135`). Next: draft the shared engine patch (STRATA_KVPROBE +
-STRATA_PLE_OVERLAY), then the coordinated measurement window. Last updated: 2026-10-11 (build session).**
+**Status (2026-10-17): Phase 1 runs on its own engine - the store rebased to native PostgreSQL
+(ADR-002, R1-R7 complete 2026-10-16; the rebase's venue gate is green on BOTH halves: retrieval
+deltas inside the floor and explained row-by-row, answer-level 0.739 vs the 0.761 SQLite-era
+baseline, inside ±0.05). The tier-3 accuracy line: arm C 0.761 per line (the doubled budget and the
+reranker as a measured bundle), date grounding shipped at +0.207 pooled on the temporal pool, and
+the stuffing trilogy closed with the purge as the cure (three ranking knobs ship, all default off,
+all measured inert-or-harmful). The query-shelf router shipped 2026-10-17 default-OFF
+(`memory.route_shelves`, six unit tests + the `--router-ab` lever in the retrieval A/B); its default
+flip is the next venue arm. Phase 2: Spike C mechanism replication PASS across 0.5B/1.5B/3B; Spike
+D0 PLE-addressing spec closed (oracle-exact mirror, `0d325135`). Next for Phase 2: draft the shared
+engine patch (STRATA_KVPROBE + STRATA_PLE_OVERLAY), then the coordinated measurement window.**
 
 This fork explores built-in long-term memory for Strata: recall that lives at the inference server, shared by
 every client (OpenCode, Odysseus AI, the web app), with **no harness ever resending memory text into the

@@ -9,9 +9,13 @@ engine logs.
 
 ## What beta-1 claims
 
-1. **Curated store (tier 3).** FTS5 + confidence/recency scoring, per-class shelves (LLC-style),
-   encryption at rest with atomic seal and plaintext shred on clean shutdown - **six shred-to-reveal
-   round-trips proven** across boots (the sixth on a 13k-row venue store, 2026-10-13). Budget law,
+1. **Curated store (tier 3).** Native PostgreSQL (ADR-002, R1-R7 landed 2026-10-16): true Lucene
+   bm25 over tsvector/GIN candidates + confidence/recency scoring, per-class shelves (LCC-style),
+   float32 vectors in the store's own database with the pinned-matrix exact cosine. At rest the law
+   moved from the file seal to the BACKUP - the seal/`.enc`/husk rules retired with the single file
+   they were one-file rules for: data dir 0700, encrypted `pg_dump` under the store's key-file
+   (`tools/m6_backup.py` - round trip verified live on the venue store mid-replay: 22.6 MB dump+seal
+   1.7 s, restore into a fresh dir searched byte-identical 5/5). Budget law,
    invalidation chain (`invalid_at`/`superseded_by`), self-feeding journal via a systemd user timer
    (pressure- and idle-gated). Consolidation runs with the v3 laws: subject rule, payload
    containment, a 4-token floor on the 70% path - each added after a measured false-merge rate
@@ -54,15 +58,25 @@ engine logs.
    regression, user 0.953 -> 0.911, is flagged in `docs/MEMORY_CORE.md`. Cost is first-turn only
    (pinned head): ~2.3 s at conversation start, zero per follow-up. Records:
    `spikes/lme/oracle-20261013-full.*` (12k) and `spikes/lme/budget24k-20261014-full.*` (24k).
+   **Re-measured on the rebased Postgres store (R7 venue day, 3 repeats, hybrid arm): 0.739 per
+   line, idk 0.145** - against the 0.761 SQLite-era baseline, inside the ±0.05 floor, so the rebase
+   gate PASSES. The day's scary retrieval flags (rowcov 0.700 vs 0.885) were venue-day sweep
+   contamination, not the engine: the sweep curated the replay's own 1,497 journal turns into
+   1,103 user-scope facts that outrank gold on recency; restoring a clean backup and re-measuring
+   offline reproduced the deterministic gate numbers exactly. Protocol law learned: a venue day
+   means the curation sweep STOPPED. Record: `spikes/lme/venuepg-full-20261016.jsonl` (+ metrics).
 8. **Hybrid semantic rerank (opt-in) - the biggest accuracy lever measured on F.** A pinned
    `bge-small-en-v1.5` ONNX embedder, **CPU-only** (the GPU belongs to the engine), verified by SHA-256
    at open: a checksum mismatch RAISES, any other load failure degrades to bm25 **loudly** (banner and
    `stats()` both say "lexical only"), because a missing model file must never take the memory down.
-   Fusion is **by rank (RRF k=60), never by mixed score scales** - the first weighted blend demoted a
+   Fusion is **by rank (RRF), never by mixed score scales** - the first weighted blend demoted a
    rank-1 exact-lexical answer to **14th** on a live 2,521-row store, which is the failure mode this
-   design exists to avoid. Vectors live inside `memory.db`, so the existing at-rest seal covers them
-   with no new key handling; `remember()` embeds at write (3 ms); `tools/m4_embed.py` backfills old
-   rows and opens a sealed store.
+   design exists to avoid. The constant was swept on our own store the same week (2026-10-15,
+   `tools/lme_retrieval_ab.py --rrf-k`, 10,973 rows, deterministic): **k=1 ships**, replacing the
+   paper-convention k=60; the property that justified rank fusion survives the change (a lexical
+   first place still outscores a both-arms fifth; the reach probe scores identically at 1 and 60).
+   Vectors live in the store's own database (the `embeddings` table), so the backup law covers them
+   with no new key handling; `remember()` embeds at write (3 ms); `tools/m4_embed.py` backfills old rows.
    **Arm C, same store, same protocol, third arm: 192 notes / 48k chars WITH the reranker = 0.761 per
    line, 0.766 by majority** (per-repeat 381/378/383) against arm B's 0.721 / 0.732 - **+4.0 points,
    about 7x the repeat-to-repeat band**. Muted control: 1478/1500 `idk` (98.5%); the single "gold leak"
@@ -133,7 +147,8 @@ engine logs.
 
 ## Reproducing
 
-- Store/UI/recall tests: `python3 serve/test_memory.py` (57 tests, no GPU).
+- Store/UI/recall tests: `PYTHONPATH=. python3 -m unittest serve.test_memory` (no GPU); the full
+  `serve` discovery suite is the pre-push gate (902 OK, skipped=11, 279 s, re-run 2026-10-17).
 - Venue tools: `tools/test_m2_merge.py`, `tools/test_lme_harness.py` (5), `tools/test_m3c_venue.py`
   (3) - offline, fixture stores, no engine.
 - F venue: `tools/lme_harness.py` (protocol + resumable records) then `tools/lme_report.py`.
