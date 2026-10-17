@@ -2043,19 +2043,33 @@ off; off means every render passes the SAME kwargs dict, byte-identical by const
   battery passes (engine_hash's 2 failures pre-date this change on a box without the engine
   installed, verified against the clean tree the same day).
 
-**Still owed, stated before it is claimed:** (1) **the performance gate** - "does it make the
-work better" is measured, not assumed: `tools/m4_reason.py` (built 2026-10-17) rides the live
-server at temp 0, 7 task shapes x 16 probes x 2 passes x 8 arms. The arm is chosen by DavidAU's
-own `{REASON:}` tag inside the probe (client tag outranks every server level, so the sweep never
-moves the box's sticky map), memory muted per request, and every probe carries a **deterministic
-checker** - exact-answer match, candidate code exec'd in a subprocess against hidden asserts,
-checklist regexes - no LLM judge, so no self-preference bias and reruns grade identical bytes
-(the graders were self-tested against synthetic good/bad answers before the first generation).
-The instrument calibrates its own noise floor: on this box the no-tag arm and `{REASON:ultra}`
-are the same framing, and their gap is the run-to-run spread at temp 0; a claim that mode X beats
-the default must clear that spread AND the ±0.05 venue band. The modes ship for steering
-regardless; any claim that mode X beats stock for task class Y waits for that record, which lands
-in this paragraph when the sweep finishes. (2) **the baseline clock reset**:
+**The performance gate, swept 2026-10-17 and recorded before any reading of it:**
+`tools/m4_reason.py` ran 256 generations on this box - 8 arms (no-tag default, ultra, off,
+xhigh, coder, house, deeptree, socrates) x 16 probes x 7 shapes x 2 passes, temp 0, arms
+interleaved probe by probe, memory muted per request. The arms ride DavidAU's own
+`{REASON:}` tag inside the probe (client tag outranks every server level, so the sweep never
+moves the sticky map it measures), and scoring is deterministic end to end - exact-answer
+match, candidate code exec'd in a subprocess against hidden asserts, checklist regexes, strict
+JSON - no LLM judge, so reruns grade identical bytes. The noise floor is built in: on this box
+the no-tag arm and `{REASON:ultra}` are the same framing, and they came apart by 0.005 - that
+is the instrument's own spread at temp 0 (MoE routing and batch shape are what's left).
+**The sweep also caught a grader bug by being right: the ordering puzzle resolves
+Ana > Bea > Cy > Dee, every arm answered "Dee" 16/16, and the bank expected "Cy."** The model
+was correct and the checker was not; the bank is fixed and the saved run rescored offline from
+the stored texts - zero new generations to correct the record.
+Corrected verdict: **no arm beats the default beyond the ±0.05 band** (deltas +0.005 to +0.024,
+deeptree the largest). Six of seven shapes saturate at 1.00 for every arm; the two that move
+at all (plan 0.81-1.00, summarize 0.80-0.95, partial-credit checklists) move by about as much
+as the same-framing pair moves on the same shape - inside the instrument's per-shape noise.
+Zero truncations at 3072 tokens. What the run does show: the modes steer, visibly and
+structurally - House's ◤H◥ asides, DeepTree's PHASE blocks, Socrates' premise interrogations
+all arrive in the saved transcripts - they just do not change outcomes on tasks below this
+model's competence floor. So the docs claim steering, not performance; a "mode X beats default
+for task class Y" line would need a round-2 bank with harder shapes (multi-step reasoning,
+longer code, adversarial constraint counts), and the instrument is ready for that rerun the
+moment someone wants the claim.
+
+**Still owed, stated before it is claimed:** (2) **the baseline clock reset**:
 every accuracy number on the books (0.761 arm C, the 0.739 Postgres re-record, the grounding
 +0.207) was measured on the PRE-swap weights, so any future arm either re-baselines on the same
 model or says so in the line. The modes were measurably active on the stock model too (the persona

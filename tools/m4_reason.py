@@ -121,8 +121,11 @@ def probes():
                 "need? Answer with just the number.", _check_int(14))
 
     # logic: ordering puzzles, answer = one name/word
+    # (the sweep caught this grader bug, 2026-10-17: Ana > Bea > Cy > Dee, the youngest is Dee, and
+    # EVERY arm answered Dee correctly 16/16 while the bank expected Cy - the model was right, the
+    # expected value was wrong. Fixed in the bank; the saved run rescores offline, no regeneration.)
     add("logic", "Bea is older than Cy. Dee is younger than Cy. Ana is older than Bea. Who is the "
-                 "youngest? Answer with just the name.", _check_name("Cy", ["Bea", "Cy", "Dee", "Ana"]))
+                 "youngest? Answer with just the name.", _check_name("Dee", ["Bea", "Cy", "Dee", "Ana"]))
     add("logic", "On a shelf the red book sits left of the blue. The green sits right of the blue. "
                  "The black sits left of the red. Which book is furthest right? Answer with just "
                  "the color.", _check_name("green", ["red", "blue", "green", "black"]))
