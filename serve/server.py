@@ -3505,6 +3505,7 @@ class Service:
         self.keep_awake = None                        # #1727 (opt-in): serve.keepawake.KeepAwake, the config's "prevent_sleep"
         self.fifo = threading.Lock()
         self.slot_save_path = None                    # --slot-save-path: /slots/0?action=save|restore (off when None)
+        self.slot_retain = 0                          # slot_retain N: a save prunes to the N newest (0 = keep all)
         self.memory = None                            # memory-core fork: serve/memory.py store (off unless configured)
         self.cartridges = None                        # memory-core M3b: tier-2 standing cartridge (off unless configured)
         self.embeddings = threading.local()           # the current request's image embeddings file (GENI)
@@ -3518,6 +3519,7 @@ class Service:
         self.reason_default = None
         self._reason = collections.OrderedDict()      # conversation key -> mode (64 conversations)
         self._reason_effort = collections.OrderedDict()   # conversation key -> pinned thinking level
+        self._reason_auto = collections.OrderedDict()     # conversation key -> what auto last picked
         self._reason_blocks = {}                      # mode -> its construct block (extracted once, lazy)
         self._reason_last = None                      # the key of the most recent render (API's "last")
         self._reason_lock = threading.Lock()
@@ -3600,6 +3602,44 @@ class Service:
     def loaded(self) -> bool:
         return not hasattr(self.engine, "alive") or self.engine.alive()
 
+    def _slot_prune(self, just_saved: str) -> None:
+        """slot_retain N (config, opt-in; 0/absent = keep all - the box that never sets it sees no
+        new bytes and no new deletes): after a successful save the slot folder holds the N newest
+        files and the older ones go (they are conversation state, and the conversation itself is
+        the archive - a lost file costs a re-prefill, never data). Two names never fall: the file
+        just written, and a cartridge's APPLIED file (the cartridge outlives its save - it
+        restores from that name on demand, and its own GC owns MEM-CRG-* rotation). A failed
+        delete is noise, not an error: the save already succeeded."""
+        if not self.slot_retain:
+            return
+        just = os.path.realpath(just_saved)
+        guards = set()
+        applied = getattr(getattr(self, "cartridge", None), "applied", None)
+        if applied:
+            ap = os.path.join(self.slot_save_path, applied)
+            if os.path.exists(ap):
+                guards.add(os.path.realpath(ap))
+        try:
+            entries = [e for e in os.scandir(self.slot_save_path) if e.is_file(follow_symlinks=False)]
+        except OSError:
+            return
+        entries.sort(key=lambda e: e.stat().st_mtime, reverse=True)
+        survivors = guards | {just}                # the just-written file is always one of the N,
+        kept = 1                                    # whatever the clock says about its mtime
+        for e in entries:                           # newest first; guards do not consume a slot
+            rp = os.path.realpath(e.path)
+            if rp in survivors:
+                continue
+            if kept < self.slot_retain:
+                survivors.add(rp)
+                kept += 1
+        for e in entries:
+            if os.path.realpath(e.path) not in survivors:
+                try:
+                    os.unlink(e.path)
+                except OSError:
+                    pass
+
     def slot_action(self, slot: str, action: str, filename) -> tuple[int, dict]:
         """llama-server's POST /slots/{id}?action=save|restore {"filename": ...}: the conversation the engine holds,
         to or from a file in slot_save_path.  -> (HTTP status, body)."""
@@ -3663,6 +3703,7 @@ class Service:
                 with self.status_lock:
                     self.status["queued"] -= 1
         if action == "save":
+            self._slot_prune(path)                    # slot_retain N (0 = keep all): the folder is
             return 200, {"id_slot": 0, "filename": filename, "n_saved": r["tokens"], "n_written": r["bytes"],
                          "timings": {"save_ms": r["ms"]}}
         return 200, {"id_slot": 0, "filename": filename, "n_restored": r["tokens"], "n_read": r["bytes"],
@@ -4291,6 +4332,11 @@ class Service:
                 mode = self.reason_default if reason_feature_on(self) else None
                 if mode == "auto":
                     mode = None                          # auto over auto: the template frames
+            with self._reason_lock:                      # observability (v1.9): the sticky says
+                self._reason_auto[key] = mode or "none"  #  "auto" and told you nothing - GET
+                self._reason_auto.move_to_end(key)       #  /reason now shows the verdict behind
+                while len(self._reason_auto) > 64:       #  the wheel ("none" = no confident pick)
+                    self._reason_auto.popitem(last=False)
         return mode
 
     def reason_block(self, mode: str) -> str:
@@ -6477,6 +6523,7 @@ def make_handler(svc: Service):
             with svc._reason_lock:
                 sticky = [[k, m] for k, m in list(svc._reason.items())[-16:]]
                 sticky_eff = [[k, e] for k, e in list(svc._reason_effort.items())[-16:]]
+                auto_picks = [[k, p] for k, p in list(svc._reason_auto.items())[-16:]]
                 last = svc._reason_last
             self._json(200, {"on": reason_feature_on(svc), "template": svc.reason_flavor,
                              "modes": list(REASON_MODES),
@@ -6485,7 +6532,7 @@ def make_handler(svc: Service):
                              "guide": REASON_GUIDE, "combos": list(REASON_PAIRS),
                              "efforts": list(REASON_EFFORTS), "level_default": svc.effort_default(),
                              "default": svc.reason_default, "sticky": sticky,
-                             "sticky_efforts": sticky_eff,
+                             "sticky_efforts": sticky_eff, "auto_picks": auto_picks,
                              "last_conversation": last})
 
         def _reason_post(self, req):
@@ -8126,8 +8173,25 @@ def main() -> int:
                 slot_save_dir(cfg["slot_save_path"], cfg.get("cwd"))
         except (ValueError, OSError) as e:
             raise SystemExit(f"[strata] {e}")
-        print(f"[strata] slot save/restore on: {svc.slot_save_path} (session files are kept until deleted: "
-              "about 1.2 GB per 63K-token conversation; restore only files this server wrote)", flush=True)
+        rv = cfg.get("slot_retain")
+        if rv is not None and not isinstance(rv, bool):
+            try:
+                rv = int(rv)
+            except (TypeError, ValueError):
+                rv = -1
+            if rv >= 0:
+                svc.slot_retain = rv
+            else:
+                print(f"[strata] slot_retain {cfg.get('slot_retain')!r}: a whole number 0 or more "
+                      f"(0 = keep all) - keeping all", flush=True)
+        if svc.slot_retain:
+            print(f"[strata] slot save/restore on: {svc.slot_save_path} (slot_retain {svc.slot_retain}: "
+                  "a save prunes the folder to the newest files; a cartridge's applied file never "
+                  "falls; restore only files this server wrote)", flush=True)
+        else:
+            print(f"[strata] slot save/restore on: {svc.slot_save_path} (session files are kept until "
+                  "deleted: about 1.2 GB per 63K-token conversation; restore only files this server "
+                  "wrote)", flush=True)
     # memory-core fork: the built-in memory store. FORK DEFAULT: ON (the user's decision, 2026-10-16:
     # "if someone doesn't want the built-in memory system they won't be using our fork to begin
     # with"). The byte-identical law survives as the explicit OPT-OUT: "memory": false or

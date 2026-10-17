@@ -152,6 +152,41 @@ class Slots(unittest.TestCase):
         self.assertEqual((b["id_slot"], b["filename"], b["n_saved"], b["n_written"]), (0, "a.bin", 62993, 1234))
         self.assertAlmostEqual(b["timings"]["save_ms"], 401.5)
 
+    def test_slot_retain_zero_keeps_everything_as_before(self):
+        # the byte-identical default: a box that never sets slot_retain sees no new deletes.
+        with tempfile.TemporaryDirectory() as d:
+            self.svc.slot_save_path = d
+            try:
+                for name in ("z1.bin", "z2.bin", "z3.bin"):
+                    self.assertEqual(self.post("/slots/0?action=save", {"filename": name})[0], 200)
+                self.assertEqual(set(os.listdir(d)), {"z1.bin", "z2.bin", "z3.bin"}, "keep all")
+            finally:
+                self.svc.slot_save_path = self.dir.name
+
+    def test_slot_retain_keeps_the_newest_N_and_never_the_applied_cartridge(self):
+        # slot_retain N (opt-in): a save prunes the folder to the N newest files (about 1.2 GB per
+        # 63K-token conversation, and the dev box proved 4 GB accumulates unpruned). The file just
+        # written always survives; so does a cartridge's APPLIED file - the cartridge restores
+        # from that name on demand, so pruning it would silently cost a re-seed.
+        with tempfile.TemporaryDirectory() as d:
+            self.svc.slot_save_path = d
+            saved, self.svc.slot_retain = self.svc.slot_retain, 2
+            try:
+                class Applied:                                     # the cartridge's one visible seam
+                    applied = "MEM-CRG-old.bin"
+                self.svc.cartridge = Applied()
+                Path(d, "MEM-CRG-old.bin").write_bytes(b"x")       # its applied file, deliberately old
+                time.sleep(0.01)
+                for name in ("r1.bin", "r2.bin", "r3.bin"):
+                    time.sleep(0.01)                               # distinct mtimes, oldest first
+                    self.assertEqual(self.post("/slots/0?action=save", {"filename": name})[0], 200)
+                self.assertEqual(set(os.listdir(d)), {"MEM-CRG-old.bin", "r2.bin", "r3.bin"},
+                                 "N=2 keeps the newest two; the guard keeps the applied file too")
+            finally:
+                self.svc.slot_retain = saved
+                del self.svc.cartridge
+                self.svc.slot_save_path = self.dir.name
+
     def test_restore_answers_like_llama_server(self):
         self.post("/slots/0?action=save", {"filename": "b.bin"})
         s, b = self.post("/slots/0?action=restore", {"filename": "b.bin"})

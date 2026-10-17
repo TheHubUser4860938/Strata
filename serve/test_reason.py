@@ -168,6 +168,7 @@ class ReasonOverHttp(unittest.TestCase):
         with self.svc._reason_lock:
             self.svc._reason.clear()
             self.svc._reason_effort.clear()
+            self.svc._reason_auto.clear()
 
     def http(self, verb, path, body=None):
         conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=30)
@@ -468,6 +469,26 @@ class ReasonOverHttp(unittest.TestCase):
         prompt = self.turn_msgs(conv)
         self.assertIn("PROGRAMMER & UI ARCHITECT", prompt, "and the same sticky auto picks coder "
                                                            "the moment a task word lands")
+
+    def test_auto_picks_are_observable_on_the_inspection_route(self):
+        # v1.9: "auto" was invisible at first - the sticky said auto, GET /reason said nothing
+        # about what the picker actually chose. The verdict per conversation is recorded now
+        # ("none" = no confident pick), keyed like everything else by the first message.
+        st, body = self.http("POST", "/reason", {"mode": "auto"})
+        self.assertEqual(st, 200, body)
+        msgs = [{"role": "user", "content": "reason probe autopick zqrg: fix the python bug "
+                                            "and refactor the parser module"}]
+        prompt = self.turn_msgs(msgs)
+        self.assertIn("PROGRAMMER & UI ARCHITECT", prompt)
+        key = reason_conv_key(msgs)
+        st, body = self.http("GET", "/reason")
+        picks = dict(body["auto_picks"])
+        self.assertEqual(picks.get(key), "coder", "the verdict behind the wheel, on the route")
+        fresh = [{"role": "user", "content": "reason zqrh: flurb the wibbit qzpzz"}]
+        self.turn_msgs(fresh)
+        st, body = self.http("GET", "/reason")
+        self.assertEqual(dict(body["auto_picks"]).get(reason_conv_key(fresh)), "none",
+                         "a no-pick turn records none, not a stale guess")
 
     def test_last_before_any_render_is_a_clean_409(self):
         with self.svc._reason_lock:

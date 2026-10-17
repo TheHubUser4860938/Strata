@@ -2095,6 +2095,20 @@ off; off means every render passes the SAME kwargs dict, byte-identical by const
   and the combos for the agent's own choosing, and `REASON_AUTO` is the same knowledge made
   computable for the server's. `test_runconfig` 11 OK, `test_reason` 33 OK, gate 1006 OK
   (skipped 11, one pass).
+- **Auto gets eyes, and the slot folder gets a keeper-count (v1.9, same day, the "get back to
+  work" batch):** the first live minutes of `auto` exposed the obvious gap - the sticky said
+  "auto" and `GET /reason` said nothing about what the picker actually chose, so the wheel looked
+  like it turned itself. Every auto resolution now records its verdict per conversation
+  (`auto_picks` on the inspection route, LRU 64, "none" = no confident pick - the absence is
+  information too). And the slot folder: `slot_save_path` sessions are ~1.2 GB per 63K-token
+  conversation and the banner itself admitted they "are kept until deleted" - the dev box proved
+  it (4.0 GB of October experiment files, never pruned). New config key **`slot_retain: N`**
+  (opt-in; 0/absent = keep all, byte-identical): after a successful save the folder holds the N
+  newest files and the older ones go - a lost slot file costs a re-prefill, never data, the
+  conversation is the archive. Two names never fall: the file just written (whatever the clock
+  says about its mtime), and a cartridge's APPLIED file (it restores from that name on demand;
+  its own GC owns MEM-CRG-* rotation). `test_slots` +2, `test_reason` +1, gate 1009 OK
+  (skipped 11, one pass).
 - **The installer now carries the model (`setup.py` "dau" family, 2026-10-17):** `setup --family
   dau --model IQ3_S` installs DavidAU's Turbo-Brilliance re-quant - pinned repo commit, both
   shard SHA-256s from the Hub's LFS pointers, Apache-2.0 stated at install. Two measured facts
