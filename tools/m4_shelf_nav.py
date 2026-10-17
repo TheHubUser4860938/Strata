@@ -190,7 +190,7 @@ def main() -> int:
                     m.conn.execute(f"delete from embeddings where id in ({qm})")
                 if tax == "B dense":       # the migration itself: the copy's class column becomes dense
                     for rid, sh in dense.items():
-                        m.conn.execute("update memories set class=? where id=?", (sh, rid))
+                        m.conn.execute("update memories set class=%s where id=%s", (sh, rid))
                 m.conn.commit()
             m._vdirty, m._dcache, m._dkey = True, None, None
             live = [p for p in probes if p["id"] in keep]

@@ -35,10 +35,10 @@ QUERIES = [
 
 
 def copy_store(src_dir: Path, dst: Path) -> None:
-    for name in ("memory.db", "memory.db-wal", "memory.db-shm"):
-        f = src_dir / name
-        if f.exists():
-            shutil.copy2(f, dst / name)
+    import _storeclone
+    _storeclone.clone_store(src_dir, dst)   # R5b: honest dump/restore; the old memory.db +
+                                             # -wal + -shm loop copied files that no longer
+                                             # exist on a Postgres store - the copy was empty.
 
 
 def rank_of(hits, needle: str) -> int:

@@ -51,7 +51,7 @@ def journal_queries(m, n):
         cand = [c for c in ("user_text", "text", "query", "q") if c in cols]
         if cand:
             out += [r[0] for r in m.conn.execute(
-                f"select {cand[0]} from {t} where length({cand[0]}) between 24 and 400 limit ?", (n,))]
+                f"select {cand[0]} from {t} where length({cand[0]}) between 24 and 400 limit %s", (n,))]
     return out[:n]
 
 

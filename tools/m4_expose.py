@@ -50,11 +50,9 @@ def toks(t: str) -> set:
 def fresh_copy(src: Path) -> tuple[Path, Path]:
     work = Path(tempfile.mkdtemp(prefix="m4expose-"))
     dst = work / "store"
-    dst.mkdir()
-    for f in src.iterdir():                                      # sealed store: db + .enc + key
-        if f.is_file():
-            shutil.copy2(f, dst / f.name)
-    return work, dst
+    import _storeclone
+    _storeclone.clone_store(src, dst)       # R5b: honest dump/restore; the old top-level file
+    return work, dst                        # loop arrived stale-or-empty on a PG store
 
 
 def main() -> int:
@@ -73,7 +71,7 @@ def main() -> int:
     src = Path(a.db_dir)
 
     live = MemoryService(str(src), embedder=None)                # read-only: replay script + df
-    replay = live.conn.execute("select id, scope, user_text from turns order by id desc limit ?",
+    replay = live.conn.execute("select id, scope, user_text from turns order by id desc limit %s",
                                (a.turns,)).fetchall()[::-1]
     df: collections.Counter = collections.Counter()
     for (t,) in live.conn.execute("select text from memories where invalid_at is null"):
@@ -98,7 +96,7 @@ def main() -> int:
         per_turn, filler = {}, collections.Counter()
         for tid, scope, utext in replay:
             with m.lock:                                         # history only: no future ledger
-                m.conn.execute("delete from turns where id > ?", (tid,))
+                m.conn.execute("delete from turns where id > %s", (tid,))
                 m.conn.commit()
                 m._expo = None                                   # the stamp moved; rebuild honestly
             hits = m.search((utext or "")[:400], scope=scope or "default", limit=a.k)

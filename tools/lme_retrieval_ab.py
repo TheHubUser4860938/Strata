@@ -100,12 +100,12 @@ def agg(rows: list[dict]) -> dict:
 
 
 def copy_dir(src: Path, dst: Path) -> None:
-    """Whole dir, so a sealed store travels with its .enc AND its key - copying only memory.db
-    (what the reach probe needs) would arrive as an empty store instead of a locked one."""
-    dst.mkdir(parents=True, exist_ok=True)
-    for f in sorted(src.iterdir()):
-        if f.is_file():
-            shutil.copy2(f, dst / f.name)
+    """Honest PG-native clone (R5b): a consistent pg_dump/pg_restore through tools/_storeclone,
+    which works while the source store is live. The old whole-dir file loop was a sqlite-era
+    lie: on a Postgres store it copies the frozen legacy memory.db.enc and skips pgdata/
+    entirely, so the copy arrives stale-or-empty, never live. The key travels with the clone."""
+    import _storeclone
+    _storeclone.clone_store(src, dst)
 
 
 def open_copy(dir_path: Path, model: str, threads: int, embed: bool, dedup: bool = True):

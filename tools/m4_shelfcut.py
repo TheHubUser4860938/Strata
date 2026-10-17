@@ -170,7 +170,7 @@ def main() -> int:
         for label, bucket, _base in cuts:
             with m.lock:
                 for rid, b in bucket.items():
-                    m.conn.execute("update memories set class=? where id=?",
+                    m.conn.execute("update memories set class=%s where id=%s",
                                    (f"{sh}/{b}" if b != sh else sh, rid))
                 m.conn.commit()
             m._vdirty, m._dcache, m._dkey = True, None, None

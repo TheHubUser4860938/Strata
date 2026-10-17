@@ -264,8 +264,8 @@ def score(a) -> int:
                         prov[rid] = json.loads(pj or "{}")
                     except json.JSONDecodeError:
                         prov[rid] = {}
-            gold_tot = m.conn.execute("select count(*) from memories where scope=? and invalid_at is null "
-                                      "and json_extract(provenance,'$.gold')=1", (scope,)).fetchone()[0]
+            gold_tot = m.conn.execute("select count(*) from memories where scope=%s and invalid_at is null "
+                                      "and provenance->>'gold' in ('1','true')", (scope,)).fetchone()[0]
             asids = set(q.get("answer_session_ids") or [])
             g = [prov.get(i, {}).get("gold") for i in ids]
             s = [prov.get(i, {}).get("sid") for i in ids]

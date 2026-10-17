@@ -55,13 +55,11 @@ def main() -> int:
     a = ap.parse_args()
 
     src = Path(a.dir).resolve()
-    if not (src / "memory.db").exists():
-        print("no plaintext store - a sealed one must be revealed first (tools/m4_embed.py can open it)")
-        return 2
     work = Path(tempfile.mkdtemp(prefix="selffeed-"))
-    for f in ("memory.db", "memory.db-wal", "memory.db-shm"):
-        if (src / f).exists():
-            shutil.copy2(src / f, work / f)
+    import _storeclone
+    _storeclone.clone_store(src, work)      # R5b: honest dump/restore, works while the store is
+                                            # live; the old plaintext-memory.db check aborted (or
+                                            # silently copied nothing) on a Postgres store.
     m = MemoryService(str(work), recall_limit=96, embedder=None)
 
     rows = m.conn.execute("select id, text, source, provenance, created_at from memories"
@@ -85,7 +83,7 @@ def main() -> int:
         if tid is None:
             verdict["no turn_id in provenance"] += 1
             continue
-        turn = m.conn.execute("select user_text, assistant_text, injected from turns where id=?",
+        turn = m.conn.execute("select user_text, assistant_text, injected from turns where id=%s",
                               (tid,)).fetchone()
         if turn is None:
             verdict["turn no longer journaled"] += 1
