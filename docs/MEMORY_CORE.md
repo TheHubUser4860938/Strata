@@ -58,9 +58,11 @@ hard constraint, measured on 2026-10-10: one engine sits at **50.7 GiB resident*
 production up only ~5 GiB is free — so **exactly one engine runs at a time**:
 
 ```
-./dev-up.sh     # stops production, starts this tree's engine on :8005 (1-3 min weight load, page-cache warm)
-./dev-down.sh   # stops dev AND production if running - nothing auto-starts. Bring :8004 back
-                # yourself (START-HERE / your launcher) when you want the main build again.
+python serve/server.py --engine strata --config strata-iq3_s.json --port 8005
+                # stock startup with stock config naming (setup's strata-<tag>.json convention).
+                # 2026-10-17: the dev-up.sh / dev-down.sh swap scripts are RETIRED (the owner's
+                # call, with strata-dev.json renamed to the stock label) - stopping and starting
+                # either side is by hand, and exactly one engine runs at a time still.
 ```
 
 - Model files are **not duplicated**: `Strata-data -> ~/Strata-data` (a symlink; git-ignored) shares
@@ -75,10 +77,12 @@ production up only ~5 GiB is free — so **exactly one engine runs at a time**:
   production's pip and installs into `~/Strata/.venv` (this bit the PHASE 4 install on 2026-10-14; the two
   stray packages were uninstalled from production the same day, it runs the pinned release set again). Use
   `.venv/bin/python -m pip install …` — `-m` resolves against the venv that owns the interpreter.
-- Engine config: `strata-dev.json` (git-ignored per upstream convention), port **8005**, same tuning args as
+- Engine config: `strata-iq3_s.json` (git-ignored per upstream convention, and named by it - the
+  upstream `strata-<tag>.json` scheme, adopted 2026-10-17 in place of the fork's `strata-dev.json`),
+  port **8005**, same tuning args as
   production plus the config key `"slot_save_path": "Strata-data/sessions-dev"`. Note: `--slot-save-path` is a
   **server** flag / config key — the *engine* binary rejects it (`unknown argument`, found on the first dev
-  boot 2026-10-10). A template ships as `strata-dev.json.example` — set your own paths and the `$HOME/Strata`
+  boot 2026-10-10). A template ships as `strata-iq3_s.json.example` — set your own paths and the `$HOME/Strata`
   fallback for `PRODROOT` if your production install lives elsewhere.
 - Session-file sizing measured on this box (see smoke table): **13.3 KB per token** of conversation state
   (k8v4 KV + MTP draft state) — 3.35 GB for a 251K-token snapshot; ~2.2 GB/s save speed. Files are mode 0600,
@@ -90,10 +94,11 @@ production up only ~5 GiB is free — so **exactly one engine runs at a time**:
   conversations and unpinned checkpoints and retries a refused save/restore.
 - **Testing protocol on this machine (one engine at a time, 62 GB RAM):** testing the dev build pauses this
   agent (the assistant itself is served by whichever engine is up on :8004). The swap is coordinated with the
-  human: agent says "ready to test dev", human closes the main build and starts dev (or the agent runs
-  `./dev-up.sh --force` once agreed), tests run against :8005, then `./dev-down.sh` stops everything -
-  the human starts production back on :8004 when they want it (nothing auto-restarts).
-  `dev-up.sh` refuses to stop a live production without `--force`. Optionally, adding a provider for
+  human entirely by hand: agent says "ready to test dev", human closes the main build and starts dev
+  themselves (the stock command above); tests run against :8005, then the human stops dev and brings
+  production back on :8004 when they want it (nothing auto-restarts). Since 2026-10-17 this is all
+  manual - the `dev-up.sh` / `dev-down.sh` helpers and their `--force` guard are retired, the discipline
+  lives in the people and in the 62 GB of RAM. Optionally, adding a provider for
   `http://127.0.0.1:8005/v1` in the harness lets the agent keep talking *on the dev model* while dev is up.
 - Running model on this machine: SC117 `Qwen3.8-Flash-Next-GSQ-RCO-abliterated-GGUF` IQ3_S (saved under the
   official filenames — check identity with `tools/strata_inspect.py`, not names), with the

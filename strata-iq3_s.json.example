@@ -48,7 +48,7 @@
   },
   "tokenizer": "$HOME/Projects/Strata-MAM-cartrige-mod/Strata-data/packs/iq3_s/tokenizer",
   "model_name": "qwen3.8-flash-next-iq3_s",
-  "log": "$HOME/Projects/Strata-MAM-cartrige-mod/strata-dev.log",
+  "log": "$HOME/Projects/Strata-MAM-cartrige-mod/strata-iq3_s.log",
   "lib_dirs": [
     "/opt/cuda/bin",
     "/opt/cuda/lib64"
