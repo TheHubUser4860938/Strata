@@ -23,6 +23,14 @@ your RAM, downloads it, and starts the server at `http://127.0.0.1:8005`:
 git clone -b memory-core https://github.com/TheHubUser4860938/Strata.git
 cd Strata
 ```
+<img width="1877" height="638" alt="image" src="https://github.com/user-attachments/assets/5cae0570-fb69-4665-a59d-92a1c0eff5f7" />
+
+
+<img width="1278" height="263" alt="image" src="https://github.com/user-attachments/assets/f6f63206-afdb-439a-a9d4-d58ce0ee054a" />
+
+
+<img width="1879" height="434" alt="image" src="https://github.com/user-attachments/assets/1643c829-dc1b-43f5-9952-0d5c4f67f924" />
+
 
 Memory is **on by default** in this fork (decided 2026-10-16: someone who does not want the built-in
 memory system would not be using this fork of Strata to begin with). Setup writes the block below and
