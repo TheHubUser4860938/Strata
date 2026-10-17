@@ -247,15 +247,17 @@ NVFP4_ENGINE = (0, 1, 44)
 
 # DavidAU's Turbo-Brilliance IQ3_S (the {REASON:} reason-mode build; the "dau" family): sizes and SHA-256 are the
 # Hub's LFS pointers, checked 2026-10-17.  Measured against ISTA's own tree the same day, his shard 2 is the
-# ORIGINAL's file byte for byte (28,800,138,432 bytes, 316b46f3... equal) - shard 2 is the family's shared Q8_0
-# PLE n-gram table (the file sleepyeldrazi/Qwen3.8-Flash-Next-GSQ-RCO-Q8_0-PLE-GGUF exists to publish; the coder
-# note below has always said shard 2 is that table, not weights), so it is the same in every GSQ-RCO family and
-# his files join the shard-2 sharing the qwen and coder families do (at its site below) - an owner of the
-# original IQ3_S who switches to this family downloads only his first shard, which carries all his weights, his
-# naming and his chat template: the file embeds it (tokenizer.chat_template, 226,745 bytes, carrying all 41
+# ORIGINAL's file byte for byte (28,800,138,432 bytes, 316b46f3... equal) - shard 2 is not model weights at all:
+# it is the family's shared n-gram PLE table, the same in every GSQ-RCO family (the coder note below has always
+# said so), so his files join the shard-2 sharing the qwen and coder families do (at its site below) - an owner
+# of the original IQ3_S who switches to this family downloads only his first shard, which carries all his weights,
+# his naming and his chat template: the file embeds it (tokenizer.chat_template, 226,745 bytes, carrying all 41
 # reason modes: checked set-equal against this checkout's REASON_MODES 2026-10-17), and setup's tokenizer export
 # (tools/strata_tokenizer.py) writes it out to <pack>/tokenizer/chat_template.jinja, which the server prefers
-# over its shipped one - so the modes' template rides the download; nothing extra is fetched for it.
+# over its shipped one - so the modes' template rides the download; nothing extra is fetched for it.  Owners who
+# want a bigger table can drop in sleepyeldrazi/Qwen3.8-Flash-Next-GSQ-RCO-Q8_0-PLE-GGUF (54,400,261,312 bytes,
+# measured 2026-10-17: exactly this fork's dev box's 00002 since 2026-10-09) in the same slot; setup installs
+# the bundled one and does not chase that repository.
 DAU_IQ3_S_SHARDS = {
     "Qwen3.8-Flash-Next-GSQ-RCO-abliterated-IQ3_S-00001-of-00002.gguf":
         (55063664928, "78706315c2fe912777c006b4ae18be1024c9f4353bd25d33b8a306c9c55f9e34"),
@@ -6582,7 +6584,9 @@ def main() -> int:
                 continue
             # the original's shard 2 is the shared n-gram table, the same file for all its sizes, the Coder and
             # DavidAU's Turbo-Brilliance (his measured 2026-10-17: SHA-256 equal to the original's - it is the
-            # Q8_0 PLE table, never model weights, so sharing it is right and not a lucky accident)
+            # PLE n-gram table, never model weights, so sharing it is right and not a lucky accident).  Boxes
+            # that swapped a bigger table into the slot themselves (sleepyeldrazi's Q8_0 one - this fork's dev
+            # box among them) own that swap outside setup: the sizes pinned above describe the bundled file.
             other = [p for p in Path(a.models_dir).glob("*/Qwen3.8-Flash-Next-GSQ-RCO-*-00002-of-00002.gguf") if done(p)]
             if family in ("qwen", "coder", "dau") and s.name.endswith("00002-of-00002.gguf") and other and not s.exists():
                 try:

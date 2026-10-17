@@ -2008,11 +2008,13 @@ off; off means every render passes the SAME kwargs dict, byte-identical by const
   which the server prefers over its shipped file - so the modes' template rides the download with
   nothing extra fetched and the shipped default template stays stock; and **his shard 2 is the
   original IQ3_S's file byte for byte** (SHA-256 `316b46f3...` equal against ISTA's tree) - because
-  shard 2 is not model weights at all: it is the family's shared Q8_0 PLE n-gram table (the file
-  sleepyeldrazi/Qwen3.8-Flash-Next-GSQ-RCO-Q8_0-PLE-GGUF exists to publish, the same in every
-  GSQ-RCO family - the coder note in setup.py has always said so), so he joins the shard-2 sharing
+  shard 2 is not model weights at all: it is the family's shared n-gram PLE table, the same in every
+  GSQ-RCO family (the coder note in setup.py has always said so), so he joins the shard-2 sharing
   the qwen and coder sizes already do - an owner of the original IQ3_S switching to this family
-  downloads only his first shard, which carries all his weights. The family sits after the coder in the
+  downloads only his first shard, which carries all his weights. Owners may replace the table with
+  sleepyeldrazi's bigger Q8_0 one (54,400,261,312 bytes, measured 2026-10-17) in the same slot -
+  this fork's dev box has run that swap since 2026-10-09 - but setup installs the bundled file and
+  does not chase that repository. The family sits after the coder in the
   menu (same-size variants of the original first): the menu snapshots in
   `tools/test_setup_menu.py`/`test_setup_unsloth.py` moved with it, and the whole 40-test setup
   battery passes (engine_hash's 2 failures pre-date this change on a box without the engine
