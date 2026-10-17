@@ -69,6 +69,8 @@ HF_REVISIONS = {
     "ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-Coder-GGUF": "5348543e0147355ac9cbcb031184a3546350988e",  # 2026-09-29
     "unsloth/Qwen3.8-Flash-Next-GGUF": "38bb39ee97821de2c9009abb7e93950eec396e66",                   # 2026-09-30
     "unsloth/Qwen3.6-35B-A3B-MTP-GGUF": "5bc3e238d916f48a861bac2f8a1990a0e9b7e98d",                  # 2026-10-12
+    "DavidAU/Qwen3.8-Flash-Next-Abliterated-Uncensored-Turbo-Brilliance-50x-Reasoning-Instruct-GSQ-RCO-GGUF":
+        "509dfb275d360bdd49e2308238a8393d53d87610",                                                  # 2026-10-17
 }
 
 
@@ -243,6 +245,22 @@ NVFP4_REPOS = {
 # the first release engine with NVFP4 experts (a source build of this checkout has them whatever its number says)
 NVFP4_ENGINE = (0, 1, 44)
 
+# DavidAU's Turbo-Brilliance IQ3_S (the {REASON:} reason-mode build; the "dau" family): sizes and SHA-256 are the
+# Hub's LFS pointers, checked 2026-10-17.  Measured against ISTA's own tree the same day: his shard 2 is the
+# ORIGINAL's file, byte for byte (28,800,138,432 bytes, 316b46f3... equal) - the abliteration, his naming and his
+# chat template all live in shard 1 - so his files join the shard-2 sharing the qwen and coder families do (at
+# its site below), and an owner of the original IQ3_S who switches to this family downloads only his first shard.
+# The file embeds his chat template (tokenizer.chat_template, 226,745 bytes, carrying all 41 reason modes:
+# checked set-equal against this checkout's REASON_MODES 2026-10-17), and setup's tokenizer export
+# (tools/strata_tokenizer.py) writes it out to <pack>/tokenizer/chat_template.jinja, which the server prefers
+# over its shipped one - so the modes' template rides the download; nothing extra is fetched for it.
+DAU_IQ3_S_SHARDS = {
+    "Qwen3.8-Flash-Next-GSQ-RCO-abliterated-IQ3_S-00001-of-00002.gguf":
+        (55063664928, "78706315c2fe912777c006b4ae18be1024c9f4353bd25d33b8a306c9c55f9e34"),
+    "Qwen3.8-Flash-Next-GSQ-RCO-abliterated-IQ3_S-00002-of-00002.gguf":
+        (28800138432, "316b46f3a2dbd68c900f43136ab9449f9dcc3725dfd8c794847c204bc161e113"),
+}
+
 MODELS = {
     # the original model only for now: Swift 1.5's Q2_0 files split one layer's experts across the two shards, which
     # the pack tool (tools/iq_pack.py) cannot prepare yet (#171)
@@ -252,8 +270,10 @@ MODELS = {
     "IQ3_XXS": {"about": "3-bit i-quant, better quality, slower (more CPU work per token)", "download_gb": 75.8,
                 "ram_gb": 60, "arena_gb": 42.9},
     # matches the full BF16 model on the published benchmarks; Swift 1.5 got an IQ3_S tier of its own (#1651)
+    # (the "dau" family is this same size - DavidAU's re-quant of the original IQ3_S - so it shares the key)
     "IQ3_S": {"about": "3.5-bit i-quant, the best quality (matches the full model), the slowest; needs a 64 GB PC "
-                       "with little else running", "download_gb": 83.6, "ram_gb": 62, "arena_gb": 50.3},
+                       "with little else running", "download_gb": 83.6, "ram_gb": 62, "arena_gb": 50.3,
+              "families": ("qwen", "swift", "dau")},
     # the Coder release: 256 of the 512 experts kept (the ones code, tools and vision use), IQ2_S-IQ4_XS like IQ3_S
     "IQ1_M": {"about": "the Coder's only size: half the experts, stored like IQ3_S (3.5 bits)", "download_gb": 58.4,
               "ram_gb": 32, "arena_gb": 23.4, "families": ("coder",)},
@@ -406,6 +426,21 @@ FAMILIES = {
               "mmproj_hf": hf("ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-Coder-GGUF"),
               "mmproj": "mmproj-Qwen3.8-Flash-Next-BF16.gguf", "name": "qwen3.8-flash-next-coder",
               "profile": "expert-profile-coder.bin"},
+    # DavidAU's abliterated Turbo-Brilliance re-quant of the original IQ3_S (DAU_IQ3_S_SHARDS above): the {REASON:}
+    # reason-mode model.  His 41 modes answer through the chat template embedded in his file - the tokenizer export
+    # writes it into the pack and the server prefers that over its shipped one - and the server keeps the modes
+    # switchable from its own side too (GET|POST /reason, docs/MEMORY_CORE.md); a stock template REFUSES a mode
+    # name in the render context (measured), which is why that feature follows this template and nothing else.
+    "dau": {"title": "Qwen3.8-Flash-Next (Turbo-Brilliance)", "by": "DavidAU's abliterated, reason-mode re-quant of the original IQ3_S",
+            "about": "the {REASON:} model: answers to 41 reason modes, switchable by the user in a chat or from the "
+                     "server side; abliterated; same size and speed as IQ3_S",
+            "hf": hf("DavidAU/Qwen3.8-Flash-Next-Abliterated-Uncensored-Turbo-Brilliance-50x-Reasoning-Instruct-GSQ-RCO-GGUF"),
+            "file": "Qwen3.8-Flash-Next-GSQ-RCO-abliterated-IQ3_S-0000{i}-of-00002.gguf", "tag": "dau-",
+            "mmproj_hf": hf("ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF"),
+            "mmproj": "mmproj-Qwen3.8-Flash-Next-BF16.gguf", "name": "qwen3.8-flash-next-tb",
+            "sha256": DAU_IQ3_S_SHARDS,
+            "license": "Apache-2.0 (DavidAU's release) on Qwen3.8-Flash-Next, Qwen Community License 1.0: "
+                       "https://huggingface.co/DavidAU/Qwen3.8-Flash-Next-Abliterated-Uncensored-Turbo-Brilliance-50x-Reasoning-Instruct-GSQ-RCO-GGUF"},
     # Unsloth's UD-IQ4_XS (three shards, #621), UD-Q4_K_XL (four), UD-Q5_K_XL, UD-Q6_K_XL and Q8_0 (six) of the original
     # model (docs/QUANTS.md): regular choices since f-quants; the shard count and "vision" are per model (MODELS)
     "unsloth": {"title": "Qwen3.8-Flash-Next (Unsloth)", "by": "Unsloth's 4- to 8-bit quantizations",
@@ -6543,9 +6578,10 @@ def main() -> int:
             if s.exists() and done(s):
                 ok(f"{s.name} already downloaded")
                 continue
-            # the original's shard 2 is the same file for all its sizes and the Coder: reuse one that is already here
+            # the original's shard 2 is the same file for all its sizes, the Coder and DavidAU's Turbo-Brilliance
+            # (the latter measured 2026-10-17: his 00002's SHA-256 equals the original's; his edits are in shard 1)
             other = [p for p in Path(a.models_dir).glob("*/Qwen3.8-Flash-Next-GSQ-RCO-*-00002-of-00002.gguf") if done(p)]
-            if family in ("qwen", "coder") and s.name.endswith("00002-of-00002.gguf") and other and not s.exists():
+            if family in ("qwen", "coder", "dau") and s.name.endswith("00002-of-00002.gguf") and other and not s.exists():
                 try:
                     os.link(other[0], s)
                     mark(s)
