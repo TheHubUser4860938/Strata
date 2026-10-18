@@ -35,7 +35,22 @@ if [ "${pressure:-0}" = "1" ] || [ "${pending:-0}" -gt "$PENDING_MAX" ]; then
     # VENV python, not bare python3: the system interpreter has no psycopg (measured
     # 2026-10-16), so the PG processed-marking crashes under it - turns stay pending and get
     # re-curated, the exact duplication amplifier the venue day filed as a law.
-    .venv/bin/python tools/curate_loop.py --sweep --batches 2 --tag cron >> tools/state/cron.log 2>&1
+    # Audit 09 finding 5 (Grok, 2026-10-18): cross-process exclusion. systemd serializes the
+    # TIMER path (a unit does not double-start while active), but a manual curate_loop run (a
+    # bench!) or the crontab install above can still overlap a tick: both drain the same
+    # processed=0 set and store twice. flock -n: the loser skips this tick (sentinel rc 9) and
+    # the next tick picks the queue up. Mark-at-end stays as designed crash-recovery - a dead
+    # sweep leaves turns pending on purpose, and the PHASE 4 write-time guard folds the
+    # re-curation into the existing rows instead of doubling them (measured: the 57-row
+    # username policy is what lands WITHOUT that guard).
+    flock -n -E 9 tools/state/sweep.lock \
+        .venv/bin/python tools/curate_loop.py --sweep --batches 2 --tag cron >> tools/state/cron.log 2>&1
+    rc=$?
+    if [ "$rc" = 9 ]; then
+        echo "$(date '+%F %T') sweep skipped: lock held by a live sweep"
+    elif [ "$rc" != 0 ]; then
+        echo "$(date '+%F %T') sweep failed rc=$rc"
+    fi
 else
     echo "$(date '+%F %T') idle: pending=$pending"
 fi
