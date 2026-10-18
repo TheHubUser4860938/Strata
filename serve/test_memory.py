@@ -202,6 +202,50 @@ class Store(unittest.TestCase):
         finally:
             mem.close()
 
+    def test_pinned_block_is_byte_stable_until_the_pin_dies(self):
+        # audit 09 MISSING TESTS #5 (Grok Q4a spec, 2026-10-18): the head block is pinned by
+        # (scope, first-user, shelf, arm) and must NOT re-render while the pin lives - the
+        # prompt-cache law depends on it: every store write bumps version/n_active, and a
+        # block that re-rendered mid-conversation would change the shared prefix bytes and
+        # force a re-prefill. Nothing tested this; the determinism claim rode on the pin-key
+        # construction alone.
+        mem = MemoryService(os.path.join(self.tmp.name, "pin1"))
+        try:
+            mem.remember("the flibber gauge reads torque", scope="fw")
+            msgs = [{"role": "user", "content": "what does the flibber gauge read?"}]
+            block1, hits1, _ = mem.block_for(msgs, "fw", semantic=False)
+            self.assertIsNotNone(block1, "a recallable query populates the pin")
+            # writes that WOULD alter a re-rendered header: version bump, n_active, and a new
+            # fact the same query would rank. NOTE (measured by this test's first run): the
+            # new fact must be DISTINCT, not a richer rephrasing - the read-side dedup law
+            # folds near-duplicate phrasings and shows ONE, so a rephrase would correctly
+            # never ride the new bytes and the assertion would measure the fold, not the pin.
+            for i in range(10):
+                mem.remember(f"filler fact {i} for the version counter", scope="fw")
+            mem.remember("the flibber gauge needs calibration every morning", scope="fw")
+            block2, hits2, _ = mem.block_for(msgs, "fw", semantic=False)
+            self.assertEqual(block1, block2, "identical key: byte-for-byte the same bytes")
+            self.assertEqual([h["id"] for h in hits2], [h["id"] for h in hits1])
+            mem._blocks.clear()                       # the pin dies (LRU eviction, restart)
+            block3, _, _ = mem.block_for(msgs, "fw", semantic=False)
+            self.assertNotEqual(block3, block1, "a fresh pin reflects the new store state")
+            self.assertIn("calibration", block3, "and the new distinct fact rides the new bytes")
+        finally:
+            mem.close()
+
+    def test_historical_recall_is_impossible_while_invalid_at_filter_is_hardcoded(self):
+        # audit 09 MISSING TESTS #6 (Grok Q4b spec): pin the CURRENT temporal invariant so
+        # the as-of/history-query backlog fix (known item (a), the invalid_at IS NULL filter)
+        # visibly flips a NAMED test instead of silently changing behavior. While the filter
+        # is hardcoded, a superseded fact is unreachable by search at ANY past date.
+        old = self.mem.remember("a fact that will be superseded", scope="fw")["id"]
+        self.assertTrue(self.mem.invalidate(old))
+        self.assertEqual(self.mem.search("fact that will be superseded", scope="fw"), [],
+                         "no as-of path exists: the hardcoded filter drops the row for every date")
+        self.assertNotIn(old, {m["id"] for m in self.mem.list_memories(scope="fw", limit=50)})
+        hist = {m["id"] for m in self.mem.list_memories(scope="fw", limit=50, include_invalid=True)}
+        self.assertIn(old, hist, "the history is walkable - it is just not RECALLABLE")
+
     def test_invalidate_correct_version_chain(self):
         # the Zep pattern: a correction supersedes, it does not delete - recall serves only the
         # new fact, the old one survives as history pointing at its replacement
