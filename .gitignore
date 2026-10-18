@@ -73,7 +73,12 @@ spikes/window/state/telemetry_*.json
 tools/state/curate_*.jsonl
 tools/state/curate_*.review.txt
 tools/state/curate_*.log
+curate-sweep.out
+*.bak
 tools/state/retro_*.jsonl
+# 2026-10-18: the whole dir is box-local ops state and can carry personal conversation
+# text (the retro labeling sheet is a .txt); nothing in it is tracked - ignore it all.
+tools/state/
 
 # local Windows HIP packaging output
 dist-hip/
