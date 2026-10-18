@@ -315,12 +315,17 @@ def main() -> int:
     if "default" in arms and "ultra" in table and "ultra" in arms:
         floor = abs(table["default"]["overall"] - table["ultra"]["overall"])
         print(f"\nnoise floor: |default - ultra| = {floor:.3f} (same framing on this box - the "
-              f"instrument's own spread at temp 0).\nClaims may only be made over that spread, "
-              f"and never under the +/-0.05 venue band.")
+              f"instrument's own spread at temperature {a.temperature:g}).\nClaims may only be made "
+              f"over that spread, and never under the +/-0.05 venue band.")
+    if "default" not in table:
+        # r3b (2026-10-18): a run without the control arm must not silently diff every arm
+        # against ITSELF (the old table.get fallback printed +0.000 for all four arms)
+        print("\n  (no 'default' arm in this run: the vs-default column needs the control arm - "
+              "compare against a run that carries one, same bank and temperature)")
     for arm in arms:
-        if arm in ("default",):
+        if arm in ("default",) or "default" not in table:
             continue
-        gap = table[arm]["overall"] - table.get("default", table[arm])["overall"]
+        gap = table[arm]["overall"] - table["default"]["overall"]
         print(f"  {arm:<10} vs default: {gap:+.3f}")
     print(f"\ntotal wall time: {(time.time()-t_start)/60:.1f} min")
 

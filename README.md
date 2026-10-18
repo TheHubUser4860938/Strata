@@ -107,14 +107,21 @@ that summons them into a steering system:
   guesses. A conversation can pin a mode over it, a client tag outranks everything, and
   `GET /reason` shows what actually framed each conversation, including when a tag overruled
   the picker.
-- **Honest about what it can claim.** Two sweeps — 256 generations on a hand-built bank, then
+- **Honest about what it can claim.** Three sweeps — 256 generations on a hand-built bank, then
   published suites (GSM-Symbolic, MATH-500, HumanEval, five BIG-Bench Hard tasks, GPQA-diamond)
-  — found **no mode beats the default on accuracy beyond the ±0.05 band**. GSM-Symbolic,
-  HumanEval and all five BBH tasks come out at ceiling for every arm — the IQ3_S re-quant
-  matches the full model there — so the verdict rests on the two shapes with headroom:
-  **GPQA-diamond 0.62 and MATH-500 0.83 for the default arm**, where coder, deeptree and house
-  measurably *cost* accuracy. The dial steers
-  voice, structure and behaviour; the docs claim steering, never performance.
+  at temperature 0, then the rerun at the model's recommended temperature (1.0, three repeats,
+  twelve arms, 3,168 generations) — found **no mode beats the default on accuracy beyond the
+  ±0.05 band**. GSM-Symbolic, HumanEval and all five BBH tasks come out at ceiling for every
+  arm — the IQ3_S re-quant matches the full model there — so the verdict rests on the two
+  shapes with headroom: **GPQA-diamond 0.67 and MATH-500 0.81 for the default arm at temp 1.0**
+  (0.62 and 0.83 at temp 0), where coder still measurably *costs* accuracy — −0.07 overall, the
+  one effect outside the band in either run — while deeptree and house, which cost it at temp 0,
+  land inside the noise at 1.0. The reasoning-family arms (einstein, omni, hyper, spoon) land
+  between +0.04 and −0.02, inside the noise; einstein's 0.95 is the best observed. At temp 1.0
+  the instrument's own spread is 0.027 — five times the temp-0 floor — so temperature, not the
+  dial, owns the variance. And the picker neither gains nor loses: untagged traffic on this box
+  rides the autonomous picker and scores 0.91, level with the no-framing control at −0.004.
+  The dial steers voice, structure and behaviour; the docs claim steering, never performance.
 - **Tuned on live traffic, the same day it shipped.** The first evening of autonomous mode
   produced a transcript audit: two turns rode a stale frame because the *agent* pinned a mode
   and forgot to re-check — and a cold replay of the picker scored the right construct 2-for-2
@@ -197,7 +204,7 @@ KV), state-without-text is research, not a result. Positive *and* negative resul
 
 The claim list, what each measurement was run on, and what beta-1 refuses to claim:
 [`docs/BETA1.md`](docs/BETA1.md). The engine-heavy queue — benchmark re-record on the current
-weights, cartridges, the temp-1.0 × 3-repeat mode rerun — waits on the 128 GB RAM upgrade
+weights, cartridges — waits on the 128 GB RAM upgrade
 (~2026-10-22): this dev box runs ~52 GB of weights on a 62 GB machine, and the engine, not the
 memory system, is the pressure (measured: Postgres holds 20 MiB resident, the embedder
 ~130 MiB, engine RSS flat). The memory-and-tooling line shipped six releases on October 17
