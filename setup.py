@@ -71,6 +71,8 @@ HF_REVISIONS = {
     "unsloth/Qwen3.6-35B-A3B-MTP-GGUF": "5bc3e238d916f48a861bac2f8a1990a0e9b7e98d",                  # 2026-10-12
     "DavidAU/Qwen3.8-Flash-Next-Abliterated-Uncensored-Turbo-Brilliance-50x-Reasoning-Instruct-GSQ-RCO-GGUF":
         "509dfb275d360bdd49e2308238a8393d53d87610",                                                  # 2026-10-17
+    "DavidAU/Qwen3.8-Flash-Next-Turbo-Brilliance-50x-Reasoning-Instruct-GSQ-RCO-GGUF":
+        "ad1ee77df30e5ff9c25af86ac3475ca91dcd12d1",                                                  # 2026-10-17
 }
 
 
@@ -264,6 +266,22 @@ DAU_IQ3_S_SHARDS = {
     "Qwen3.8-Flash-Next-GSQ-RCO-abliterated-IQ3_S-00002-of-00002.gguf":
         (28800138432, "316b46f3a2dbd68c900f43136ab9449f9dcc3725dfd8c794847c204bc161e113"),
 }
+# DavidAU's REGULAR (non-abliterated) Turbo-Brilliance re-quant of the same original IQ3_S (the repo the owner
+# pointed at 2026-10-17 evening): same file series, same reason-mode system per his card (27 reasoning + 27
+# instruct + 9 xhigh modes, the pairing guide, and example generations in the pkd/house/business/neo voices).
+# His shard 2 is the family's shared n-gram PLE table again - 28,800,138,432 bytes, sha 316b46f3... byte-
+# identical to the abliterated family's and the original's - so an owner switching between the two DAU families
+# downloads only the first shard (54,817,741,024 bytes, the regular weights; the abliterated shard 1 is
+# 55,063,664,928 - different bytes, same size class). Sizes and SHA-256 are the Hub's LFS pointers, checked
+# 2026-10-17.  The reason-mode flavor is content-based (the server reads the template the tokenizer export
+# writes from his file: reason_mods + {REASON} present = dau dialect, absent = the feature stays off with a
+# banner that says so) - the regular card documents the modes, and the server decides by bytes, not by trust.
+DAUREG_IQ3_S_SHARDS = {
+    "Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf":
+        (54817741024, "8a14ab07ca7b54619e6b250cd1d83f97f79ab7eef3caf8ee9e6543bc9ac6a193"),
+    "Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf":
+        (28800138432, "316b46f3a2dbd68c900f43136ab9449f9dcc3725dfd8c794847c204bc161e113"),
+}
 
 MODELS = {
     # the original model only for now: Swift 1.5's Q2_0 files split one layer's experts across the two shards, which
@@ -277,7 +295,7 @@ MODELS = {
     # (the "dau" family is this same size - DavidAU's re-quant of the original IQ3_S - so it shares the key)
     "IQ3_S": {"about": "3.5-bit i-quant, the best quality (matches the full model), the slowest; needs a 64 GB PC "
                        "with little else running", "download_gb": 83.6, "ram_gb": 62, "arena_gb": 50.3,
-              "families": ("qwen", "swift", "dau")},
+              "families": ("qwen", "swift", "dau", "daureg")},
     # the Coder release: 256 of the 512 experts kept (the ones code, tools and vision use), IQ2_S-IQ4_XS like IQ3_S
     "IQ1_M": {"about": "the Coder's only size: half the experts, stored like IQ3_S (3.5 bits)", "download_gb": 58.4,
               "ram_gb": 32, "arena_gb": 23.4, "families": ("coder",)},
@@ -445,6 +463,22 @@ FAMILIES = {
             "sha256": DAU_IQ3_S_SHARDS,
             "license": "Apache-2.0 (DavidAU's release) on Qwen3.8-Flash-Next, Qwen Community License 1.0: "
                        "https://huggingface.co/DavidAU/Qwen3.8-Flash-Next-Abliterated-Uncensored-Turbo-Brilliance-50x-Reasoning-Instruct-GSQ-RCO-GGUF"},
+    # the regular (non-abliterated) Turbo-Brilliance (DAUREG_IQ3_S_SHARDS above): the same reason-mode model
+    # without the refusal-shaping removal - the owner pointed at this repository 2026-10-17 evening.  The
+    # reason modes ride the chat template embedded in his file (his card documents the 27+27+9 mode system and
+    # the pairing guide; the server's flavor check is content-based, so if the template ever lacked the grammar
+    # the feature would stay off with a banner saying so - the same measured refusal law as every stock file).
+    "daureg": {"title": "Qwen3.8-Flash-Next (Turbo-Brilliance, regular)",
+               "by": "DavidAU's reason-mode re-quant of the original IQ3_S, without the abliteration",
+               "about": "the {REASON:} model in its regular dress: the same reason modes, the same size and "
+                        "speed as IQ3_S; the abliterated family is the one with the refusal shaping removed",
+               "hf": hf("DavidAU/Qwen3.8-Flash-Next-Turbo-Brilliance-50x-Reasoning-Instruct-GSQ-RCO-GGUF"),
+               "file": "Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-0000{i}-of-00002.gguf", "tag": "daureg-",
+               "mmproj_hf": hf("ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF"),
+               "mmproj": "mmproj-Qwen3.8-Flash-Next-BF16.gguf", "name": "qwen3.8-flash-next-tb-regular",
+               "sha256": DAUREG_IQ3_S_SHARDS,
+               "license": "Apache-2.0 (DavidAU's release) on Qwen3.8-Flash-Next, Qwen Community License 1.0: "
+                          "https://huggingface.co/DavidAU/Qwen3.8-Flash-Next-Turbo-Brilliance-50x-Reasoning-Instruct-GSQ-RCO-GGUF"},
     # Unsloth's UD-IQ4_XS (three shards, #621), UD-Q4_K_XL (four), UD-Q5_K_XL, UD-Q6_K_XL and Q8_0 (six) of the original
     # model (docs/QUANTS.md): regular choices since f-quants; the shard count and "vision" are per model (MODELS)
     "unsloth": {"title": "Qwen3.8-Flash-Next (Unsloth)", "by": "Unsloth's 4- to 8-bit quantizations",
@@ -7130,10 +7164,12 @@ def main() -> int:
            "model_name": f"{fam['name']}-{model.lower()}", "log": str(ROOT / f"strata-{tag.lower()}.log"),
            "lib_dirs": lib_dirs, "port": port}
     cfg["memory"] = fork_memory_cfg(ROOT)          # memory-core fork: on every time, opt-out by config
-    if family == "dau":
+    if family in ("dau", "daureg"):
         # the {REASON:} master switch (the one boolean the user asked for): a DavidAU install arrives
         # with its reason modes ON - the /reason door, the reason_mode tool, the sticky modes; every
         # other family leaves the key absent, which is off, and the server never consults any of it.
+        # Both DAU families get it (regular and abliterated): the server's flavor check is content-based,
+        # so the switch only ever lights up on a template that actually answers to the modes.
         cfg["reason_modes"] = True
         # and its generalist default (the owner, 2026-10-17 evening, once autonomous mode shipped):
         # "auto" - the construct picked per task from the author's use-case map, no pick without a

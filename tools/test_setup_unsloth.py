@@ -501,13 +501,17 @@ class IQ4XS(Base):
         """The first menu lists the Unsloth family without [experimental]; its size menu lists the five files by size,
         UD-IQ4_XS first (the default on 64 GB, Enter), none marked EXPERIMENTAL; --model names are unchanged."""
         code, out, cfg = self.main(["--context", "8192", "--vision", "no"], version="0.1.38", model=False,
-                                   family=False, answers={"Which model": "5"}, m=M)
+                                   family=False, answers={"Which model": "6"}, m=M)
         self.assertEqual(code, 0, out)
-        # the "dau" family (added 2026-10-17) sits right after the coder: same-size variants of the
-        # original first, then the bigger re-quants - so Unsloth answered "5" from here on
+        # the "dau" family (added 2026-10-17) sits right after the coder, and the regular
+        # Turbo-Brilliance ("daureg", the owner's evening addition the same day) right after it:
+        # same-size variants of the original first, then the bigger re-quants - so Unsloth
+        # answered "6" from here on
         self.assertIn("Qwen3.8-Flash-Next (Turbo-Brilliance)",
                       next(ln for ln in out.splitlines() if ln.startswith("  4) ")))
-        fam_line = next(ln for ln in out.splitlines() if ln.startswith("  5) "))
+        self.assertIn("Turbo-Brilliance, regular",
+                      next(ln for ln in out.splitlines() if ln.startswith("  5) ")))
+        fam_line = next(ln for ln in out.splitlines() if ln.startswith("  6) "))
         self.assertIn("Qwen3.8-Flash-Next (Unsloth)", fam_line)
         self.assertIn("UD-IQ4_XS, UD-Q4_K_XL, UD-Q5_K_XL, UD-Q6_K_XL or Q8_0 (94 to 188 GB downloads)", fam_line)
         self.assertNotIn("[experimental]", out)

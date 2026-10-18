@@ -1,6 +1,6 @@
 # Strata Mnemosyne — Strata with built-in long-term memory
 
-A 120-billion-parameter model running on a normal PC — one graphics card, some system RAM —
+An 180-billion-parameter model running on a normal PC — one graphics card, some system RAM —
 that **remembers**. Not in the client, not per-app: the memory lives at the inference server
 itself, so every client (OpenCode, Claude Code, Codex, the web app) shares one store, and no
 harness ever has to re-send history. The server remembers, and it remembers the same way no
@@ -101,7 +101,11 @@ that summons them into a steering system:
   the picker.
 - **Honest about what it can claim.** Two sweeps — 256 generations on a hand-built bank, then
   published suites (GSM-Symbolic, MATH-500, HumanEval, five BIG-Bench Hard tasks, GPQA-diamond)
-  — found **no mode beats the default on accuracy beyond the ±0.05 band**. The dial steers
+  — found **no mode beats the default on accuracy beyond the ±0.05 band**. GSM-Symbolic,
+  HumanEval and all five BBH tasks come out at ceiling for every arm — the IQ3_S re-quant
+  matches the full model there — so the verdict rests on the two shapes with headroom:
+  **GPQA-diamond 0.62 and MATH-500 0.83 for the default arm**, where coder, deeptree and house
+  measurably *cost* accuracy. The dial steers
   voice, structure and behaviour; the docs claim steering, never performance.
 - **Tuned on live traffic, the same day it shipped.** The first evening of autonomous mode
   produced a transcript audit: two turns rode a stale frame because the *agent* pinned a mode
@@ -175,7 +179,9 @@ appends; Zenodo DOIs [23127434](https://doi.org/10.5281/zenodo.23127434),
 [23434686](https://doi.org/10.5281/zenodo.23434686)). The authors' own boundary governs how we
 read it: semantic transfer is **not** claimed, and the open question they raise — extension to
 "architectures with substantially different attention mechanisms" — is exactly this fork's
-blocker: on the 120B MoE here (36 Gated DeltaNet layers + 12 sparse-attention layers, quantized
+blocker: on the 180B MoE here (125B of language model plus 51B of n-gram embedding plus 4B of MTP —
+the three numbers you see floating around the cards are the same model counted three ways; 512
+experts, 10 active per token; 36 Gated DeltaNet layers + 12 sparse-attention layers, quantized
 KV), state-without-text is research, not a result. Positive *and* negative results land in
 `docs/MEMORY_CORE.md`.
 
@@ -207,8 +213,11 @@ whether or not an AI typed the driver.
 ## Credits and license
 
 The model is [Qwen3.8-Flash-Next](https://huggingface.co/Qwen/Qwen3.8-Flash-Next) by the Qwen team. It was
-compressed by [ISTA-DASLab](https://huggingface.co/ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF), UkisAI (Swift 1.5)
-and Unsloth. Strata uses parts of [llama.cpp / ggml](https://github.com/ggml-org/llama.cpp). All credits:
+compressed by [ISTA-DASLab](https://huggingface.co/ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF), UkisAI (Swift 1.5),
+Unsloth, and [DavidAU](https://huggingface.co/DavidAU) — whose Turbo-Brilliance reason-mode re-quants,
+[regular](https://huggingface.co/DavidAU/Qwen3.8-Flash-Next-Turbo-Brilliance-50x-Reasoning-Instruct-GSQ-RCO-GGUF)
+and [abliterated](https://huggingface.co/DavidAU/Qwen3.8-Flash-Next-Abliterated-Uncensored-Turbo-Brilliance-50x-Reasoning-Instruct-GSQ-RCO-GGUF),
+are the models this fork's reason modes ride and both of which the installer offers. Strata uses parts of [llama.cpp / ggml](https://github.com/ggml-org/llama.cpp). All credits:
 [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md#credits). Strata is open source under the [MIT License](LICENSE). A few
 parts and every model have their own licenses ([which ones](docs/HOW_IT_WORKS.md#license)).
 

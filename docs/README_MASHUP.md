@@ -13,7 +13,8 @@
 models are just goldfish, that every app has to re-paste your life into it every morning. It's
 not physics. It's a habit. There is no session state. There never was.
 
-**House:** The patient is a 120-billion-parameter mixture-of-experts on one graphics card and
+**House:** The patient is an 180-billion-parameter mixture-of-experts — 512 experts, 10 of them
+awake per token — on one graphics card and
 62 GB of system RAM, paging about 30 GB of experts to swap, and it still answers **0.72** on
 LongMemEval-V1 oracle — 500 questions, three repeats. The control arm is the interesting one:
 mute the memory and **98.4–98.7%** of answers are `idk`. It wasn't faking. It genuinely didn't
