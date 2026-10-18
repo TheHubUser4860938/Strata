@@ -357,6 +357,74 @@ def prepend_head(messages: list[dict], text: str) -> list[dict]:
     return [{"role": "system", "content": text}] + list(messages)
 
 
+SOUL_BUDGET = 6000            # soul.md's load-time budget (the soul plan's enforced-at-load law)
+
+
+def compose_soul(raw: str, gate_on: bool) -> tuple[str, str, str]:
+    """soul.md text -> (injected bytes, variant, reason). Fail-closed: unusable bytes
+    return ("", "off", why) and the box runs the byte-identical pre-soul path - a
+    half-soul is never served. Pure and offline (no server, no store, no model):
+    - Budget: the RAW file must be <= SOUL_BUDGET chars (v1 ships at 5,995 raw; the
+      budget is a tripwire against drift, not a squeeze).
+    - HTML comments are load-time INSTRUCTIONS, not soul bytes: stripped, whitespace
+      re-normalized. The same file always composes to the same bytes.
+    - Part B (first line starting "## B.") composes ONLY when the gate is on -
+      svc.reason_enabled, which already means config-true AND the template answers to
+      reason_mods (no model-name string anywhere). Gate off, the bytes end at Part A;
+      gate on with no Part B in the file honestly reports variant "A"."""
+    if not raw or not raw.strip():
+        return "", "off", "soul file is empty"
+    if len(raw) > SOUL_BUDGET:
+        return "", "off", f"soul is {len(raw)} chars, over the {SOUL_BUDGET} budget"
+    text = re.sub(r"<!--.*?-->", "", raw, flags=re.S)
+    text = re.sub(r"\n{3,}", "\n\n", text).strip()
+    lines = text.splitlines(True)
+    cut = next((i for i, ln in enumerate(lines) if ln.startswith("## B.")), None)
+    part_a = "".join(lines[:cut]).strip() if cut is not None else text
+    if not part_a:
+        return "", "off", "soul composes to zero bytes (it was all comment)"
+    if gate_on and cut is not None:
+        return part_a + "\n\n" + "".join(lines[cut:]).strip(), "A+B", ""
+    return part_a, "A", ("" if cut is None else "Part B held back: reason system off")
+
+
+def soul_boot(svc, cfg: dict) -> None:
+    """soul.md, slot 0 (soul plan 06 sec 6, frozen after the Grok round-3 review): the
+    store's persona rides the FRONT of the system message - soul -> cartridge -> recall
+    -> app, the order enforced by prepend order (the soul prepends LAST, so it lands
+    FIRST). Opt-in: {"memory": {"soul": "soul.md"}}; off by default until the night-one
+    numbers and the owner's call (persona framings measured -0.04..-0.08 on hard shapes).
+    Fail-closed: unreadable, empty, or over-budget logs loudly and the box serves
+    today's bytes. Composed ONCE here: no hot path re-reads the file or re-gates, and
+    the bytes are immutable until restart (model_for only aliases - it never swaps).
+    The sha256 is LOGGED for prefix forensics, not gated: the owner edits soul.md, and
+    a boot gate on file contents turns every edit into a test change. The journal never
+    sees these bytes - turn rows store user and assistant text; the soul rides the
+    system head, outside the block pin (which keys on the first USER message)."""
+    soul_cfg = (cfg.get("memory") or {}).get("soul") if isinstance(cfg.get("memory"), dict) else None
+    if not soul_cfg:
+        return
+    if svc.memory is None:
+        print("[strata] soul wants the memory system on - staying off", flush=True)
+        return
+    sp = soul_cfg if isinstance(soul_cfg, str) else str((soul_cfg or {}).get("file") or "soul.md")
+    if not os.path.isabs(sp):
+        sp = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), sp)
+    try:
+        with open(sp, encoding="utf-8") as f:
+            raw = f.read()
+    except OSError as e:
+        print(f"[strata] soul: {sp} unreadable ({e}) - pre-soul path", flush=True)
+        return
+    svc.soul, svc.soul_variant, why = compose_soul(raw, getattr(svc, "reason_enabled", False))
+    if not svc.soul:
+        print(f"[strata] soul: {why} - pre-soul path", flush=True)
+        return
+    print(f"[strata] soul slot 0 on: variant {svc.soul_variant}, {len(svc.soul)} composed chars, "
+          f"sha256 {hashlib.sha256(svc.soul.encode()).hexdigest()[:16]} from {sp} - immutable "
+          f"until restart (soul -> cartridge -> recall -> app)", flush=True)
+
+
 def time_bound(value) -> float | None:
     """A /memory date-index bound (?since= / ?until=, 2026-10-12): epoch seconds, an ISO date
     (read as UTC midnight), or an ISO datetime. None for empty/None - the default window stays

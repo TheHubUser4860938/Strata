@@ -3538,6 +3538,8 @@ class Service:
         self.slot_retain = 0                          # slot_retain N: a save prunes to the N newest (0 = keep all)
         self.memory = None                            # memory-core fork: serve/memory.py store (off unless configured)
         self.cartridges = None                        # memory-core M3b: tier-2 standing cartridge (off unless configured)
+        self.soul = ""                                # soul.md slot 0 (opt-in "memory.soul"; "" = today's bytes)
+        self.soul_variant = "off"                     # "off" | "A" | "A+B" - what the boot gate composed
         self.embeddings = threading.local()           # the current request's image embeddings file (GENI)
         self.api_key = ""                              # when set, /v1/* needs it (Bearer or x-api-key)
         # #458 (opt-in, the config's "effort_position": "end"): a non-default reasoning effort goes in a short system
@@ -7063,6 +7065,10 @@ def make_handler(svc: Service):
                         messages = svc.cartridges.prepend(messages)
                 else:
                     svc.cartridges.invalidate()                   # muted: this conversation will replace the slot
+            if svc.soul and mem_ctx is not None:                  # soul.md slot 0: the LAST prepend, the
+                messages = memory_api.prepend_head(messages, svc.soul)   # FIRST bytes (order = prepend
+                                                                         # order). Muted conversations
+                                                                         # keep the byte-identical upstream path
             if force and use_mcp:
                 raise ValueError("a forced tool_choice with MCP tools is not supported")
             svc.reasoning_budget(req)                         # a bad value is a 400 before anything is sent
@@ -7262,6 +7268,9 @@ def make_handler(svc: Service):
                         messages = svc.cartridges.prepend(messages)
                 else:
                     svc.cartridges.invalidate()
+            if svc.soul and mem_ctx is not None:                  # soul.md slot 0 (parity: every dialect
+                messages = memory_api.prepend_head(messages, svc.soul)   # stands on the same prefix, or
+                                                                         # the prefix law is a suggestion)
             # memory-core C parity (2026-10-13): the browse tool for Codex too. The tool list here is in the
             # template's flat form; the flag rides mem_ctx (the return tuple is already wide) and _responses
             # builds the loop after prepare. Internal rounds never reach the assembler: run_with_mcp swallows
@@ -7335,7 +7344,10 @@ def make_handler(svc: Service):
             # memory-core fork (beta item B): the count must reflect the prompt this server ACTUALLY
             # reads - with memory on, the injected block is bytes in that prompt, and a client that
             # budgets by this number (Claude Code's context bar) deserves the honest figure.
-            messages, _ = memory_api.request_state(svc.memory, messages, self.headers, req)
+            messages, mem_ctx_ct = memory_api.request_state(svc.memory, messages, self.headers, req)
+            if svc.soul and mem_ctx_ct is not None:               # the count must include the slot-0
+                messages = memory_api.prepend_head(messages, svc.soul)   # bytes too, or the context bar
+                                                                         # lies by exactly the soul
             stop_strings(req)                                 # the same 400 as the request itself would get
             check_request_sampling(req)                       # ... likewise a sampling field of the wrong type
             self._json(200, {"input_tokens": len(svc.encode_prompt(messages, tools, kw, store=False))})
@@ -7357,6 +7369,9 @@ def make_handler(svc: Service):
                         messages = svc.cartridges.prepend(messages)
                 else:
                     svc.cartridges.invalidate()
+            if svc.soul and mem_ctx is not None:                  # soul.md slot 0 (Anthropic parity:
+                messages = memory_api.prepend_head(messages, svc.soul)   # Claude Code rides the same
+                                                                         # bytes as every other dialect)
             no_tools = tool_choice_of(req.get("tool_choice"))[0] == "none"   # Anthropic's {"type": "none"}
             if no_tools:
                 tools = None
@@ -8400,6 +8415,10 @@ def main() -> int:
             svc.reason_default = rm
             print(f"[strata] reason mode default: {rm} (per-conversation stickies and a client's own "
                   f"{{REASON:}} tag outrank it; GET /reason)", flush=True)
+    # SOUL.MD, SLOT 0 (soul plan 06 sec 6): runs AFTER the reason master switch so the Part
+    # B gate reads the final verdict, and before the first request can be served. soul_boot
+    # composes once; nothing recomposes until the next boot (the owner's reboot law).
+    memory_api.soul_boot(svc, cfg)
     if cfg.get("reasoning_budget_tokens") is not None:  # #123: a default thinking budget for every request
         try:
             svc.reasoning_budget_tokens = cfg["reasoning_budget_tokens"]
