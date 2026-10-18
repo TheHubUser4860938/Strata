@@ -99,8 +99,7 @@ that summons them into a steering system:
   draws the architecture and ships the files. The server splices both constructs mechanically,
   so the grammar works through any door: a client tag, the `reason_mode` tool (agents steer
   themselves mid-task), or the Settings menu — which applies live, no restart.
-- **Thinking levels.** `none / low / medium / xhigh`, pinned per conversation, outranking an
-  app's own request level — the dial that decides how much the model thinks before it speaks.
+
 - **Autonomous mode — the default.** `auto` picks the construct per request, scored against
   the template author's own use-case map: the map that says `curie+teacher` for explanations
   and `musk+business` for physics-first strategy. No confident match, no pick — it never
