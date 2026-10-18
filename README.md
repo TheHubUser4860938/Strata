@@ -1,53 +1,60 @@
 # Strata Mnemosyne — Strata with built-in long-term memory
 
-**What this fork is for: building memory into Strata — a persistent, harness-independent long-term memory
-that lives at the inference server.** Every client (OpenCode, Claude Code, Codex, the web app) shares one
-store, and no harness ever re-sends conversation history — the server remembers, and it remembers the same
-way no matter which app is knocking.
+A 120-billion-parameter model running on a normal PC — one graphics card, some system RAM —
+that **remembers**. Not in the client, not per-app: the memory lives at the inference server
+itself, so every client (OpenCode, Claude Code, Codex, the web app) shares one store, and no
+harness ever has to re-send history. The server remembers, and it remembers the same way no
+matter which app is knocking.
 
-**Naming (settled 2026-10-16).** The project is **Strata**. Its built-in memory system is **Strata
-Mnemosyne** — the store: subject shelves, native PostgreSQL (FTS + float32 vectors in one database,
-ADR-002 2026-10-16, superseding the original SQLite base), the journal, the sweep.
-The assistant that recalls it — the chat voice and the coding agent's hands — is **Clio** (KLEE-oh),
-who in the mythology is Mnemosyne's daughter: the retriever descends from the store. The split is
-architectural, not decoration: storage is passive and curated; recall is the part with rules,
-budgets and judgement. Short form for code and speech: **Mnemo**.
+**Naming (settled 2026-10-16).** The project is **Strata**. Its built-in memory system is
+**Strata Mnemosyne** — the store: subject shelves, native PostgreSQL (FTS + float32 vectors in
+one database, ADR-002), the journal, the sweep. The assistant that recalls it — the chat voice
+and the coding agent's hands — is **Clio** (KLEE-oh), who in the mythology is Mnemosyne's
+daughter: the retriever descends from the store. The split is architectural, not decoration:
+storage is passive and curated; recall is the part with rules, budgets and judgement. Short
+form for code and speech: **Mnemo**.
 
 ## Try it: Strata with memory
 
-**Windows:** double-click `START-HERE.bat`. **Linux:** `./setup.sh`. Run it from a clone of **this**
-repository's `memory-core` branch — the installer checks your PC, picks the model size that fits
-your RAM, downloads it, and starts the server at `http://127.0.0.1:8005`:
+**Windows:** double-click `START-HERE.bat`. **Linux:** `./setup.sh`. Run it from a clone of
+**this** repository's `memory-core` branch — the installer checks your PC, picks the model size
+that fits your RAM, downloads it, and starts the server at `http://127.0.0.1:8005`:
 
 ```
 git clone -b memory-core https://github.com/TheHubUser4860938/Strata.git
 cd Strata
 ```
-<img width="1877" height="638" alt="image" src="https://github.com/user-attachments/assets/5cae0570-fb69-4665-a59d-92a1c0eff5f7" />
 
+<img width="1877" height="638" alt="image" src="https://github.com/user-attachments/assets/5cae0570-fb69-4665-a59d-92a1c0eff5f7" />
 
 <img width="1278" height="263" alt="image" src="https://github.com/user-attachments/assets/f6f63206-afdb-439a-a9d4-d58ce0ee054a" />
 
-
 <img width="1879" height="434" alt="image" src="https://github.com/user-attachments/assets/1643c829-dc1b-43f5-9952-0d5c4f67f924" />
 
+Two things arrive switched **on**, and everything else stays byte-identical to upstream Strata:
 
-Memory is **on by default** in this fork (decided 2026-10-16: someone who does not want the built-in
-memory system would not be using this fork of Strata to begin with). Setup writes the block below and
-fetches the embedder it ships with, so the hybrid recall works out of the box. To turn the memory off,
-set `"memory": { "enabled": false }` in the engine config - every path then returns to upstream Strata,
-byte for byte:
+- **Memory.** Decided 2026-10-16: someone who does not want the built-in memory system would
+  not be using this fork to begin with. Setup writes the block below and fetches the embedder
+  it ships with, so hybrid recall works out of the box. To turn it off, set
+  `"memory": { "enabled": false }` — every path then returns to upstream Strata, byte for byte:
 
-```json
-"memory": { "dir": "Strata-data/memory",
-            "embedder": { "dir": "Strata-data/embeddings/bge-small-en-v1.5" } }
-```
+  ```json
+  "memory": { "dir": "Strata-data/memory",
+              "embedder": { "dir": "Strata-data/embeddings/bge-small-en-v1.5" } }
+  ```
 
-or by starting the server with `--memory Strata-data/memory`. When it is live the boot banner prints
-`[strata] memory core on: ...`, and `http://127.0.0.1:8005/memory-ui` is the store's own page —
-stats, search, forget. The embedder (pinned by SHA-256, MIT, ~130 MB, CPU-only — it never touches
-the GPU your model owns) is what lets recall understand paraphrase; without it recall stays lexical
-and everything else still works. The exact files and hashes: `docs/MEMORY_CORE.md`.
+  or start the server with `--memory Strata-data/memory`. When it is live the boot banner
+  prints `[strata] memory core on: ...`, and `http://127.0.0.1:8005/memory-ui` is the store's
+  own page — stats, search, forget. The embedder (pinned by SHA-256, MIT, ~130 MB, CPU-only —
+  it never touches the GPU your model owns) is what lets recall understand paraphrase;
+  without it recall stays lexical and everything else still works.
+
+- **Reason modes** (DavidAU model families — see below): the server answers to 41 framings,
+  pairs, thinking levels, and an autonomous picker, and boots with the picker on. The banner
+  prints `reason modes on: ...`; `http://127.0.0.1:8005/reason` is the live view.
+
+This fork listens on **port 8005** where upstream uses 8080/8095, so a mainline Strata install
+and a memory install can run side by side on the same PC.
 
 ### Or point your AI agent at it
 
@@ -58,124 +65,123 @@ Set up Strata with its built-in memory (Strata Mnemosyne) on this PC for me:
 https://github.com/TheHubUser4860938/Strata - use the memory-core branch, follow
 docs/AI_SETUP.md in that repository. The memory is ON by default on that branch, and setup
 fetches its embedder as part of the install.
-Before reporting done, verify the boot banner says "memory core on" and /memory-ui answers.
+Before reporting done, verify the boot banner says "memory core on" (and, on a DavidAU
+install, "reason modes on"), and /memory-ui answers.
 ```
 
 The agent can also drive install/start/stop through Strata's [MCP server](docs/MCP_SERVER.md).
 
-Status, October 17, 2026 — **beta-1 (Linux), development paused**: the claim list, with what each
-measurement was run on and what beta-1 refuses to claim, is [`docs/BETA1.md`](docs/BETA1.md). The
-text tier is live on the dev server and the K/V tier is in code. **The pause is hardware, not
-code:** the dev box now runs DavidAU's 120B Qwen3.8-Flash-Next at IQ3_S (~52 GB of weights) on a
-62 GB machine, so the engine pages ~30 GB of experts to swap; a 128 GB upgrade lands ~2026-10-22
-and development resumes behind it. The memory system itself is not the pressure — measured:
-Postgres holds 20 MiB resident, the embedder ~130 MiB, and the engine RSS is flat (no leak).
-Everything below is what shipped the day the pause began:
+## What's new — the thinking, on a dial
 
-- **Reason modes (live, measured twice):** 41 persona/effort framings the DAU template answers to,
-  steered by a `{REASON:name}` tag or the `reason_mode` tool, per-conversation sticky. Two sweeps
-  measured whether any of them *score*: round 1 on a hand-built bank (256 generations), round 2 on
-  published suites — GSM-Symbolic, MATH-500, HumanEval, five BIG-Bench Hard tasks, GPQA-diamond
-  (88 probes, 8 arms, records saved with gold so checker fixes never need regeneration). Verdict:
-  **no mode beats default/plain beyond the ±0.05 band, and coder, deeptree and house measurably
-  cost accuracy on the only shapes with headroom** (GPQA 0.62, MATH-500 0.83 for default). The
-  docs claim steering, never performance; the sweeps ran at temp 0 by instrument design, which is
-  not the model's recommended setting — a temp-1.0 × 3-repeat rerun is one flag (`--temperature`),
-  owned and queued.
-- **Store hygiene, proven by a 233-operation manual cleanup and now enforced in the write paths:**
-  multi-call agent turns journal as ONE row, not one per API round (the root cause of the duplicate
-  clusters — five rounds, five extractor passes, five paraphrased memories); the curation sweep's
-  supersession-law arm judges every landing fact against the store before it is stored (RESTATED
-  retires the older, CORRECTS amends the survivor to carry the history — 88 flags with correct
-  verdicts in the first live hours); ingest reunites abbreviation splits ("8 U.S.C." no longer dies
-  mid-citation) and refuses shards that cannot stand alone; and a weekly systemd timer seals an
-  encrypted backup then collapses paraphrase clusters — the store woke at 2,885 active rows, was
-  hand-merged to 2,595, and now **self-heals**: zero residual clusters, and the sweep retired ~36
-  more on its own the same afternoon.
+DavidAU's re-quant of Qwen3.8-Flash-Next ships with a chat template that answers to a
+`{REASON:name}` tag — 41 ways to frame the same question: DevOracle for code, House for
+debugging, Curie for science, Socrates for hard questions, Every Joe for plain talk. This fork
+turned that quirk into a steering system:
 
-- **Tier 3, curated text memory (running):** ~2,700 facts on subject shelves, recalled server-side and
-  injected as one hidden system block that rides all three dialects (OpenAI, Anthropic, Responses). A
-  journal feeds itself from conversations; a curation loop classifies, dedups, and consolidates with
-  human-gated merge review; a budget speaks before it's full; `?since=`/`?until=` date windows answer
-  when-said questions; encryption at rest seals atomically and shreds plaintext on clean shutdown
-  (round-trip proven); the store has its own page (`/memory-ui`: stats, search, forget, re-seed);
-  and, opt-in, the model browses its own store mid-answer with a `memory_search`
-  tool the server runs itself — no client tool wiring on the route that offers it.
-- **Tier 2, KV cartridges (built; first venue ran the day they booted, 2026-10-13):** the store's
-  standing shelves are seeded once as an engine session file and restored ahead of every
-  conversation. Measured on this engine: save 1,973 tokens → 260 MB (132 KB/token, the slot's
-  whole state); restore **81 ms** for 247 MB; the pin law **refuses foreign files** by config
-  fingerprint; the knowledge delta is **real** - warm 3/3 correct, cold 3/3 `idk`,
-  wrong-cartridge control 0 leaks. What did not measure yet: the fresh-conversation prefill win -
-  engine resume extends only the same conversation (one adjacent probe gave back 2,871 tokens,
-  1,837 ms → 599 ms); the RAM-side conversation cache was then measured doing its own version of
-  that trick per conversation (~13 ms parked-state returns, 1,989 ms → 705 ms) but not across
-  conversations. And continuation reuse measures **working** on a clean adjacent probe (session
-  idle, zero other clients): 100% of the parent prompt given back (2,629 of 2,622 tokens),
-  prefill 2,011 ms -> 681 ms - the head block is pinned per conversation (keyed by the first
-  user message) and the per-turn recall block rides the prompt tail by design. The venue's
-  fragile lines (runs 4-5, cache_n 0) are the runbook's slot-replacement failure - an
-  interleaving client took the slot while RAM churn evicted the parked copy - not placement
-  bugs; a first reading that blamed block instability was withdrawn the same day it was
-  filed. The earned claims today are fast slot reload, pin-verified provenance, parked
-  repeats, and a stable pinned head (a multi-turn conversation pays its head prefill once at
-  conversation start, not every turn); nothing here claims prefill skipped for strangers.
-  Protocol and raw records: `spikes/cartridge/M3C_PRE_REG.md`.
-- **Benchmark, measured (2026-10-13/14):** on **LongMemEval-V1 oracle** — all 500 official questions,
-  3 repeats, one fresh conversation per ask, the benchmark's own checker prompt verbatim — the
-  built-in memory answers **0.72** correctly (0.73 by question majority) at the shipped 96-note /
-  24k-char head, up from 0.68/0.69 at the first 48-note / 12k arm — a measured +3.8-point budget
-  A/B on the same store and protocol, per-repeat spread only ±5. The cold control is the line to
-  trust: memory muted, **98.4–98.7% answer `idk`** and gold leaks are **2 in 1,500**. Recall splits
-  honestly: single-session 0.91–0.95, preferences 0.90, knowledge-update 0.75, multi-session 0.74,
-  abstention 0.78, temporal arithmetic 0.43 — the known weak spot, unmoved by budget. The write path
-   then moved it: facts extracted with absolute dates answer the same 127 temporal questions
-   **+0.207** over the undated prompt (3 answer repeats, pooled McNemar p ≤ 1.2e-12, scratch stores,
-   2026-10-16) — the first intervention measured to move it at all, and it is already in the curation
-   loop every install ships. The judge
-  model is local (same engine, paper's decoding shape, disclosed); the doubled head costs ~2.3 s at
-  conversation start and zero per follow-up (pinned prefix). Full protocol, caveats, and records:
-  `docs/MEMORY_CORE.md` (F venue section) + `spikes/lme/oracle-20261013-full.jsonl` (12k) and
-  `spikes/lme/budget24k-20261014-full.jsonl` (24k). These baselines were recorded on the previous
-  weights; the re-record on the DavidAU build (oracle re-fetched, runbook ready) sits queued behind
-  the RAM pause, and until it runs every comparison against these numbers is cross-model — said out
-  loud wherever the numbers are used.
-- **Phase 2, state-without-text (open research):** porting the *AKBASCORE MAM / NIRVANA cognitive
-  cartridge* idea — knowledge stored as model-produced K/V (v1.3.0 "CUT3": 56 tensors per fact, one
-  file each, SHA-256 manifested) and read back with no source text in the prompt, which on this
-  hybrid-attention engine needs engine-level grafting.
-  Upstream research: [ceceli33/titan-cognitive-core-v2](https://github.com/ceceli33/titan-cognitive-core-v2)
-  (technical disclosures: [10.5281/zenodo.23127434](https://doi.org/10.5281/zenodo.23127434),
-  [10.5281/zenodo.23143605](https://doi.org/10.5281/zenodo.23143605),
-  [10.5281/zenodo.23146475](https://doi.org/10.5281/zenodo.23146475),
-  [10.5281/zenodo.23311350](https://doi.org/10.5281/zenodo.23311350)), and since 2026-10-17 two new
-  records: **Record II** — the procedure ported to Mistral-7B (CUT6, per-model adaptation, honest
-  strict-match scoring kept, parity-with-sealed-record 198/198 claimed as *outputs identical*, not
-  *answers correct*: [10.5281/zenodo.23381336](https://doi.org/10.5281/zenodo.23381336),
-  [titan-cognitive-core-v3](https://github.com/ceceli33/titan-cognitive-core-v3)) — and **Record
-  III**, first scale beyond 7B: Qwen2.5-72B on one A100-80GB (NF4), three 10k-token cartridges
-  assembled append-only to 30,031 positions, K/V bitwise-identical across all 80 layers under
-  appends, reconstruction 17.6 s / 46 s / 74 s for 1/2/3 cartridges (~9.16 GiB state):
-  [10.5281/zenodo.23434686](https://doi.org/10.5281/zenodo.23434686). The authors' own stated
-  boundary governs how we read all of it: semantic transfer is **not** claimed — the demo books
-  are pretraining data — and the open question they raise, extension "to architectures with
-  substantially different attention mechanisms," is precisely this fork's blocker. A DeepSeek
-  port is announced, unclaimed.
+- **Pairs.** `joe+comedy` thinks like the first and answers like the second — the server
+  splices both constructs mechanically, so the pair grammar works no matter which door you
+  use: a client tag, the `reason_mode` tool (agents steer themselves mid-task), or the
+  Settings menu. The menu applies live; no restart.
+- **Thinking levels.** `none / low / medium / xhigh`, pinned per conversation, outranking an
+  app's own request level — the knob that decides how much the model thinks before it speaks.
+- **Autonomous mode — the default.** `auto` picks the construct per request, scored against
+  the author's own use-case map. No confident match, no pick: it never guesses. A conversation
+  can pin a mode over it, a client tag outranks everything, and `GET /reason` shows what
+  actually framed each conversation — including when a tag overruled the picker.
+- **Honest about what it can claim.** Two sweeps (256 generations on a hand-built bank, then
+  published suites — GSM-Symbolic, MATH-500, HumanEval, five BIG-Bench Hard tasks,
+  GPQA-diamond) found **no mode beats the default on accuracy beyond the ±0.05 band**. Modes
+  steer voice, structure and behaviour — the docs claim steering, never performance.
+- **Tuned on live traffic, the same day it shipped.** The first evening of autonomous mode
+  produced a transcript audit: two turns rode a stale frame because the *agent* pinned a mode
+  and forgot to re-check, and a cold replay of the picker scored the right construct for both
+  misses. So pins now say what they freeze, pair splices carry a wrapper-arbitration bridge,
+  and internal machinery (the curation loop, the benchmark harness) opts out with its own tag —
+  measured: that machinery had been carrying 2,227 tokens of persona block per prompt.
 
-On this fork's target model (Qwen3.8-Flash-Next, the 120B MoE: 36 Gated DeltaNet layers + 12 Qwen Sparse Attention layers,
-quantized KV) the state-without-text port is **open research, not an established result**: MAM's published
-evidence covers dense full-attention models - now up to 72B (NF4 weights, BF16 compute), still never a hybrid-attention or quantized-KV engine - and seals a scaling ceiling (22/80 at 80 cartridges). This
-fork documents positive *and* negative results as they land, in `docs/MEMORY_CORE.md`.
+## And the store got disciplined
+
+The store woke up one morning with 2,885 rows, half of them paraphrased fragments of documents
+still sitting in a folder. By that evening it held **1,051**: 1,549 fragments were forgotten and
+replaced by eleven whole-document pointers — one memory per document, the document itself on
+disk — every unclassified row found its shelf (148 shelves, zero wild), retired facts now lose
+their vectors with their recall (the store holds the invariant *vectors == live rows*,
+1,051 == 1,051), and the nightly machinery does the rest: a curation sweep every 30 minutes
+that only runs when the store asks for it, a weekly janitor that seals an encrypted backup and
+collapses paraphrase clusters, and a slot folder that keeps the newest files and nothing else.
+
+The write paths earned their rules the hard way — a 233-operation manual cleanup, then the laws
+enforced in code: multi-call agent turns journal as ONE row; every landing fact is judged
+against the store before it is stored (the supersession arm: 88 flags with correct verdicts in
+its first live hours); ingest reunites abbreviation splits ("8 U.S.C." no longer dies
+mid-citation) and refuses shards that cannot stand alone.
+
+## How it works today
+
+**Tier 3 — curated text memory (live).** ~1,050 facts on subject shelves, recalled server-side
+and injected as one hidden system block that rides all three dialects (OpenAI, Anthropic,
+Responses). A journal feeds itself from conversations; a curation loop classifies, dedups and
+consolidates with human-gated merge review; a budget speaks before it's full; `?since=`/`?until=`
+windows answer when-said questions; encryption at rest seals atomically and shreds plaintext on
+clean shutdown. Opt-in: the model browses its own store mid-answer with a `memory_search` tool
+the server runs itself — no client wiring.
+
+**What it measures like, on LongMemEval-V1 (oracle, 500 questions × 3 repeats):** the built-in
+memory answers **0.72** correctly at the shipped budget. The control line is the one to trust:
+with memory muted, **98.4–98.7% of answers are `idk`** and gold leaks 2 in 1,500 — the model is
+recalling, not confabulating. Recall splits honestly: single-session 0.91–0.95, preferences
+0.90, knowledge-update 0.75, multi-session 0.74, abstention 0.78, temporal arithmetic 0.43 —
+and the one intervention ever measured to move that weak spot (writing facts with absolute
+dates) gained **+0.207** on the same 127 questions, McNemar p ≤ 1.2e-12, and it ships in the
+curation loop. Full protocol and records: `docs/MEMORY_CORE.md`.
+
+**Tier 2 — KV cartridges (built; waiting on RAM).** The store's standing shelves are seeded
+once as an engine session file and restored ahead of every conversation: restore **81 ms** for
+247 MB, the pin law **refuses foreign files** by config fingerprint, and the knowledge delta is
+real — warm 3/3 correct, cold 3/3 `idk`, wrong-cartridge control 0 leaks. What is *not* claimed:
+prefill skipped for strangers (engine resume extends one conversation, not across them —
+measured, and the docs say so). The venue re-record that would settle its economics sits queued
+behind the RAM upgrade below.
+
+**Phase 2 — state-without-text (open research).** Porting the *AKBASCORE MAM / NIRVANA
+cognitive cartridge* idea — knowledge stored as model-produced K/V and read back with no source
+text in the prompt. Upstream:
+[ceceli33/titan-cognitive-core-v2](https://github.com/ceceli33/titan-cognitive-core-v2)
+(records I–III: 7B, Mistral parity, and Qwen2.5-72B on one A100, K/V bitwise-stable under
+appends; Zenodo DOIs [23127434](https://doi.org/10.5281/zenodo.23127434),
+[23143605](https://doi.org/10.5281/zenodo.23143605),
+[23146475](https://doi.org/10.5281/zenodo.23146475),
+[23311350](https://doi.org/10.5281/zenodo.23311350),
+[23381336](https://doi.org/10.5281/zenodo.23381336),
+[23434686](https://doi.org/10.5281/zenodo.23434686)). The authors' own boundary governs how we
+read it: semantic transfer is **not** claimed, and the open question they raise — extension to
+"architectures with substantially different attention mechanisms" — is exactly this fork's
+blocker: on the 120B MoE here (36 Gated DeltaNet layers + 12 sparse-attention layers, quantized
+KV), state-without-text is research, not a result. Positive *and* negative results land in
+`docs/MEMORY_CORE.md`.
+
+## Status — beta-1 (Linux), active again
+
+The claim list, what each measurement was run on, and what beta-1 refuses to claim:
+[`docs/BETA1.md`](docs/BETA1.md). The October 17 pause lasted an afternoon, not a week: the
+engine-heavy queue (benchmark re-record on the current weights, cartridges, the temp-1.0
+× 3-repeat mode rerun) still waits on the 128 GB RAM upgrade (~2026-10-22) — the dev box runs
+~52 GB of weights on a 62 GB machine, and the engine, not the memory system, is the pressure
+(measured: Postgres holds 20 MiB resident, the embedder ~130 MiB, engine RSS flat). The
+memory-and-tooling line resumed the same evening and shipped six releases: pairs, levels,
+autonomous mode, the Settings menu, auto-pick observability, and the store purge above. The
+server's own test suite — 1,012 tests, no GPU and no downloads needed — passes on that box.
 
 Engine and server changes live on the `memory-core` branch; `main` stays a near-mirror of
-[upstream Strata](https://github.com/Niko1221/Strata) (MIT, by Niko1221). MAM-derived code carries the
-attribution and license terms of the AkbasCore repository (Copyright © 2026 Mustafa Akbaş).
+[upstream Strata](https://github.com/Niko1221/Strata) (MIT, by Niko1221). MAM-derived code
+carries the attribution and license terms of the AkbasCore repository (Copyright © 2026
+Mustafa Akbaş).
 
-**Who wrote this code:** most of it was typed by AI coding agents under a human's direction. The human
-picks the direction, owns the claims, and runs every measurement on real hardware (RTX 4090,
-Ryzen 7 9800X3D, 64 GB RAM class — 128 GB arriving ~2026-10-22); each number in this fork links
-to the script and raw output that
-produced it, so anyone can re-check it whether or not an AI typed the driver.
+**Who wrote this code:** most of it was typed by AI coding agents under a human's direction.
+The human picks the direction, owns the claims, and runs every measurement on real hardware
+(RTX 4090, Ryzen 7 9800X3D, 64 GB RAM class — 128 GB arriving ~2026-10-22); each number in
+this fork links to the script and raw output that produced it, so anyone can re-check it
+whether or not an AI typed the driver.
 
 ---
 

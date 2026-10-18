@@ -180,7 +180,10 @@ says so out loud - the degrade is visible, never a silent no-op.
 
 - verify before reporting done: the boot banner must print `[strata] memory core on: ...` (the
   banner is the check - a silent no-op config is the failure mode), and
-  `http://127.0.0.1:<port>/memory-ui` must answer;
+  `http://127.0.0.1:<port>/memory-ui` must answer; on a DavidAU-family install the banner must
+  also print `[strata] reason modes on: ...` and `http://127.0.0.1:<port>/reason` must answer
+  (setup writes `reason_modes: true` and the autonomous default for that family - a DAU install
+  without those lines did not get the fork's config);
 - never expose `/memory` beyond `127.0.0.1` without `--api-key` — the store holds what the server
   remembers about the user.
 
