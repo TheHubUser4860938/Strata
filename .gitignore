@@ -73,6 +73,7 @@ spikes/window/state/telemetry_*.json
 tools/state/curate_*.jsonl
 tools/state/curate_*.review.txt
 tools/state/curate_*.log
+tools/state/retro_*.jsonl
 
 # local Windows HIP packaging output
 dist-hip/
