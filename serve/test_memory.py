@@ -246,6 +246,36 @@ class Store(unittest.TestCase):
         hist = {m["id"] for m in self.mem.list_memories(scope="fw", limit=50, include_invalid=True)}
         self.assertIn(old, hist, "the history is walkable - it is just not RECALLABLE")
 
+    def test_forget_tombstones_and_purge_needs_a_reason(self):
+        # audit 09 finding 2 (Grok Q2 split, 2026-10-18): forget used to hard-DELETE with no
+        # trace of WHAT was removed; it now tombstones (invalid_at + provenance.forgotten).
+        # The hard delete is purge: it refuses an empty reason and records the victim in the
+        # purges ledger (whole-text hash + 200-char head + reason + actor) before it kills.
+        mem = MemoryService(os.path.join(self.tmp.name, "fmpurge"))
+        try:
+            a = mem.remember("a fact chosen to be forgotten", scope="fw")["id"]
+            self.assertTrue(mem.forget(a, reason="owner renamed the policy"))
+            self.assertNotIn(a, {m["id"] for m in mem.list_memories(scope="fw", limit=50)})
+            hist = {m["id"] for m in mem.list_memories(scope="fw", limit=50, include_invalid=True)}
+            self.assertIn(a, hist, "the forgotten text stays walkable - a tombstone, not a hole")
+            with mem.lock:
+                prov = mem.conn.execute("select provenance from memories where id = %s",
+                                        (a,)).fetchone()[0] or {}
+            self.assertEqual(prov.get("forgotten", {}).get("reason"), "owner renamed the policy")
+            self.assertRaises(ValueError, mem.purge, a, "")           # no silent exit
+            self.assertTrue(mem.purge(a, reason="manual burial", actor="cli"))
+            self.assertNotIn(a, {m["id"] for m in mem.list_memories(scope="fw", limit=50,
+                                                                     include_invalid=True)},
+                             "purge really deletes - and only after the ledger entry lands")
+            with mem.lock:
+                led = mem.conn.execute("select mem_id, text_head, reason, actor from purges"
+                                       " where mem_id = %s", (a,)).fetchone()
+            self.assertIsNotNone(led, "the purges ledger records the removal")
+            self.assertIn("forgotten", led[1], "with the head of what was removed")
+            self.assertEqual((led[2], led[3]), ("manual burial", "cli"))
+        finally:
+            mem.close()
+
     def test_invalidate_correct_version_chain(self):
         # the Zep pattern: a correction supersedes, it does not delete - recall serves only the
         # new fact, the old one survives as history pointing at its replacement

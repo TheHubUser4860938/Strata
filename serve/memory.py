@@ -438,6 +438,17 @@ _PG_DDL: tuple[str, ...] = (
          processed integer not null default 0,
          injected jsonb)""",
     "create index if not exists turns_pending on turns(id) where processed = 0",
+    # the purge ledger (audit 09 finding 2, Grok Q2 split, 2026-10-18): the one verb that
+    # erases a row may only do so with a reason, and it writes the victim's whole-text hash,
+    # 200-char head, reason, actor and timestamp HERE first - so even a hard delete leaves
+    # the removed content recoverable and the act itself auditable.
+    """create table if not exists purges(
+         mem_id bigint not null,
+         text_hash text not null,
+         text_head text not null,
+         reason text not null,
+         actor text not null default '',
+         ts timestamptz not null)""",
     "create table if not exists meta(key text primary key, value text not null)",
     """create table if not exists embeddings(
          id bigint primary key references memories(id) on delete cascade,
@@ -1042,15 +1053,57 @@ class MemoryService:
                 return ("supersede", rid)
         return None
 
-    def forget(self, memory_id: int) -> bool:
+    def forget(self, memory_id: int, reason: str = "") -> bool:
+        """The honest forget (audit 09 finding 2, Grok Q2 split, 2026-10-18): op=forget used
+        to hard-DELETE - explicit on the surface, but it left no record of WHAT was removed.
+        It is now a tombstone: the same invalid_at stamp invalidate() sets, plus a "forgotten"
+        record (reason + timestamp) merged into the row's provenance; the vector goes with the
+        recall (the owner's dead-weight ruling, see invalidate). The hard-delete primitive did
+        not die - it is purge() below, which cannot run without a reason and records the
+        victim in the purges ledger before it kills. Nothing leaves the store silently either
+        way; the difference is how much of the ledger survives."""
         with self.lock:
-            gone = self.conn.execute("delete from memories where id = %s", (int(memory_id),))
+            gone = self.conn.execute(
+                "update memories set invalid_at=%s, updated_at=%s,"
+                " provenance=coalesce(provenance,'{}'::jsonb)||%s::jsonb"
+                " where id=%s and invalid_at is null",
+                (self._dt(time.time()), self._dt(time.time()),
+                 Jsonb({"forgotten": {"reason": str(reason or ""), "ts": time.time()}}),
+                 int(memory_id)))
             self.conn.execute("delete from embeddings where id = %s", (int(memory_id),))
             self._bump()
             self.conn.commit()
             self._touched()
             self._vdirty = True
             return gone.rowcount > 0
+
+    def purge(self, memory_id: int, reason: str, actor: str = "api") -> bool:
+        """The hard-delete primitive (Grok Q2): legal ONLY with a non-empty reason, and it
+        inserts {mem_id, sha256 of the full text, text head 200, reason, actor, ts} into the
+        purges ledger BEFORE the DELETE, so even the one verb that erases the row leaves the
+        removed content recoverable to a fingerprint plus a 200-char head. The webui and the
+        sweep never call this - it is the operator path (server op=purge, 400 without reason)."""
+        reason = str(reason or "").strip()
+        if not reason:
+            raise ValueError("purge requires a non-empty reason - nothing leaves the store silently")
+        with self.lock:
+            row = self.conn.execute("select text from memories where id = %s",
+                                    (int(memory_id),)).fetchone()
+            if row is None:
+                return False
+            self.conn.execute(
+                "insert into purges(mem_id,text_hash,text_head,reason,actor,ts)"
+                " values(%s,%s,%s,%s,%s,%s)",
+                (int(memory_id),
+                 hashlib.sha256(row[0].encode("utf-8", "replace")).hexdigest(),
+                 row[0][:200], reason[:300], str(actor or "api")[:40], self._dt(time.time())))
+            self.conn.execute("delete from memories where id = %s", (int(memory_id),))
+            self.conn.execute("delete from embeddings where id = %s", (int(memory_id),))
+            self._bump()
+            self.conn.commit()
+            self._touched()
+            self._vdirty = True
+            return True
 
     def invalidate(self, memory_id: int, by_id: int | None = None) -> bool:
         """Take a fact out of recall WITHOUT deleting it: invalid_at marks when the store stopped

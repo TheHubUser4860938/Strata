@@ -6717,7 +6717,19 @@ def make_handler(svc: Service):
                 # the curation loop passes provenance {turn_id, probe, gold, cls, passes} so every
                 # stored fact can be audited back to its evidence; absent -> byte-identical to before
             elif op == "forget":
-                r = {"forgotten": svc.memory.forget(int(req.get("id") or 0))}
+                # audit 09 finding 2 (Grok Q2, 2026-10-18): forget is now the TOMBSTONE verb
+                # (invalidate + a "forgotten" provenance record) - the hard delete moved to
+                # op=purge, which 400s without a reason. Same verb, same call sites, honest exit.
+                r = {"forgotten": svc.memory.forget(int(req.get("id") or 0),
+                                                    str(req.get("reason") or ""))}
+            elif op == "purge":
+                reason = str(req.get("reason") or "").strip()
+                if not reason:
+                    self._json(400, {"error": {"message": "purge requires a non-empty reason - "
+                                                          "nothing leaves the store silently"}})
+                    return
+                r = {"purged": svc.memory.purge(int(req.get("id") or 0), reason,
+                                                str(req.get("actor") or "api"))}
             elif op == "invalidate":
                 # M2 job 7 (Zep pattern): retire a fact from recall, keep the history; "by" points
                 # the version chain at the fact that replaced it
