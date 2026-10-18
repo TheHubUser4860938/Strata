@@ -507,13 +507,16 @@ class IQ4XS(Base):
         # Turbo-Brilliance ("daureg", the owner's evening addition the same day) right after it:
         # same-size variants of the original first, then the bigger re-quants - so Unsloth
         # answered "6" from here on
-        self.assertIn("Qwen3.8-Flash-Next (Turbo-Brilliance)",
+        # the owner's late-evening menu law (2026-10-17): the family menu shows the model's NAME
+        # only - the by/about prose is gone, so the lines assert names and the absence of prose
+        self.assertIn("Turbo-Brilliance, abliterated",
                       next(ln for ln in out.splitlines() if ln.startswith("  4) ")))
-        self.assertIn("Turbo-Brilliance, regular",
+        self.assertIn("Qwen3.8-Flash-Next (Turbo-Brilliance)",
                       next(ln for ln in out.splitlines() if ln.startswith("  5) ")))
         fam_line = next(ln for ln in out.splitlines() if ln.startswith("  6) "))
         self.assertIn("Qwen3.8-Flash-Next (Unsloth)", fam_line)
-        self.assertIn("UD-IQ4_XS, UD-Q4_K_XL, UD-Q5_K_XL, UD-Q6_K_XL or Q8_0 (94 to 188 GB downloads)", fam_line)
+        self.assertNotIn("UD-IQ4_XS, UD-Q4_K_XL, UD-Q5_K_XL", fam_line,
+                         "the about prose left the menu with the owner's edit")
         self.assertNotIn("[experimental]", out)
         size_lines = [ln for ln in out.splitlines()
                       if any(ln.startswith(f"  {i}) {m} ") for i in range(1, 6) for m in setup.MODELS)]

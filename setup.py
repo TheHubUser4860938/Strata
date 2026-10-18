@@ -453,7 +453,7 @@ FAMILIES = {
     # writes it into the pack and the server prefers that over its shipped one - and the server keeps the modes
     # switchable from its own side too (GET|POST /reason, docs/MEMORY_CORE.md); a stock template REFUSES a mode
     # name in the render context (measured), which is why that feature follows this template and nothing else.
-    "dau": {"title": "Qwen3.8-Flash-Next (Turbo-Brilliance)", "by": "DavidAU's abliterated, reason-mode re-quant of the original IQ3_S",
+    "dau": {"title": "Qwen3.8-Flash-Next (Turbo-Brilliance, abliterated)", "by": "DavidAU's abliterated, reason-mode re-quant of the original IQ3_S",
             "about": "the {REASON:} model: answers to 41 reason modes, switchable by the user in a chat or from the "
                      "server side; abliterated; same size and speed as IQ3_S",
             "hf": hf("DavidAU/Qwen3.8-Flash-Next-Abliterated-Uncensored-Turbo-Brilliance-50x-Reasoning-Instruct-GSQ-RCO-GGUF"),
@@ -468,7 +468,7 @@ FAMILIES = {
     # reason modes ride the chat template embedded in his file (his card documents the 27+27+9 mode system and
     # the pairing guide; the server's flavor check is content-based, so if the template ever lacked the grammar
     # the feature would stay off with a banner saying so - the same measured refusal law as every stock file).
-    "daureg": {"title": "Qwen3.8-Flash-Next (Turbo-Brilliance, regular)",
+    "daureg": {"title": "Qwen3.8-Flash-Next (Turbo-Brilliance)",
                "by": "DavidAU's reason-mode re-quant of the original IQ3_S, without the abliteration",
                "about": "the {REASON:} model in its regular dress: the same reason modes, the same size and "
                         "speed as IQ3_S; the abliterated family is the one with the refusal shaping removed",
@@ -6548,12 +6548,15 @@ def main() -> int:
         rec_fam = STRIX_HALO_FAMILY if strix_halo_recommends(gpu, ram) and STRIX_HALO_FAMILY in fams else fams[0]
         for i, f in enumerate(fams, 1):
             d = FAMILIES[f]
-            say(f"  {i}) {d['title']:20s} {d['by']} - {d['about']}" + ("   [experimental]" if d.get("experimental") else "")
+            # the owner, 2026-10-17 late: the family menu shows the model's name, full stop - no
+            # by/about prose blocks (the menu was a wall of text); the flags that carry warnings
+            # (experimental, hardware notes, the recommendation) stay because they change the choice
+            say(f"  {i}) {d['title']}" + ("   [experimental]" if d.get("experimental") else "")
                 + family_menu_note(f, hip, gpu, avx2, avx512)
                 + (f"   (recommended for Strix Halo: {STRIX_HALO_MODEL})" if f == rec_fam and rec_fam != fams[0] else ""))
         for j, f in enumerate(OWN_PATH_FAMILIES, len(fams) + 1):   # families with an engine path of their own
             d = OWN_PATH_FAMILIES[f]
-            say(f"  {j}) {d['title']:20s} {d['by']} - {d['about']}   [new]")
+            say(f"  {j}) {d['title']}   [new]")
         allf = fams + list(OWN_PATH_FAMILIES)
         family = allf[int(ask("Which model?", [str(i) for i in range(1, len(allf) + 1)],
                               str(allf.index(rec_fam) + 1), a.yes)) - 1]
