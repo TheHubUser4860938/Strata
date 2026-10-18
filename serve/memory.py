@@ -895,11 +895,20 @@ class MemoryService:
                     return {"id": verdict[1], "deduped": "semantic"}
                 if verdict and verdict[0] == "supersede":
                     supersede = verdict[1]
+            prov = dict(provenance) if provenance else {}
+            if supersede:      # audit 09 finding 3 (Grok): the core supersede path kept only the
+                prior = next((r[1] for r in same if r[0] == supersede), "")   # chain pointer, while
+                # the sweep's amend path rewrites the survivor's TEXT. The mechanical carry below
+                # satisfies "the newer row carries the older fact's history" STRUCTURALLY - the prior
+                # words ride the survivor's own provenance - with no engine call at write time and
+                # the text untouched, so norm_text dedup and the byte-stable recall block are
+                # unchanged. The full narrative amend stays the sweep's async job (the ask isn't free).
+                prov.setdefault("supersedes", {"id": supersede, "prior_text": prior[:300]})
             new_id = self.conn.execute(
                 "insert into memories(scope,text,source,provenance,confidence,created_at,updated_at,class)"
                 " values(%s,%s,%s,%s,%s,%s,%s,%s) returning id",
                 (scope, text, str(source)[:40],
-                 Jsonb(provenance) if provenance else None,
+                 Jsonb(prov) if prov else None,
                  conf, self._dt(now), self._dt(now), klass)).fetchone()[0]
             if vec is not None:
                 self.conn.execute(
@@ -915,6 +924,14 @@ class MemoryService:
                 # the budget line: over cap, the worst NEVER-RECALLED rows go first (lowest confidence,
                 # then oldest) - a fact the recall has served is never deleted without a human. The row
                 # just written is exempt: an eviction that eats its own input makes the store a sieve.
+                # Audit 09 finding 1 (Grok, 2026-10-18): the going-used-to-be a DELETE, which the
+                # supersession law forbids under EITHER reading of the chain-vs-text question - a
+                # deleted row has no chain at all. Eviction now stamps the same invalid_at that
+                # invalidate() sets: the cap still holds (the count above sees active rows only),
+                # the culled text stays walkable forever, and the vector still goes with the recall
+                # (the owner's dead-weight ruling, see invalidate). With the row surviving, the
+                # ON DELETE CASCADE never fires - the explicit embeddings delete below is now
+                # load-bearing, not the SQLite-era belt it used to be.
                 n = self.conn.execute("select count(*) from memories where invalid_at is null").fetchone()[0]
                 over = n - self.max_memories
                 if over > 0:
@@ -922,10 +939,9 @@ class MemoryService:
                         "select id from memories where hits=0 and invalid_at is null and id != %s"
                         " order by confidence asc, created_at asc limit %s", (new_id, over)).fetchall()
                     if gone:
-                        # ON DELETE CASCADE on embeddings is the native pair-keeping (the DDL note);
-                        # the explicit delete stays as the SQLite-era belt, harmless on PG.
-                        self._execmany("delete from memories where id = %s",
-                                       [(g[0],) for g in gone])
+                        self._execmany("update memories set invalid_at=%s, updated_at=%s"
+                                       " where id = %s and invalid_at is null",
+                                       [(self._dt(now), self._dt(now), g[0]) for g in gone])
                         self._execmany("delete from embeddings where id = %s",
                                        [(g[0],) for g in gone])
                         evicted = [g[0] for g in gone]
@@ -934,7 +950,7 @@ class MemoryService:
             self._touched()
             self._vdirty = True
             # the token table folds this write in instead of rebuilding (see _dedupe_amend): a
-            # superseded row leaves the active set, an eviction deletes one, and the new row joins it.
+            # superseded row leaves the active set, an eviction retires one, and the new row joins it.
             self._dedupe_amend(added=[(new_id, set(norm_text(text).split()))],
                                retired=([supersede] if supersede else []) + evicted)
             out = {"id": new_id, "deduped": False}

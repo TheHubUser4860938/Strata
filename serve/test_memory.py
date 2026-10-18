@@ -178,6 +178,30 @@ class Store(unittest.TestCase):
         finally:
             mem.close()
 
+    def test_budget_eviction_keeps_history_walkable(self):
+        # audit 09 finding 1 (Grok, 2026-10-18): the budget line used to DELETE the never-recalled
+        # rows it culled - "nothing deleted silently" forbids that under EITHER reading of the
+        # supersession chain-vs-text question, since a deleted row has no chain at all. Culling
+        # now stamps invalid_at: the cap still holds (active count only) and the text survives.
+        mem = MemoryService(os.path.join(self.tmp.name, "capwalk"), max_memories=3)
+        try:
+            evicted: list[int] = []
+            for i in range(5):
+                r = mem.remember(f"never recalled fact number {i}", scope="fw", confidence=0.2)
+                evicted += r.get("evicted", [])
+            self.assertEqual(len(evicted), 2, "two writes cross cap 3, each reports its cull")
+            st = mem.stats()
+            self.assertLessEqual(st["memories"], 3, "the cap still holds: retired rows do not count active")
+            self.assertEqual(st["invalid"], 2, "the cull RETIRES, it does not delete")
+            hist = {m["id"]: m for m in mem.list_memories(limit=100, include_invalid=True)}
+            for gid in evicted:
+                self.assertIn(gid, hist, "the culled text stays in the ledger forever")
+                self.assertIsNotNone(hist[gid].get("invalid_at"), "retired with a timestamp")
+            self.assertFalse([h for h in mem.search("never recalled fact number")
+                              if "number 0" in h["text"]], "and it is out of recall")
+        finally:
+            mem.close()
+
     def test_invalidate_correct_version_chain(self):
         # the Zep pattern: a correction supersedes, it does not delete - recall serves only the
         # new fact, the old one survives as history pointing at its replacement
@@ -1439,7 +1463,8 @@ class WriteCacheFastPaths(unittest.TestCase):
     def test_suppress_update_in_place_supersede_and_eviction_all_stay_equal(self):
         """Every exit of remember() is a different change to the active row set, so each one gets
         checked against the rebuild: fold-in (no new row), in-place update (text unchanged),
-        supersede (the older row RETIRES - its tokens leave df) and budget eviction (a DELETE)."""
+        supersede (the older row RETIRES - its tokens leave df) and budget eviction (a RETIRE,
+        audit 09: the cull stamps invalid_at; the df fold cannot tell the two apart and must not)."""
         m = self.mem_with("station kzq1 is licensed to Terrytown",
                           "station kzq1 is licensed",
                           "station kzq1 is licensed to Terrytown every morning",
@@ -1579,6 +1604,27 @@ class WriteTimeDedupe(unittest.TestCase):
                                                       "the version chain stays walkable")
             self.assertFalse(any("every morning" not in h["text"] for h in m.search("flibber gauge")),
                              "recall must show the richer phrasing")
+        finally:
+            m.close()
+
+    def test_semantic_supersede_carries_the_prior_fact_in_provenance(self):
+        # audit 09 finding 3 (Grok): the core supersede path kept only a chain pointer while the
+        # sweep's amend path rewrites the survivor's text - one law, two behaviors. The mechanical
+        # carry (prior_text in the survivor's provenance) closes the gap under either reading of
+        # the law, with no engine call at write time and the text untouched.
+        m = self.mem_with("the flibber gauge reads torque",
+                          "the flibber gauge reads torque at the works every morning")
+        try:
+            a = m.remember("the flibber gauge reads torque")
+            b = m.remember("the flibber gauge reads torque at the works every morning")
+            self.assertEqual(b.get("superseded"), a["id"], "the richer row lands and the poorer retires")
+            with m.lock:
+                prov = m.conn.execute("select provenance from memories where id = %s",
+                                      (b["id"],)).fetchone()[0]
+            carry = (prov or {}).get("supersedes") or {}
+            self.assertEqual(carry.get("id"), a["id"], "the survivor names what it replaced")
+            self.assertIn("torque", carry.get("prior_text", ""),
+                          "and carries the older fact's own words in its record")
         finally:
             m.close()
 
