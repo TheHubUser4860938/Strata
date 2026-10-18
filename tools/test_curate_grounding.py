@@ -57,11 +57,15 @@ class DatedPrompt(unittest.TestCase):
             self.assertIn(needle, p)
 
     def test_the_grounding_costs_one_paragraph_not_a_second_ask(self):
-        # measured 2026-10-15: +525 chars. The bound is a tripwire, not a claim: a future edit that turns
-        # this into a multi-turn context dump changes the ask's cost profile and should fail here.
+        # measured 2026-10-15: +525 chars (the DATES paragraph). The bound is a tripwire, not a
+        # claim: a future edit that turns this into a multi-turn context dump changes the ask's
+        # cost profile and should fail here. RE-BASED 2026-10-18: the ATTR/QUOTE paragraph
+        # (audit 09 finding 4 / Grok Q3) adds a SECOND grounding paragraph, measured +520 on
+        # top; the tripwire moved 900 -> 1300 - one paragraph's worth of headroom for the next
+        # law, still no license for a context dump.
         delta = len(extract_prompt(TURN, 3)) - len(extract_prompt(TURN, 3, dated=False))
         self.assertGreater(delta, 0)
-        self.assertLess(delta, 900)
+        self.assertLess(delta, 1300)
 
     def test_both_arms_see_the_same_conversation(self):
         dated, ctl = extract_prompt(TURN, 3), extract_prompt(TURN, 3, dated=False)

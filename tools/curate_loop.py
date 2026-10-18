@@ -74,7 +74,18 @@ _DATES_RULE = (
     "date in it at all, so a fact that does not name its own day is unorderable even when it is "
     "present. Never invent a date: if the day is unknown, leave it out.\n")
 _EXTRACT_TAIL = "\nCONVERSATION:\nuser: {user}\nassistant: {assistant}"
-EXTRACT_PROMPT = _EXTRACT_HEAD + _DATES_RULE + _EXTRACT_TAIL       # the shipped shape
+_ATTR_RULE = (
+    "APPEND TWO FIELDS TO EVERY LINE: ATTR: user|attributed|observed || QUOTE: <contiguous "
+    "words copied verbatim from the conversation>\n"
+    "ATTR = WHOSE words ground the fact - user: stated by the user about themselves or "
+    "their project; attributed: a position or quote BY someone else (a discussed position "
+    "is not a held belief - calling that one user is the laundering this catches); "
+    "observed: behavior the conversation shows, not stated. QUOTE = copied words, never a "
+    "paraphrase; a fact whose quote is not found verbatim is trusted less, not more.\n")
+# audit 09 finding 4 (Grok Q3, 2026-10-18): ATTR/QUOTE join the SHIPPED prompt only.
+# EXTRACT_PROMPT_UNDATED stays byte-identical to the prompt every stored fact was written
+# with (sha256 pinned by tools/test_curate_grounding.py) - the control arm must not move.
+EXTRACT_PROMPT = _EXTRACT_HEAD + _ATTR_RULE + _DATES_RULE + _EXTRACT_TAIL   # the shipped shape
 EXTRACT_PROMPT_UNDATED = _EXTRACT_HEAD + _EXTRACT_TAIL             # control arm: byte-identical to
 # the prompt every fact now in the store was written with (sha256 e7c8fa6b64114ee0, pinned by
 # tools/test_curate_grounding.py so the control cannot drift into a second variable)
@@ -331,6 +342,54 @@ def law_verdict(answer):
         if w in a[:40]:
             return w
     return "DIFFERENT"
+
+
+_EXTRACT_RE = re.compile(
+    r"\s*FACT:\s*(.+?)\s*\|\|\s*PROBE:\s*(.+?)\s*\|\|\s*GOLD:\s*(.+?)\s*\|\|\s*SCOPE:\s*(user|project)"
+    # ATTR captures ANY text ([^|]*), not just the three tokens: a garbled ATTR must DEMOTE
+    # the candidate to unverified (parse_extract_line validates), never kill the whole line -
+    # a field that silently deletes facts from the queue is its own new bug (measured by
+    # tools/test_curate_extract.py test_garbled_attr on the first token-strict regex).
+    r"\s*(?:\|\|\s*ATTR:\s*([^\|]*?))?\s*(?:\|\|\s*QUOTE:\s*(.+?))?\s*$", re.I)
+ATTRS = ("user", "attributed", "observed")
+
+
+def _norm_ws(s: str) -> str:
+    return " ".join((s or "").lower().split())
+
+
+def parse_extract_line(ln: str, turn_user: str = "", turn_assistant: str = "") -> dict | None:
+    """One EXTRACT_PROMPT line -> candidate fields, or None. The empty-field law and the
+    idk-gold law live here so the parse is testable standalone (tools/test_curate_extract.py).
+
+    audit 09 finding 4 (Grok Q3, 2026-10-18): lines now carry ATTR (WHOSE words ground the
+    fact) and QUOTE (a verbatim span). Both are OPTIONAL in the regex so every pre-ATTR line
+    still parses - an old-format fact lands as attribution=unverified, quote_ok=False, which
+    is the honest description of a fact whose grounding was never checked, and no candidate
+    silently vanishes from the queue because the model has not learned new fields yet. A
+    QUOTE counts ONLY as a contiguous whitespace-normalized span of the turn: the model's
+    own paraphrase cannot certify itself. ATTR=user without a matching quote is DEMOTED to
+    unverified - the live exhibit is a debate-transcript position stored as "the user
+    believes X", and a discussed position is not a held belief."""
+    m = _EXTRACT_RE.match(ln)
+    if not m:
+        return None
+    fact, probe, gold, scope, attr, quote = (
+        (scrub(g).strip() if g else "") for g in m.groups())
+    if not fact or not probe or not gold:
+        return None
+    if norm(gold) in IDK:            # the idk-gold law (was inline): a candidate whose GOLD
+        return None                  # admits it cannot answer is not a fact, and gate1.hit()'s
+        # idk guard (spikes/window/gate1_driver.py) returns False BEFORE gold matching, so an
+        # idk-gold could never score a hit - it would silently misclassify.
+    attr = attr.lower()
+    qn = _norm_ws(quote)
+    quote_ok = bool(qn) and qn in _norm_ws(turn_user + " " + turn_assistant)
+    if attr not in ATTRS or (attr == "user" and not quote_ok):
+        attr = "unverified"          # demote, never drop: the review queue decides, not a regex
+    return {"fact": fact, "probe": probe, "gold": gold,
+            "scope": "user" if scope.lower() == "user" else "project",
+            "attr": attr, "quote": quote[:300], "quote_ok": quote_ok}
 
 
 def amend_with_history(ask, new_fact, old_text):
@@ -657,28 +716,22 @@ def main():
             n = 0
             new_facts: list[str] = []
             for ln in ans.splitlines():
-                m = re.match(r"\s*FACT:\s*(.+?)\s*\|\|\s*PROBE:\s*(.+?)\s*\|\|\s*GOLD:\s*"
-                             r"(.+?)\s*\|\|\s*SCOPE:\s*(user|project)\s*$", ln, re.I)
-                if not m:
+                c = parse_extract_line(ln, t["user"], t["assistant"])
+                if c is None:
                     continue
-                fact, probe, gold, scope = (scrub(g).strip() for g in m.groups())
-                key = norm(fact)
-                if not fact or not probe or not gold or key in seen:
-                    continue
-                if norm(gold) in IDK:
-                    # a candidate whose GOLD is "idk" is not a fact: the extractor proposed a
-                    # question its own answer admits it cannot answer. And gate1.hit()'s idk
-                    # guard (spikes/window/gate1_driver.py) returns False BEFORE gold matching,
-                    # so an idk-gold could never score a hit - it would silently misclassify.
+                key = norm(c["fact"])
+                if key in seen:
                     continue
                 seen.add(key)
                 n += 1
-                new_facts.append(fact[:90])                # NOT candidates[-n:]: with n=0 that
-                candidates.append({"turn_id": t["id"], "turn_scope": t["scope"], "fact": fact,
-                                   "probe": probe, "gold": gold,
+                new_facts.append(c["fact"][:90])           # NOT candidates[-n:]: with n=0 that
+                candidates.append({"turn_id": t["id"], "turn_scope": t["scope"],
+                                   "fact": c["fact"], "probe": c["probe"], "gold": c["gold"],
                                    "turn_probe": _probe_shape(t["user"], t["assistant"]),
-                                   "scope": "user" if scope.lower() == "user" else t["scope"],
-                                   "extract_ptok": ptok})  # slice returns the WHOLE list (-0 == 0)
+                                   "scope": "user" if c["scope"] == "user" else t["scope"],
+                                   "attr": c["attr"], "quote": c["quote"],
+                                   "quote_ok": c["quote_ok"],   # slice returns the WHOLE list (-0 == 0)
+                                   "extract_ptok": ptok})
             processed_ids.append(t["id"])
             handled.add(t["id"])
             drained += 1
@@ -752,7 +805,13 @@ def main():
                       "source": f"curation-{datetime.date.today().isoformat()}",
                       "class": fact_class(c["fact"], c["scope"]),   # PHASE 4.5: shelf at store time
                       "provenance": {"turn_id": c["turn_id"], "probe": c["probe"], "gold": c["gold"],
-                                     "cls": cls, "mixed": mixed, "passes": cold, "model": model}}
+                                     "cls": cls, "mixed": mixed, "passes": cold, "model": model,
+                                     # audit 09 finding 4 (Grok Q3): whose words + the verbatim span
+                                     # the fact came from - a row without these is unverified by
+                                     # construction, and tools/retro_audit.py measures the older ones
+                                     "attribution": c.get("attr", "unverified"),
+                                     "source_quote": c.get("quote", ""),
+                                     "quote_ok": c.get("quote_ok", False)}}
             body = {"op": "remember", **fields}
             stored_now = False
             if cls == "CORRECT":
@@ -812,6 +871,7 @@ def main():
              "hits": [x["gold_hit"] for x in cold]})
         review.append(f"[{cls}{'/mixed' if mixed else ''}] (turn {c['turn_id']}) {c['fact']}\n"
                       f"    probe: {c['probe']}  gold: {c['gold']}  "
+                      f"attr: {c.get('attr', 'unverified')}  quote_ok: {c.get('quote_ok', False)}  "
                       f"cold: {' | '.join(x['answer'][:40] for x in cold)}")
     if processed_ids and not a.no_store:                   # the store's own hygiene flag
         from serve.memory import attach
