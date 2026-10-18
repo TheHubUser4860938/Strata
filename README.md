@@ -111,6 +111,11 @@ that summons them into a steering system:
   tag — measured, it had been carrying 2,227 tokens of persona block per prompt. The cast is
   for the user; the staff room stays professional.
 
+  And if you want to hear the cast at full volume: the staff room wrote a second README —
+  **[docs/README_MASHUP.md](docs/README_MASHUP.md)** — neo thinking, House diagnosing, Vader
+  commanding. Same numbers, different clothes; it is the fastest way to see what the dial
+  actually does to the voice.
+
 ## And the store got disciplined
 
 The store woke up one morning with 2,885 rows, half of them paraphrased fragments of documents
