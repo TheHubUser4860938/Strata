@@ -6,13 +6,16 @@ itself, so every client (OpenCode, Claude Code, Codex, the web app) shares one s
 harness ever has to re-send history. The server remembers, and it remembers the same way no
 matter which app is knocking.
 
-**Naming (settled 2026-10-16).** The project is **Strata**. Its built-in memory system is
-**Strata Mnemosyne** — the store: subject shelves, native PostgreSQL (FTS + float32 vectors in
-one database, ADR-002), the journal, the sweep. The assistant that recalls it — the chat voice
-and the coding agent's hands — is **Clio** (KLEE-oh), who in the mythology is Mnemosyne's
-daughter: the retriever descends from the store. The split is architectural, not decoration:
-storage is passive and curated; recall is the part with rules, budgets and judgement. Short
-form for code and speech: **Mnemo**.
+## The two names, and they are not decoration
+
+The project is **Strata**. Its built-in memory system is **Strata Mnemosyne** — Mnemosyne being
+the Titaness of memory, mother of the Muses, and the literal root of the word *mnemonic*: the
+store is named after memory itself. The assistant that recalls it — in the chat window, and in
+the coding agent's tool calls — is **Clio** (KLEE-oh), the Muse of history: the one who decides
+what gets recorded and what gets repeated. The split is architectural, not mythological
+window dressing: storage is passive and curated; recall is the part with rules, budgets and
+judgement. The mythology *is* the spec — a store that never forgets, and a retriever with
+taste.
 
 ## Try it: Strata with memory
 
@@ -33,9 +36,9 @@ cd Strata
 
 Two things arrive switched **on**, and everything else stays byte-identical to upstream Strata:
 
-- **Memory.** Decided 2026-10-16: someone who does not want the built-in memory system would
-  not be using this fork to begin with. Setup writes the block below and fetches the embedder
-  it ships with, so hybrid recall works out of the box. To turn it off, set
+- **Memory.** On by default in this fork — someone who does not want the built-in memory
+  system would not be using this fork to begin with. Setup writes the block below and fetches
+  the embedder it ships with, so hybrid recall works out of the box. To turn it off, set
   `"memory": { "enabled": false }` — every path then returns to upstream Strata, byte for byte:
 
   ```json
@@ -49,9 +52,10 @@ Two things arrive switched **on**, and everything else stays byte-identical to u
   it never touches the GPU your model owns) is what lets recall understand paraphrase;
   without it recall stays lexical and everything else still works.
 
-- **Reason modes** (DavidAU model families — see below): the server answers to 41 framings,
-  pairs, thinking levels, and an autonomous picker, and boots with the picker on. The banner
-  prints `reason modes on: ...`; `http://127.0.0.1:8005/reason` is the live view.
+- **Reason modes** (DavidAU model families — see below): 41 framings, pairs, thinking levels
+  and an autonomous picker — the server boots already knowing how to consult its own cast
+  list. The banner prints `reason modes on: ...`; `http://127.0.0.1:8005/reason` is the live
+  view.
 
 This fork listens on **port 8005** where upstream uses 8080/8095, so a mainline Strata install
 and a memory install can run side by side on the same PC.
@@ -74,47 +78,57 @@ The agent can also drive install/start/stop through Strata's [MCP server](docs/M
 ## What's new — the thinking, on a dial
 
 DavidAU's re-quant of Qwen3.8-Flash-Next ships with a chat template that answers to a
-`{REASON:name}` tag — 41 ways to frame the same question: DevOracle for code, House for
-debugging, Curie for science, Socrates for hard questions, Every Joe for plain talk. This fork
-turned that quirk into a steering system:
+`{REASON:name}` tag, and the cast list reads like a convention badge rather than a config
+file: **DevOracle**, an architect who cannot resist proposing a refactor; **House**, who
+diagnoses first and is pleasant later; **Curie**, lab notebook before opinions; **Socrates**,
+who would rather ask you a better question than answer this one; **Every Joe**, who never met
+a jargon term he didn't translate; **007**, whose licence to improvise expires when the task
+is done; and **einstein+pkd**, who suspects the cartridge is a simulation — a reasonable
+paranoia, given the research below. Forty-one framings in all, and this fork turned the tag
+that summons them into a steering system:
 
-- **Pairs.** `joe+comedy` thinks like the first and answers like the second — the server
-  splices both constructs mechanically, so the pair grammar works no matter which door you
-  use: a client tag, the `reason_mode` tool (agents steer themselves mid-task), or the
-  Settings menu. The menu applies live; no restart.
+- **Pairs.** `joe+comedy` thinks like the first and answers like the second; `stark+coder`
+  draws the architecture and ships the files. The server splices both constructs mechanically,
+  so the grammar works through any door: a client tag, the `reason_mode` tool (agents steer
+  themselves mid-task), or the Settings menu — which applies live, no restart.
 - **Thinking levels.** `none / low / medium / xhigh`, pinned per conversation, outranking an
-  app's own request level — the knob that decides how much the model thinks before it speaks.
+  app's own request level — the dial that decides how much the model thinks before it speaks.
 - **Autonomous mode — the default.** `auto` picks the construct per request, scored against
-  the author's own use-case map. No confident match, no pick: it never guesses. A conversation
-  can pin a mode over it, a client tag outranks everything, and `GET /reason` shows what
-  actually framed each conversation — including when a tag overruled the picker.
-- **Honest about what it can claim.** Two sweeps (256 generations on a hand-built bank, then
-  published suites — GSM-Symbolic, MATH-500, HumanEval, five BIG-Bench Hard tasks,
-  GPQA-diamond) found **no mode beats the default on accuracy beyond the ±0.05 band**. Modes
-  steer voice, structure and behaviour — the docs claim steering, never performance.
+  the template author's own use-case map: the map that says `curie+teacher` for explanations
+  and `musk+business` for physics-first strategy. No confident match, no pick — it never
+  guesses. A conversation can pin a mode over it, a client tag outranks everything, and
+  `GET /reason` shows what actually framed each conversation, including when a tag overruled
+  the picker.
+- **Honest about what it can claim.** Two sweeps — 256 generations on a hand-built bank, then
+  published suites (GSM-Symbolic, MATH-500, HumanEval, five BIG-Bench Hard tasks, GPQA-diamond)
+  — found **no mode beats the default on accuracy beyond the ±0.05 band**. The dial steers
+  voice, structure and behaviour; the docs claim steering, never performance.
 - **Tuned on live traffic, the same day it shipped.** The first evening of autonomous mode
   produced a transcript audit: two turns rode a stale frame because the *agent* pinned a mode
-  and forgot to re-check, and a cold replay of the picker scored the right construct for both
-  misses. So pins now say what they freeze, pair splices carry a wrapper-arbitration bridge,
-  and internal machinery (the curation loop, the benchmark harness) opts out with its own tag —
-  measured: that machinery had been carrying 2,227 tokens of persona block per prompt.
+  and forgot to re-check — and a cold replay of the picker scored the right construct 2-for-2
+  on the misses. So pins now say what they freeze, pair splices carry a wrapper-arbitration
+  bridge, and the internal machinery (curation loop, benchmark harness) got its own opt-out
+  tag — measured, it had been carrying 2,227 tokens of persona block per prompt. The cast is
+  for the user; the staff room stays professional.
 
 ## And the store got disciplined
 
 The store woke up one morning with 2,885 rows, half of them paraphrased fragments of documents
-still sitting in a folder. By that evening it held **1,051**: 1,549 fragments were forgotten and
-replaced by eleven whole-document pointers — one memory per document, the document itself on
-disk — every unclassified row found its shelf (148 shelves, zero wild), retired facts now lose
-their vectors with their recall (the store holds the invariant *vectors == live rows*,
-1,051 == 1,051), and the nightly machinery does the rest: a curation sweep every 30 minutes
-that only runs when the store asks for it, a weekly janitor that seals an encrypted backup and
-collapses paraphrase clusters, and a slot folder that keeps the newest files and nothing else.
+still sitting in a folder — which is not a memory, that is a photocopy shop. By that evening it
+held **1,051**: 1,549 fragments were forgotten and replaced by eleven whole-document pointers
+(one memory per document, the document itself on disk, the recall quoting it by title and
+fingerprint), every unclassified row found its shelf (148 shelves, zero wild), retired facts
+now lose their vectors along with their recall — the store holds the invariant *vectors ==
+live rows*, 1,051 == 1,051 — and the nightly machinery does the rest: a curation sweep every
+30 minutes that runs only when the store asks for it, a weekly janitor that seals an encrypted
+backup and collapses paraphrase clusters, and a slot folder that keeps the newest files and
+nothing else.
 
 The write paths earned their rules the hard way — a 233-operation manual cleanup, then the laws
 enforced in code: multi-call agent turns journal as ONE row; every landing fact is judged
-against the store before it is stored (the supersession arm: 88 flags with correct verdicts in
-its first live hours); ingest reunites abbreviation splits ("8 U.S.C." no longer dies
-mid-citation) and refuses shards that cannot stand alone.
+against the store before it is stored (the supersession arm: 88 flags, correct verdicts, in its
+first live hours); ingest reunites abbreviation splits ("8 U.S.C." no longer dies mid-citation)
+and refuses shards that cannot stand alone.
 
 ## How it works today
 
@@ -160,17 +174,17 @@ blocker: on the 120B MoE here (36 Gated DeltaNet layers + 12 sparse-attention la
 KV), state-without-text is research, not a result. Positive *and* negative results land in
 `docs/MEMORY_CORE.md`.
 
-## Status — beta-1 (Linux), active again
+## Status — beta-1 (Linux)
 
 The claim list, what each measurement was run on, and what beta-1 refuses to claim:
-[`docs/BETA1.md`](docs/BETA1.md). The October 17 pause lasted an afternoon, not a week: the
-engine-heavy queue (benchmark re-record on the current weights, cartridges, the temp-1.0
-× 3-repeat mode rerun) still waits on the 128 GB RAM upgrade (~2026-10-22) — the dev box runs
-~52 GB of weights on a 62 GB machine, and the engine, not the memory system, is the pressure
-(measured: Postgres holds 20 MiB resident, the embedder ~130 MiB, engine RSS flat). The
-memory-and-tooling line resumed the same evening and shipped six releases: pairs, levels,
-autonomous mode, the Settings menu, auto-pick observability, and the store purge above. The
-server's own test suite — 1,012 tests, no GPU and no downloads needed — passes on that box.
+[`docs/BETA1.md`](docs/BETA1.md). The engine-heavy queue — benchmark re-record on the current
+weights, cartridges, the temp-1.0 × 3-repeat mode rerun — waits on the 128 GB RAM upgrade
+(~2026-10-22): this dev box runs ~52 GB of weights on a 62 GB machine, and the engine, not the
+memory system, is the pressure (measured: Postgres holds 20 MiB resident, the embedder
+~130 MiB, engine RSS flat). The memory-and-tooling line shipped six releases on October 17
+alone: pairs, thinking levels, autonomous mode, the Settings menu, auto-pick observability and
+the store purge above. The server's own test suite — 1,012 tests, no GPU and no downloads
+needed — passes on that box.
 
 Engine and server changes live on the `memory-core` branch; `main` stays a near-mirror of
 [upstream Strata](https://github.com/Niko1221/Strata) (MIT, by Niko1221). MAM-derived code
