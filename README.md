@@ -84,7 +84,15 @@ diagnoses first and is pleasant later; **Curie**, lab notebook before opinions; 
 who would rather ask you a better question than answer this one; **Every Joe**, who never met
 a jargon term he didn't translate; **007**, whose licence to improvise expires when the task
 is done; and **einstein+pkd**, who suspects the cartridge is a simulation — a reasonable
-paranoia, given the research below. Forty-one framings in all, and this fork turned the tag
+paranoia, given the research below.
+
+The abliterated family's ancestry, because credits belong in the story: it descends from
+[SC117](https://huggingface.co/SC117/Qwen3.8-Flash-Next-GSQ-RCO-abliterated-GGUF)'s abliterated GSQ-RCO
+build — the refusal direction removed by tensor transplant, copying [orcarouter](https://huggingface.co/orcarouter/Qwen3.8-Flash-Next-Uncensored-GGUF)'s
+abliterated weights into ISTA-DASLab's already-learned quantization without recomputing a single value —
+and DavidAU's build is assembled on that file.
+
+Forty-one framings in all, and this fork turned the tag
 that summons them into a steering system:
 
 - **Pairs.** `joe+comedy` thinks like the first and answers like the second; `stark+coder`
@@ -216,7 +224,10 @@ The model is [Qwen3.8-Flash-Next](https://huggingface.co/Qwen/Qwen3.8-Flash-Next
 compressed by [ISTA-DASLab](https://huggingface.co/ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF), UkisAI (Swift 1.5),
 Unsloth, and [DavidAU](https://huggingface.co/DavidAU) — whose Turbo-Brilliance reason-mode re-quants,
 [regular](https://huggingface.co/DavidAU/Qwen3.8-Flash-Next-Turbo-Brilliance-50x-Reasoning-Instruct-GSQ-RCO-GGUF)
-and [abliterated](https://huggingface.co/DavidAU/Qwen3.8-Flash-Next-Abliterated-Uncensored-Turbo-Brilliance-50x-Reasoning-Instruct-GSQ-RCO-GGUF),
+and [abliterated](https://huggingface.co/DavidAU/Qwen3.8-Flash-Next-Abliterated-Uncensored-Turbo-Brilliance-50x-Reasoning-Instruct-GSQ-RCO-GGUF)
+(the abliterated one built on [SC117](https://huggingface.co/SC117/Qwen3.8-Flash-Next-GSQ-RCO-abliterated-GGUF)'s
+abliterated GSQ-RCO transplant, which carries [orcarouter](https://huggingface.co/orcarouter/Qwen3.8-Flash-Next-Uncensored-GGUF)'s
+abliterated weights),
 are the models this fork's reason modes ride and both of which the installer offers. Strata uses parts of [llama.cpp / ggml](https://github.com/ggml-org/llama.cpp). All credits:
 [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md#credits). Strata is open source under the [MIT License](LICENSE). A few
 parts and every model have their own licenses ([which ones](docs/HOW_IT_WORKS.md#license)).

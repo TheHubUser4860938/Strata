@@ -248,7 +248,12 @@ NVFP4_REPOS = {
 NVFP4_ENGINE = (0, 1, 44)
 
 # DavidAU's Turbo-Brilliance IQ3_S (the {REASON:} reason-mode build; the "dau" family): sizes and SHA-256 are the
-# Hub's LFS pointers, checked 2026-10-17.  Measured against ISTA's own tree the same day, his shard 2 is the
+# Hub's LFS pointers, checked 2026-10-17.  His shard 1 descends from SC117's abliterated transplant, not from
+# ISTA's file directly (the owner's credit 2026-10-17, measured the same day): SC117's IQ3_S shard 1 is
+# 55,063,448,064 B / 40f369ec..., his is 55,063,664,928 B / 78706315... - both the original +0.25 GB (SC117's
+# 96-Q8_0 signature), 0.2 MB apart (his template re-bake), different bytes: a derivative build.  SC117's card
+# credits ISTA-DASLab for the quantization and orcarouter for the abliterated tensors the transplant copies.
+# Measured against ISTA's own tree the same day, his shard 2 is the
 # ORIGINAL's file byte for byte (28,800,138,432 bytes, 316b46f3... equal) - shard 2 is not model weights at all:
 # it is the family's shared n-gram PLE table, the same in every GSQ-RCO family (the coder note below has always
 # said so), so his files join the shard-2 sharing the qwen and coder families do (at its site below) - an owner
@@ -448,12 +453,16 @@ FAMILIES = {
               "mmproj_hf": hf("ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-Coder-GGUF"),
               "mmproj": "mmproj-Qwen3.8-Flash-Next-BF16.gguf", "name": "qwen3.8-flash-next-coder",
               "profile": "expert-profile-coder.bin"},
-    # DavidAU's abliterated Turbo-Brilliance re-quant of the original IQ3_S (DAU_IQ3_S_SHARDS above): the {REASON:}
-    # reason-mode model.  His 41 modes answer through the chat template embedded in his file - the tokenizer export
+    # DavidAU's abliterated Turbo-Brilliance build (DAU_IQ3_S_SHARDS above), on SC117's abliterated GSQ-RCO
+    # build (HF SC117/Qwen3.8-Flash-Next-GSQ-RCO-abliterated-GGUF: ISTA-DASLab's quant with orcarouter's
+    # abliterated tensors transplanted in) - the owner's credit, 2026-10-17, and the shard-1 sizes agree:
+    # his 55,063,664,928 B and SC117's 55,063,448,064 B are both the original +0.25 GB, that transplant's
+    # 96-Q8_0 signature; the bytes differ, so his file is a derivative of SC117's, not SC117's file itself.
+    # The {REASON:} reason-mode model.  His 41 modes answer through the chat template embedded in his file - the tokenizer export
     # writes it into the pack and the server prefers that over its shipped one - and the server keeps the modes
     # switchable from its own side too (GET|POST /reason, docs/MEMORY_CORE.md); a stock template REFUSES a mode
     # name in the render context (measured), which is why that feature follows this template and nothing else.
-    "dau": {"title": "Qwen3.8-Flash-Next (Turbo-Brilliance, abliterated)", "by": "DavidAU's abliterated, reason-mode re-quant of the original IQ3_S",
+    "dau": {"title": "Qwen3.8-Flash-Next (Turbo-Brilliance, abliterated)", "by": "DavidAU's reason-mode build on SC117's abliterated GSQ-RCO quant",
             "about": "the {REASON:} model: answers to 41 reason modes, switchable by the user in a chat or from the "
                      "server side; abliterated; same size and speed as IQ3_S",
             "hf": hf("DavidAU/Qwen3.8-Flash-Next-Abliterated-Uncensored-Turbo-Brilliance-50x-Reasoning-Instruct-GSQ-RCO-GGUF"),

@@ -2122,7 +2122,13 @@ Strata itself: [MIT](../LICENSE). The model files are not part of it; their lice
   The Coder: [ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-Coder-GGUF](https://huggingface.co/ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-Coder-GGUF)
   (Apache-2.0 per its card); its support in Strata came from @pjgmobile's PR #54.
   Swift 1.5: [ukisai/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-GGUF](https://huggingface.co/ukisai/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-GGUF)
-  by UkisAI. Their licenses apply to the weights.
+  by UkisAI. DavidAU's Turbo-Brilliance reason-mode builds (Apache-2.0 per their cards):
+  [regular](https://huggingface.co/DavidAU/Qwen3.8-Flash-Next-Turbo-Brilliance-50x-Reasoning-Instruct-GSQ-RCO-GGUF)
+  and [abliterated](https://huggingface.co/DavidAU/Qwen3.8-Flash-Next-Abliterated-Uncensored-Turbo-Brilliance-50x-Reasoning-Instruct-GSQ-RCO-GGUF)
+  — the abliterated one a derivative of [SC117/Qwen3.8-Flash-Next-GSQ-RCO-abliterated-GGUF](https://huggingface.co/SC117/Qwen3.8-Flash-Next-GSQ-RCO-abliterated-GGUF)
+  (measured 2026-10-17: shard-1 sizes agree with SC117's within 0.2 MB, both the original +0.25 GB, the bytes
+  differ), itself a tensor transplant of [orcarouter/Qwen3.8-Flash-Next-Uncensored-GGUF](https://huggingface.co/orcarouter/Qwen3.8-Flash-Next-Uncensored-GGUF)'s
+  abliterated weights into ISTA-DASLab's quantization. Their licenses apply to the weights.
 - [llama.cpp / ggml](https://github.com/ggml-org/llama.cpp) (MIT): the i-quant formats, the GPU dot products and
   dequantizers transcribed in `src/kernels/cuda/iq_kernels.cu`, the CPU backend linked for the i-quant experts, the
   `mtmd` library behind the image encoder (`tools/vision/`), and `gguf-py` used by the tools. See
