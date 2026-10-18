@@ -384,12 +384,23 @@ def parse_extract_line(ln: str, turn_user: str = "", turn_assistant: str = "") -
         # idk-gold could never score a hit - it would silently misclassify.
     attr = attr.lower()
     qn = _norm_ws(quote)
-    quote_ok = bool(qn) and qn in _norm_ws(turn_user + " " + turn_assistant)
-    if attr not in ATTRS or (attr == "user" and not quote_ok):
+    # SIDE matters, not just presence (Grok round-3 Q1a, 2026-10-18): the soul-flavored
+    # assistant prose of tomorrow is the journaled turn text of the day after, and a quote
+    # that sits on the ASSISTANT side is not the user's words - the voting-rights disease
+    # in a new dress (an assistant POSITION re-minted as a user BELIEF would pass a
+    # presence-only check, because the assistant said it IN the turn). ATTR=user therefore
+    # requires the span on the USER side; assistant-side quotes stay valid for attributed/
+    # observed, and the side rides the provenance for the review queue.
+    side_user = bool(qn) and qn in _norm_ws(turn_user)
+    side_asst = bool(qn) and qn in _norm_ws(turn_assistant)
+    quote_ok = side_user or side_asst
+    quote_side = "user" if side_user else ("assistant" if side_asst else "none")
+    if attr not in ATTRS or (attr == "user" and not side_user):
         attr = "unverified"          # demote, never drop: the review queue decides, not a regex
     return {"fact": fact, "probe": probe, "gold": gold,
             "scope": "user" if scope.lower() == "user" else "project",
-            "attr": attr, "quote": quote[:300], "quote_ok": quote_ok}
+            "attr": attr, "quote": quote[:300], "quote_ok": quote_ok,
+            "quote_side": quote_side}
 
 
 def amend_with_history(ask, new_fact, old_text):
@@ -730,7 +741,8 @@ def main():
                                    "turn_probe": _probe_shape(t["user"], t["assistant"]),
                                    "scope": "user" if c["scope"] == "user" else t["scope"],
                                    "attr": c["attr"], "quote": c["quote"],
-                                   "quote_ok": c["quote_ok"],   # slice returns the WHOLE list (-0 == 0)
+                                   "quote_ok": c["quote_ok"],
+                                   "quote_side": c["quote_side"],  # slice returns the WHOLE list (-0 == 0)
                                    "extract_ptok": ptok})
             processed_ids.append(t["id"])
             handled.add(t["id"])
@@ -811,7 +823,8 @@ def main():
                                      # construction, and tools/retro_audit.py measures the older ones
                                      "attribution": c.get("attr", "unverified"),
                                      "source_quote": c.get("quote", ""),
-                                     "quote_ok": c.get("quote_ok", False)}}
+                                     "quote_ok": c.get("quote_ok", False),
+                                     "quote_side": c.get("quote_side", "none")}}
             body = {"op": "remember", **fields}
             stored_now = False
             if cls == "CORRECT":

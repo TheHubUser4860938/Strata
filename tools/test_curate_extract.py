@@ -62,6 +62,25 @@ class ExtractHonesty(unittest.TestCase):
               "GOLD: idk || SCOPE: project || ATTR: user || QUOTE: the flibber reads torque")
         self.assertIsNone(parse_extract_line(ln, "the flibber reads torque", "x"))
 
+    def test_assistant_side_quote_never_becomes_a_user_belief(self):
+        # Grok round-3 Q1a: the soul speaks, the soul speaks gets journaled, the journaled
+        # soul gets re-extracted - and a quote from the ASSISTANT side of the turn is not
+        # the user's words no matter how verbatim it is.
+        ln = ("FACT: the assistant insists the apparatus is not the text || "
+              "PROBE: what does the assistant insist about texts? || GOLD: the apparatus "
+              "is not the text || SCOPE: project || ATTR: user || "
+              "QUOTE: the apparatus is not the text")
+        c = parse_extract_line(ln, "please log my standing rule about quotes",
+                               "Understood: the apparatus is not the text.")
+        self.assertEqual(c["quote_side"], "assistant", "the span is real but it is the agent's own line")
+        self.assertEqual(c["attr"], "unverified", "ATTR=user loses the claim on the side check")
+        # the same span under observed is honest - it IS behavior the conversation shows
+        ln2 = ln.replace("ATTR: user", "ATTR: observed")
+        c2 = parse_extract_line(ln2, "please log my standing rule about quotes",
+                                "Understood: the apparatus is not the text.")
+        self.assertEqual(c2["attr"], "observed")
+        self.assertEqual(c2["quote_side"], "assistant")
+
     def test_user_attr_with_verbatim_quote_survives(self):
         ln = ("FACT: the owner reboots the box personally || PROBE: who reboots the box? || "
               "GOLD: the owner || SCOPE: user || ATTR: user || "
