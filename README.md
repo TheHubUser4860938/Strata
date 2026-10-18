@@ -99,14 +99,22 @@ that summons them into a steering system:
   draws the architecture and ships the files. The server splices both constructs mechanically,
   so the grammar works through any door: a client tag, the `reason_mode` tool (agents steer
   themselves mid-task), or the Settings menu — which applies live, no restart.
-
 - **Autonomous mode — the default.** `auto` picks the construct per request, scored against
   the template author's own use-case map: the map that says `curie+teacher` for explanations
   and `musk+business` for physics-first strategy. No confident match, no pick — it never
   guesses. A conversation can pin a mode over it, a client tag outranks everything, and
   `GET /reason` shows what actually framed each conversation, including when a tag overruled
   the picker.
-
+- **Honest about what it can claim.** Three sweeps over the published suites (GSM-Symbolic,
+  MATH-500, HumanEval, five BIG-Bench Hard tasks, GPQA-diamond) — 3,168 generations, twelve
+  arms, at temperature 0 and at the model's recommended 1.0 — found **no mode beats the
+  default on accuracy beyond the ±0.05 band**; coder alone measurably *costs* it (−0.07), the
+  reasoning-family arms land inside the noise (einstein's 0.95 best observed), and the dial
+  steers voice, structure and behaviour — never performance (full record: docs/MEMORY_CORE.md).
+  For the model itself: on the full 198-question GPQA-diamond set it scores **0.843** (physics
+  0.93, chemistry 0.78, biology 0.74; no framing, temp 0) — ISTA's card claims 0.929 for the
+  stock IQ3_S on their harness; the free-agent run, the model unrestrained with search and
+  memory in hand, will say how much of that gap is dress, harness, or nothing.
 - **Tuned on live traffic, the same day it shipped.** The first evening of autonomous mode
   produced a transcript audit: two turns rode a stale frame because the *agent* pinned a mode
   and forgot to re-check — and a cold replay of the picker scored the right construct 2-for-2
