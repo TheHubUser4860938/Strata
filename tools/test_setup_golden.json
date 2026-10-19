@@ -38,21 +38,33 @@
    "log": "<T>/strata-iq3_s.log",
    "memory": {
     "auto_shelve": true,
+    "cartridges": {
+     "class_prefixes": [
+      "USR",
+      "DEC"
+     ],
+     "enabled": true,
+     "max_chars": 12000
+    },
     "dir": "<T>/Strata-data/memory",
     "embedder": {
      "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
-    "max_block_chars": 24000,
+    "max_block_chars": 48000,
     "per_turn": true,
     "recall_limit": 96,
+    "soul": "soul.md",
     "tool": true,
-    "turn_block_chars": 2000,
-    "turn_recall_limit": 8
+    "tool_rounds": 0,
+    "turn_block_chars": 24000,
+    "turn_recall_limit": 12
    },
    "model_name": "qwen3.8-flash-next-iq3_s",
    "port": 8005,
+   "slot_retain": 6,
+   "slot_save_path": "<T>/Strata-data/sessions",
    "tokenizer": "<T>/data/packs/iq3_s/tokenizer"
   }
  },
@@ -95,21 +107,33 @@
    "log": "<T>/strata-iq3_xxs.log",
    "memory": {
     "auto_shelve": true,
+    "cartridges": {
+     "class_prefixes": [
+      "USR",
+      "DEC"
+     ],
+     "enabled": true,
+     "max_chars": 12000
+    },
     "dir": "<T>/Strata-data/memory",
     "embedder": {
      "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
-    "max_block_chars": 24000,
+    "max_block_chars": 48000,
     "per_turn": true,
     "recall_limit": 96,
+    "soul": "soul.md",
     "tool": true,
-    "turn_block_chars": 2000,
-    "turn_recall_limit": 8
+    "tool_rounds": 0,
+    "turn_block_chars": 24000,
+    "turn_recall_limit": 12
    },
    "model_name": "qwen3.8-flash-next-iq3_xxs",
    "port": 8005,
+   "slot_retain": 6,
+   "slot_save_path": "<T>/Strata-data/sessions",
    "tokenizer": "<T>/data/packs/iq3_xxs/tokenizer"
   }
  },
@@ -152,21 +176,33 @@
    "log": "<T>/strata-q2_0.log",
    "memory": {
     "auto_shelve": true,
+    "cartridges": {
+     "class_prefixes": [
+      "USR",
+      "DEC"
+     ],
+     "enabled": true,
+     "max_chars": 12000
+    },
     "dir": "<T>/Strata-data/memory",
     "embedder": {
      "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
-    "max_block_chars": 24000,
+    "max_block_chars": 48000,
     "per_turn": true,
     "recall_limit": 96,
+    "soul": "soul.md",
     "tool": true,
-    "turn_block_chars": 2000,
-    "turn_recall_limit": 8
+    "tool_rounds": 0,
+    "turn_block_chars": 24000,
+    "turn_recall_limit": 12
    },
    "model_name": "qwen3.8-flash-next-q2_0",
    "port": 8005,
+   "slot_retain": 6,
+   "slot_save_path": "<T>/Strata-data/sessions",
    "tokenizer": "<T>/data/packs/q2_0/tokenizer"
   }
  },
@@ -209,21 +245,33 @@
    "log": "<T>/strata-iq3_s.log",
    "memory": {
     "auto_shelve": true,
+    "cartridges": {
+     "class_prefixes": [
+      "USR",
+      "DEC"
+     ],
+     "enabled": true,
+     "max_chars": 12000
+    },
     "dir": "<T>/Strata-data/memory",
     "embedder": {
      "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
-    "max_block_chars": 24000,
+    "max_block_chars": 48000,
     "per_turn": true,
     "recall_limit": 96,
+    "soul": "soul.md",
     "tool": true,
-    "turn_block_chars": 2000,
-    "turn_recall_limit": 8
+    "tool_rounds": 0,
+    "turn_block_chars": 24000,
+    "turn_recall_limit": 12
    },
    "model_name": "qwen3.8-flash-next-iq3_s",
    "port": 8005,
+   "slot_retain": 6,
+   "slot_save_path": "<T>/Strata-data/sessions",
    "tokenizer": "<T>/data/packs/iq3_s/tokenizer"
   }
  },
@@ -271,21 +319,33 @@
    "log": "<T>/strata-unsloth-ud-q4_k_xl.log",
    "memory": {
     "auto_shelve": true,
+    "cartridges": {
+     "class_prefixes": [
+      "USR",
+      "DEC"
+     ],
+     "enabled": true,
+     "max_chars": 12000
+    },
     "dir": "<T>/Strata-data/memory",
     "embedder": {
      "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
-    "max_block_chars": 24000,
+    "max_block_chars": 48000,
     "per_turn": true,
     "recall_limit": 96,
+    "soul": "soul.md",
     "tool": true,
-    "turn_block_chars": 2000,
-    "turn_recall_limit": 8
+    "tool_rounds": 0,
+    "turn_block_chars": 24000,
+    "turn_recall_limit": 12
    },
    "model_name": "qwen3.8-flash-next-unsloth-ud-q4_k_xl",
    "port": 8005,
+   "slot_retain": 6,
+   "slot_save_path": "<T>/Strata-data/sessions",
    "tokenizer": "<T>/data/packs/unsloth-ud-q4_k_xl/tokenizer",
    "vision": {
     "exe": "<T>/engine/strata-vision",
@@ -344,15 +404,19 @@
      "threads": 4
     },
     "encrypt": 1,
-    "max_block_chars": 24000,
+    "max_block_chars": 48000,
     "per_turn": true,
     "recall_limit": 96,
+    "soul": "soul.md",
     "tool": true,
-    "turn_block_chars": 2000,
-    "turn_recall_limit": 8
+    "tool_rounds": 0,
+    "turn_block_chars": 24000,
+    "turn_recall_limit": 12
    },
    "model_name": "qwen3.8-flash-next-iq3_s",
    "port": 8005,
+   "slot_retain": 6,
+   "slot_save_path": "<T>/Strata-data/sessions",
    "tokenizer": "<T>/data/packs/iq3_s/tokenizer"
   }
  },
@@ -404,15 +468,19 @@
      "threads": 4
     },
     "encrypt": 1,
-    "max_block_chars": 24000,
+    "max_block_chars": 48000,
     "per_turn": true,
     "recall_limit": 96,
+    "soul": "soul.md",
     "tool": true,
-    "turn_block_chars": 2000,
-    "turn_recall_limit": 8
+    "tool_rounds": 0,
+    "turn_block_chars": 24000,
+    "turn_recall_limit": 12
    },
    "model_name": "qwen3.8-flash-next-iq3_xxs",
    "port": 8005,
+   "slot_retain": 6,
+   "slot_save_path": "<T>/Strata-data/sessions",
    "tokenizer": "<T>/data/packs/iq3_xxs/tokenizer"
   }
  },
@@ -464,15 +532,19 @@
      "threads": 4
     },
     "encrypt": 1,
-    "max_block_chars": 24000,
+    "max_block_chars": 48000,
     "per_turn": true,
     "recall_limit": 96,
+    "soul": "soul.md",
     "tool": true,
-    "turn_block_chars": 2000,
-    "turn_recall_limit": 8
+    "tool_rounds": 0,
+    "turn_block_chars": 24000,
+    "turn_recall_limit": 12
    },
    "model_name": "qwen3.8-flash-next-q2_0",
    "port": 8005,
+   "slot_retain": 6,
+   "slot_save_path": "<T>/Strata-data/sessions",
    "tokenizer": "<T>/data/packs/q2_0/tokenizer"
   }
  },
@@ -524,15 +596,19 @@
      "threads": 4
     },
     "encrypt": 1,
-    "max_block_chars": 24000,
+    "max_block_chars": 48000,
     "per_turn": true,
     "recall_limit": 96,
+    "soul": "soul.md",
     "tool": true,
-    "turn_block_chars": 2000,
-    "turn_recall_limit": 8
+    "tool_rounds": 0,
+    "turn_block_chars": 24000,
+    "turn_recall_limit": 12
    },
    "model_name": "qwen3.8-flash-next-q2_0",
    "port": 8005,
+   "slot_retain": 6,
+   "slot_save_path": "<T>/Strata-data/sessions",
    "tokenizer": "<T>/data/packs/q2_0/tokenizer"
   }
  },
@@ -585,15 +661,19 @@
      "threads": 4
     },
     "encrypt": 1,
-    "max_block_chars": 24000,
+    "max_block_chars": 48000,
     "per_turn": true,
     "recall_limit": 96,
+    "soul": "soul.md",
     "tool": true,
-    "turn_block_chars": 2000,
-    "turn_recall_limit": 8
+    "tool_rounds": 0,
+    "turn_block_chars": 24000,
+    "turn_recall_limit": 12
    },
    "model_name": "qwen3.8-flash-next-unsloth-ud-q4_k_xl",
    "port": 8005,
+   "slot_retain": 6,
+   "slot_save_path": "<T>/Strata-data/sessions",
    "tokenizer": "<T>/data/packs/unsloth-ud-q4_k_xl/tokenizer",
    "vision": {
     "exe": "<T>/engine/strata-vision",
@@ -652,15 +732,19 @@
      "threads": 4
     },
     "encrypt": 1,
-    "max_block_chars": 24000,
+    "max_block_chars": 48000,
     "per_turn": true,
     "recall_limit": 96,
+    "soul": "soul.md",
     "tool": true,
-    "turn_block_chars": 2000,
-    "turn_recall_limit": 8
+    "tool_rounds": 0,
+    "turn_block_chars": 24000,
+    "turn_recall_limit": 12
    },
    "model_name": "qwen3.8-flash-next-iq3_s",
    "port": 8005,
+   "slot_retain": 6,
+   "slot_save_path": "<T>/Strata-data/sessions",
    "tokenizer": "<T>/data/packs/iq3_s/tokenizer"
   }
  },
@@ -712,15 +796,19 @@
      "threads": 4
     },
     "encrypt": 1,
-    "max_block_chars": 24000,
+    "max_block_chars": 48000,
     "per_turn": true,
     "recall_limit": 96,
+    "soul": "soul.md",
     "tool": true,
-    "turn_block_chars": 2000,
-    "turn_recall_limit": 8
+    "tool_rounds": 0,
+    "turn_block_chars": 24000,
+    "turn_recall_limit": 12
    },
    "model_name": "qwen3.8-flash-next-iq3_xxs",
    "port": 8005,
+   "slot_retain": 6,
+   "slot_save_path": "<T>/Strata-data/sessions",
    "tokenizer": "<T>/data/packs/iq3_xxs/tokenizer"
   }
  },
@@ -771,15 +859,19 @@
      "threads": 4
     },
     "encrypt": 1,
-    "max_block_chars": 24000,
+    "max_block_chars": 48000,
     "per_turn": true,
     "recall_limit": 96,
+    "soul": "soul.md",
     "tool": true,
-    "turn_block_chars": 2000,
-    "turn_recall_limit": 8
+    "tool_rounds": 0,
+    "turn_block_chars": 24000,
+    "turn_recall_limit": 12
    },
    "model_name": "qwen3.8-flash-next-q2_0",
    "port": 8005,
+   "slot_retain": 6,
+   "slot_save_path": "<T>/Strata-data/sessions",
    "tokenizer": "<T>/data/packs/q2_0/tokenizer"
   }
  },
@@ -830,15 +922,19 @@
      "threads": 4
     },
     "encrypt": 1,
-    "max_block_chars": 24000,
+    "max_block_chars": 48000,
     "per_turn": true,
     "recall_limit": 96,
+    "soul": "soul.md",
     "tool": true,
-    "turn_block_chars": 2000,
-    "turn_recall_limit": 8
+    "tool_rounds": 0,
+    "turn_block_chars": 24000,
+    "turn_recall_limit": 12
    },
    "model_name": "qwen3.8-flash-next-q2_0",
    "port": 8005,
+   "slot_retain": 6,
+   "slot_save_path": "<T>/Strata-data/sessions",
    "tokenizer": "<T>/data/packs/q2_0/tokenizer"
   }
  },
@@ -891,15 +987,19 @@
      "threads": 4
     },
     "encrypt": 1,
-    "max_block_chars": 24000,
+    "max_block_chars": 48000,
     "per_turn": true,
     "recall_limit": 96,
+    "soul": "soul.md",
     "tool": true,
-    "turn_block_chars": 2000,
-    "turn_recall_limit": 8
+    "tool_rounds": 0,
+    "turn_block_chars": 24000,
+    "turn_recall_limit": 12
    },
    "model_name": "qwen3.8-flash-next-unsloth-ud-q4_k_xl",
    "port": 8005,
+   "slot_retain": 6,
+   "slot_save_path": "<T>/Strata-data/sessions",
    "tokenizer": "<T>/data/packs/unsloth-ud-q4_k_xl/tokenizer",
    "vision": {
     "exe": "<T>/engine/strata-vision",
@@ -954,15 +1054,19 @@
      "threads": 4
     },
     "encrypt": 1,
-    "max_block_chars": 24000,
+    "max_block_chars": 48000,
     "per_turn": true,
     "recall_limit": 96,
+    "soul": "soul.md",
     "tool": true,
-    "turn_block_chars": 2000,
-    "turn_recall_limit": 8
+    "tool_rounds": 0,
+    "turn_block_chars": 24000,
+    "turn_recall_limit": 12
    },
    "model_name": "qwen3.8-flash-next-iq3_s",
    "port": 8005,
+   "slot_retain": 6,
+   "slot_save_path": "<T>/Strata-data/sessions",
    "tokenizer": "<T>/data/packs/iq3_s/tokenizer"
   }
  },
@@ -1011,15 +1115,19 @@
      "threads": 4
     },
     "encrypt": 1,
-    "max_block_chars": 24000,
+    "max_block_chars": 48000,
     "per_turn": true,
     "recall_limit": 96,
+    "soul": "soul.md",
     "tool": true,
-    "turn_block_chars": 2000,
-    "turn_recall_limit": 8
+    "tool_rounds": 0,
+    "turn_block_chars": 24000,
+    "turn_recall_limit": 12
    },
    "model_name": "qwen3.8-flash-next-iq3_xxs",
    "port": 8005,
+   "slot_retain": 6,
+   "slot_save_path": "<T>/Strata-data/sessions",
    "tokenizer": "<T>/data/packs/iq3_xxs/tokenizer"
   }
  },
@@ -1062,21 +1170,33 @@
    "log": "<T>/strata-q2_0.log",
    "memory": {
     "auto_shelve": true,
+    "cartridges": {
+     "class_prefixes": [
+      "USR",
+      "DEC"
+     ],
+     "enabled": true,
+     "max_chars": 12000
+    },
     "dir": "<T>/Strata-data/memory",
     "embedder": {
      "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
-    "max_block_chars": 24000,
+    "max_block_chars": 48000,
     "per_turn": true,
     "recall_limit": 96,
+    "soul": "soul.md",
     "tool": true,
-    "turn_block_chars": 2000,
-    "turn_recall_limit": 8
+    "tool_rounds": 0,
+    "turn_block_chars": 24000,
+    "turn_recall_limit": 12
    },
    "model_name": "qwen3.8-flash-next-q2_0",
    "port": 8005,
+   "slot_retain": 6,
+   "slot_save_path": "<T>/Strata-data/sessions",
    "tokenizer": "<T>/data/packs/q2_0/tokenizer"
   }
  },
@@ -1123,15 +1243,19 @@
      "threads": 4
     },
     "encrypt": 1,
-    "max_block_chars": 24000,
+    "max_block_chars": 48000,
     "per_turn": true,
     "recall_limit": 96,
+    "soul": "soul.md",
     "tool": true,
-    "turn_block_chars": 2000,
-    "turn_recall_limit": 8
+    "tool_rounds": 0,
+    "turn_block_chars": 24000,
+    "turn_recall_limit": 12
    },
    "model_name": "qwen3.8-flash-next-iq3_s",
    "port": 8005,
+   "slot_retain": 6,
+   "slot_save_path": "<T>/Strata-data/sessions",
    "tokenizer": "<T>/data/packs/iq3_s/tokenizer"
   }
  },
@@ -1178,21 +1302,33 @@
    "log": "<T>/strata-unsloth-ud-q4_k_xl.log",
    "memory": {
     "auto_shelve": true,
+    "cartridges": {
+     "class_prefixes": [
+      "USR",
+      "DEC"
+     ],
+     "enabled": true,
+     "max_chars": 12000
+    },
     "dir": "<T>/Strata-data/memory",
     "embedder": {
      "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
-    "max_block_chars": 24000,
+    "max_block_chars": 48000,
     "per_turn": true,
     "recall_limit": 96,
+    "soul": "soul.md",
     "tool": true,
-    "turn_block_chars": 2000,
-    "turn_recall_limit": 8
+    "tool_rounds": 0,
+    "turn_block_chars": 24000,
+    "turn_recall_limit": 12
    },
    "model_name": "qwen3.8-flash-next-unsloth-ud-q4_k_xl",
    "port": 8005,
+   "slot_retain": 6,
+   "slot_save_path": "<T>/Strata-data/sessions",
    "tokenizer": "<T>/data/packs/unsloth-ud-q4_k_xl/tokenizer",
    "vision": {
     "exe": "<T>/engine/strata-vision",
@@ -1242,21 +1378,33 @@
    "log": "<T>/strata-iq3_s.log",
    "memory": {
     "auto_shelve": true,
+    "cartridges": {
+     "class_prefixes": [
+      "USR",
+      "DEC"
+     ],
+     "enabled": true,
+     "max_chars": 12000
+    },
     "dir": "<T>/Strata-data/memory",
     "embedder": {
      "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
-    "max_block_chars": 24000,
+    "max_block_chars": 48000,
     "per_turn": true,
     "recall_limit": 96,
+    "soul": "soul.md",
     "tool": true,
-    "turn_block_chars": 2000,
-    "turn_recall_limit": 8
+    "tool_rounds": 0,
+    "turn_block_chars": 24000,
+    "turn_recall_limit": 12
    },
    "model_name": "qwen3.8-flash-next-iq3_s",
    "port": 8005,
+   "slot_retain": 6,
+   "slot_save_path": "<T>/Strata-data/sessions",
    "tokenizer": "<T>/data/packs/iq3_s/tokenizer"
   }
  },
@@ -1299,21 +1447,33 @@
    "log": "<T>/strata-iq3_xxs.log",
    "memory": {
     "auto_shelve": true,
+    "cartridges": {
+     "class_prefixes": [
+      "USR",
+      "DEC"
+     ],
+     "enabled": true,
+     "max_chars": 12000
+    },
     "dir": "<T>/Strata-data/memory",
     "embedder": {
      "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
-    "max_block_chars": 24000,
+    "max_block_chars": 48000,
     "per_turn": true,
     "recall_limit": 96,
+    "soul": "soul.md",
     "tool": true,
-    "turn_block_chars": 2000,
-    "turn_recall_limit": 8
+    "tool_rounds": 0,
+    "turn_block_chars": 24000,
+    "turn_recall_limit": 12
    },
    "model_name": "qwen3.8-flash-next-iq3_xxs",
    "port": 8005,
+   "slot_retain": 6,
+   "slot_save_path": "<T>/Strata-data/sessions",
    "tokenizer": "<T>/data/packs/iq3_xxs/tokenizer"
   }
  },
@@ -1356,21 +1516,33 @@
    "log": "<T>/strata-q2_0.log",
    "memory": {
     "auto_shelve": true,
+    "cartridges": {
+     "class_prefixes": [
+      "USR",
+      "DEC"
+     ],
+     "enabled": true,
+     "max_chars": 12000
+    },
     "dir": "<T>/Strata-data/memory",
     "embedder": {
      "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
-    "max_block_chars": 24000,
+    "max_block_chars": 48000,
     "per_turn": true,
     "recall_limit": 96,
+    "soul": "soul.md",
     "tool": true,
-    "turn_block_chars": 2000,
-    "turn_recall_limit": 8
+    "tool_rounds": 0,
+    "turn_block_chars": 24000,
+    "turn_recall_limit": 12
    },
    "model_name": "qwen3.8-flash-next-q2_0",
    "port": 8005,
+   "slot_retain": 6,
+   "slot_save_path": "<T>/Strata-data/sessions",
    "tokenizer": "<T>/data/packs/q2_0/tokenizer"
   }
  },
@@ -1413,21 +1585,33 @@
    "log": "<T>/strata-iq3_s.log",
    "memory": {
     "auto_shelve": true,
+    "cartridges": {
+     "class_prefixes": [
+      "USR",
+      "DEC"
+     ],
+     "enabled": true,
+     "max_chars": 12000
+    },
     "dir": "<T>/Strata-data/memory",
     "embedder": {
      "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
-    "max_block_chars": 24000,
+    "max_block_chars": 48000,
     "per_turn": true,
     "recall_limit": 96,
+    "soul": "soul.md",
     "tool": true,
-    "turn_block_chars": 2000,
-    "turn_recall_limit": 8
+    "tool_rounds": 0,
+    "turn_block_chars": 24000,
+    "turn_recall_limit": 12
    },
    "model_name": "qwen3.8-flash-next-iq3_s",
    "port": 8005,
+   "slot_retain": 6,
+   "slot_save_path": "<T>/Strata-data/sessions",
    "tokenizer": "<T>/data/packs/iq3_s/tokenizer"
   }
  },
@@ -1475,21 +1659,33 @@
    "log": "<T>/strata-unsloth-ud-q4_k_xl.log",
    "memory": {
     "auto_shelve": true,
+    "cartridges": {
+     "class_prefixes": [
+      "USR",
+      "DEC"
+     ],
+     "enabled": true,
+     "max_chars": 12000
+    },
     "dir": "<T>/Strata-data/memory",
     "embedder": {
      "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
-    "max_block_chars": 24000,
+    "max_block_chars": 48000,
     "per_turn": true,
     "recall_limit": 96,
+    "soul": "soul.md",
     "tool": true,
-    "turn_block_chars": 2000,
-    "turn_recall_limit": 8
+    "tool_rounds": 0,
+    "turn_block_chars": 24000,
+    "turn_recall_limit": 12
    },
    "model_name": "qwen3.8-flash-next-unsloth-ud-q4_k_xl",
    "port": 8005,
+   "slot_retain": 6,
+   "slot_save_path": "<T>/Strata-data/sessions",
    "tokenizer": "<T>/data/packs/unsloth-ud-q4_k_xl/tokenizer",
    "vision": {
     "exe": "<T>/engine/strata-vision",

@@ -175,7 +175,14 @@ turn it OFF, set `"memory": { "enabled": false }` (or `"memory": false`) - every
 returns to upstream Strata, byte for byte. `--memory DIR` still forces the store on at a given
 directory. Tuning (all optional): `"recall_limit"`, `"max_block_chars"`, `"per_turn"`,
 `"turn_recall_limit"`, `"turn_block_chars"`, `"encrypt"`, `"tool"`, `"auto_shelve"`,
-`"embedder"`, `"cartridges"`; without the embedder files recall stays lexical and the banner
+`"embedder"`, `"cartridges"`, `"soul"`; setup bundles the store at the dev-verified budgets
+(96 notes under a 48,000-char cap, per-turn 12 notes under 24,000, unlimited tool rounds), writes
+`"slot_save_path": "<Strata folder>/Strata-data/sessions"` with `"slot_retain": 6` (slot
+save/restore, and the directory the cartridges need), and ships the tier-2 cartridges ON only when
+the PC keeps at least 8 GB of system RAM free of the model's all-in need (an IQ3_S box with 64 GB
+gets no cartridges; a 128 GB box does) - the knobs measured and shipped off (`floor_cosine`,
+`block_min_score`, exposure decay, `route_shelves`) stay one config key away. Without the embedder
+files recall stays lexical and the banner
 says so out loud - the degrade is visible, never a silent no-op.
 
 - verify before reporting done: the boot banner must print `[strata] memory core on: ...` (the

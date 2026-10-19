@@ -1948,16 +1948,37 @@ def fetch_embedder(root: Path) -> bool:
     return ready
 
 
-def fork_memory_cfg(root: Path) -> dict:
-    """The "memory" block setup writes: the shape the development store has run since boot day -
-    96 recall notes at 24,000 chars, per-turn fresh recall, the agentic tool, at-rest encryption,
-    the self-growing taxonomy (auto-shelve), hybrid embeddings. Opt out with "memory":
+CARTRIDGE_MIN_HEADROOM_GB = 8.0   # tier-2 cartridges only when this much system RAM stays free of the
+                                  # model's all-in need (the owner's law, 2026-10-19: "IQ3_S with only
+                                  # 32 GB or even 64 GB - do not enable"; IQ3_S needs 62, so a 64 GB
+                                  # box has 2 GB of headroom and gets no cartridges, a 128 GB box has
+                                  # ~66 and does)
+
+
+def fork_memory_cfg(root: Path, ram: float | None = None, model: str | None = None) -> dict:
+    """The "memory" block setup writes: the shape the development store runs, with every budget at a
+    measured value - 96 recall notes under a 48,000-char cap (m4_blockcov: the CHAR cap is what binds
+    long rows, and at 96 notes the everyday block is ~15k chars, so the wider cap costs nothing and
+    recovers the +0.047 lexical coverage the 24k cap was cutting), per-turn fresh recall 12 notes <=
+    24,000 chars, the agentic tool with unlimited rounds, at-rest encryption, the self-growing
+    taxonomy (auto-shelve), hybrid embeddings, and the Clio persona file (soul.md at the repo root,
+    fail-closed: unreadable or over-budget just means no persona). The tier-2 cartridges ride only on
+    a PC with CARTRIDGE_MIN_HEADROOM_GB of RAM free of the model's all-in need, and they need the
+    slot_save_path both writers set beside this block (the server creates the dir 0700 at boot).
+    Knobs measured and shipped OFF stay OFF: floor_cosine (-7.2% coverage), block_min_score (purity
+    flat, evidence down), exposure decay (suppresses the relevant), route_shelves (-0.031) - each is
+    one config key away if a user wants them. Opt out of memory entirely with "memory":
     {"enabled": false}; every other edit tunes rather than disables."""
-    return {"dir": str(root / "Strata-data" / "memory"), "recall_limit": 96,
-            "max_block_chars": 24000, "per_turn": True, "turn_recall_limit": 8,
-            "turn_block_chars": 2000, "encrypt": 1, "tool": True, "auto_shelve": True,
-            "embedder": {"dir": str(root / "Strata-data" / "embeddings" / EMBEDDER_NAME),
-                         "threads": 4}}
+    out = {"dir": str(root / "Strata-data" / "memory"), "recall_limit": 96,
+           "max_block_chars": 48000, "per_turn": True, "turn_recall_limit": 12,
+           "turn_block_chars": 24000, "tool_rounds": 0, "encrypt": 1, "tool": True,
+           "auto_shelve": True, "soul": "soul.md",
+           "embedder": {"dir": str(root / "Strata-data" / "embeddings" / EMBEDDER_NAME),
+                        "threads": 4}}
+    need = (MODELS.get(model) or {}).get("ram_gb")
+    if ram is not None and need is not None and ram - need >= CARTRIDGE_MIN_HEADROOM_GB:
+        out["cartridges"] = {"enabled": True, "class_prefixes": ["USR", "DEC"], "max_chars": 12000}
+    return out
 
 
 def ready_files(model: str) -> list:
@@ -4670,8 +4691,9 @@ def write_config(path: Path, cfg: dict):
 # "sampling" or "mcp_servers" block, "allowed_hosts", "cors_origins", "open_browser" - and is kept when setup runs again
 SETUP_KEYS = frozenset({"exe", "args", "cwd", "tokenizer", "model_name", "log", "lib_dirs", "port", "backend", "env",
                         "gpu", "gpus_asked", "layer_split", "host", "api_key", "draft_vocab", "vision",
-                        "memory"})    # memory-core fork: setup writes the memory block too (on by default,
-                                      # 2026-10-16) - it is a setup-owned key in this fork
+                        "memory", "slot_save_path", "slot_retain"})    # memory-core fork: setup writes the memory
+                                      # block too (on by default, 2026-10-16) - it is a setup-owned key in this fork,
+                                      # and so are the slot keys the cartridges need (2026-10-19)
 SETUP_ENV = frozenset({"STRATA_HIPBLASLT_TUNING", "STRATA_ROCBLAS_TUNING", "STRATA_RESIDENT_PIN", "STRATA_NO_ARENA_THP", "STRATA_MMQ_KQ", "STRATA_HC_Q8",
                        "STRATA_ROUTE_TAIL_SKIP"}) | frozenset(GFX1103_SWITCHES) | frozenset(GFX1150_SWITCHES)   # the "env" entries setup writes (the gfx1103 switches are setup's too: a re-run refreshes them, they do not linger)
 # 0.1.44 added these three, written for Unsloth's files only (unsloth_default_env).  In any other model's config they are the
@@ -6033,7 +6055,9 @@ def install_own_path(a, family, gpu, hip, amd, cuda_tk, multi, port, ram, adopte
     cfg = {"exe": str(eng / EXE), "args": args, "cwd": str(ROOT), "tokenizer": str(pack / "tokenizer"),
            "model_name": f"{fam['name']}-{model.lower()}", "arch": fam["arch"],
            "log": str(ROOT / f"strata-{tag.lower()}.log"), "lib_dirs": lib_dirs, "port": port}
-    cfg["memory"] = fork_memory_cfg(ROOT)          # memory-core fork: memory on by default, and the
+    cfg["memory"] = fork_memory_cfg(ROOT, ram, model)   # memory-core fork: memory on by default, and the
+    cfg["slot_save_path"] = str(ROOT / "Strata-data" / "sessions")   # slot save/restore + the cartridges' file dir
+    cfg["slot_retain"] = 6                             # prune to the 6 newest saves: the dev box's disk law
     fetch_embedder(ROOT)                           # hybrid arm's model is part of the install
     if cuda_tk == 12:
         cfg["cuda"] = 12
@@ -7175,7 +7199,9 @@ def main() -> int:
     cfg = {"exe": str(eng / EXE), "args": args, "cwd": str(ROOT), "tokenizer": str(pack / "tokenizer"),
            "model_name": f"{fam['name']}-{model.lower()}", "log": str(ROOT / f"strata-{tag.lower()}.log"),
            "lib_dirs": lib_dirs, "port": port}
-    cfg["memory"] = fork_memory_cfg(ROOT)          # memory-core fork: on every time, opt-out by config
+    cfg["memory"] = fork_memory_cfg(ROOT, ram, model)   # memory-core fork: on every time, opt-out by config
+    cfg["slot_save_path"] = str(ROOT / "Strata-data" / "sessions")   # slot save/restore + the cartridges' file dir
+    cfg["slot_retain"] = 6                             # prune to the 6 newest saves: the dev box's disk law
     if family in ("dau", "daureg"):
         # the {REASON:} master switch (the one boolean the user asked for): a DavidAU install arrives
         # with its reason modes ON - the /reason door, the reason_mode tool, the sticky modes; every
