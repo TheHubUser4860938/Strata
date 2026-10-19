@@ -14,6 +14,13 @@ main() {
       exit 1
     fi
     echo "Getting the newest Strata (git pull) ..."
+    # Fork patch (2026-10-19, the owner's ask): name the branch and upstream this pull answers
+    # to, before it runs. git pull follows the current branch's tracking, and this fork's work
+    # lives on memory-core; "main" below appears only in the fallback messages and names the
+    # clone's old upstream snapshot, never the branch being pulled.
+    br=$(git symbolic-ref --short -q HEAD || echo "(detached HEAD)")
+    up=$(git rev-parse --abbrev-ref "@{upstream}" 2>/dev/null || echo "(no tracking)")
+    echo "On branch $br, tracking $up - pulling that."
     if ! git pull --ff-only; then
       # The history of the repository was rewritten on 2026-10-06 (#1276): a clone made before that has no commit in
       # common with origin/main, so a fast-forward can never work. Say so, and move it over when nothing is lost.
