@@ -366,7 +366,7 @@ def reason_mode_ok(value: str) -> bool:
 # the author's too, and live in runconfig.py beside the mode list (the Settings menu is their
 # other owner; the fork makes them mechanical - see reason_mode_ok).
 REASON_GUIDE = {
-    "coder": "code work", "house": "debugging (pair with logic)", "stark": "architecture",
+    "coder": "code work", "house": "debugging, medical (pair with logic)", "stark": "architecture",
     "007": "agentic multi-step builds", "ultra": "final deliverables, review",
     "hyper": "audits, deconstruction", "spoon": "research, fact-check",
     "deeptree": "branching strategy", "omni": "cross-domain synthesis",
@@ -427,65 +427,155 @@ REASON_AUTO = {
               "symptom", "symptoms", "diagnose", "diagnosis", "root", "cause", "failure",
               "broken", "fails", "failing", "hypothesis", "regression", "intermittent", "mystery",
               "worked", "suddenly", "logs", "coredump", "segfault", "oom", "timeout", "heisenbug",
-              "differential", "eliminate", "elimination"},
+              "differential", "eliminate", "elimination",
+              # 2026-10-19 (owner's probe "lump on my right arm" claimed nothing and the picker
+              # abstained): medical is House's native domain per the author's card - "diagnostic
+              # prodigy with 40 years of medical experience" - so the clinical nouns live here.
+              # Chosen for low ambiguity: words that rarely appear outside a medical sentence.
+              "medical", "medicine", "doctor", "patient", "clinic", "hospital", "disease",
+              "illness", "ailment", "malady", "condition", "treatment", "therapy", "remedy",
+              "prescription", "medication", "prognosis", "triage", "surgery", "surgical",
+              "lesion", "lump", "swelling", "rash", "migraine", "headache", "nausea", "fatigue",
+              "dizzy", "dizziness", "vertigo", "cough", "palpitations", "reflux", "abscess",
+              "cyst", "tumor", "tumour", "benign", "malignant", "inflammation", "infection",
+              "virus", "bacteria", "autoimmune", "allergy", "allergies", "fracture", "sprain",
+              "oncology", "cardiology", "neurology", "dermatology", "rheumatology", "sarcoma"},
     "stark": {"architecture", "architect", "design", "systems", "scalable", "scaling",
               "infrastructure", "platform", "blueprint", "foresight", "tradeoff", "capacity",
-              "redundancy", "failover", "cluster", "service", "solutions", "visionary"},
+              "redundancy", "failover", "cluster", "service", "solutions", "visionary",
+              # 2026-10-19 guide expansion: the whiteboard nouns ("system design",
+              # "architecture decisions", "technical vision") from the author's card.
+              "whiteboard", "requirements", "topology", "diagram", "monolith",
+              "integration", "roadmapping"},
     "007": {"orchestrate", "orchestration", "pipeline", "workflow", "automation", "autonomous",
             "agent", "agentic", "batch", "job", "schedule", "retry", "fallback", "execute",
-            "runbook", "monitor", "fleet", "multi-step", "tool-calls", "deterministic"},
+            "runbook", "monitor", "fleet", "multi-step", "tool-calls", "deterministic",
+            # 2026-10-19 guide expansion: the field-operative nouns ("multi-step tasks",
+            # "research and execute") from the author's card.
+            "cron", "daemon", "watchdog", "backpressure", "self-healing", "unattended"},
     "ultra": {"final", "deliverable", "deliverables", "ship", "polish", "perfect", "perfection",
               "flawless", "complete", "production", "release", "careful", "verify", "validation",
-              "review", "reviews"},
+              "review", "reviews",
+              # 2026-10-19 guide expansion: the acceptance nouns ("code review", "final
+              # polish", QA) from the author's card.
+              "benchmark", "eval", "evaluation", "acceptance", "sign-off"},
     "hyper": {"audit", "deconstruct", "deconstruction", "mece", "outline", "breakdown",
-              "categorize", "taxonomy", "frameworks", "sections", "structure"},
+              "categorize", "taxonomy", "frameworks", "sections", "structure",
+              # 2026-10-19 guide expansion: the MECE nouns ("break down complex problems",
+              # "market analysis", "thesis structuring") from the author's card.
+              "decompose", "dissect", "segmentation", "exhaustive", "granularity"},
     "spoon": {"research", "study", "studies", "sources", "facts", "evidence", "citation", "cite",
               "paper", "papers", "survey", "literature", "fact-checking", "panel", "experts",
-              "rigor", "claims"},
+              "rigor", "claims",
+              # 2026-10-19 guide expansion: the citation-desk nouns ("literature review",
+              # "fact-checking", "cite sources") from the author's card.
+              "methodology", "meta-analysis", "peer-reviewed", "bibliography", "dossier",
+              "referencing", "archival"},
     "deeptree": {"plan", "planning", "strategy", "strategic", "roadmap", "options", "alternative",
                  "branch", "scenarios", "path", "prune", "contingency", "tree", "stages",
-                 "decision", "decisions"},
+                 "decision", "decisions",
+                 # 2026-10-19 guide expansion: the branching nouns ("multi-step problems",
+                 # "scenario planning", "decision trees") from the author's card.
+                 "causal", "causality", "counterfactual", "decision-tree", "dependency",
+                 "pruning"},
     "omni": {"interdisciplinary", "domains", "synthesis", "synthesize", "connections", "analogy",
-             "metaphor", "parallel", "culture", "fields", "unified", "across", "everything"},
+             "metaphor", "parallel", "culture", "fields", "unified", "across", "everything",
+             # 2026-10-19 guide expansion: the cross-domain nouns ("interdisciplinary research",
+             # "connect disparate concepts") from the author's card.
+             "cross-domain", "paradigm", "holistic", "isomorphism", "convergent", "lenses"},
     "socrates": {"question", "questions", "probe", "meaning", "assumption", "assumptions",
-                 "examine", "clarify", "definition", "define", "socratic", "gaps", "critique"},
+                 "examine", "clarify", "definition", "define", "socratic", "gaps", "critique",
+                 # 2026-10-19 guide expansion: the elenchus nouns ("interrogate assumptions",
+                 # "challenge my reasoning") from the author's card.
+                 "interrogate", "premise", "premises", "implication", "implications",
+                 "counterexample", "refute", "elenchus"},
     "teacher": {"explain", "simply", "plain", "teach", "teaching", "learn", "tutorial", "beginner",
-                "understand", "intro", "introduction", "lesson", "eli5", "guide", "learned"},
+                "understand", "intro", "introduction", "lesson", "eli5", "guide", "learned",
+                # 2026-10-19 guide expansion: the classroom nouns ("teach me X", exam prep,
+                # ELI5) the author's card names for teacher and its pairs.
+                "walkthrough", "crash-course", "primer", "foundations", "mentor",
+                "step-by-step"},
     "einstein": {"novel", "novelty", "creative", "creativity", "imagine", "what-if", "invention",
-                 "invent", "unusual", "surprising", "original", "speculative", "ideas", "ideation"},
+                 "invent", "unusual", "surprising", "original", "speculative", "ideas", "ideation",
+                 # 2026-10-19 guide expansion: the ideation nouns ("brainstorming sessions",
+                 # "unconventional approaches") from the author's card.
+                 "lateral", "divergent", "thought-experiment", "improbable", "serendipity"},
     "brainstorm": {"brainstorm", "ideate", "generate", "solutions", "quickly", "many", "list"},
     "business": {"business", "market", "marketing", "startup", "revenue", "pricing", "customer",
                  "customers", "go-to-market", "gtm", "investor", "funding", "pitch", "sales",
-                 "growth", "profit", "company", "competitor", "competitors"},
+                 "growth", "profit", "company", "competitor", "competitors",
+                 # 2026-10-19 guide expansion: the deck nouns ("go-to-market, pitch decks,
+                 # business plans") the map was missing.
+                 "acquisition", "merger", "valuation", "monetization", "churn", "retention",
+                 "saas", "b2b", "b2c", "funnel", "okrs", "positioning", "differentiation",
+                 "brand", "boardroom"},
     "matlock": {"legal", "law", "lawyer", "court", "contract", "contracts", "regulation",
                 "regulations", "compliance", "liability", "litigation", "gdpr", "privacy",
-                "statute", "precedent", "brief", "advocacy", "procedural"},
+                "statute", "precedent", "brief", "advocacy", "procedural",
+                # 2026-10-19 guide expansion: the courtroom nouns the author's card names
+                # ("case analysis, legal strategy, contract review") but the map never claimed.
+                "lawsuit", "verdict", "attorney", "counsel", "deposition", "tort", "patent",
+                "trademark", "copyright", "arbitration", "testimony", "witness", "objection",
+                "subpoena", "injunction", "felony", "misdemeanor"},
     "musk": {"physics", "first-principles", "manufacturing", "physical", "feasible", "fundamental",
-             "rocket", "battery", "material", "materials", "energy", "costs"},
+             "rocket", "battery", "material", "materials", "energy", "costs",
+             # 2026-10-19 guide expansion: the hard-engineering nouns ("product design",
+             # "engineering challenges", "physics-first sanity checks") from the author's card.
+             "orbital", "propulsion", "thruster", "wafer", "silicon",
+             "volumetric", "tolerances", "aerodynamic"},
     "curie": {"science", "scientific", "experiment", "experiments", "chemistry", "biology",
               "gene", "genes", "crispr", "molecule", "molecules", "atom", "atoms", "radioactivity",
-              "measurement", "laboratory", "truth"},
+              "measurement", "laboratory", "truth",
+              # 2026-10-19 guide expansion: the mechanism nouns ("how does X work",
+              # "the mechanism behind Y") the author's card assigns to Curie.
+              "mechanism", "mechanistic", "physiology", "anatomy", "protein", "enzyme",
+              "neuron", "hormone", "vaccine", "mrna", "dna", "rna", "evolution"},
     "story": {"story", "stories", "narrative", "fiction", "novel", "tale", "writing", "character",
               "characters", "plot", "scene", "dialogue", "prose", "poem", "poetry", "screenplay",
-              "chapter", "ending", "twist"},
+              "chapter", "ending", "twist",
+              # 2026-10-19 guide expansion: the craft nouns ("epic narratives", "character
+              # development", "worldbuilding") from the author's card.
+              "protagonist", "antagonist", "theme", "themes", "motif", "climax", "monologue",
+              "lyrical", "epic", "screenwriting"},
     "comedy": {"joke", "jokes", "funny", "humor", "humorous", "humour", "comedian", "laugh",
                "laughing", "stand-up", "satire", "witty", "pun", "meme", "silly", "amuse", "bit"},
     "joe": {"everyday", "casual", "regular", "folks", "honestly", "relatable", "friend"},
     "prompt": {"prompt", "prompts", "prompting", "system-prompt", "llm", "gpt", "claude",
-               "instruct", "few-shot", "chain-of-thought"},
+               "instruct", "few-shot", "chain-of-thought",
+               # 2026-10-19 guide expansion: the prompt-desk nouns ("improve this prompt",
+               # "prompt engineering") from the author's card.
+               "meta-prompt", "prompt-template", "instruction-tuning", "token-budget",
+               "context-window"},
     "holodeck": {"debate", "debates", "argue", "perspectives", "discuss", "discussion", "opposing",
-                 "versus", "simulate", "panelists"},
+                 "versus", "simulate", "panelists",
+                 # 2026-10-19 guide expansion: the war-room nouns ("argue both sides",
+                 # "debate preparation") from the author's card.
+                 "roundtable", "symposium", "sparring", "tribunal", "adversarial",
+                 "devil-advocate", "both-sides"},
     "vader": {"decide", "decision", "decisions", "choose", "choice", "commit", "command", "order",
-              "leadership", "authority", "ultimatum", "irreversible", "duty", "empire"},
+              "leadership", "authority", "ultimatum", "irreversible", "duty", "empire",
+              # 2026-10-19 guide expansion: the hard-call nouns ("tough calls", "hard
+              # prioritization") from the author's card.
+              "sacrifice", "consequential", "resolve", "decree", "mandate", "ruthless"},
     "neo": {"reality", "illusion", "matrix", "awake", "belief", "believe", "control", "doubt",
-            "skeptical", "reframe", "consciousness"},
+            "skeptical", "reframe", "consciousness",
+            # 2026-10-19 guide expansion: the red-pill nouns ("question assumptions",
+            # "paradigm shifts", existential reframes) from the author's card.
+            "determinism", "prophecy", "glitch", "morpheus", "red-pill", "zion",
+            "simulation-hypothesis"},
     "joker": {"chaos", "anarchy", "absurd", "upend", "invert", "paradox", "irony", "disrupt",
-              "unconventional", "mad", "trick", "fragile"},
+              "unconventional", "mad", "trick", "fragile",
+              # 2026-10-19 guide expansion: the chaos-agent nouns ("devil's advocate",
+              # "unconventional approaches") from the author's card.
+              "subvert", "irreverent", "provocateur", "anarchic", "topsy-turvy"},
     "quinn": {"bold", "confident", "personality", "flair", "edgy", "playful", "daring",
               "unapologetic", "opinion", "opinions"},
     "logic": {"logic", "logical", "prove", "proof", "proving", "deduce", "deduction", "validity",
               "fallacy", "theorem", "mathematics", "formal", "axiom", "consistent",
-              "contradiction", "first", "principles"},
+              "contradiction", "first", "principles",
+              # 2026-10-19 guide expansion: the proof-desk nouns ("logic puzzles",
+              # "first principles") from the author's card.
+              "syllogism", "tautology", "modus-ponens", "soundness"},
     "007+coder": {"agentic", "builds", "rate-limiter", "circuit-breaker", "workers", "idempotent",
                   "orchestration"},
     "stark+coder": {"apis", "microservices", "frontends"},
@@ -496,10 +586,32 @@ REASON_AUTO = {
     "curie+teacher": {"crispr", "lessons"},
     "joe+comedy": {"relatable"},
     "socrates+teacher": {"homework", "philosophy", "philosophical", "ethics", "tutor", "tutoring",
-                         "rebuttal", "argument", "position"},
+                         "rebuttal", "argument", "position",
+                         # 2026-10-19 (guide: "Exam prep → socrates+teacher"): the study-desk
+                         # nouns neither half claims - the 007+coder law.
+                         "exam", "exams", "quiz", "quizzes", "flashcards", "drill", "drills",
+                         "memorize"},
     "einstein+pkd": {"scifi", "sci-fi", "paranoid", "what-if", "fantasy", "dystopia", "dystopian",
                      "android", "cyberpunk", "worldbuilding", "simulation"},
     "prompt+prompt": {"optimize", "tune"},
+    # 2026-10-19 (owner's "add some more good matches and possible combos", grounded in the
+    # author's Mode Pairing Guide): the ten new pairs' corpora. Each word is combo-distinctive -
+    # claimed by no other construct, so its full 1/df weight lands on the pair and a plain
+    # single-mode task never ties it to no-pick (the 007+coder law).
+    "house+teacher": {"diagnostic", "layperson", "second-opinion", "patient-friendly"},
+    "matlock+hyper": {"clause", "clauses", "boilerplate", "addendum", "indemnity", "redline",
+                      "fine-print"},
+    "socrates+matlock": {"policy", "policies", "jurisprudence", "dissent", "cross-examination",
+                         "briefs"},
+    "joker+comedy": {"roast", "roasts", "punchline", "punchlines", "improv", "deadpan",
+                     "one-liner", "one-liners"},
+    "pkd+comedy": {"parody", "farce", "caricature", "gallows", "tragicomic"},
+    "stark+prompt": {"persona", "personas", "guardrail", "guardrails", "system-card",
+                     "output-format"},
+    "joker+socrates": {"advocate", "advocates", "raconteur", "goad"},
+    "business+hyper": {"swot", "segment", "segments", "five-forces", "white-space"},
+    "musk+logic": {"moat", "defensibility", "thermodynamics", "unit-economics"},
+    "neo+story": {"twists", "peripeteia", "foreshadow", "deus-ex-machina", "reversal"},
 }
 _AUTO_DF: dict = {}
 for _auto_words in REASON_AUTO.values():

@@ -33,10 +33,18 @@ REASON_MODES = ("xomni", "xdeeptree", "xhyper", "xsocrates", "xlogic", "xhelp", 
                 "comedy", "business", "story", "teacher", "007", "coder", "stark", "matlock",
                 "house")
 REASON_PAIRS = ("007+coder agentic builds", "stark+coder architecture", "ultra+coder code review",
-                "house+logic debugging", "deeptree+spoon research", "hyper+socrates thesis work",
-                "logic+spoon fact-checking", "omni+omni synthesis", "musk+business go-to-market",
-                "curie+teacher explanations", "matlock+logic legal analysis", "joe+comedy humor",
-                "einstein+pkd speculative fiction", "prompt+prompt prompt optimization")
+                "house+logic debugging", "house+teacher medical-explain", "deeptree+spoon research",
+                "hyper+socrates thesis work", "logic+spoon fact-checking", "omni+omni synthesis",
+                "musk+business go-to-market", "curie+teacher explanations", "matlock+logic legal analysis",
+                "joe+comedy humor", "einstein+pkd speculative fiction", "prompt+prompt prompt optimization",
+                # added 2026-10-19 from the author's Mode Pairing Guide (the owner's "add some more
+                # good matches and possible combos"): each is a guide use-case the map did not yet
+                # reach; the picker fires on them only via combo-distinctive words its own halves do
+                # not claim (the 007+coder law), so a plain single-mode task never ties to no-pick.
+                "socrates+teacher exam-prep", "matlock+hyper contract-analysis",
+                "socrates+matlock policy-critique", "joker+comedy stand-up", "pkd+comedy satire",
+                "stark+prompt system-prompt-design", "joker+socrates devils-advocate",
+                "business+hyper market-entry", "musk+logic moat-analysis", "neo+story plot-twists")
 REASON_MODE_CHOICES = ["auto"] + list(REASON_MODES) + [p.split()[0] for p in REASON_PAIRS]
 
 # (key, kind, help).  kind: "bool", "int>=0", "num>=0", ("enum", values), "names", or ("sampling", check) for a key
