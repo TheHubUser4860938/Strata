@@ -95,6 +95,7 @@ HF_REVISIONS = {
         "509dfb275d360bdd49e2308238a8393d53d87610",                                                  # 2026-10-17
     "DavidAU/Qwen3.8-Flash-Next-Turbo-Brilliance-50x-Reasoning-Instruct-GSQ-RCO-GGUF":
         "ad1ee77df30e5ff9c25af86ac3475ca91dcd12d1",                                                  # 2026-10-17
+    "huihui-ai/Huihui-Qwen3.8-Flash-Next-abliterated-v2-GGUF": "411f1f7349c9711e6f75aa8d20e1612eb3a4d55d",  # 2026-10-19
 }
 
 
@@ -466,7 +467,7 @@ MODELS = {
     # Images: the vision path has no restriction for this pack (the same base model and image encoder), so setup asks
     "UD-IQ4_XS": {"about": "~4-bit i-quant (Unsloth Dynamic), between IQ3_S and UD-Q4_K_XL in quality; on a PC with "
                            "less than ~80 GB of RAM part of its experts are read from the SSD",
-                  "download_gb": 93.7, "ram_gb": 48, "arena_gb": 59.5, "families": ("unsloth",), "budget": True,
+                  "download_gb": 93.7, "ram_gb": 48, "arena_gb": 59.5, "families": ("unsloth", "huihui"), "budget": True,
                   "shards": 3, "file": "Qwen3.8-Flash-Next-{q}-0000{i}-of-00003.gguf", "engine": (0, 1, 38),
                   "vision": True},
     # Unsloth's 4-bit file (docs/UNSLOTH_Q4.md); experimental until MODEL-UPDATE Phase 2.  Its 77 GB of experts stay in
@@ -474,7 +475,7 @@ MODELS = {
     # (--resident-budget-gib, chosen below) and reads the rest from the GGUF on the SSD.  It runs on AMD too (R9700:
     # the quality yardstick and the decode/prompt numbers in docs/QUANTS.md), so it is no longer NVIDIA-only (#429).
     "UD-Q4_K_XL": {"about": "4-bit (Unsloth Dynamic): K-quant experts, between UD-IQ4_XS and UD-Q5_K_XL in quality",
-                   "download_gb": 111.3, "ram_gb": 48, "arena_gb": 77.0, "families": ("unsloth",), "budget": True,
+                   "download_gb": 111.3, "ram_gb": 48, "arena_gb": 77.0, "families": ("unsloth", "huihui"), "budget": True,
                    # #967 / MODEL-UPDATE: images run end to end with this file (CUDA: RTX A4000, GPU encoder; HIP:
                    # R9700, CPU encoder; the test picture's text and shapes as the IQ3_XXS pack answers them)
                    "vision": True},
@@ -484,15 +485,15 @@ MODELS = {
     # shards 2 (the head) and 3 (the 54 GB Q8_0 PLE table) are the same bytes in all three files.  UD-Q5_K_XL and
     # UD-Q6_K_XL need the Q6_K expert kernels every engine has from MODEL-UPDATE Phase 1 on (Q5: layer 2's gate/up).
     "UD-Q5_K_XL": {"about": "5-bit (Unsloth Dynamic): Q5_K experts with Q8_0 downs, close to Q8_0 in quality",
-                   "download_gb": 158.3, "ram_gb": 108, "arena_gb": 98.4, "families": ("unsloth",), "budget": True,
+                   "download_gb": 158.3, "ram_gb": 108, "arena_gb": 98.4, "families": ("unsloth", "huihui"), "budget": True,
                    "shards": 6, "file": "Qwen3.8-Flash-Next-{q}-0000{i}-of-00006.gguf", "engine": (0, 1, 44),
                    "vision": True},
     "UD-Q6_K_XL": {"about": "6-bit (Unsloth Dynamic): Q6_K experts with Q8_0 downs",
-                   "download_gb": 169.2, "ram_gb": 118, "arena_gb": 109.2, "families": ("unsloth",), "budget": True,
+                   "download_gb": 169.2, "ram_gb": 118, "arena_gb": 109.2, "families": ("unsloth", "huihui"), "budget": True,
                    "shards": 6, "file": "Qwen3.8-Flash-Next-{q}-0000{i}-of-00006.gguf", "engine": (0, 1, 44),
                    "vision": True},
     "Q8_0": {"about": "8-bit, the reference quality (every expert Q8_0); for a 192 GB PC",
-             "download_gb": 188.2, "ram_gb": 136, "arena_gb": 128.3, "families": ("unsloth",), "budget": True,
+             "download_gb": 188.2, "ram_gb": 136, "arena_gb": 128.3, "families": ("unsloth", "huihui"), "budget": True,
              "shards": 6, "file": "Qwen3.8-Flash-Next-{q}-0000{i}-of-00006.gguf", "engine": (0, 1, 38),
              "vision": True},
     # MODEL-UPDATE Phase 4: NVFP4 experts, ready-made packs (NVFP4_REPOS).  63.3 GiB (68.0 GB) of experts in the
@@ -596,6 +597,68 @@ UNSLOTH_BIG_SHARDS = {
     "Qwen3.8-Flash-Next-Q8_0-00006-of-00006.gguf":
         (34015618784, "538a93bca918064983409a41187ad4c68640f9aced6f29564da8f551bf86d7a5"),
 }
+# huihui-ai's re-quants of their abliterated v2 of the original model (the "huihui" family): the same Unsloth
+# Dynamic sizes, shard counts and file names as the unsloth family, from a different base - theirs has the
+# refusal shaping removed and is quantized against their own imatrix.  Sizes and SHA-256 are the Hub's LFS
+# pointers at the pinned revision, checked against the repository tree 2026-10-19; the sums match the MODELS
+# download figures (93.7 / 111.3 / 158.3 / 169.2 / 188.2 GB).  Same file names, different bytes where the
+# experts differ - UD-Q5_K_XL shard 4 is 49,990,245,824 B / 9ee6bbe4... at unsloth and the same size /
+# d9c78b3c... here - which is exactly why every repository is pinned per file, not by name.  The head shard
+# and the 54 GB n-gram table (the Q5/Q6/Q8 shards 2 and 3) are the family's shared files again, byte-
+# identical across the two repositories.  Their swift-* folders (the Swift 1.5 base under its own names) and
+# their duplicate UD-Q4_K_XL-V2 folder are not offered.
+HUIHUI_SHARDS = {
+    "Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf":
+        (10946624, "5ce89370720f8bf90890f439361282104c1aa1482d4013bb9a50923e758e71a4"),
+    "Qwen3.8-Flash-Next-UD-IQ4_XS-00002-of-00003.gguf":
+        (49835229856, "ede87d3bd3e354d43f0e710b2df6791d3479e396847e53adbe2b48be7ba6d663"),
+    "Qwen3.8-Flash-Next-UD-IQ4_XS-00003-of-00003.gguf":
+        (43836407744, "f8aa8bd7ba134b3b7fe4fc95b9131fc8f6678ace374a0fa6e632225031665995"),
+    "Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf":
+        (10946624, "4448186216b3af4cc558bbce2c3213f01608f8f8b2e5267a9767971dd3ec8082"),
+    "Qwen3.8-Flash-Next-UD-Q4_K_XL-00002-of-00004.gguf":
+        (49859583136, "6f3e21a5ae10c9124c2405061d89f90b575a0704b2927f059621b7936850b276"),
+    "Qwen3.8-Flash-Next-UD-Q4_K_XL-00003-of-00004.gguf":
+        (49376141504, "bb24c1d9c42c129ad93d427d3be6ca9a8d5ca6bf07ca9a50ddca03328d08c702"),
+    "Qwen3.8-Flash-Next-UD-Q4_K_XL-00004-of-00004.gguf":
+        (12087983520, "3d6a9aee4ade5740394da9bcb9fa22ea9343471f246af6914f8fcc8327ceab8e"),
+    "Qwen3.8-Flash-Next-UD-Q5_K_XL-00001-of-00006.gguf":
+        (10946624, "6c537059d79c060aeb9a942f23a2d21a1b56360c8c27b9ab380539fa4c476eb2"),
+    "Qwen3.8-Flash-Next-UD-Q5_K_XL-00002-of-00006.gguf":
+        (682434912, "494ca4ed3dbf97bc28da88af3890b8877b9032f909812d00c0526a9ca5e91d2e"),
+    "Qwen3.8-Flash-Next-UD-Q5_K_XL-00003-of-00006.gguf":
+        (54400261312, "34efd79a80a1ce540a517a5d56171924b66ce1c38b04c904f17ad6d8ef17cf20"),
+    "Qwen3.8-Flash-Next-UD-Q5_K_XL-00004-of-00006.gguf":
+        (49990245824, "d9c78b3c1d22e434feddb91bcb32f3641fc830285618a0e534e8757521130bcc"),
+    "Qwen3.8-Flash-Next-UD-Q5_K_XL-00005-of-00006.gguf":
+        (49882416192, "ea750364f06cd685634a31619009afb2656f6a62a6d72270e25d4990963e08ad"),
+    "Qwen3.8-Flash-Next-UD-Q5_K_XL-00006-of-00006.gguf":
+        (3320101792, "8cc8aaa3a3b45fdc04d921caeb4039b73b39c6878fe9d7046b5d4276d0fbc96a"),
+    "Qwen3.8-Flash-Next-UD-Q6_K_XL-00001-of-00006.gguf":
+        (10946624, "8bdc6bad55b6699f46f60708829932ff4018d7ac9bd309c388534fa31753bdb7"),
+    "Qwen3.8-Flash-Next-UD-Q6_K_XL-00002-of-00006.gguf":
+        (682434912, "494ca4ed3dbf97bc28da88af3890b8877b9032f909812d00c0526a9ca5e91d2e"),
+    "Qwen3.8-Flash-Next-UD-Q6_K_XL-00003-of-00006.gguf":
+        (54400261312, "34efd79a80a1ce540a517a5d56171924b66ce1c38b04c904f17ad6d8ef17cf20"),
+    "Qwen3.8-Flash-Next-UD-Q6_K_XL-00004-of-00006.gguf":
+        (49814108512, "6f9826d42d8befc7f31321a13031c57b67efcd27a4e5a113a5ebe5a81f0e44cf"),
+    "Qwen3.8-Flash-Next-UD-Q6_K_XL-00005-of-00006.gguf":
+        (49419317344, "5f289eee5f01779d711c06a4028f1820829e9471a5aac866777a959635431895"),
+    "Qwen3.8-Flash-Next-UD-Q6_K_XL-00006-of-00006.gguf":
+        (14838313984, "59a79c43c99f4546912e27f4eb6e23f2c9f09e60401ce59dcfd74e21a28c2db4"),
+    "Qwen3.8-Flash-Next-Q8_0-00001-of-00006.gguf":
+        (10946624, "2dabcbb53ca537a7947bc7d20414fd464eeaf4d66d43021b5b2556cc87544ad2"),
+    "Qwen3.8-Flash-Next-Q8_0-00002-of-00006.gguf":
+        (682434912, "494ca4ed3dbf97bc28da88af3890b8877b9032f909812d00c0526a9ca5e91d2e"),
+    "Qwen3.8-Flash-Next-Q8_0-00003-of-00006.gguf":
+        (54400261312, "34efd79a80a1ce540a517a5d56171924b66ce1c38b04c904f17ad6d8ef17cf20"),
+    "Qwen3.8-Flash-Next-Q8_0-00004-of-00006.gguf":
+        (49446841216, "2c2ed17193fec793c9daad5840ab944795546bbf28fe60e29cc822cc0a8d8d45"),
+    "Qwen3.8-Flash-Next-Q8_0-00005-of-00006.gguf":
+        (49668930400, "0c96f6ee54c026c2af5859b9c21d829158369693c3a942d1875609a6cae13e32"),
+    "Qwen3.8-Flash-Next-Q8_0-00006-of-00006.gguf":
+        (34015618784, "01782b8bf7094a37ea675538189ecbf7d6d698368a7e2a72b286ae99dd37ee7c"),
+}
 UNSLOTH_ENGINE = (0, 1, 32)     # the first engine setup configures for UD-Q4_K_XL (0.1.31 ran it by hand)
 UNSLOTH_RAM_LEFT_GB = 24        # RAM beside the budget: the OS, the engine, and the file cache the rest is read through
 UNSLOTH_MIN_RAM_GB = 48         # the RAM-budget mode below which setup says an Unsloth file does not fit (UD-Q4_K_XL's floor)
@@ -677,6 +740,26 @@ FAMILIES = {
                 "mmproj": "mmproj-Qwen3.8-Flash-Next-BF16.gguf", "name": "qwen3.8-flash-next-unsloth",
                 "vision": True, "pack_args": ["--compat-bf16"],
                 "sha256": {**UNSLOTH_SHARDS, **UNSLOTH_IQ4_XS_SHARDS, **UNSLOTH_BIG_SHARDS}},
+    # huihui-ai's re-quants of their abliterated v2 of the original model (HUIHUI_SHARDS above): the unsloth
+    # family's sizes and file names, their own bytes and base - the refusal shaping removed, so it answers
+    # plainly where the original declines.  A stock chat template: the {REASON:} reason modes do not ride it
+    # (the server's flavor check is content-based, measured 2026-10-17 - it says so with a banner), which is
+    # the honest trade for the higher-fidelity voice; the memory system and the picture reader work as usual.
+    # Their own mmproj is byte-identical to ISTA's (the pinned shared file), so the vision reader comes from
+    # ISTA's repository like the dau, unsloth and gyro families' does.
+    "huihui": {"title": "Qwen3.8-Flash-Next (Huihui, abliterated)",
+               "by": "huihui-ai's re-quants of their abliterated v2 model",
+               "about": "UD-IQ4_XS, UD-Q4_K_XL, UD-Q5_K_XL, UD-Q6_K_XL or Q8_0 (94 to 188 GB downloads): the "
+                        "Unsloth Dynamic sizes of the abliterated model - it answers plainly where the original "
+                        "declines; the reason modes do not ride it (stock template)",
+               "hf": hf("huihui-ai/Huihui-Qwen3.8-Flash-Next-abliterated-v2-GGUF") + "unsloth-{q}/",
+               "file": "Qwen3.8-Flash-Next-{q}-0000{i}-of-00004.gguf", "shards": 4, "tag": "huihui-",
+               "mmproj_hf": hf("ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF"),
+               "mmproj": "mmproj-Qwen3.8-Flash-Next-BF16.gguf", "name": "qwen3.8-flash-next-abliterated",
+               "vision": True, "pack_args": ["--compat-bf16"],
+               "sha256": HUIHUI_SHARDS,
+               "license": "Qwen Community License 1.0 (Qwen3.8-Flash-Next's; huihui-ai's quantization of their "
+                          "abliterated release): https://huggingface.co/huihui-ai/Huihui-Qwen3.8-Flash-Next-abliterated-v2-GGUF"},
     # MODEL-UPDATE Phase 4: the original model with NVFP4 experts, as ready-made packs (NVFP4_REPOS): the files come
     # as the engine reads them (no GGUF to pack), each size has its own repository ("repo" in MODELS)
     # agentionai's Gyro quantizations (see GYRO_FILES): after the regular families, never the default
@@ -761,6 +844,7 @@ REPO_PINS = {
     "DavidAU/Qwen3.8-Flash-Next-Abliterated-Uncensored-Turbo-Brilliance-50x-Reasoning-Instruct-GSQ-RCO-GGUF":
         DAU_FILES,
     "DavidAU/Qwen3.8-Flash-Next-Turbo-Brilliance-50x-Reasoning-Instruct-GSQ-RCO-GGUF": DAUREG_FILES,
+    "huihui-ai/Huihui-Qwen3.8-Flash-Next-abliterated-v2-GGUF": HUIHUI_SHARDS,
 }
 # EXPERIMENTAL, off by default (setup asks): a control vector shipped with the repository, see its README
 ESP_VECTOR = ROOT / "data" / "experimental-speed-projection" / "Qwen3.8-Flash-Next-experimental-speed-projection.gguf"

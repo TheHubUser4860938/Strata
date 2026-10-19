@@ -42,7 +42,8 @@ class Pins(unittest.TestCase):
             self.assertRegex(sha, r"^[0-9a-f]{64}$")
         self.assertEqual(fam["hf"].format(q=M),
                          f"https://huggingface.co/unsloth/Qwen3.8-Flash-Next-GGUF/resolve/{REV}/UD-Q4_K_XL/")
-        self.assertEqual(setup.MODELS[M]["families"], ("unsloth",))   # no other family lists it
+        self.assertEqual(setup.MODELS[M]["families"], ("unsloth", "huihui"))   # huihui-ai re-quant the same
+        # sizes from their own abliterated base (the "huihui" family); no other family lists them
         self.assertFalse(setup.MODELS[M].get("experimental"))         # MODEL-UPDATE Phase 2: official
         self.assertFalse(fam.get("experimental"))
         self.assertEqual(list(setup.FAMILIES)[0], "qwen")             # not the default choice
@@ -455,7 +456,7 @@ class IQ4XS(Base):
         for n in setup.UNSLOTH_SHARDS:                                         # UD-Q4_K_XL's are still there
             self.assertEqual(fam["sha256"][n], setup.UNSLOTH_SHARDS[n])
         self.assertAlmostEqual(setup.MODELS[X]["download_gb"], 93682584224 / 1e9, places=1)
-        self.assertEqual(setup.MODELS[X]["families"], ("unsloth",))
+        self.assertEqual(setup.MODELS[X]["families"], ("unsloth", "huihui"))
         self.assertEqual([m for m in setup.MODELS if "unsloth" in setup.MODELS[m].get("families", ())],
                          [X, M, "UD-Q5_K_XL", "UD-Q6_K_XL", "Q8_0"])
         self.assertIsNone(setup.gguf_unsupported(names[0]))                    # #444: a file setup runs now

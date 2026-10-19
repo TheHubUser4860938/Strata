@@ -266,7 +266,7 @@ The flags (all of them: `START-HERE.bat --help`):
 | Flag | Meaning |
 | --- | --- |
 | `--yes` | take the recommended answer to every question (no prompts) |
-| `--family qwen\|swift\|coder\|unsloth` | the model version (this fork also offers `dau` and `daureg` - DavidAU's Turbo-Brilliance re-quants the reason modes ride - plus `gyro`, `nvfp4` and `qwen36`) |
+| `--family qwen\|swift\|coder\|unsloth` | the model version (this fork also offers `dau` and `daureg` - DavidAU's Turbo-Brilliance re-quants the reason modes ride - plus `huihui` (huihui-ai's abliterated re-quants, the same Unsloth Dynamic sizes, plain template), `gyro`, `nvfp4` and `qwen36`) |
 | `--model Q2_0\|IQ2_XS\|IQ3_XXS\|IQ3_S\|IQ1_M\|UD-IQ4_XS\|UD-Q4_K_XL` | the size (the Coder is IQ1_M, Unsloth UD-IQ4_XS or UD-Q4_K_XL) |
 | `--context N` | context in tokens; default by VRAM: 32768 under 14 GB, 65536 under 20 GB, else 131072 |
 | `--vision yes\|no\|gpu\|cpu` | read pictures. Pass `yes` to get the best reader for the card (the CPU under 24 GB, the GPU from 24 GB, any make); `no` turns them off |
