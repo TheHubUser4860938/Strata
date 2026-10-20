@@ -24,11 +24,22 @@ class Verdict(unittest.TestCase):
         return copy.deepcopy({k: v for k, v in self.table[key].items() if k not in ("files", "repo")})
 
     def test_every_installed_file_is_known(self):
+        # memory-core fork: the fork's re-quant families are tensor-for-tensor their base rows
+        # (daureg == qwen IQ3_S, each huihui size == its unsloth twin; only the chat template
+        # differs, and the fingerprint carries tensors/bytes/experts, not the template), so a
+        # fingerprint match may legitimately name either family - the engine reads the template
+        # from the file itself. "known" stays strict; only the family LABEL is relaxed to the
+        # families that own the identical fingerprint.
+        twins = {"daureg/IQ3_S": ("daureg", "qwen"),
+                 "huihui/UD-IQ4_XS": ("huihui", "unsloth"), "huihui/UD-Q4_K_XL": ("huihui", "unsloth"),
+                 "huihui/UD-Q5_K_XL": ("huihui", "unsloth"), "huihui/UD-Q6_K_XL": ("huihui", "unsloth"),
+                 "huihui/Q8_0": ("huihui", "unsloth")}
         for key in (k for k in self.table if not k.startswith("_")):
             kind, sentence = SI.verdict(self.fp(key), self.table)
             fam, model = key.split("/")
             self.assertEqual(kind, "known", key)
-            self.assertIn(f"--family {fam} --model {model}", sentence)
+            self.assertTrue(any(f"--family {f} --model {model}" in sentence for f in twins.get(key, (fam,))),
+                            f"{key}: {sentence}")
 
     def test_same_layout_other_file(self):
         fp = self.fp("qwen/Q2_0")

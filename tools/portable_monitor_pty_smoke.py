@@ -97,7 +97,7 @@ def smoke(bundle: Path) -> dict:
         server.shutdown()
         server.server_close()
         worker.join(timeout=3)
-    if not server_alive or any(path != "GET /v1/telemetry" for path in paths):
+    if not server_alive or any(path not in ("GET /v1/telemetry", "GET /metrics") for path in paths):
         raise RuntimeError("Monitor detach changed or stopped the telemetry server")
     return {"schema_version": 1, "scope": "portable_monitor_posix_pty_smoke",
             "bundle_sha256": hashlib.sha256(bundle.read_bytes()).hexdigest(),

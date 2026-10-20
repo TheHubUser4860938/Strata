@@ -65,7 +65,7 @@ class MonitorBundleTests(unittest.TestCase):
                 build(bundle)
             with zipfile.ZipFile(bundle) as archive:
                 self.assertIn(b"MIT License\r\n", archive.read("LICENSE"))
-            self.assertEqual(verify(bundle)["schema_version"], 5)
+            self.assertEqual(verify(bundle)["schema_version"], 6)
 
     def test_update_rollback_and_commit_keep_one_verified_previous_copy(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -282,6 +282,38 @@ class MonitorBundleTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "manifest or SHA-256"):
                 verify(bundle)
 
+    def test_bundle_carries_every_module_its_entry_point_imports(self):
+        """The import closure of strata_cli.monitor_commands (lazy imports included) minus the launch package must be in the bundle."""
+        import ast
+        needed, todo = set(), ["strata_cli/monitor_commands.py"]
+        while todo:
+            name = todo.pop()
+            if name in needed:
+                continue
+            needed.add(name)
+            for node in ast.walk(ast.parse((ROOT / name).read_text(encoding="utf-8"))):
+                if isinstance(node, ast.ImportFrom) and node.module and node.module.split(".")[0] == "strata_cli":
+                    names = [node.module] + [node.module + "." + a.name for a in node.names]
+                elif isinstance(node, ast.Import):
+                    names = [a.name for a in node.names]
+                else:
+                    continue
+                for module in names:
+                    path = module.replace(".", "/") + ".py"
+                    if module.startswith("strata_cli") and (ROOT / path).is_file() and "/launch/" not in path:
+                        todo.append(path)
+        self.assertLessEqual(needed, set(BUILDER_MODULE.SOURCES))
+
+    def test_plain_monitor_runs_when_the_launch_package_is_not_bundled(self):
+        """The pyz has no strata_cli.launch: interactive `monitor` must fall back to the plain Monitor, not fail."""
+        from strata_cli import monitor as monitor_module
+        from strata_cli import monitor_commands
+        ran = []
+        blocked = {"strata_cli.launch.monitor_ext": None}       # None in sys.modules makes the import raise ImportError
+        with mock.patch.dict(sys.modules, blocked),                 mock.patch.object(monitor_module.MonitorApp, "run", lambda self: ran.append(self.endpoint.base_url)),                 mock.patch.object(sys.stdout, "isatty", return_value=True):
+            code = monitor_commands.main(["monitor", "--url", "http://127.0.0.1:9"])
+        self.assertEqual((code, ran), (0, ["http://127.0.0.1:9"]))
+
     def test_versioned_manifest_keeps_legacy_update_and_rollback_available(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -293,7 +325,8 @@ class MonitorBundleTests(unittest.TestCase):
             for old_bundle, version in ((current, 1), (previous, 2), (old_visual, 3)):
                 with zipfile.ZipFile(modern) as source, zipfile.ZipFile(old_bundle, "w", zipfile.ZIP_DEFLATED) as legacy:
                     for item in source.infolist():
-                        if item.filename not in ("strata_cli/detail_dashboard.py", "strata_cli/nav.py") and \
+                        if item.filename not in ("strata_cli/detail_dashboard.py", "strata_cli/nav.py",
+                                                 "strata_cli/consoleinfo.py", "strata_cli/overview.py") and \
                                 (version >= 3 or item.filename != "strata_cli/dashboard.py") and \
                                 (version != 1 or item.filename != "LICENSE"):
                             legacy.writestr(item, source.read(item.filename))
@@ -303,6 +336,8 @@ class MonitorBundleTests(unittest.TestCase):
                 report["sha256"] = hashlib.sha256(old_bundle.read_bytes()).hexdigest()
                 del report["files"]["strata_cli/detail_dashboard.py"]
                 del report["files"]["strata_cli/nav.py"]
+                del report["files"]["strata_cli/consoleinfo.py"]
+                del report["files"]["strata_cli/overview.py"]
                 if version < 3:
                     del report["files"]["strata_cli/dashboard.py"]
                 if version == 1:
@@ -313,7 +348,7 @@ class MonitorBundleTests(unittest.TestCase):
             self.assertEqual(verify(current)["schema_version"], 1)
             self.assertEqual(verify(previous)["schema_version"], 2)
             self.assertEqual(verify(old_visual)["schema_version"], 3)
-            self.assertEqual(verify(modern)["schema_version"], 5)
+            self.assertEqual(verify(modern)["schema_version"], 6)
             with zipfile.ZipFile(modern) as archive:
                 self.assertIn(b"MIT License", archive.read("LICENSE"))
                 self.assertIn(b"render_dashboard", archive.read("strata_cli/dashboard.py"))
@@ -324,7 +359,7 @@ class MonitorBundleTests(unittest.TestCase):
             self.assertTrue(preview["would_update"])
             self.assertTrue(update(modern, target, if_current_sha256=preview["current_sha256"],
                                    if_candidate_sha256=preview["candidate_sha256"])["updated"])
-            self.assertEqual(verify(target / modern.name)["schema_version"], 5)
+            self.assertEqual(verify(target / modern.name)["schema_version"], 6)
             self.assertEqual(verify(root / "optional-monitor.previous" / current.name)["schema_version"], 1)
             planned = rollback(target, plan=True)
             self.assertTrue(rollback(target, if_active_sha256=planned["active_sha256"],
@@ -336,7 +371,7 @@ class MonitorBundleTests(unittest.TestCase):
             self.assertTrue(update(modern, second_target,
                                    if_current_sha256=preview["current_sha256"],
                                    if_candidate_sha256=preview["candidate_sha256"])["updated"])
-            self.assertEqual(verify(second_target / modern.name)["schema_version"], 5)
+            self.assertEqual(verify(second_target / modern.name)["schema_version"], 6)
             planned = rollback(second_target, plan=True)
             self.assertTrue(rollback(second_target, if_active_sha256=planned["active_sha256"],
                                      if_rollback_sha256=planned["rollback_sha256"])["rolled_back"])
@@ -401,7 +436,7 @@ class MonitorBundleTests(unittest.TestCase):
                                capture_output=True, text=True)
                 subprocess.run([sys.executable, str(BUILDER), "verify", str(bundle)], check=True,
                                capture_output=True, text=True)
-                self.assertLess(bundle.stat().st_size, 64 * 1024)
+                self.assertLess(bundle.stat().st_size, 96 * 1024)
                 with zipfile.ZipFile(bundle) as archive:
                     self.assertIn(b"MIT License", archive.read("LICENSE"))
                     self.assertIn("strata_cli/dashboard.py", archive.namelist())

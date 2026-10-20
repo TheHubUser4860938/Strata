@@ -96,13 +96,29 @@ def _read_json(path: Path) -> dict:
     return data if isinstance(data, dict) else {}
 
 
+def in_trash(path: str | os.PathLike) -> bool:
+    """#3410: True when ``path`` is inside a Trash / Recycle Bin folder (a Strata folder that was deleted with the file manager
+    is still a folder there, and was remembered as an install): ~/.local/share/Trash/files/.., /.Trash-1000/.., ~/.Trash/..,
+    $RECYCLE.BIN\\.."""
+    # fork patch (0.2.1.3 merge): Path() does not split backslashes on Linux, so a Windows Recycle Bin
+    # path arrived as ONE part and the check missed it (upstream's own test_issues_022 fails on Linux);
+    # splitting each part on backslashes too is a no-op on Windows, where Path already split them
+    parts = [x.lower() for p in Path(path).parts for x in p.split("\\")]
+    for i, x in enumerate(parts):
+        if x in (".trash", "$recycle.bin", "recycler", "$recycle.bin.old") or x.startswith(".trash-"):
+            return True
+        if x == "trash" and i + 1 < len(parts) and parts[i + 1] in ("files", "info", "expunged"):
+            return True                                  # the XDG Trash: ~/.local/share/Trash/files
+    return False
+
+
 def _installs_in(settings: dict) -> list[Path]:
     items = settings.get("installs")
     found: list[Path] = []
     for raw in (items if isinstance(items, list) else [])[:20]:
         if isinstance(raw, str) and raw:
             p = Path(raw).expanduser()
-            if p.is_absolute() and p not in found:
+            if p.is_absolute() and p not in found and not in_trash(p):
                 found.append(p)
     return found
 

@@ -40,14 +40,16 @@ def smoke() -> dict:
     result = subprocess.run([sys.executable, "-m", "unittest", TEST_MODULE], cwd=ROOT,
                             capture_output=True, text=True, timeout=240, check=False)
     summary = result.stdout + result.stderr
-    count = re.search(r"Ran (\d+) tests in [0-9.]+s\s+OK\s*$", summary)
-    passed = result.returncode == 0 and count is not None and int(count[1]) >= MIN_TESTS
+    # Windows-only tests skip on POSIX, so unittest ends "OK (skipped=N)", not a bare "OK".
+    count = re.search(r"Ran (\d+) tests in [0-9.]+s\s+OK(?: \(skipped=(\d+)\))?\s*$", summary)
+    executed = int(count[1]) - int(count[2] or 0) if count else 0
+    passed = result.returncode == 0 and count is not None and executed >= MIN_TESTS
     return {"schema_version": 1, "scope": "source_checkout_fake_engine_runtime_only",
             "platform": platform.platform(), "python": platform.python_version(),
             "requirements_sha256": hashlib.sha256((ROOT / "requirements.txt").read_bytes()).hexdigest(),
             "optional_packages_visible": {name: visible[name] for name in ("rich", "textual")},
             "server_packages_visible": {name: visible[name] for name in ("numpy", "jinja2", "requests")},
-            "test_module": TEST_MODULE, "tests_run": int(count[1]) if count else None,
+            "test_module": TEST_MODULE, "tests_run": executed if count else None,
             "duration_s": round(time.monotonic() - started, 2),
             "test_exit_code": result.returncode, "actual_gpu_engine": False,
             "passed": bool(passed), "test_summary": summary[-1000:]}

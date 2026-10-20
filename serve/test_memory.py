@@ -654,7 +654,12 @@ class ServerMemory(unittest.TestCase):
                          "the exchange was journaled")
         st, muted = self.http("POST", "/v1/messages", msg, headers=hdr + [("X-Strata-Memory", "off")])
         self.assertEqual(st, 200, muted)
-        self.assertLess(muted["usage"]["input_tokens"], body["usage"]["input_tokens"],
+        # 0.2.1 usage accounting: input_tokens keeps only the last token; the rest of the prompt rides
+        # cache_creation_input_tokens (and the cache reuse rides cache_read). The whole prompt is the
+        # sum, and that is the number the fork's law is about.
+        whole = lambda b: (b["usage"]["input_tokens"] + (b["usage"].get("cache_creation_input_tokens") or 0)
+                           + (b["usage"].get("cache_read_input_tokens") or 0))
+        self.assertLess(whole(muted), whole(body),
                         "the injected block must be bytes in the prompt, not just in the journal")
         self.assertEqual(self.http("GET", "/memory")[1]["stats"]["turns"], before + 1,
                          "the mute header skips memory entirely on this dialect too")
@@ -781,8 +786,11 @@ class MemoryTool(unittest.TestCase):
         self.assertEqual(body["stop_reason"], "end_turn")
         self.assertFalse([b for b in body["content"] if b["type"] == "tool_use"],
                          "the internal call never leaks to the client")
-        self.assertEqual(body["usage"]["input_tokens"], len(self.engine.last_prompt),
-                         "input_tokens counts the final round's prompt, the one the engine read")
+        whole = (body["usage"]["input_tokens"] + (body["usage"].get("cache_creation_input_tokens") or 0)
+                 + (body["usage"].get("cache_read_input_tokens") or 0))
+        self.assertEqual(whole, len(self.engine.last_prompt),
+                         "the whole prompt (input + cache write + cache read) counts the final round's prompt, "
+                         "the one the engine read (0.2.1 moved all but the last token into cache_creation)")
 
     def test_responses_route_runs_the_same_loop(self):
         # C parity: Codex CLI rides /v1/responses - same loop, and the assembler never sees the

@@ -31,14 +31,18 @@ SOURCES_V2 = (
 )
 SOURCES_V3 = (*SOURCES_V2, "strata_cli/dashboard.py")
 SOURCES_V4 = (*SOURCES_V3, "strata_cli/detail_dashboard.py")
-SOURCES = (*SOURCES_V4, "strata_cli/nav.py")          # schema 5: the view tabs every screen shares (strata_cli/nav.py)
+SOURCES_V5 = (*SOURCES_V4, "strata_cli/nav.py")      # schema 5: the view tabs every screen shares (strata_cli/nav.py)
+# schema 6: the two modules the interactive Monitor imports at run time (strata_cli/monitor.py, render.py) that earlier lists missed.
+# tests/terminal/test_monitor_bundle.py derives the import closure of the bundle's entry point and fails if this list falls behind.
+SOURCES = (*SOURCES_V5, "strata_cli/consoleinfo.py", "strata_cli/overview.py")
 BOOTSTRAP = b"from strata_cli.monitor_commands import main\nraise SystemExit(main())\n"
 MEMBERS_V1 = ("__main__.py", *SOURCES_V2)
 LICENSE_NOTICE = "LICENSE"
 MEMBERS_V2 = (*MEMBERS_V1, LICENSE_NOTICE)
 MEMBERS_V3 = (*MEMBERS_V2, "strata_cli/dashboard.py")
 MEMBERS_V4 = (*MEMBERS_V3, "strata_cli/detail_dashboard.py")
-MEMBERS = (*MEMBERS_V4, "strata_cli/nav.py")
+MEMBERS_V5 = (*MEMBERS_V4, "strata_cli/nav.py")
+MEMBERS = (*MEMBERS_V5, "strata_cli/consoleinfo.py", "strata_cli/overview.py")
 COMPATIBILITY = {"python_min": "3.10", "telemetry_schema": [1]}
 MAX_BUNDLE_BYTES = 1024 * 1024
 MAX_MANIFEST_BYTES = 64 * 1024
@@ -74,7 +78,7 @@ def build(bundle: Path) -> dict:
             if set(names) != set((*MEMBERS, "strata_cli/")) or len(names) != len(MEMBERS) + 1:
                 raise ValueError("bundle member list changed during build")
             files = {name: digest(archive.read(name)) for name in MEMBERS}
-        report = {"schema_version": 5, "kind": "strata-monitor-bundle",
+        report = {"schema_version": 6, "kind": "strata-monitor-bundle",
                   "bundle": bundle.name, "sha256": digest(temp_bundle.read_bytes()),
                   "files": files, "interactive_dependency": "textual==8.2.8",
                   "compatibility": COMPATIBILITY, "license": "MIT", "license_file": LICENSE_NOTICE,
@@ -96,13 +100,13 @@ def verify(bundle: Path) -> dict:
             raise ValueError("bundle and manifest must be bounded regular files")
     report = json.loads(manifest_path(bundle).read_text())
     if (not isinstance(report, dict) or type(report.get("schema_version")) is not int or
-            report["schema_version"] not in (1, 2, 3, 4, 5) or
+            report["schema_version"] not in (1, 2, 3, 4, 5, 6) or
             report.get("kind") != "strata-monitor-bundle" or
             report.get("publisher_signature") is not None or
             report.get("bundle") != bundle.name or report.get("sha256") != digest(bundle.read_bytes())):
         raise ValueError("bundle manifest or SHA-256 mismatch")
     members = {1: MEMBERS_V1, 2: MEMBERS_V2, 3: MEMBERS_V3, 4: MEMBERS_V4,
-               5: MEMBERS}[report["schema_version"]]
+               5: MEMBERS_V5, 6: MEMBERS}[report["schema_version"]]
     if report["schema_version"] >= 2:
         if (report.get("compatibility") != COMPATIBILITY or report.get("license") != "MIT" or
                 report.get("license_file") != LICENSE_NOTICE):
