@@ -46,7 +46,7 @@ class Compose(unittest.TestCase):
         self.assertLess(b.index("Who I am"), b.index("dressed mind"), "A before B, always")
 
     def test_over_budget_fails_closed(self):
-        b, v, why = compose_soul("# x\n" + "y" * 12001, False)
+        b, v, why = compose_soul("# x\n" + "y" * 14001, False)
         self.assertEqual(b, "")
         self.assertEqual(v, "off")
         self.assertIn("budget", why)
@@ -186,7 +186,7 @@ class Inject(unittest.TestCase):
     def test_over_budget_soul_leaves_the_box_pre_soul(self):
         big = self.soulfile.name + ".big"
         with open(big, "w", encoding="utf-8") as f:
-            f.write("z" * 12001)
+            f.write("z" * 14001)
         try:
             self.svc.reason_enabled = False
             soul_boot(self.svc, {"memory": {"soul": big}})
