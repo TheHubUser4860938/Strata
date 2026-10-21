@@ -357,15 +357,16 @@ def prepend_head(messages: list[dict], text: str) -> list[dict]:
     return [{"role": "system", "content": text}] + list(messages)
 
 
-SOUL_BUDGET = 6000            # soul.md's load-time budget (the soul plan's enforced-at-load law)
+SOUL_BUDGET = 12000           # soul.md's load-time budget (the soul plan's enforced-at-load law; 6000 -> 12000
+                              # for v4, owner's decision 2026-10-20 — v1 shipped 5,995 raw, v4 composes ~8.9k)
 
 
 def compose_soul(raw: str, gate_on: bool) -> tuple[str, str, str]:
     """soul.md text -> (injected bytes, variant, reason). Fail-closed: unusable bytes
     return ("", "off", why) and the box runs the byte-identical pre-soul path - a
     half-soul is never served. Pure and offline (no server, no store, no model):
-    - Budget: the RAW file must be <= SOUL_BUDGET chars (v1 ships at 5,995 raw; the
-      budget is a tripwire against drift, not a squeeze).
+    - Budget: the RAW file must be <= SOUL_BUDGET chars (v1 shipped 5,995 raw, v4 10,955;
+      the budget is a tripwire against drift, not a squeeze).
     - HTML comments are load-time INSTRUCTIONS, not soul bytes: stripped, whitespace
       re-normalized. The same file always composes to the same bytes.
     - Part B (first line starting "## B.") composes ONLY when the gate is on -
