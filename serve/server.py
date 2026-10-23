@@ -4459,7 +4459,11 @@ class Service:
             return
         just = os.path.realpath(just_saved)
         guards = set()
-        applied = getattr(getattr(self, "cartridge", None), "applied", None)
+        # the Service's attribute is `cartridges` (serve/server.py: self.cartridges = Cartridges(...)
+        # when configured). The 2026-10-23 audit found this line reading a singular name nothing in
+        # production ever sets, so the guard silently protected nothing and slot_retain could evict
+        # the cartridge's own applied file; the test that "covered" it invented the singular name too.
+        applied = getattr(getattr(self, "cartridges", None), "applied", None)
         if applied:
             ap = os.path.join(self.slot_save_path, applied)
             if os.path.exists(ap):
@@ -7684,6 +7688,14 @@ def make_handler(svc: Service):
                 print(f"[strata] 503: {e}", flush=True)
                 self._json(503, responses_error_body(str(e), "server_error") if path == "/v1/responses"
                            else {"error": {"type": "server_error", "message": str(e)}})
+            except memory_api.StoreError as e:      # the store failed: answer JSON, do not drop the socket
+                # (measured 2026-10-23: a store failure printed a bare traceback and killed the client's
+                # connection, which is how the dict_snowball morning reached the user as a hung app.)
+                first = str(e).splitlines()[0]
+                print(f"[strata] 503 memory store: {type(e).__name__}: {first}", flush=True)
+                self._json(503, responses_error_body(f"the memory store failed: {first}", "server_error")
+                           if path == "/v1/responses"
+                           else {"error": {"type": "server_error", "message": f"the memory store failed: {first}"}})
             except ValueError as e:
                 print(f"[strata] 400 invalid request: {e}", flush=True)
                 if path == "/v1/responses":

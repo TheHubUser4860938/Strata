@@ -2230,5 +2230,62 @@ class SemanticRerank(unittest.TestCase):
             tmp.cleanup()
 
 
+class StoreIdentityAndHealing(unittest.TestCase):
+    """The two laws the 2026-10-23 audit found nothing was holding. (1) A store's identity is its
+    PHYSICAL directory - the realpath law, measured the hard way at the 2026-10-16 cutover when one
+    directory got two database names and the first boot opened an empty store. (2) A failed read
+    heals the shared connection instead of poisoning it - the dict_snowball day, where one bad
+    query was followed by a wall of InFailedSqlTransaction from every later request."""
+
+    def test_one_directory_one_dbname_however_it_is_spelled(self):
+        tmp = tempfile.TemporaryDirectory()
+        try:
+            d = Path(tmp.name) / "memory-eval"
+            d.mkdir()
+            name = _memory_mod.store_dbname(str(d))
+            self.assertEqual(name, _memory_mod.store_dbname(str(Path(tmp.name) / "." / "memory-eval")),
+                             "one more ./ in the spelling must not buy a second store")
+            other = Path(tmp.name) / "memory-venue"
+            other.mkdir()
+            self.assertNotEqual(name, _memory_mod.store_dbname(str(other)),
+                                "two directories are two stores, whatever they are called")
+        finally:
+            tmp.cleanup()
+
+    def test_a_symlink_spelling_of_one_store_is_one_store(self):
+        tmp = tempfile.TemporaryDirectory()
+        try:
+            real = Path(tmp.name) / "real" / "memory-eval"
+            real.mkdir(parents=True)
+            alias = Path(tmp.name) / "alias"
+            alias.symlink_to(Path(tmp.name) / "real")           # the shape of the old repo/Strata-data
+            self.assertEqual(_memory_mod.store_dbname(str(real)),
+                             _memory_mod.store_dbname(str(alias / "memory-eval")),
+                             "the 2026-10-16 failure mode: one directory, two database names, one empty boot")
+        finally:
+            tmp.cleanup()
+
+    def test_a_poisoned_connection_costs_one_request_not_the_store(self):
+        tmp = tempfile.TemporaryDirectory()
+        try:
+            mem = MemoryService(tmp.name)
+            try:
+                mem.remember("The water-drawer at Delphi drew from the shrine's own spring", scope="heal")
+                with self.assertRaises(Exception):
+                    mem.conn.execute("select * from no_such_table")    # unguarded: this is the poison
+                self.assertEqual(int(mem.conn.info.transaction_status), 3,
+                                 "a raw failure leaves the transaction aborted")
+                with self.assertRaises(Exception):
+                    mem.search("Delphi spring water", scope="heal")    # the one casualty inherits it
+                self.assertEqual(int(mem.conn.info.transaction_status), 0,
+                                 "_heals rolled back on the way out: the store is usable again")
+                self.assertTrue(mem.search("Delphi spring water", scope="heal"),
+                                "and the NEXT request answers - one failed query, not a dead store")
+            finally:
+                mem.close()
+        finally:
+            tmp.cleanup()
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

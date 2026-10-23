@@ -38,6 +38,7 @@ from __future__ import annotations
 
 import contextlib
 import datetime
+import functools
 import hashlib
 import json
 import math
@@ -545,6 +546,24 @@ def _rollback_on_error(conn):
         raise
 
 
+StoreError = psycopg.Error      # the store's failure class, named for serve/server.py's HTTP clauses
+
+
+def _heals(fn):
+    """Decorator form of _rollback_on_error, on every read the request path takes.
+
+    The store serves on ONE psycopg connection, and psycopg opens an implicit transaction on the
+    first statement: a statement that raises leaves that transaction aborted, and until something
+    rolls back, EVERY later request on the connection dies with InFailedSqlTransaction - one bad
+    query wearing the costume of a dead store (measured 2026-10-23, the dict_snowball day). The
+    guard costs nothing on the success path and turns a store outage into one failed request."""
+    @functools.wraps(fn)
+    def inner(self, *args, **kwargs):
+        with _rollback_on_error(self.conn):
+            return fn(self, *args, **kwargs)
+    return inner
+
+
 class MemoryService:
     """The store, the recall and the journal. Thread-safe: every statement runs under one lock on a
     single psycopg connection (ADR-002: one writer, now with real transactions - the lock keeps the
@@ -796,6 +815,7 @@ class MemoryService:
 
     # ---- store ---------------------------------------------------------------
 
+    @_heals
     def version(self) -> int:
         with self.lock:
             return int(self.conn.execute("select value from meta where key='version'").fetchone()[0])
@@ -1266,6 +1286,7 @@ class MemoryService:
             # (2026-10-16) were invisible to the cosine arm while the lexical arm was always right.
             return r.rowcount > 0
 
+    @_heals
     def list_memories(self, scope: str | None = None, limit: int = 100,
                       include_invalid: bool = False, klass: str | None = None) -> list[dict]:
         """The store newest-first. Invalidated (superseded) rows are hidden by default - the caller
@@ -1313,6 +1334,7 @@ class MemoryService:
                              "is", "are", "was", "were", "do", "does", "did", "can", "could", "in",
                              "on", "at", "from", "name", "identify", "list", "state", "tell", "given")
 
+    @_heals
     def _dedupe_tables(self) -> dict:
         """The whole-store token table, its document frequencies and the rare-token bar that
         _dedupe reads. They depend on nothing but the ACTIVE row set, so they are cached and
@@ -1351,6 +1373,7 @@ class MemoryService:
         self._dcache, self._dkey = tab, key
         return tab
 
+    @_heals
     def _dedupe_stamp(self) -> tuple:
         with self.lock:
             return tuple(self.conn.execute(
@@ -1490,6 +1513,7 @@ class MemoryService:
             return "", 0, left
         return header + "\n" + "\n".join(lines), len(lines), left
 
+    @_heals
     def _bm25_stats(self) -> tuple[float, float]:
         """(n, avgdl) for the lexical arm - FTS5 computed document stats over the whole table for
         every query; a bare Postgres tsvector column carries no hidden equivalent, so the store
@@ -1675,6 +1699,7 @@ class MemoryService:
             self._seen([h["id"] for h in hits])
         return hits
 
+    @_heals
     def _vec_matrix(self):
         """(ids, mat, scope, class, created, updated, conf) for every ACTIVE row that carries a
         vector, cached; rebuilt when a write dirtied it OR the embedded-count moved (a backfill ran
@@ -1708,6 +1733,7 @@ class MemoryService:
         self._vmeta, self._vdirty, self._ecount = meta, False, n
         return meta
 
+    @_heals
     def _scope_vecs(self, scope: str) -> dict:
         """{row id: vector} for the ACTIVE rows of ONE scope, cached against that scope's own stamp
         (count, max id, max updated_at). The write-time near-dupe guard compares a new fact only
@@ -1753,6 +1779,7 @@ class MemoryService:
             self._qc.popitem(last=False)
         return vec
 
+    @_heals
     def _semantic(self, cands: list[dict], query: str, scopes, classes,
                   since, until, limit: int) -> list[dict]:
         """PHASE 4 hybrid pass: bm25 candidates UNION the cosine top over every embedded active row.
@@ -1846,6 +1873,7 @@ class MemoryService:
                                   **{"class": r[3]}))
         return cands
 
+    @_heals
     def _exposure(self) -> dict:
         """{row id: exposures} across the newest expose_window journaled turns - the exposure
         ledger (turns.injected: the ids each turn's block ACTUALLY showed, written by the
@@ -1882,6 +1910,7 @@ class MemoryService:
         self._expo = (tuple(key), dem)
         return dem
 
+    @_heals
     def _seen(self, ids: list[int]) -> None:
         now = self._dt(time.time())
         with self.lock:
@@ -1889,6 +1918,7 @@ class MemoryService:
                            [(now, i) for i in ids])
             self.conn.commit()
 
+    @_heals
     def _render_block(self, hits: list[dict], budget: int, scope: str) -> tuple[str, list[dict]]:
         """One fact block, byte-shaped identically for head and tail use: header + instruction line +
         one "[n] (scope) text" line per fact, kept under `budget` characters. Returns the block and the
@@ -1944,6 +1974,23 @@ class MemoryService:
             self._route_stats["picks"] += 1
         return pick or None
 
+    def _pinned(self, key):
+        """One block-LRU hit, taken under the store lock: the server gives every request its own
+        thread (socketserver.process_request_thread), and get-then-touch is two operations."""
+        with self.lock:
+            hit = self._blocks.get(key)
+            if hit is not None:
+                self._blocks.move_to_end(key)
+            return hit
+
+    def _pin(self, key, value) -> None:
+        """One block-LRU write with its eviction loop, under the store lock (see _pinned): two
+        threads evicting at once could otherwise pop an emptied OrderedDict."""
+        with self.lock:
+            self._blocks[key] = value
+            while len(self._blocks) > self._cache_entries:
+                self._blocks.popitem(last=False)
+
     def block_for(self, messages: list[dict], scope: str,
                   classes: list[str] | None = None,
                   semantic: bool = True) -> tuple[str | None, list[dict], str]:
@@ -1969,9 +2016,8 @@ class MemoryService:
         key = (scope, "h" + hashlib.sha1(
             (norm_text(users[0]) + "|" + shelf + arm).encode("utf-8", "replace")).hexdigest()[:16])
         query = users[-1][:400] if len(users[-1].strip()) > 3 else users[0][:400]
-        pinned = self._blocks.get(key)
+        pinned = self._pinned(key)
         if pinned is not None:
-            self._blocks.move_to_end(key)
             block, ids = pinned
             return block, [{"id": i} for i in ids], query
         want = classes if classes is not None else self._route(query, scope)
@@ -1993,9 +2039,7 @@ class MemoryService:
         if not hits:
             return None, [], query
         block, shown = self._render_block(hits, self.max_block_chars, scope)
-        self._blocks[key] = (block, [h["id"] for h in shown])
-        while len(self._blocks) > self._cache_entries:
-            self._blocks.popitem(last=False)
+        self._pin(key, (block, [h["id"] for h in shown]))
         return block, shown, query
 
     def turn_block_for(self, messages: list[dict], scope: str,
@@ -2022,9 +2066,8 @@ class MemoryService:
         arm = "" if self.embedder is None else ("|s" if semantic else "|l")   # see block_for: the arm
         material = f"{norm_text(users[-1][:400])}|{','.join(map(str, seen))}|{shelf}" + arm
         key = (scope, "t" + hashlib.sha1(material.encode("utf-8", "replace")).hexdigest()[:16])
-        pinned = self._blocks.get(key)
+        pinned = self._pinned(key)
         if pinned is not None:
-            self._blocks.move_to_end(key)
             block, ids = pinned
             return (block or None), [{"id": i} for i in ids]
         q = users[-1][:400]
@@ -2039,19 +2082,18 @@ class MemoryService:
                     if h["id"] not in set(seen)]
         hits = hits[:self.turn_recall_limit]
         if not hits:
-            self._blocks[key] = ("", [])            # the miss is pinned too: same message, same nothing
+            self._pin(key, ("", []))                # the miss is pinned too: same message, same nothing
             return None, []
         block, shown = self._render_block(hits, self.turn_block_chars, scope)
         if not shown:
-            self._blocks[key] = ("", [])            # nothing fits the budget: inject no bytes at all
+            self._pin(key, ("", []))                # nothing fits the budget: inject no bytes at all
             return None, []
-        self._blocks[key] = (block, [h["id"] for h in shown])
-        while len(self._blocks) > self._cache_entries:
-            self._blocks.popitem(last=False)
+        self._pin(key, (block, [h["id"] for h in shown]))
         return block, shown
 
     # ---- journal (raw turns; the curation loop reads these) -------------------
 
+    @_heals
     def journal_turn(self, scope: str, user_text: str, assistant_text: str, model: str | None = None,
                      injected: list[int] | None = None) -> int:
         """Store one completed turn for curation to read later. `injected` is the list of memory row ids
@@ -2095,6 +2137,7 @@ class MemoryService:
             self._touched()
             return new_id
 
+    @_heals
     def pending_turns(self, limit: int = 200) -> list[dict]:
         with self.lock:
             rows = self.conn.execute(
@@ -2116,6 +2159,7 @@ class MemoryService:
                      injected=_inj(r[5]))
                     for r in rows]
 
+    @_heals
     def mark_processed(self, ids: list[int]) -> None:
         if not ids:
             return
@@ -2127,6 +2171,7 @@ class MemoryService:
 
     # ---- stats ----------------------------------------------------------------
 
+    @_heals
     def stats(self) -> dict:
         with self.lock:
             memories = self.conn.execute("select count(*) from memories where invalid_at is null").fetchone()[0]
@@ -2337,8 +2382,9 @@ def journal_chunks(chunks, mem: "MemoryService", ctx: dict):
             try:
                 mem.journal_turn(ctx["scope"], ctx["user"], text, ctx.get("model"),
                                  ctx.get("hits"))
-            except Exception:      # noqa: BLE001 - the journal is never allowed to break a reply
-                pass
+            except Exception as e:     # noqa: BLE001 - the journal is never allowed to break a reply
+                print(f"[strata] journal: the turn was not stored ({type(e).__name__}: "
+                      f"{str(e).splitlines()[0]})", flush=True)
 
 
 def journal_stream(items, mem: "MemoryService", ctx: dict):
@@ -2370,5 +2416,6 @@ def journal_stream(items, mem: "MemoryService", ctx: dict):
             try:
                 mem.journal_turn(ctx["scope"], ctx["user"], text, ctx.get("model"),
                                  ctx.get("hits"))
-            except Exception:      # noqa: BLE001 - the journal is never allowed to break a reply
-                pass
+            except Exception as e:     # noqa: BLE001 - the journal is never allowed to break a reply
+                print(f"[strata] journal: the turn was not stored ({type(e).__name__}: "
+                      f"{str(e).splitlines()[0]})", flush=True)

@@ -174,7 +174,7 @@ class Slots(unittest.TestCase):
             try:
                 class Applied:                                     # the cartridge's one visible seam
                     applied = "MEM-CRG-old.bin"
-                self.svc.cartridge = Applied()
+                crg, self.svc.cartridges = self.svc.cartridges, Applied()    # the Service's real name (2026-10-23 audit)
                 Path(d, "MEM-CRG-old.bin").write_bytes(b"x")       # its applied file, deliberately old
                 time.sleep(0.01)
                 for name in ("r1.bin", "r2.bin", "r3.bin"):
@@ -184,7 +184,7 @@ class Slots(unittest.TestCase):
                                  "N=2 keeps the newest two; the guard keeps the applied file too")
             finally:
                 self.svc.slot_retain = saved
-                del self.svc.cartridge
+                self.svc.cartridges = crg
                 self.svc.slot_save_path = self.dir.name
 
     def test_restore_answers_like_llama_server(self):
