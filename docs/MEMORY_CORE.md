@@ -484,6 +484,19 @@ as an identity and the only measured change is the one that was asked for: the f
 request should now reuse the cartridge's own length instead of zero. A box with the soul off
 sees byte-identical behavior; a cartridge that fails to stand never swallows the soul.
 
+*Measured at the 17:08 boot, kept honest:* the re-encode itself is exactly as designed - one seed
+(6,363 prompt tokens, 3.3 s, the ack costing the 24-token cap), the file rotated by hash, gc
+retired the cart-only one, three restores at ~0.13 s, zero errors. But the reuse line still reads
+**0 on live prompts**, and `spikes/cartridge/c1_plumb.py` says why on the same engine: a restored
+slot really is the model's live conversation (the C1 codeword came back, `PREFILL-FREE` riding as
+the C0 map promised - the ask cost 75 tokens, not 294+75), and the engine counts prefix reuse
+*within a conversation*, not across conversations. A live prompt is a different conversation: it
+re-renders soul + facts + the per-conversation block inside the one system message, so it branches
+from the seed's ack round and reprefills its own bytes. The soul-inside change is what makes the
+seed's leading bytes right; cashing the speed on live traffic needs one more owner decision - the
+SHAPE of the standing conversation (where the block rides, and whether the ack round replays),
+not another encoding fix.
+
 **The store's own page (item D).** `GET /memory-ui` (only when memory is on) serves a panel:
 stats cards (rows/cap/pressure, pending turns, at-rest seal, cartridge state), search with
 scope/class filters, the fifty most recent facts with per-row **Forget**, an **Add a fact** box
