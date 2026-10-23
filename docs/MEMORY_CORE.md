@@ -475,6 +475,15 @@ token 0. Re-encoding with the soul inside is the next cartridge step, and the pa
 first standing request: reused tokens going from 0 to the cartridge's own length, while the soul stops
 being re-prefilled every turn — which is the point of carrying it.
 
+*Implemented 2026-10-23, riding the owner's next boot.* The standing string is now soul + facts as
+one object, seeded and prepended as one; the file hash covers the soul, so the boot rotates the
+cartridge file, pays exactly one seed (~6.2k tokens of prefix, the ack answer costs nothing more),
+and `gc()` retires the cart-only file. The rendered prompt bytes are identical to the separate
+prepends this replaces - `prepend_head` joins with the same blank line, so the order law survives
+as an identity and the only measured change is the one that was asked for: the first standing
+request should now reuse the cartridge's own length instead of zero. A box with the soul off
+sees byte-identical behavior; a cartridge that fails to stand never swallows the soul.
+
 **The store's own page (item D).** `GET /memory-ui` (only when memory is on) serves a panel:
 stats cards (rows/cap/pressure, pending turns, at-rest seal, cartridge state), search with
 scope/class filters, the fifty most recent facts with per-row **Forget**, an **Add a fact** box

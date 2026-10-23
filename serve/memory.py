@@ -616,7 +616,7 @@ class MemoryService:
         # release; on = the m4_shelfcall routed arm (leak 2-5x down, reach identical) runs on every
         # unscoped block and tail. The default flips only when the venue re-record says so.
         self.route_shelves = bool(route_shelves)
-        self._route_stats = {"tries": 0, "picks": 0, "fallbacks": 0}  # observability, see stats()
+        self._route_stats = {"tries": 0, "picks": 0, "fallbacks": 0, "picked": {}}  # observability, see stats()
         # BLOCK FLOOR (cap-not-quota, m4_blockrule 2026-10-16): _render_block stops taking
         # candidates once the fused RRF score falls below this floor - the budget stays as the
         # hard ceiling, but a full block of weak rows no longer beats an honest short one.
@@ -1972,6 +1972,13 @@ class MemoryService:
         pick = shelf_vote(stage1)
         if pick:
             self._route_stats["picks"] += 1
+            # what it picked, not just that it picked (2026-10-23, the routegrade's ask). Copy-on-
+            # write: stats() snapshots the ledger for JSON, and a dict mutated mid-dump is a torn
+            # read; the shelf universe is ~170, so a per-pick copy is free.
+            h = dict(self._route_stats["picked"])
+            for s in pick:
+                h[s] = h.get(s, 0) + 1
+            self._route_stats["picked"] = h
         return pick or None
 
     def _pinned(self, key):

@@ -6529,7 +6529,17 @@ class Cartridges:
     request restores again - 0.1 s, honestly charged.
 
     Best-effort by construction: any failure leaves the text un-prepended and the request
-    completely normal - the cartridge only ever adds speed, never risk."""
+    completely normal - the cartridge only ever adds speed, never risk.
+
+    The soul-inside law (the owner's call, 2026-10-23): the standing text is the slot-0 soul PLUS
+    the shelved facts, one string, seeded and prepended as one - so it costs context once and is
+    reused every turn, which is the point of carrying it. A live prompt's first bytes are soul
+    bytes (the soul is the LAST prepend, so it lands FIRST), and a cart-only seed measured zero
+    reuse at token 0 on two boots (parked reused_kv_bytes=0; the next request reused 0 of 294,038
+    tokens), so the soul rides inside or the cartridge buys nothing. The rendered bytes are
+    identical to the separate prepend this replaces - prepend_head joins with the same "\\n\\n" -
+    so the order law survives as an identity and only the seed changes; the file hash covers the
+    soul, so a soul change rotates the file and re-seeds, never reusing stale prefix bytes."""
 
     def __init__(self, svc: Service, cfg: dict):
         self.svc = svc
@@ -6537,19 +6547,30 @@ class Cartridges:
                                      for x in (cfg.get("class_prefixes") or ["USR", "DEC"])) if p]
         self.max_chars = max(200, int(cfg.get("max_chars") or 4000))
         self.text, self.n_facts, self.n_left = "", 0, 0
+        self.standing, self.soul_chars = "", 0            # the seeded prefix: soul + facts, one string
         self.file, self.applied, self.bytes = None, None, 0
         self.state = "pending"
         self.lock = threading.Lock()
 
     def build(self):
         self.text, self.n_facts, self.n_left = self.svc.memory.cartridge_text(self.prefixes, self.max_chars)
+        soul = getattr(self.svc, "soul", "") or ""
+        self.soul_chars = len(soul)
         if not self.text:
-            self.file = None
+            self.standing, self.file = "", None
             return
-        self.file = "MEM-CRG-" + hashlib.sha256(self.text.encode()).hexdigest()[:8] + ".bin"
+        self.standing = soul + "\n\n" + self.text if soul else self.text
+        self.file = "MEM-CRG-" + hashlib.sha256(self.standing.encode()).hexdigest()[:8] + ".bin"
+
+    def standing_rides(self) -> bool:
+        """True when the standing text is on its way into the prompt WITH the soul inside it: the
+        slot-0 prepend must then be SKIPPED, or the soul bytes ride twice. Gated on the applied
+        state - a cartridge that failed to stand never swallows the soul - and soul_chars only
+        counts what build() actually read, so a box with the soul off keeps today's bytes."""
+        return self.state in ("loaded", "seeded") and self.soul_chars > 0
 
     def prepend(self, messages):
-        return memory_api.prepend_head(messages, self.text) if self.text else messages
+        return memory_api.prepend_head(messages, self.standing) if self.standing else messages
 
     def invalidate(self):
         with self.lock:
@@ -6591,7 +6612,7 @@ class Cartridges:
     def seed(self, path):
         try:
             ids, thinking, max_new = self.svc.prepare(
-                [{"role": "system", "content": self.text},
+                [{"role": "system", "content": self.standing},
                  {"role": "user", "content": "Acknowledge with OK only."}], None, {}, 24)
             for kind, x in self.svc.run(ids, thinking, None, max_new or 24, {}, threading.Event()):
                 if kind == "done":
@@ -6634,7 +6655,8 @@ class Cartridges:
 
     def view(self):
         return {"shelves": self.prefixes, "max_chars": self.max_chars, "facts": self.n_facts,
-                "left_for_block": self.n_left, "file": self.applied, "bytes": self.bytes, "state": self.state}
+                "left_for_block": self.n_left, "file": self.applied, "bytes": self.bytes,
+                "state": self.state, "soul_chars": self.soul_chars}
 
 
 # ------------------------------------------------------------------------------------------------ OpenAI
@@ -8301,10 +8323,13 @@ def make_handler(svc: Service):
                         messages = svc.cartridges.prepend(messages)
                 else:
                     svc.cartridges.invalidate()                   # muted: this conversation will replace the slot
-            if svc.soul and mem_ctx is not None:                  # soul.md slot 0: the LAST prepend, the
-                messages = memory_api.prepend_head(messages, svc.soul)   # FIRST bytes (order = prepend
-                                                                         # order). Muted conversations
-                                                                         # keep the byte-identical upstream path
+            if svc.soul and mem_ctx is not None and not (svc.cartridges and
+                                                         svc.cartridges.standing_rides()):
+                # soul.md slot 0: the LAST prepend, the FIRST bytes (order = prepend order). Muted
+                # conversations keep the byte-identical upstream path. While the standing text carries
+                # the soul inside it (2026-10-23) this prepend must NOT run - the bytes are already
+                # there, and twice-riding soul is twice-spent context.
+                messages = memory_api.prepend_head(messages, svc.soul)
             if force and use_mcp:
                 raise ValueError("a forced tool_choice with MCP tools is not supported")
             svc.reasoning_budget(req)                         # a bad value is a 400 before anything is sent
@@ -8513,9 +8538,11 @@ def make_handler(svc: Service):
                         messages = svc.cartridges.prepend(messages)
                 else:
                     svc.cartridges.invalidate()
-            if svc.soul and mem_ctx is not None:                  # soul.md slot 0 (parity: every dialect
-                messages = memory_api.prepend_head(messages, svc.soul)   # stands on the same prefix, or
-                                                                         # the prefix law is a suggestion)
+            if svc.soul and mem_ctx is not None and not (svc.cartridges and
+                                                         svc.cartridges.standing_rides()):
+                # soul.md slot 0 (parity: every dialect stands on the same prefix, or the prefix law
+                # is a suggestion) - skipped while the standing text carries the soul inside it.
+                messages = memory_api.prepend_head(messages, svc.soul)
             # memory-core C parity (2026-10-13): the browse tool for Codex too. The tool list here is in the
             # template's flat form; the flag rides mem_ctx (the return tuple is already wide) and _responses
             # builds the loop after prepare. Internal rounds never reach the assembler: run_with_mcp swallows
@@ -8614,9 +8641,11 @@ def make_handler(svc: Service):
                         messages = svc.cartridges.prepend(messages)
                 else:
                     svc.cartridges.invalidate()
-            if svc.soul and mem_ctx is not None:                  # soul.md slot 0 (Anthropic parity:
-                messages = memory_api.prepend_head(messages, svc.soul)   # Claude Code rides the same
-                                                                         # bytes as every other dialect)
+            if svc.soul and mem_ctx is not None and not (svc.cartridges and
+                                                         svc.cartridges.standing_rides()):
+                # soul.md slot 0 (Anthropic parity: Claude Code rides the same bytes as every other
+                # dialect) - skipped while the standing text carries the soul inside it.
+                messages = memory_api.prepend_head(messages, svc.soul)
             no_tools = tool_choice_of(req.get("tool_choice"))[0] == "none"   # Anthropic's {"type": "none"}
             if no_tools:
                 tools = None

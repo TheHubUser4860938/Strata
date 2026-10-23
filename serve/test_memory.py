@@ -1026,6 +1026,33 @@ class Cartridge(unittest.TestCase):
         st, body = self.http("POST", "/memory", {"op": "cartridge"})
         self.assertEqual(st, 400, body)
 
+    def test_the_soul_rides_inside_the_standing_text(self):
+        # The soul-inside law (2026-10-23): the standing prefix is soul + facts as ONE string, the
+        # file hash covers what actually seeds, and a box with the soul off keeps today's bytes.
+        c = self.svc.cartridges
+        c.build()
+        plain = c.file
+        self.assertEqual(c.standing, c.text, "soul off: today's bytes, byte for byte")
+        self.svc.soul = "SOUL bytes here"
+        c.build()
+        self.assertEqual(c.standing, "SOUL bytes here\n\n" + c.text)
+        self.assertNotEqual(c.file, plain, "a soul change rotates the file - the hash is over the bytes that seed")
+        self.assertEqual(c.view()["soul_chars"], len("SOUL bytes here"))
+        self.assertFalse(c.standing_rides(), "pending: while nothing stands, the soul rides separately")
+        c.state = "loaded"
+        self.assertTrue(c.standing_rides(), "standing with the soul inside: slot 0 must not prepend again")
+
+    def test_the_soul_rides_once_end_to_end(self):
+        # The request path must inject the soul EXACTLY ONCE when the standing text carries it:
+        # the same leading bytes the seed saved, no second copy from slot 0 - and the soul still
+        # lands at token 0, ahead of the facts and the volatile block (the order law as identity).
+        self.svc.soul = "SOUL-ONCE"
+        st, body = self.ask("what is my launch ritual?")
+        self.assertEqual(st, 200, body)
+        p = self.prompt_text()
+        self.assertEqual(p.count("SOUL-ONCE"), 1, "soul bytes ride once: inside the standing text, not again from slot 0")
+        self.assertIn("SOUL-ONCE\n\nSTANDING MEMORY", p, "the soul still leads, the facts follow it")
+
 
 class MemoryOff(unittest.TestCase):
     """With the store off, the endpoints say so and chat behaves exactly as before."""
@@ -1323,9 +1350,14 @@ class ShelfRouter(unittest.TestCase):
         self.assertLess(len(texts_on), len(texts_off), "contamination fell")
         r = self.on.stats()["router"]
         self.assertTrue(r["on"] and r["tries"] == 1 and r["picks"] == 1, r)
+        self.assertTrue(r["picked"] and all(isinstance(k, str) and v >= 1 for k, v in r["picked"].items()),
+                        "the ledger now names WHAT it picked, not just that it picked (the 2026-10-23 "
+                        "routegrade asked for the histogram the live box never showed)")
         self.assertFalse(self.off.stats()["router"]["on"])
         b_again, _, _ = self.on.block_for(self.MSGS, "ops")
         self.assertEqual(b_again, b_on, "the routed block pins byte-stable like any other")
+        self.assertEqual(self.on.stats()["router"]["picked"], r["picked"],
+                         "a pin hit re-reads no shelf bytes and re-counts no pick")
         self.assertEqual(self.on.stats()["router"]["tries"], 1,
                          "a pin hit must not re-ask the router")
 
