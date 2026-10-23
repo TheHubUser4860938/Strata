@@ -242,7 +242,7 @@ On **this fork**, clone the fork instead - the `memory-core` branch is the one w
 the reason modes (the installer on it writes the memory block, the slot keys and the DavidAU families by itself):
 
 ```
-git clone -b memory-core https://github.com/TheHubUser4860938/Strata.git
+git clone -b memory-core https://github.com/TheHubUser4860938/Strata-Mnemosyne.git
 ```
 
 Without git: download https://github.com/Niko1221/Strata/archive/refs/heads/main.zip and unzip it. Pick a drive with

@@ -31,7 +31,7 @@ taste.
 that fits your RAM, downloads it, and starts the server at `http://127.0.0.1:8005`:
 
 ```
-git clone -b memory-core https://github.com/TheHubUser4860938/Strata.git
+git clone -b memory-core https://github.com/TheHubUser4860938/Strata-Mnemosyne.git
 cd Strata
 ```
 
@@ -171,7 +171,7 @@ Paste this into Claude Code, Cursor, Codex, GitHub Copilot or another coding ass
 
 ```text
 Set up Strata with its built-in memory (Strata Mnemosyne) on this PC for me:
-https://github.com/TheHubUser4860938/Strata - use the memory-core branch, follow
+https://github.com/TheHubUser4860938/Strata-Mnemosyne - use the memory-core branch, follow
 docs/AI_SETUP.md in that repository. The memory is ON by default on that branch, and setup
 fetches its embedder as part of the install.
 Before reporting done, verify the boot banner says "memory core on" (and, on a DavidAU
