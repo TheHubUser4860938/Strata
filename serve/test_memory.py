@@ -994,18 +994,42 @@ class Cartridge(unittest.TestCase):
         self.assertEqual(cart["state"], "seeded")
         self.assertEqual(cart["facts"], 1)
 
-    def test_muted_request_invalidates_and_the_next_one_restores(self):
+    def test_muted_request_does_not_chase_the_slot_back(self):
+        # Law 5 as flipped 2026-10-23: a muted conversation replaces the slot's state, and the
+        # cartridge lets it go. The chase measured 11 restores in 4.5 h, ~3.3 GB re-parked, and
+        # ZERO reuse on the branching live prompts that followed. The TEXT still rides; only the
+        # pointless K/V hauling stopped.
         st, body = self.ask("first question")
         self.assertEqual(st, 200, body)
         st, body = self.ask("muted question", headers=[("X-Strata-Memory", "off")])
         self.assertEqual(st, 200, body)        # which scripted string it answers with is fixture noise;
         self.assertNotIn("STANDING MEMORY", self.prompt_text(), "memory off means the cartridge off")
-        self.assertEqual(self.calls["restore"], 0)
         st, body = self.ask("third question")
         self.assertEqual(st, 200, body)
-        self.assertIn("STANDING MEMORY", self.prompt_text())
-        self.assertEqual(self.calls["restore"], 1, "the muted conversation replaced the slot: restore once")
-        self.assertEqual(self.calls["save"], 1, "no re-seed - the file survived, only the slot moved")
+        self.assertIn("STANDING MEMORY", self.prompt_text(), "the text rides regardless - only the chase died")
+        self.assertEqual(self.calls["restore"], 0, "no chase: the muted conversation kept the slot it took")
+        self.assertEqual(self.calls["save"], 1, "no re-seed - the file survived, the slot moved on")
+
+    def test_the_reseed_window_holds_engine_traffic_back(self):
+        # The window (2026-10-23): moved standing text waits instead of paying a full seed on the
+        # next request - the applied bytes keep serving while the fresh fact rides the recall
+        # block, then exactly ONE seed catches the cart up and gc retires the stale file.
+        st, body = self.ask("first question")                       # seed #1
+        self.assertEqual(self.calls["save"], 1)
+        first_file = self.svc.cartridges.applied
+        st, body = self.http("POST", "/memory", {"op": "remember", "scope": "user", "class": "USR",
+                                                 "text": "The user's ship-it ritual is a green suite"})
+        self.assertEqual(st, 200, body)
+        st, body = self.ask("second question")
+        self.assertEqual(self.calls["save"], 1, "inside the window: no seed, no restore, no store read")
+        self.assertNotIn("ship-it", self.svc.cartridges.text, "the cart still stands on the applied bytes")
+        self.svc.cartridges.applied_at = 0.0                        # window expires
+        st, body = self.ask("third question")
+        self.assertEqual(self.calls["save"], 2, "one catch-up seed when the window ends, not one per turn")
+        self.assertIn("ship-it", self.svc.cartridges.text, "and the cart now stands on the moved text")
+        files = [f for f in os.listdir(self.slots.name) if f.startswith("MEM-CRG-")]
+        self.assertEqual(len(files), 1, "gc retired the stale standing set")
+        self.assertNotEqual(files[0], first_file, "the file rotates with the text")
 
     def test_cartridge_text_is_deterministic_shelved_only_and_bounded(self):
         m = self.svc.memory

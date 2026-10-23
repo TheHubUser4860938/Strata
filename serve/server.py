@@ -6525,8 +6525,12 @@ class Cartridges:
     (model fingerprint, engine version, rope config, geometry), so this class never computes pins:
     it tries the file and re-seeds on refusal - an engine upgrade costs one re-seed, never a stale
     read; (4) one slot, one FIFO: off with --batch, like slot_action itself; (5) a request that
-    does not carry the standing text (muted) replaces the slot's state, so the next standing
-    request restores again - 0.1 s, honestly charged.
+    does not carry the standing text (muted) replaces the slot's state. The 2026-10-12 law restored
+    it on the next standing request ("0.1 s, honestly charged"); the 2026-10-23 measurement stopped
+    that chase - 11 restores in 4.5 h hauled 6,386 tokens back into a slot the next muted probe
+    evicted, ~3.3 GB re-parked, and the branching live prompts reused ZERO of it (invalidate()
+    holds the account). The K/V installs at boot/seed/reseed/pin events; the TEXT rides every
+    prompt regardless, and the venue ladder's own explicit slot ops are what exercise the ride.
 
     Best-effort by construction: any failure leaves the text un-prepended and the request
     completely normal - the cartridge only ever adds speed, never risk.
@@ -6546,6 +6550,13 @@ class Cartridges:
         self.prefixes = [p for p in (memory_api.class_name(x, quiet=True)
                                      for x in (cfg.get("class_prefixes") or ["USR", "DEC"])) if p]
         self.max_chars = max(200, int(cfg.get("max_chars") or 4000))
+        # the re-seed window (2026-10-23): while a cart stands, moved text waits its turn instead
+        # of paying a full seed on the next request - a session that shelves a fact every turn was
+        # a full 6.3k-token re-prefill + 333 MB save per turn. New facts are NOT lost: the shelves
+        # not in the applied text ride the recall block until the window expires and one seed
+        # catches the cart up. The re-seed op and a pin rotation bypass the window; 0 disables it.
+        self.min_reseed_s = max(0, int(cfg.get("min_reseed_s") or 600))
+        self.applied_at = 0.0                             # when the applied text last stood
         self.text, self.n_facts, self.n_left = "", 0, 0
         self.standing, self.soul_chars = "", 0            # the seeded prefix: soul + facts, one string
         self.file, self.applied, self.bytes = None, None, 0
@@ -6573,20 +6584,37 @@ class Cartridges:
         return memory_api.prepend_head(messages, self.standing) if self.standing else messages
 
     def invalidate(self):
-        with self.lock:
-            if self.state in ("loaded", "seeded"):
-                self.state = "pending"        # a muted conversation replaced the slot's state
+        """Muted conversations replace the slot's state - and since 2026-10-23 the cartridge does
+        NOT chase it back. The chase was the 2026-10-12 design: restore before the next standing
+        request so the K/V sits in the slot. Measured on the soul-in-cart ride: 11 restores in
+        4.5 h, each hauling 6,386 tokens back into a slot the runner's next muted probe evicted,
+        ~3.3 GB of snapshots re-parked, evictions climbing past 470, and the live conversations
+        reused ZERO of it - a branching conversation reprefills its own bytes (C1's ride guard,
+        same evening). The standing facts keep riding EVERY prompt as text; the K/V is now
+        installed at boot/seed/reseed/pin events and left alone, the venue ladder's explicit slot
+        ops (c1/c2/c3, all memory-muted) are what exercise the ride, and the live path earns its
+        restores back the day the standing-conversation shape makes a continuation worth chasing."""
+        pass
 
     def ensure(self):
         """Make the slot hold the standing text's K/V before the request renders. Called from the
         request path; holds its lock across seed/restore so parallel lanes never interleave a
-        session transfer (the engine refuses it anyway - #465 - but a clean wait beats a retry)."""
+        session transfer (the engine refuses it anyway - #465 - but a clean wait beats a retry).
+        Inside the re-seed window of a standing cart it reads NOTHING and asks NOTHING of the
+        engine: the applied bytes keep serving, the store keeps growing, one seed catches up."""
         with self.lock:
+            if (self.state in ("loaded", "seeded") and self.file == self.applied
+                    and time.time() - self.applied_at < self.min_reseed_s):
+                return
             self.build()
             if not self.file:
                 self.state = "failed: no shelved facts to stand"
                 return
             if self.state in ("loaded", "seeded") and self.file == self.applied:
+                # the text came back to, or stayed at, what stands: extend the window, ask the
+                # engine NOTHING. (Before the window this was the per-request fast path; keeping
+                # it after build() is what stops a pointless restore on every window expiry.)
+                self.applied_at = time.time()
                 return
             svc = self.svc
             if getattr(svc.engine, "batch", 0):
@@ -6601,6 +6629,7 @@ class Cartridges:
                 code, r = svc.slot_action("0", "restore", self.file)
                 if code == 200:
                     self.state, self.applied, self.bytes = "loaded", self.file, os.path.getsize(path)
+                    self.applied_at = time.time()
                     print(f"[strata] cartridge: restored {self.file} ({self.n_facts} standing facts, "
                           f"{self.bytes:,} B)", flush=True)
                     self.gc()
@@ -6627,6 +6656,7 @@ class Cartridges:
             print(f"[strata] cartridge: save refused ({str(r)[:100]})", flush=True)
             return
         self.state, self.applied = "seeded", self.file
+        self.applied_at = time.time()
         self.bytes = os.path.getsize(path) if os.path.exists(path) else 0
         print(f"[strata] cartridge: seeded {self.file} ({self.n_facts} standing facts, {self.bytes:,} B; "
               f"{self.n_left} left for the recall block)", flush=True)
@@ -6656,7 +6686,9 @@ class Cartridges:
     def view(self):
         return {"shelves": self.prefixes, "max_chars": self.max_chars, "facts": self.n_facts,
                 "left_for_block": self.n_left, "file": self.applied, "bytes": self.bytes,
-                "state": self.state, "soul_chars": self.soul_chars}
+                "state": self.state, "soul_chars": self.soul_chars,
+                "reseed_in_s": max(0, int(self.min_reseed_s - (time.time() - self.applied_at)))
+                if self.applied_at else 0}
 
 
 # ------------------------------------------------------------------------------------------------ OpenAI
