@@ -36,6 +36,7 @@ independent and keeps Strata's MIT license.
 """
 from __future__ import annotations
 
+import contextlib
 import datetime
 import hashlib
 import json
@@ -527,6 +528,22 @@ _PG_DDL: tuple[str, ...] = (
          id bigint primary key references memories(id) on delete cascade,
          vec bytea not null)""",
 )
+
+@contextlib.contextmanager
+def _rollback_on_error(conn):
+    """A failed read must not poison the store's single shared connection.
+
+    psycopg opens an implicit transaction on the first statement; when that statement raises,
+    the transaction stays aborted and every later request on the same connection dies with
+    InFailedSqlTransaction - one bad query looked like a dead store until restart (measured
+    2026-10-23: a postmaster that predated the folder rename could not load dict_snowball).
+    The rollback turns one failed query into one failed query, not a poisoned store."""
+    try:
+        yield
+    except psycopg.Error:
+        conn.rollback()
+        raise
+
 
 class MemoryService:
     """The store, the recall and the journal. Thread-safe: every statement runs under one lock on a
@@ -1591,7 +1608,7 @@ class MemoryService:
             # still supplies the set (measured, ADR-002 R0: 1.6 ms at 2,707 rows); order by id
             # keeps the cap deterministic, and the cap is worst-case honesty: at this store's
             # scale it never binds; a query matching >4000 rows is a different design conversation.
-            with self.lock:
+            with self.lock, _rollback_on_error(self.conn):
                 cand = self.conn.execute(
                     f"select m.id, m.scope, m.text, m.confidence, m.updated_at, m.class, m.hits,"
                     f" m.ts::text"

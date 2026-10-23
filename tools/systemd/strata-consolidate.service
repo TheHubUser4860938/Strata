@@ -9,5 +9,5 @@ After=network.target
 
 [Service]
 Type=oneshot
-WorkingDirectory=/home/eugene/Projects/Strata-MAM-cartrige-mod
-ExecStart=/usr/bin/bash -c 'curl -sf --max-time 10 http://127.0.0.1:8005/memory >/dev/null || { echo "server down: skipping this week"; exit 0; }; /home/eugene/Projects/Strata-MAM-cartrige-mod/.venv/bin/python tools/m6_backup.py --dir /home/eugene/Strata-data/memory-eval && /home/eugene/Projects/Strata-MAM-cartrige-mod/.venv/bin/python tools/m7_consolidate.py --dir /home/eugene/Strata-data/memory-eval --threshold 0.85 --go'
+WorkingDirectory=/home/eugene/Projects/Strata-Mnemosyne
+ExecStart=/usr/bin/bash -c 'curl -sf --max-time 10 http://127.0.0.1:8005/memory >/dev/null || { echo "server down: skipping this week"; exit 0; }; /home/eugene/Projects/Strata-Mnemosyne/.venv/bin/python tools/m6_backup.py --dir /home/eugene/Strata-data/memory-eval && /home/eugene/Projects/Strata-Mnemosyne/.venv/bin/python tools/m7_consolidate.py --dir /home/eugene/Strata-data/memory-eval --threshold 0.85 --go'
