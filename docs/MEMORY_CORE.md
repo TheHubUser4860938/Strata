@@ -350,6 +350,19 @@ not reasoning; the context budget still caps what any ask can carry; and a shelf
 got its step change when the Phase 4 embedder arrived (2026-10-14, above) — ranking no longer stops
 at the words a question happens to share with a fact.
 
+**Two lanes ride the axes (added 2026-10-23, item 4; the practitioners named both holes twice).**
+The extract grammar gained a third optional field, `LANE: fact|taboo|state:<key>` — optional like
+ATTR, so a garbled or missing lane demotes to plain fact and never drops the line. **taboo** is the
+user's negative constraint ("personal info never goes into git"): shelved `USR/TABOO` or `OPS/TABOO`,
+trusted as user-stated, and made the LAST never-recalled row over-cap eviction eats — a rule you have
+not needed yet is not a rule you have outgrown (last out, not exempt: the cap still holds). **state**
+is the machine's self-reported condition (`engine = 0.1.48 (2026-10-23)`): shelved `OPS/STATE`,
+trusted as observed, and superseded **by key** the moment a fresher observation of the same key
+stores — the stale value retires instead of living beside the fresh one waiting for the model to
+pick, which is how a journal line can otherwise say "engine 0.1.43" on a 0.1.48 box for a week.
+Both lanes are decimal subclasses and jsonb provenance: no fifth axis was invented, no column was
+added, and pre-lane rows parse and evict exactly as before.
+
 **Taxonomy growth by evidence (`tools/m4_shelves.py`, 2026-10-14).** The keyword map names what it
 can and leaves the rest wild, so the wild rows ARE the evidence of what the taxonomy is missing. The
 tool clusters active rows by cosine over the vectors the store already carries (leader clustering,
