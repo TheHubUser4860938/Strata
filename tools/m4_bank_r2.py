@@ -59,10 +59,36 @@ def _norm_math(s):
         s = s.replace(junk, "")
     return s.strip().rstrip(".")
 
+def _extract_boxed(t):
+    """All \\boxed{...} contents, brace-matched so nested answers (\\frac{3\\sqrt{3}}{4}) extract;
+    escaped braces (\\{ \\}) are literal content. The bank's regex only reached one nesting level
+    and failed five MATH-500 golds against their own golds - full-set self-test, 2026-10-22."""
+    out, i = [], 0
+    while True:
+        j = t.find("\\boxed{", i)
+        if j < 0:
+            return out
+        k, depth = j + 7, 1
+        while k < len(t) and depth:
+            c = t[k]
+            if c == "\\":
+                k += 2
+                continue
+            if c == "{":
+                depth += 1
+            elif c == "}":
+                depth -= 1
+                if depth == 0:
+                    break
+            k += 1
+        if depth == 0:
+            out.append(t[j + 7:k])
+        i = j + 8
+
 def _check_math(gold):
     g = _norm_math(gold)
     def f(t):
-        m = re.findall(r"\\boxed\{((?:[^{}]|\{[^{}]*\})*)\}", t or "")
+        m = _extract_boxed(t or "")
         got = _norm_math(m[-1]) if m else ""
         if got == g:
             return 1.0
@@ -127,12 +153,16 @@ def _stride(seq, n):
     step = max(1, len(seq) // n)
     return seq[::step][:n]
 
+def _pick(seq, n, full):
+    """Full-set mode (the owner's call, 2026-10-22): every row, or the fixed-stride sample."""
+    return list(seq) if full else _stride(seq, n)
+
 def _lines(path):
     op = gzip.open if path.suffix == ".gz" else open
     with op(path, "rt", encoding="utf-8") as f:
         return [json.loads(ln) for ln in f if ln.strip()]
 
-def probes(bench_dir=None, force=False):
+def probes(bench_dir=None, force=False, full=False):
     d = Path(bench_dir) if bench_dir else ROOT / "Strata-data" / "bench"
     man = json.loads((d / "manifest.json").read_text())
     for name, meta in man.items():
@@ -145,18 +175,18 @@ def probes(bench_dir=None, force=False):
 
     P = []
     gsm = _lines(d / "gsm_symbolic_test.jsonl")
-    for row in _stride(gsm, 12):
+    for row in _pick(gsm, 12, full):
         gold = row["answer"].split("####")[-1]
         P.append({"shape": "gsm_sym",
                   "prompt": row["question"] + "\nSolve it. Answer with just the number.",
                   "check": _check_gsm(gold), "gold": gold.strip()})
     math = _lines(d / "math500_test.jsonl")
-    for row in _stride(math, 12):
+    for row in _pick(math, 12, full):
         P.append({"shape": "math_hard",
                   "prompt": row["problem"] + "\nSolve it and put your final answer inside \\boxed{}.",
                   "check": _check_math(row["answer"]), "gold": row["answer"]})
     he = _lines(d / "humaneval.jsonl.gz")
-    for row in _stride(he, 12):
+    for row in _pick(he, 12, full):
         P.append({"shape": "code", "prompt": row["prompt"].rstrip() +
                   "\nComplete the function. Reply with only the Python code.",
                   "check": _check_humaneval(row["prompt"], row["test"], row["entry_point"]),
@@ -168,7 +198,7 @@ def probes(bench_dir=None, force=False):
         with open(d / "gpqa_diamond.csv", newline="", encoding="utf-8") as f:
             gpqa = [r for r in csv.DictReader(f)
                     if (r.get("Question") or "").strip() and (r.get("Correct Answer") or "").strip()]
-        for i, row in enumerate(_stride(gpqa, 12)):
+        for i, row in enumerate(_pick(gpqa, 12, full)):
             opts = [row["Correct Answer"], row["Incorrect Answer 1"],
                     row["Incorrect Answer 2"], row["Incorrect Answer 3"]]
             order = list(range(4))
@@ -182,7 +212,7 @@ def probes(bench_dir=None, force=False):
                       "check": _check_mcq(gold), "gold": gold})
     for task, (shape, instr, kind) in BBH.items():
         rows = json.loads((d / f"bbh_{task}.json").read_text())
-        for row in _stride(rows, 8):
+        for row in _pick(rows, 8, full):
             P.append({"shape": shape, "prompt": row["input"] + " " + instr,
                       "check": _check_bbh(row["target"], kind), "gold": row["target"]})
     return P
@@ -192,7 +222,9 @@ if __name__ == "__main__":
     # grader self-test against the REAL gold answers: every probe's checker must accept its own
     # gold (MATH via a boxed rendering, HumanEval via its canonical solution) - the discipline
     # that caught the round-1 Cy/Dee bug, applied to data instead of to my own expectations.
-    P = probes()
+    # --full runs the self-test over every row of every suite, which is what the 2026-10-22
+    # full-set overnight runs demand before they start.
+    P = probes(full=("--full" in sys.argv))
     bad = 0
     for i, p in enumerate(P):
         if p["shape"] == "code":

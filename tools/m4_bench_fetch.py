@@ -121,7 +121,7 @@ def main() -> int:
         if a.verify or (p.exists() and name in man):
             print(f"  {name}: {'re-hash' if a.verify else 'present'} -> {sha256(p)[:16]}")
             continue
-        rows = bbh_rows(task)
+        rows = bbh_rows(task, 256)  # full task sets (the owner's call, 2026-10-22: no partials)
         assert rows and "input" in rows[0] and "target" in rows[0], f"bad {task} rows"
         p.write_text(json.dumps(rows))
         man[name] = {"url": f"datasets-server rows SaylorTwift/bbh {task} test",

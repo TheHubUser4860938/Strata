@@ -262,6 +262,8 @@ def main() -> int:
                     "tools/m4_bench_fetch.py)")
     ap.add_argument("--bench-dir", default="", help="r2 data dir (default Strata-data/bench)")
     ap.add_argument("--force", action="store_true", help="r2: load even if file hashes moved")
+    ap.add_argument("--full", action="store_true", help="r2: every row of every suite - the full "
+                    "sets, not the fixed-stride samples (the owner's call, 2026-10-22)")
     ap.add_argument("--pilot", action="store_true", help="smoke preset: math,code,plan x "
                     "default,ultra,coder,house x 1 pass")
     ap.add_argument("--json", default="", help="write every record here")
@@ -270,7 +272,7 @@ def main() -> int:
     if a.bank == "r2":
         sys.path.insert(0, str(Path(__file__).resolve().parent))
         from m4_bank_r2 import probes as bank_probes
-        bank_all = bank_probes(a.bench_dir or None, force=a.force)
+        bank_all = bank_probes(a.bench_dir or None, force=a.force, full=a.full)
     else:
         bank_all = probes()
     bank_shapes = list(dict.fromkeys(p["shape"] for p in bank_all))
