@@ -86,10 +86,20 @@ _ATTR_RULE = (
     "is not a held belief - calling that one user is the laundering this catches); "
     "observed: behavior the conversation shows, not stated. QUOTE = copied words, never a "
     "paraphrase; a fact whose quote is not found verbatim is trusted less, not more.\n")
+_LANE_RULE = (
+    "APPEND ONE MORE FIELD, BETWEEN ATTR AND QUOTE: LANE: fact|taboo|state:<key>\n"
+    "taboo = a NEGATIVE CONSTRAINT stated by the user - what must not happen, what must always "
+    "hold. Keep the binding word (never, don't, no, not, must, only, avoid) INSIDE the FACT: a "
+    "fact that drops the negation silently flips a rule into a permission, and no later reader "
+    "can tell. state:<key> = machine or environment state the conversation SHOWS - versions, "
+    "ports, paths, RAM, boot counts - where <key> is the ONE word naming what was measured "
+    "(state:engine, state:port, state:ram); write the FACT as 'key = value (YYYY-MM-DD)'. "
+    "State is true only until the next look, so an undated state fact is a stale claim waiting "
+    "to happen. Everything else is fact.\n")
 # audit 09 finding 4 (Grok Q3, 2026-10-18): ATTR/QUOTE join the SHIPPED prompt only.
 # EXTRACT_PROMPT_UNDATED stays byte-identical to the prompt every stored fact was written
 # with (sha256 pinned by tools/test_curate_grounding.py) - the control arm must not move.
-EXTRACT_PROMPT = _EXTRACT_HEAD + _ATTR_RULE + _DATES_RULE + _EXTRACT_TAIL   # the shipped shape
+EXTRACT_PROMPT = _EXTRACT_HEAD + _ATTR_RULE + _LANE_RULE + _DATES_RULE + _EXTRACT_TAIL   # the shipped shape
 EXTRACT_PROMPT_UNDATED = _EXTRACT_HEAD + _EXTRACT_TAIL             # control arm: byte-identical to
 # the prompt every fact now in the store was written with (sha256 e7c8fa6b64114ee0, pinned by
 # tools/test_curate_grounding.py so the control cannot drift into a second variable)
@@ -299,6 +309,40 @@ def supersede_id(url, fact, scope, log, min_created=0.0):
     return None, None
 
 
+def _state_pick(key, rows, min_created=0.0):
+    """Pure matching for the machine-state lane (unit-tested offline): rows are
+    (id, text, created_at); the target is the OLDEST active row whose text starts with the
+    canonical state shape - 'key =' or 'key:' case-insensitively. Oldest: the chain says the
+    newest claim wins, so each new observation supersedes the value before it, never a fresher
+    one out of order. The batch guard (min_created) keeps one sweep from superseding its own
+    fresh rows, exactly as the CORRECT path's does. Only a STORED state fact may be superseded
+    by a state fact: a prose mention ("the engine, 0.1.43, ...") is not a claim with a key."""
+    hits = [(i, float(cr or 0)) for i, t, cr in rows
+            if t.lower().startswith((key.lower() + " =", key.lower() + ":"))
+            and (not min_created or float(cr or 0) < min_created)]
+    return min(hits, key=lambda h: h[1])[0] if hits else None
+
+
+def state_supersede_id(url, key, scope, log, min_created=0.0):
+    """The id of the active same-scope state row this observation replaces ("engine = 0.1.43"
+    for key='engine'), or None. None on any lookup trouble - the law never loses a fact (the
+    supersede_id rule, inherited). State supersedes BY KEY, not cosine: "engine = 0.1.48" and
+    "engine = 0.1.43" share almost no scoreable words, and the stale value must not live beside
+    the fresh one waiting for the model to pick - the journal's line 103 ("engine 0.1.43
+    running") is the fossil this lane exists to bury."""
+    try:
+        st, r = http(f"{url}/memory?scope={urllib.parse.quote(scope)}&limit=500")
+        rows = [(m["id"], m.get("text", ""), m.get("created_at", 0))
+                for m in (r or {}).get("memories", [])] if st == 200 else []
+    except Exception as e:                                    # noqa: BLE001 - a lookup is never worth losing a fact
+        log({"kind": "state_lookup_err", "err": str(e)[:100]})
+        return None
+    old = _state_pick(key, [(i, t, c) for i, t, c in rows], min_created)
+    if old is not None:
+        log({"kind": "state_supersede", "key": key, "old_id": old})
+    return old
+
+
 # ---- the supersession law (fact 3820, the user's decision 2026-10-16) -------------------------
 # "when a memory that is newer says something very similar to an older one, the NEWER gets more
 #  careful scrutiny: does it supersede/correct the older? pure restatement -> newer stands, older
@@ -354,7 +398,9 @@ _EXTRACT_RE = re.compile(
     # the candidate to unverified (parse_extract_line validates), never kill the whole line -
     # a field that silently deletes facts from the queue is its own new bug (measured by
     # tools/test_curate_extract.py test_garbled_attr on the first token-strict regex).
-    r"\s*(?:\|\|\s*ATTR:\s*([^\|]*?))?\s*(?:\|\|\s*QUOTE:\s*(.+?))?\s*$", re.I)
+    # LANE (the 2026-10-23 item-4 lanes) follows the same law: OPTIONAL in the regex, so every
+    # pre-LANE line still parses as fact, and a garbled lane demotes to fact, never drops.
+    r"\s*(?:\|\|\s*ATTR:\s*([^\|]*?))?\s*(?:\|\|\s*LANE:\s*([^\|]*?))?\s*(?:\|\|\s*QUOTE:\s*(.+?))?\s*$", re.I)
 ATTRS = ("user", "attributed", "observed")
 
 
@@ -378,7 +424,7 @@ def parse_extract_line(ln: str, turn_user: str = "", turn_assistant: str = "") -
     m = _EXTRACT_RE.match(ln)
     if not m:
         return None
-    fact, probe, gold, scope, attr, quote = (
+    fact, probe, gold, scope, attr, lane_raw, quote = (
         (scrub(g).strip() if g else "") for g in m.groups())
     if not fact or not probe or not gold:
         return None
@@ -401,10 +447,22 @@ def parse_extract_line(ln: str, turn_user: str = "", turn_assistant: str = "") -
     quote_side = "user" if side_user else ("assistant" if side_asst else "none")
     if attr not in ATTRS or (attr == "user" and not side_user):
         attr = "unverified"          # demote, never drop: the review queue decides, not a regex
+    # the lane field (2026-10-23, item 4): demote, never drop - the same law ATTR follows.
+    # taboo = the user's negative constraint; state:<key> = machine state with a nameable key.
+    # A state claim whose key is missing, multi-word, or absurd earns nothing special: a key
+    # that cannot match a future key cannot supersede anything, so it is an ordinary fact.
+    lane_raw = lane_raw.lower().strip()
+    lane, state_key = "fact", ""
+    if lane_raw.startswith("taboo"):
+        lane = "taboo"
+    elif lane_raw.startswith("state"):
+        key = lane_raw.split(":", 1)[1].strip() if ":" in lane_raw else ""
+        if key and " " not in key and len(key) <= 24:
+            lane, state_key = "state", key
     return {"fact": fact, "probe": probe, "gold": gold,
             "scope": "user" if scope.lower() == "user" else "project",
             "attr": attr, "quote": quote[:300], "quote_ok": quote_ok,
-            "quote_side": quote_side}
+            "quote_side": quote_side, "lane": lane, "state_key": state_key}
 
 
 def amend_with_history(ask, new_fact, old_text):
@@ -511,8 +569,13 @@ FIC_CUTTERS = {"krevven": "KREVV", "krevvens": "KREVV", "voldranium": "VOLDR", "
 PREF_V = ("prefers", "preference", "preferences", "wants", "likes", "loves", "hates")
 
 
-def fact_class(fact: str, scope: str) -> str:
+def fact_class(fact: str, scope: str, lane: str = "fact") -> str:
     """The shelf mark for a stored fact (PHASE 4.5). Order is deliberate:
+    0. the LANES (2026-10-23, item 4) shelf first when they fire: a taboo is a RULE, so it
+       shelves as one (USR/TABOO personal, OPS/TABOO when the constraint governs operations);
+       machine state shelves OPS/STATE, where the same-key supersede retires the stale value.
+       Both are decimal SUBCLASSES of existing tops: the subtree law keeps them visible to a
+       plain USR or OPS call, and the router may still vote them by name - no new axis.
     1. USR/PREF - "user" plus a preference verb: taste is personal by nature, first subclass.
     2. DEC      - one decision verb decides the GENRE (unlike USR, where a stray word is noise,
                   "decided" IS the record) - but only when nothing else outscores it.
@@ -522,6 +585,10 @@ def fact_class(fact: str, scope: str) -> str:
     4. A confident USR score still shelves personal; everything else stays wild.
     Subclasses beyond these (MEM/CRG, STR/VER) arrive with the embedder's centroids (Phase 4)
     or a human hand - not with more keywords."""
+    if lane == "taboo":
+        return "USR/TABOO" if scope == "user" else "OPS/TABOO"
+    if lane == "state":
+        return "OPS/STATE"
     toks = set(_norm(fact).split())
     scores = {cls: len(toks & set(words)) for cls, words in CLASS_MAP.items()}
     if "user" in toks and any(v in toks for v in PREF_V):
@@ -819,7 +886,8 @@ def main():
             # code; they were forgotten by hand the same night, source-tag verified.)
             fields = {"text": c["fact"], "scope": c["scope"],
                       "source": f"curation-{datetime.date.today().isoformat()}",
-                      "class": fact_class(c["fact"], c["scope"]),   # PHASE 4.5: shelf at store time
+                      "class": fact_class(c["fact"], c["scope"], c.get("lane", "fact")),
+                      # PHASE 4.5: shelf at store time; the lanes (item 4, 2026-10-23) shelve first
                       "provenance": {"turn_id": c["turn_id"], "probe": c["probe"], "gold": c["gold"],
                                      "cls": cls, "mixed": mixed, "passes": cold, "model": model,
                                      # audit 09 finding 4 (Grok Q3): whose words + the verbatim span
@@ -828,7 +896,11 @@ def main():
                                      "attribution": c.get("attr", "unverified"),
                                      "source_quote": c.get("quote", ""),
                                      "quote_ok": c.get("quote_ok", False),
-                                     "quote_side": c.get("quote_side", "none")}}
+                                     "quote_side": c.get("quote_side", "none"),
+                                     # the lane rides the provenance jsonb: no schema change, and
+                                     # the state_key is what the same-key supersede matches on later
+                                     "lane": c.get("lane", "fact"),
+                                     "state_key": c.get("state_key", "")}}
             body = {"op": "remember", **fields}
             stored_now = False
             if cls == "CORRECT":
@@ -841,6 +913,14 @@ def main():
                     if amended:
                         fields = {**fields, "text": amended}
                         c["amended"] = True
+                    body = {"op": "correct", "id": old, **fields}
+                    c["supersedes"] = old
+            elif c.get("lane") == "state" and c.get("state_key"):
+                # the machine-state lane's durability law (item 4, 2026-10-23): state supersedes
+                # BY KEY before any cosine law runs - the stale value retires the moment the fresh
+                # observation stores, and the two never coexist for recall to confuse.
+                old = state_supersede_id(url, c["state_key"], c["scope"], rec, min_created=batch_start)
+                if old:
                     body = {"op": "correct", "id": old, **fields}
                     c["supersedes"] = old
             elif not a.no_law and not c.get("turn_probe"):

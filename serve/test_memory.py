@@ -178,6 +178,27 @@ class Store(unittest.TestCase):
         finally:
             mem.close()
 
+    def test_budget_taboos_are_the_last_to_go(self):
+        # the taboo lane's durability law (item 4, 2026-10-23): a never-recalled prohibition is
+        # NOT a stale fact - a rule you have not needed yet is a rule you have not outgrown.
+        # Over cap, ordinary zero-hits rows go first even when the taboo is the LOWEST-confidence
+        # row on the board. LAST OUT, not exempt: the cap holds even when only rules could break it.
+        mem = MemoryService(os.path.join(self.tmp.name, "taboicap"), max_memories=4)
+        try:
+            taboo = mem.remember("never restart the server unasked", scope="fw", confidence=0.2,
+                                 provenance={"lane": "taboo"})["id"]
+            ordinary = [mem.remember(f"ordinary zero-hits fact {i}", scope="fw", confidence=0.9)["id"]
+                        for i in range(3)]
+            self.assertEqual(len(mem.list_memories(limit=100)), 4, "cap not crossed yet")
+            r = mem.remember("the write that crosses the cap", scope="fw", confidence=0.9)
+            self.assertIn("evicted", r, "this write crosses the cap and reports its cull")
+            ids = {m["id"] for m in mem.list_memories(limit=100)}
+            self.assertEqual(len(ids), 4, "the cap holds even against a rule: last out, not exempt")
+            self.assertIn(taboo, ids, "the lowest-confidence zero-hits row survived: it is a rule, not a rumor")
+            self.assertNotIn(ordinary[0], ids, "the oldest ordinary equal-confidence row went first")
+        finally:
+            mem.close()
+
     def test_budget_eviction_keeps_history_walkable(self):
         # audit 09 finding 1 (Grok, 2026-10-18): the budget line used to DELETE the never-recalled
         # rows it culled - "nothing deleted silently" forbids that under EITHER reading of the

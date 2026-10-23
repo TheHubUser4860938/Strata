@@ -1053,12 +1053,19 @@ class MemoryService:
                 # (the owner's dead-weight ruling, see invalidate). With the row surviving, the
                 # ON DELETE CASCADE never fires - the explicit embeddings delete below is now
                 # load-bearing, not the SQLite-era belt it used to be.
+                # The taboo lane's durability law (item 4, 2026-10-23): a never-recalled prohibition
+                # is NOT a stale fact - a rule you have not needed yet is a rule you have not
+                # outgrown - so taboos (provenance->>'lane' = 'taboo', the trust-axis jsonb) are
+                # LAST OUT, ordered after every ordinary zero-hits row, not exempt: the cap still
+                # holds even if the store ever becomes nothing but rules. Pre-lane rows have no
+                # lane key and evict as before; the lane marker only ever PROTECTS, never exposes.
                 n = self.conn.execute("select count(*) from memories where invalid_at is null").fetchone()[0]
                 over = n - self.max_memories
                 if over > 0:
                     gone = self.conn.execute(
                         "select id from memories where hits=0 and invalid_at is null and id != %s"
-                        " order by confidence asc, created_at asc limit %s", (new_id, over)).fetchall()
+                        " order by (coalesce(provenance->>'lane','') = 'taboo') asc,"
+                        " confidence asc, created_at asc limit %s", (new_id, over)).fetchall()
                     if gone:
                         self._execmany("update memories set invalid_at=%s, updated_at=%s"
                                        " where id = %s and invalid_at is null",

@@ -65,7 +65,11 @@ class DatedPrompt(unittest.TestCase):
         # law, still no license for a context dump.
         delta = len(extract_prompt(TURN, 3)) - len(extract_prompt(TURN, 3, dated=False))
         self.assertGreater(delta, 0)
-        self.assertLess(delta, 1300)
+        # 1300 budget = the DATES paragraph's cost guard (name says it: grounding must stay one
+        # paragraph). Raised to 1900 for the LANES paragraph (item 4, 2026-10-23: the taboo +
+        # machine-state lanes the practitioners named twice) - still nowhere near a second ask,
+        # which would cost another call's latency per turn, not another byte-count.
+        self.assertLess(delta, 1900)
 
     def test_both_arms_see_the_same_conversation(self):
         dated, ctl = extract_prompt(TURN, 3), extract_prompt(TURN, 3, dated=False)
