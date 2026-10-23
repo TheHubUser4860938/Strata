@@ -1,8 +1,8 @@
-c1 plumb @ 2026-10-11T19:19:37+00:00 url=http://127.0.0.1:8005 channel=reasoning_effort=off,temperature=0.8,memory-muted
-health: ok model=qwen3.8-flash-next-iq3_s max_context=393216
+c1 plumb @ 2026-10-23T21:13:38+00:00 url=http://127.0.0.1:8005 channel=reasoning_effort=off,temperature=0.8,memory-muted
+health: ok model=qwen3.8-flash-next-abliterated-ud-q4_k_xl max_context=393216
 encode: ack='OK' ptok=38
-save: n_saved=41 n_written=236673128 B save_ms=251.4 file=present sha256=12dfae5bf255b6de
-restore: status=200 n_restored=41 n_read=236673128 restore_ms=82.6
-re-save byte-exact: sha256 match (12dfae5bf255b6de) - round-trip integrity PASS
-continuation ask: ptok=75/75 geometry OK | cache_n=41 prompt_n=34 (need cache_n>=33) ride OK | answer 'zephyr-quill-46377' -> codeword recall FOUND
-C1 PASS - the venue is open on this build; C2 may run
+save: n_saved=294 n_written=240647660 B save_ms=313.4 file=present sha256=1d07e0091992734f
+restore: status=200 n_restored=294 n_read=240647660 restore_ms=96.0
+re-save DIFFERS at byte 32 (len 240647660 vs 239554508): header re-save content is not specced timestamp-free - recorded honestly, first diff b'\x9c\xfdW\x0e\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' vs b'|OG\x0e\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+continuation ask: ptok=75/75 geometry OK | cache_n=31 prompt_n=44 (need cache_n>=286) ride NO-GO | answer 'zephyr-quill-90018' -> codeword recall FOUND
+C1 FAIL - re-save not byte-exact (see line above); ride guard: server did not count the restored prefix as reused
