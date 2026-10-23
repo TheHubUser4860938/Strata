@@ -6,11 +6,12 @@ itself, so every client (OpenCode, Claude Code, Codex, the web app) shares one s
 harness ever has to re-send history. The server remembers, and it remembers the same way no
 matter which app is knocking.
 
-This fork is based on upstream Strata 0.2.3 (engine 0.1.48) — faster Strix Halo (+6% to +19% on
-the test PC), Intel Arc as a released engine package, the DFlash2 drafter (opt-in, Terminal only),
-an agent chat that copes with a full context, HTTPS through the operating system's certificates
-(#3722), better defaults for CPU workers, VRAM and the conversation cache (#3493), a steadier
-Terminal and app — and adds the memory system and the reason-mode steering described below.
+This fork is based on upstream Strata 0.2.3 (engine 0.1.48) — upstream's own headline list: faster
+Strix Halo (+6% to +19% answer speed on their test PC), Intel Arc as a released engine package, the
+DFlash2 drafter (opt-in, Terminal only), an agent chat that copes with a full context, HTTPS through
+the operating system's certificates (#3722), better defaults for CPU workers, VRAM and the
+conversation cache (#3493), a steadier Terminal and app — and adds the memory system and the
+reason-mode steering described below.
 
 ## The two names, and they are not decoration
 
@@ -37,6 +38,8 @@ cd Strata
 <img width="1877" height="638" alt="image" src="https://github.com/user-attachments/assets/5cae0570-fb69-4665-a59d-92a1c0eff5f7" />
 
 <img width="1278" height="263" alt="image" src="https://github.com/user-attachments/assets/f6f63206-afdb-439a-a9d4-d58ce0ee054a" />
+
+Version 0.2.3 · engine 0.1.48
 
 <img width="1879" height="434" alt="image" src="https://github.com/user-attachments/assets/1643c829-dc1b-43f5-9952-0d5c4f67f924" />
 
@@ -355,6 +358,12 @@ More choices:
 - **[Qwen3.6-35B-A3B](docs/QWEN36.md)** is a smaller, different model that reads pictures and can answer several requests at once.
 - **[OrcaRouter's Uncensored IQ3_XXS](docs/MODELS.md#orcarouter-uncensored-iq3_xxs)** is set up by hand.
 
+And three this fork added to setup's menu (`--family ...`), in the order the menu shows them — qwen, swift, coder, dau, daureg, unsloth, huihui, gyro, nvfp4, qwen36:
+
+- **Turbo-Brilliance, abliterated** ([DavidAU](https://huggingface.co/DavidAU/Qwen3.8-Flash-Next-Abliterated-Uncensored-Turbo-Brilliance-50x-Reasoning-Instruct-GSQ-RCO-GGUF), `--family dau`) is the IQ3_S that answers the `{REASON:}` dial described above: 41 framings, pairs, thinking levels and an autonomous picker. It is DavidAU's build on [SC117](https://huggingface.co/SC117/Qwen3.8-Flash-Next-GSQ-RCO-abliterated-GGUF)'s abliterated GSQ-RCO quant — his shard sizes agree with SC117's plus the transplant's signature, so it is a derivative of that file, not the original quant. Same size and speed as IQ3_S. Apache-2.0 on DavidAU's release, Qwen Community License 1.0 underneath.
+- **Turbo-Brilliance, regular** ([DavidAU](https://huggingface.co/DavidAU/Qwen3.8-Flash-Next-Turbo-Brilliance-50x-Reasoning-Instruct-GSQ-RCO-GGUF), `--family daureg`) is his re-quant of the original IQ3_S without the refusal-shaping removal: the same dial, the same size and speed as IQ3_S, the same licenses.
+- **Huihui, abliterated** ([huihui-ai](https://huggingface.co/huihui-ai/Huihui-Qwen3.8-Flash-Next-abliterated-v2-GGUF), `--family huihui`) is their re-quant of their own abliterated model in the Unsloth Dynamic sizes (94 to 188 GB of download): it answers plainly where the original declines. The dial does not ride it — its chat template is the stock one, and the server says so with a banner at boot — but the memory system and the picture reader work as usual. Qwen Community License 1.0.
+
 Every size, download and what fits where: [docs/MODELS.md](docs/MODELS.md).
 
 ## How fast is it?
@@ -399,7 +408,10 @@ memory-and-tooling line shipped six releases on October 17 alone: pairs, thinkin
 autonomous mode, the Settings menu, auto-pick observability and the store purge above. The
 full-size intelligence run — five published suites at full size, 21,336 generations, temperature
 1.0, three repeats — was launched on 2026-10-22 and has not landed a number yet. The server's own
-test suite — 1,012 tests, no GPU and no downloads needed — passes on this box.
+test suite — 1,156 tests under this repo's runner, no GPU and no downloads needed — passes on this
+box except two timing tests, both upstream's own files and both environmental: the
+`test_lifeline` watcher, and `test_keepawake`, which fails only inside the full run and passes when
+run by itself.
 
 Engine and server changes live on the `memory-core` branch; `main` stays a near-mirror of
 [upstream Strata](https://github.com/Niko1221/Strata) (MIT, by Niko1221). MAM-derived code
@@ -408,7 +420,8 @@ Mustafa Akbaş).
 
 **Who wrote this code:** most of it was typed by AI coding agents under a human's direction.
 The human picks the direction, owns the claims, and runs every measurement on real hardware
-(RTX 4090, Ryzen 7 9800X3D, 64 GB RAM class — 128 GB arriving ~2026-10-22); each number in
+(RTX 4090, Ryzen 7 9800X3D — 62 GB RAM class through 2026-10-21, 125 GB since 2026-10-22, so
+every number before that date was measured on the smaller box); each number in
 this fork links to the script and raw output that produced it, so anyone can re-check it
 whether or not an AI typed the driver.
 
