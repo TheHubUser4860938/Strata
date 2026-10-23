@@ -103,6 +103,8 @@ HF_REVISIONS = {
     "DavidAU/Qwen3.8-Flash-Next-Turbo-Brilliance-50x-Reasoning-Instruct-GSQ-RCO-GGUF":
         "ad1ee77df30e5ff9c25af86ac3475ca91dcd12d1",                                                  # 2026-10-17
     "huihui-ai/Huihui-Qwen3.8-Flash-Next-abliterated-v2-GGUF": "411f1f7349c9711e6f75aa8d20e1612eb3a4d55d",  # 2026-10-19
+    "sleepyeldrazi/Qwen3.8-Flash-Next-GSQ-RCO-Q8_0-PLE-GGUF": "11bbd8e8dad2c24c449418d6ef18043ff041f548",   # 2026-10-23
+    "mduca771/Qwen3.8-Flash-Next-PLE-tables-GGUF": "0fbc3613dfc05f818592a030036995c3a725b6dd",              # 2026-10-23
 }
 
 
@@ -427,8 +429,27 @@ CODER_FILES = {
 # (tools/strata_tokenizer.py) writes it out to <pack>/tokenizer/chat_template.jinja, which the server prefers
 # over its shipped one - so the modes' template rides the download; nothing extra is fetched for it.  Owners who
 # want a bigger table can drop in sleepyeldrazi/Qwen3.8-Flash-Next-GSQ-RCO-Q8_0-PLE-GGUF (54,400,261,312 bytes,
-# measured 2026-10-17: exactly this fork's dev box's 00002 since 2026-10-09) in the same slot; setup installs
-# the bundled one and does not chase that repository.
+# measured 2026-10-17: exactly this fork's dev box's 00002 since 2026-10-09) in the same slot.  Since 2026-10-23
+# setup offers that swap itself: --ple-q8 (off unless the person asks or an interactive setup is told yes),
+# one shared Q8_0 table per family tree - the PLE_Q8 pins below.
+# The optional Q8_0 n-gram table (the owner's law, 2026-10-23, after the huihui UD-Q4_K_XL install ran the
+# in-file IQ4_NL one at 0.076 row error against BF16 where the Q8_0 measures 0.0053 - Delgon's numbers, and
+# mduca771's PLE_flash_IQ4_NL is byte-identical to the families' own 316b46f3 shard 2, which is what makes
+# the same-tables-at-better-precision claim checkable).  The table is one trained tensor, identical in every
+# quant of a tree (mduca771: the payload equal across unsloth's UD-Q5_K_XL, UD-Q6_K_XL and Q8_0), and Q8_0
+# takes no imatrix, so each tree needs one file shared by all its quants; the trees' files differ only in
+# container metadata, which is why the tree picks the file and its pin.  Sizes and SHA-256 are the Hub's LFS
+# pointers, checked 2026-10-23; the ista tree's equals this fork's dev box's IQ3_S shard 2 byte for byte
+# (its sha256 measured on the box the same morning).
+PLE_Q8 = {   # tree -> (repository, file, bytes, sha256)
+    "ista": ("sleepyeldrazi/Qwen3.8-Flash-Next-GSQ-RCO-Q8_0-PLE-GGUF",
+             "Qwen3.8-Flash-Next-GSQ-RCO-Q8_0-00002-of-00002.gguf", 54400261312,
+             "e60d876283f30879bb6fd7e0ef26cf3e55266ec4c06eea01554b43f1bce2d6de"),
+    "unsloth": ("mduca771/Qwen3.8-Flash-Next-PLE-tables-GGUF", "PLE_flash_Q8.gguf", 54400261408,
+                "84cb63a026bec8d3568b008c2c1876cba48e4ca3062d20203f3010836ecb4179"),
+}
+PLE_Q8_TREE = {"qwen": "ista", "coder": "ista", "dau": "ista", "daureg": "ista",
+               "unsloth": "unsloth", "huihui": "unsloth"}   # swift brings its own tuned table; gyro carries its own; NVFP4 is FP8
 DAU_IQ3_S_SHARDS = {
     "Qwen3.8-Flash-Next-GSQ-RCO-abliterated-IQ3_S-00001-of-00002.gguf":
         (55063664928, "78706315c2fe912777c006b4ae18be1024c9f4353bd25d33b8a306c9c55f9e34"),
@@ -3050,6 +3071,40 @@ def verify_sha256(s: Path, size: int, sha: str, own: bool = False, repair=None) 
     mark(s, f"sha256 {sha}")
 
 
+def get_ple_q8(models_dir: Path, tree: str) -> Path:
+    """The family tree's optional Q8_0 n-gram table (PLE_Q8): one file, in its own name, shared by every
+    quant of the tree on this PC.  A table the box already owns links instead of downloading 54.4 GB twice:
+    the same file under its own name, or - the swap this fork's dev box made by hand on 2026-10-09, and the
+    reason the reuse glob carries a size filter - a done-marked quant shard of exactly the pinned size.
+    A link or a download is hashed against the pin once (verify_sha256 keeps the digest in the finish
+    mark); a size look-alike with different bytes stops setup by name, it never runs as a silent swap."""
+    repo, name, size, sha = PLE_Q8[tree]
+    want = models_dir / name
+    if not (want.exists() and done(want)):
+        reuse = next((p for p in sorted(models_dir.rglob("*.gguf"))
+                      if p != want and done(p) and p.stat().st_size == size and
+                      (p.name == name or p.name.endswith("-00002-of-00002.gguf"))), None)
+        if reuse is not None:
+            try:
+                os.link(reuse, want)
+                mark(want)
+                ok(f"n-gram table: {name} shared with {reuse.parent.name}'s (identical bytes, no download)")
+            except OSError:                            # another filesystem: read the table where it is
+                verify_sha256(reuse, size, sha)
+                ok(f"n-gram table: {reuse.name} where it stands ({reuse.parent})")
+                return reuse
+        else:
+            if want.exists():
+                want.unlink()                          # an interrupted attempt: the download starts fresh
+            if free_gb(models_dir) < size / 1e9 + 2:
+                fail(f"not enough free disk space in {models_dir} for the 54.4 GB Q8_0 n-gram table: "
+                     f"{free_gb(models_dir):.0f} GB free",
+                     "free some disk space, or install without the table (--ple-q8 off)")
+            download(hf(repo) + name, want)
+    verify_sha256(want, size, sha)
+    return want
+
+
 # ---------------------------------------------------------------------------
 # memory-core fork: the memory system ships ON by default (the user's decision, 2026-10-16:
 # "if someone doesn't want the built-in memory system they won't be using our fork to begin
@@ -3108,7 +3163,26 @@ CARTRIDGE_MIN_HEADROOM_GB = 8.0   # tier-2 cartridges only when this much system
                                   # ~66 and does)
 
 
-def fork_memory_cfg(root: Path, ram: float | None = None, model: str | None = None) -> dict:
+def last_memory_block() -> dict | None:
+    """The newest "memory" block among this PC's strata-*.json files, if any (2026-10-23, the owner's fix
+    for "make sure the setup builds the .json with all the correct memory settings"): the memory block is
+    setup's own key (SETUP_KEYS), so a rerun - or a second model installed on a lived-in box - rewrote it
+    from scratch and quietly dropped the person's tuning layer (the store's dir, the embedder's threads,
+    the measured knobs turned ON against the shipped stance: route_shelves and the rest of the LCC block).
+    On a box that never ran the fork's setup this returns None and the generated block is exactly what it
+    always was - the byte-identical default path holds."""
+    for p in sorted(home().glob("strata-*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
+        try:
+            m = json.loads(p.read_text(encoding="utf-8-sig")).get("memory")
+        except (OSError, ValueError):
+            continue                                   # unreadable or half-written: the next file's turn
+        if isinstance(m, dict):
+            return m
+    return None
+
+
+def fork_memory_cfg(root: Path, ram: float | None = None, model: str | None = None,
+                    prev: dict | None = None) -> dict:
     """The "memory" block setup writes: the shape the development store runs, with every budget at a
     measured value - 96 recall notes under a 48,000-char cap (m4_blockcov: the CHAR cap is what binds
     long rows, and at 96 notes the everyday block is ~15k chars, so the wider cap costs nothing and
@@ -3120,8 +3194,12 @@ def fork_memory_cfg(root: Path, ram: float | None = None, model: str | None = No
     slot_save_path both writers set beside this block (the server creates the dir 0700 at boot).
     Knobs measured and shipped OFF stay OFF: floor_cosine (-7.2% coverage), block_min_score (purity
     flat, evidence down), exposure decay (suppresses the relevant), route_shelves (-0.031) - each is
-    one config key away if a user wants them. Opt out of memory entirely with "memory":
-    {"enabled": false}; every other edit tunes rather than disables."""
+    one config key away if a user wants them; `prev` (last_memory_block(): this PC's newest memory
+    block) is where the person's own turning-them-on survives a rerun or a second model - its values
+    merge over this shape, and only the cartridge gate re-decides for the new model's RAM (the
+    2026-10-19 RAM law beats carry-over; an explicit "enabled": false in prev stays false). Opt out
+    of memory entirely with "memory": {"enabled": false}; every other edit tunes rather than
+    disables."""
     out = {"dir": str(root / "Strata-data" / "memory"), "recall_limit": 96,
            "max_block_chars": 48000, "per_turn": True, "turn_recall_limit": 12,
            "turn_block_chars": 24000, "tool_rounds": 0, "encrypt": 1, "tool": True,
@@ -3131,6 +3209,14 @@ def fork_memory_cfg(root: Path, ram: float | None = None, model: str | None = No
     need = (MODELS.get(model) or {}).get("ram_gb")
     if ram is not None and need is not None and ram - need >= CARTRIDGE_MIN_HEADROOM_GB:
         out["cartridges"] = {"enabled": True, "class_prefixes": ["USR", "DEC"], "max_chars": 12000}
+    if isinstance(prev, dict):                         # the tuning layer follows the model (2026-10-23)
+        for k, v in prev.items():
+            if k != "cartridges":
+                out[k] = v                             # store dir, budgets, embedder, measured knobs: the person's, kept
+        pc = prev.get("cartridges")
+        if isinstance(pc, dict) and isinstance(out.get("cartridges"), dict):
+            out["cartridges"] = {**out["cartridges"], **pc,        # the person's shelf prefixes and char budget win;
+                                 "enabled": bool(pc.get("enabled", True))}   # an explicit no stays a no; a gate fail drops all
     return out
 
 
@@ -7784,7 +7870,7 @@ def install_own_path(a, family, gpu, hip, amd, cuda_tk, multi, port, ram, adopte
     cfg = {"exe": engine_exe(eng), "args": args, "cwd": str(ROOT), "tokenizer": str(pack / "tokenizer"),
            "model_name": f"{fam['name']}-{model.lower()}", "arch": fam["arch"],
            "log": str(home() / f"strata-{tag.lower()}.log"), "lib_dirs": lib_dirs, "port": port}   # v0.2.0: logs live in the user's home folder
-    cfg["memory"] = fork_memory_cfg(ROOT, ram, model)   # memory-core fork: memory on by default, and the
+    cfg["memory"] = fork_memory_cfg(ROOT, ram, model, prev=last_memory_block())   # memory-core fork: memory on by default, and the
     cfg["slot_save_path"] = str(ROOT / "Strata-data" / "sessions")   # slot save/restore + the cartridges' file dir
     cfg["slot_retain"] = 6                             # prune to the 6 newest saves: the dev box's disk law
     fetch_embedder(ROOT)                               # hybrid arm's model is part of the install
@@ -8128,6 +8214,20 @@ def main() -> int:
                     help="the most image tokens a picture becomes (default 1024 with the encoder on the GPU, 300 on "
                          "the CPU): more reads small text and charts better, and takes longer to encode; remembered "
                          "for this model")
+    ap.add_argument("--ple-q8", choices=["on", "off"],
+                    help="add the optional Q8_0 n-gram (PLE) table where the files carry IQ4_NL: row error 0.0053 "
+                         "against BF16 where the bundled table sits at 0.076 (measured). On the two-file GSQ-RCO "
+                         "families it downloads as the model's second file in that file's place and name (the "
+                         "IQ4_NL one is not downloaded); on the four-file Unsloth families it rides beside the "
+                         "files, all of which stay, and is read by --ple-gguf. 54.4 GB, one download per family "
+                         "tree shared by every quant of it on this PC. Off without a word by default; an "
+                         "interactive setup asks (swift, gyro and NVFP4 bring their own tables and are never asked)")
+    ap.add_argument("--ple-io", choices=["ram", "ssd"],
+                    help="how the engine reads the n-gram table: ram locks it in RAM (a fresh 4K prompt about 18%% "
+                         "sooner on a fast card, measured; the table's own size in RAM the experts cannot use), "
+                         "ssd reads only the rows each batch needs from the drive (the engine's default). An "
+                         "interactive setup asks where RAM fits; either answer is kept as the person's option "
+                         "(user_args), so a later setup run does not change it on its own")
     # image generation (Qwen-Image): in preview, not offered in setup or --help; the options still work (docs/IMAGES.md)
     ap.add_argument("--images", choices=["qwen-image", "no"],
                     help=argparse.SUPPRESS)
@@ -8951,6 +9051,29 @@ def main() -> int:
 
     # ---- 5. the model files
     step(5, f"downloading {fam['title']} {model}")
+    ple_sidecar, want_q8, ple_swap = None, "off", False
+    if family in PLE_Q8_TREE and not ready:            # the in-file n-gram table is IQ4_NL here: the Q8_0 offer fits (owner, 2026-10-23)
+        if a.ple_q8:
+            want_q8 = a.ple_q8
+        elif not a.yes and not CONTROL:
+            want_q8 = "on" if ask("The model files keep their n-gram table at IQ4_NL (row error 0.076 against BF16); "
+                                  "the family's Q8_0 table measures 14x truer (0.0053). Add it?" +
+                                  (" it downloads as the model's second file in that file's place and name (54.4 GB "
+                                   "where the IQ4_NL one is 28.8, one download shared by every quant of the family "
+                                   "on this PC), and nothing else is fetched"
+                                   if PLE_Q8_TREE[family] == "ista" else
+                                   " 54.4 GB, one download beside the files (all of them stay), read by --ple-gguf, "
+                                   "shared by every quant of this family on this PC"), ["y", "n"], "n", a.yes) == "y" else "off"
+        if want_q8 == "on":
+            # the two-file GSQ-RCO families hold the table in a file of its own (the second shard is the n-gram
+            # table, never weights): the Q8_0 then swaps into its slot under the slot's own name and the IQ4_NL
+            # file is not downloaded at all - the swap this fork's dev box has run by hand since 2026-10-09, and
+            # what the owner asked for (2026-10-23: "skip downloading shard two and instead download the Q8 PLE
+            # table ... and just rename that to whatever the second shard was supposed to be named").  The four-
+            # file Unsloth families mix the table into the expert shards - no slot to swap, so the sidecar there.
+            ple_swap = PLE_Q8_TREE[family] == "ista" and len(shards) == 2 and not a.gguf_dir
+            if PLE_Q8_TREE[family] == "ista" and not ple_swap:
+                say("  your own files (--gguf-dir) keep their place: the Q8_0 table rides beside them as a sidecar")
     if ready:                                          # pinned files of the pack's repository, each SHA-256-checked
         say(f"  The model files go in {models_dir / MODELS[model]['repo'].replace('/', '--')}")
         if model_source() == "modelscope":
@@ -8971,15 +9094,25 @@ def main() -> int:
                 say(f"  Downloading from {hf_endpoint()} (HF_ENDPOINT)")
         for s in shards:
             if s.exists() and done(s):
-                ok(f"{s.name} already downloaded")
-                continue
+                if ple_swap and s.name.endswith("-00002-of-00002.gguf") and s.stat().st_size != PLE_Q8["ista"][2]:
+                    say(f"  {s.name} is the bundled IQ4_NL table: the Q8_0 swap replaces this copy (models sharing "
+                        "the file by a hard link keep theirs)")
+                    s.unlink()
+                else:
+                    ok(f"{s.name} already downloaded")
+                    continue
             # the original's shard 2 is the shared n-gram table, the same file for all its sizes, the Coder and
             # DavidAU's Turbo-Brilliance (his measured 2026-10-17: SHA-256 equal to the original's - it is the
             # PLE n-gram table, never model weights, so sharing it is right and not a lucky accident).  Boxes
             # that swapped a bigger table into the slot themselves (sleepyeldrazi's Q8_0 one - this fork's dev
-            # box among them) own that swap outside setup: the sizes pinned above describe the bundled file.
+            # box among them) own that swap outside setup - or, since 2026-10-23, own it through setup: with
+            # --ple-q8 on the Q8_0 downloads under the slot's name and checks against the table's own pin, and
+            # the sizes pinned above then describe the bundled file that stayed behind.
             other = [p for p in Path(a.models_dir).glob("*/Qwen3.8-Flash-Next-GSQ-RCO-*-00002-of-00002.gguf") if done(p)]
-            if family in ("qwen", "coder", "dau") and s.name.endswith("00002-of-00002.gguf") and other and not s.exists():
+            if ple_swap:                               # the slot wants the Q8_0 blob: a finished file of exactly
+                other = [p for p in sorted(Path(a.models_dir).glob("*/*.gguf"))   # the table's size, under any name
+                         if done(p) and p.stat().st_size == PLE_Q8["ista"][2]]    # (the pinned hash below keeps it honest)
+            if (family in ("qwen", "coder", "dau") or ple_swap) and s.name.endswith("00002-of-00002.gguf") and other and not s.exists():
                 try:
                     os.link(other[0], s)
                     mark(s)
@@ -8987,13 +9120,25 @@ def main() -> int:
                     continue
                 except OSError:
                     pass
-            download(fam["hf"].format(q=model) + s.name, s)
+            download(hf(PLE_Q8["ista"][0]) + PLE_Q8["ista"][1] if ple_swap and s.name.endswith("-00002-of-00002.gguf")
+                     else fam["hf"].format(q=model) + s.name, s)
     if not ready:
         check_shards(shards)
     for s in ([] if ready else shards):                # the Unsloth files: pinned sizes and SHA-256
-        if s.name in fam.get("sha256", {}):
+        if (family in PLE_Q8_TREE and PLE_Q8_TREE[family] == "ista" and s.is_file() and not ready
+                and s.name.endswith("-00002-of-00002.gguf") and s.stat().st_size == PLE_Q8["ista"][2]):
+            # the slot holds the tree's Q8_0 table - swapped by --ple-q8 or by a hand swap that outlived it (the
+            # dev box's since 2026-10-09): checked against the table's pin, not the IQ4_NL pin the family dict
+            # carries, so the swap survives every later setup run in both directions, by these bytes
+            verify_sha256(s, *PLE_Q8["ista"][2:], own=bool(a.gguf_dir))
+        elif s.name in fam.get("sha256", {}):
             verify_sha256(s, *fam["sha256"][s.name], own=bool(a.gguf_dir))
     ok("model files present")
+    if want_q8 == "on" and ple_swap:
+        ok(f"n-gram table: the model's second file is the Q8_0 table in its slot ({PLE_Q8['ista'][1]} read under "
+           f"{shards[1].name}) - the IQ4_NL file was not downloaded, and no --ple-gguf sidecar line is needed")
+    elif want_q8 == "on":                              # the four-file Unsloth family keeps every shard (the table is
+        ple_sidecar = get_ple_q8(Path(a.models_dir), PLE_Q8_TREE[family])   # mixed with the experts): the table rides beside them
     mmproj = Path(a.models_dir) / fam.get("mmproj", MMPROJ)
     if not mmproj.exists():                            # an earlier install's copy (the same file for every family)
         mmproj = find_in(roots, f"models/{fam['mmproj']}") or mmproj
@@ -9083,9 +9228,18 @@ def main() -> int:
         ple = next((s for s in shards if any(t.name == "per_layer_token_embd.weight" for t in GGUFFile(s).tensors)), None)
         if ple is None:
             fail("the model has no per_layer_token_embd tensor (is this a Qwen3.8-Flash-Next GGUF?)")
-        # (a 4-shard file: the engine finds the PLE table's shard itself from shard 1, the measured setup)
-        model_args = ["--pack", str(pack), "--native", str(shards[0]),
-                      *(["--ple-gguf", str(ple)] if len(shards) <= 2 else [])]
+        # (a 4-shard file: the engine finds the PLE table's shard itself from shard 1, the measured setup;
+        #  an opted-in Q8_0 sidecar rides by name instead, --ple-gguf, over the in-file IQ4_NL one - and on
+        #  a 4-shard file the shards must then be enumerated as native dense too: the engine reads an
+        #  external table as a native-dense additional shard and refuses its split metadata against the
+        #  4-of-4 first shard ("additional shard must match the architecture-validated first shard's split
+        #  metadata", measured 2026-10-23 11:24 on the huihui arm; with the four --native-dense-gguf lines
+        #  it started at 11:32 - the shape the owner wired by hand and the swift config already ran))
+        if ple_sidecar is not None:
+            ple = ple_sidecar
+        dense = [x for s in shards for x in ("--native-dense-gguf", str(s))] if ple_sidecar is not None and len(shards) > 2 else []
+        model_args = ["--pack", str(pack), "--native", str(shards[0]), *dense,
+                      *(["--ple-gguf", str(ple)] if ple_sidecar is not None or len(shards) <= 2 else [])]
     args = [*model_args,
             "--expert-profile", str(ROOT / "data" / fam.get("profile", "expert-profile.bin")), "--expert-cache", "auto",
             "--prefill", "auto", "--spec", "4", "--spec-min-p", "0.5", "--mtp", str(rt),
@@ -9109,6 +9263,7 @@ def main() -> int:
            "experts.bin on the SSD as needed")
     elif low_ram:   # the experts from the pack's experts.bin: the ones the GPU does not hold copied into RAM, or mapped
         args += ["--resident-experts" if resident else "--mmap-experts"]
+    ple_io_user = None                                 # the person's --ple-io answer (set only in the SSD-and-RAM branch)
     disk = None if is_wsl() else rotational_disk(ple)  # #605 (WSL's virtual disk says rotational)
     if disk:
         tensor = None if ready else next((t for t in GGUFFile(ple).tensors if t.name == "per_layer_token_embd.weight"), None)
@@ -9135,7 +9290,23 @@ def main() -> int:
         except Exception:
             size = None
         table_gb = size / 1e9 if size else 28.8
-        if ram >= MODELS[model]["ram_gb"] + table_gb + 16:
+        fits = ram >= MODELS[model]["ram_gb"] + table_gb + 16
+        ple_io_user = {"ram": "ram", "ssd": "direct"}.get(a.ple_io)   # --ple-io: the person's, kept in user_args
+        if ple_io_user is None and not a.yes and not CONTROL and fits:
+            # the silent RAM choice (0.1.39) becomes a question (the owner, 2026-10-23: "have it ask whether
+            # you want the PLE table to stream from NVMe or RAM"): the engine's own default leads, RAM is the
+            # opt-in with the measured bonus, and either answer rides in user_args so no later setup run
+            # rewrites it by formula
+            ple_io_user = "ram" if ask(f"Keep the {table_gb:.0f} GB n-gram table locked in RAM? A new 4K prompt is "
+                                       "about 18% sooner on a fast card (measured); the SSD path reads only the rows "
+                                       f"each batch needs (the engine's default) and leaves the {table_gb:.0f} GB for "
+                                       "the experts", ["ssd", "ram"], "ssd", a.yes) == "ram" else "direct"
+        if ple_io_user is not None:
+            ok(f"n-gram table: read from {'RAM, locked (--ple-io ram)' if ple_io_user == 'ram' else 'the SSD (--ple-io direct, the engine default)'}"
+               " - recorded as your option (user_args): setup will not change it on its own")
+            if ple_io_user == "ram" and not fits:
+                warn(f"{ram:.0f} GB of RAM with a {table_gb:.0f} GB table locked in it: the expert cache runs on the less")
+        elif fits:
             args += ["--ple-io", "ram"]
             ok(f"{ram:.0f} GB of RAM: the {table_gb:.0f} GB n-gram table is kept in RAM (--ple-io ram), so a new prompt does "
                "not wait for its rows from the SSD (a 4K prompt about 18% sooner on a fast card); remove --ple-io ram from "
@@ -9268,9 +9439,11 @@ def main() -> int:
     cfg = {"exe": engine_exe(eng), "args": args, "cwd": str(ROOT), "tokenizer": str(pack / "tokenizer"),
            "model_name": f"{fam['name']}-{model.lower()}", "log": str(home() / f"strata-{tag.lower()}.log"),
            "lib_dirs": lib_dirs, "port": port}
-    cfg["memory"] = fork_memory_cfg(ROOT, ram, model)   # memory-core fork: on every time, opt-out by config
+    cfg["memory"] = fork_memory_cfg(ROOT, ram, model, prev=last_memory_block())   # memory-core fork: on every time, opt-out by config
     cfg["slot_save_path"] = str(ROOT / "Strata-data" / "sessions")   # slot save/restore + the cartridges' file dir
     cfg["slot_retain"] = 6                             # prune to the 6 newest saves: the dev box's disk law
+    if ple_io_user is not None:                        # the --ple-io answer: durable against the RAM formula on reruns
+        cfg["user_args"] = user_args.set_flag(cfg.get("user_args") or [], "--ple-io", ple_io_user)
     if family in ("dau", "daureg"):
         # the {REASON:} master switch (the one boolean the user asked for): a DavidAU install arrives
         # with its reason modes ON - the /reason door, the reason_mode tool, the sticky modes; every

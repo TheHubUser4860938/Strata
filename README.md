@@ -316,6 +316,16 @@ KV), state-without-text is research, not a result. Positive *and* negative resul
 Setup checks your graphics card, RAM and disk, picks the model that fits, installs and starts it, and tells you how to
 connect your apps.
 
+Where your PC has RAM to spare, setup no longer locks the n-gram table into RAM by itself: it asks. Locked in RAM
+(`--ple-io ram`) a fresh 4K prompt arrives about 18% sooner on a fast card (measured) — at the table's own size in RAM
+the experts cannot use; read from the SSD (the engine's default) only the rows each batch needs come off the drive and
+the RAM stays free. Either answer is recorded as your own option in the model's config (`user_args`), so no later
+setup run rewrites it by formula; `--ple-io ram|ssd` on the command line answers for you.
+
+And a second model, or a setup rerun on the first, no longer resets the memory system: the box's memory block — the
+store's folder, the recall budgets, the embedder, the measured knobs you turned on — is carried into the new config.
+Only the tier-2 cartridge gate re-decides, for the new model's RAM.
+
 Prefer to build it yourself? See [Build from source](#build-from-source).
 
 ## Models
@@ -365,6 +375,31 @@ And three this fork added to setup's menu (`--family ...`), in the order the men
 - **Huihui, abliterated** ([huihui-ai](https://huggingface.co/huihui-ai/Huihui-Qwen3.8-Flash-Next-abliterated-v2-GGUF), `--family huihui`) is their re-quant of their own abliterated model in the Unsloth Dynamic sizes (94 to 188 GB of download): it answers plainly where the original declines. The dial does not ride it — its chat template is the stock one, and the server says so with a banner at boot — but the memory system and the picture reader work as usual. Qwen Community License 1.0.
 
 Every size, download and what fits where: [docs/MODELS.md](docs/MODELS.md).
+
+### The n-gram table: a bigger one is optional
+
+Every file of this model carries its n-gram lookup table at IQ4_NL: measured against the model's own
+BF16 table it misremembers rows at 0.076, where the Q8_0 table sits at 0.0053 — fourteen times truer
+(the labs' numbers, cross-checked against each other's quants). The table is one trained tensor, the
+same in every quantization of a family tree, and Q8_0 takes no imatrix, so one 54.4 GB file per tree
+serves every quant of it on your PC. Setup offers it as **`--ple-q8 on`** (an interactive setup asks;
+`--yes` and the app take the bundled table, as always):
+
+- On the two-file GSQ-RCO families (qwen, coder, dau, daureg) the Q8_0 downloads **as the model's second
+  file, in that file's place and name** — the IQ4_NL file is never fetched, so the table costs 54.4 GB
+  instead of 28.8 and nothing else changes. This is the shape the fork's own 125 GB box has run since
+  2026-10-09.
+- On the four-file Unsloth families (unsloth, huihui) every file stays: the table rides beside them and
+  is read by `--ple-gguf`, with all four shards enumerated as dense projections — without that the
+  engine refuses an outside table ("additional shard must match the architecture-validated first
+  shard's split metadata"), measured on this fork's box 2026-10-23.
+- One file per tree, pinned by size and SHA-256 (sleepyeldrazi's for the GSQ-RCO tree, mduca771's for
+  the Unsloth one — his IQ4_NL sibling is the families' own bundled shard 2 byte for byte, which is what
+  makes the same-table-better-precision claim checkable). A PC that already owns a table of the pinned
+  size links it instead of downloading it twice, and a swapped slot is checked against the table's own
+  pin — a swap you made by hand included, so it survives every later setup run.
+
+Swift, Gyro and NVFP4 bring their own tables and are never asked.
 
 ## How fast is it?
 
