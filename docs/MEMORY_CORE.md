@@ -462,6 +462,19 @@ PC keeps 8 GB of RAM free of the model's all-in need. The file lands in the **on
 `sessions/`, the same directory `slot_save_path` names, never inside the install folder; `slot_retain`
 prunes that folder to the newest saves and must never evict the cartridge's applied file.
 
+**Two decisions from the owner (2026-10-23) set the next rung.** First, **tier 1 is canceled** as not
+feasible: the recall ladder ships as the tier-2 standing cartridge over the tier-3 curated store, and
+the docs should stop implying a third rung beneath them. (The other `tier-1` in these pages,
+MEMORY_CORE's mention of plan §11-7, is the *PLE* three-tier storage design — a different ladder that
+happens to share the word.) Second, **the soul rides INSIDE the cartridge**: the standing text is soul
+plus the shelved facts, seeded as one prefix, because a live prompt's first bytes are soul bytes and
+prefix reuse dies at the first mismatch — which is what the numbers showed on the 14:28 boot: the
+cartridge restored in 150.6 ms (3,257 tokens, 285,914,528 bytes) yet parked `reused_kv_bytes=0`, and
+the next request reused 0 of 294,038 tokens. The cart was seeded cart-only, so nothing matched at
+token 0. Re-encoding with the soul inside is the next cartridge step, and the pass condition is that
+first standing request: reused tokens going from 0 to the cartridge's own length, while the soul stops
+being re-prefilled every turn — which is the point of carrying it.
+
 **The store's own page (item D).** `GET /memory-ui` (only when memory is on) serves a panel:
 stats cards (rows/cap/pressure, pending turns, at-rest seal, cartridge state), search with
 scope/class filters, the fifty most recent facts with per-row **Forget**, an **Add a fact** box
