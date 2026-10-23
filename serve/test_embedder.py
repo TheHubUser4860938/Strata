@@ -13,8 +13,9 @@ from pathlib import Path
 
 from serve.embedder import Embedder, _verify_pinned
 from serve.memory import MemoryService
+from strata_control.datafolder import data_dir      # the one data folder (2026-10-23): the embedder is not inside the install
 
-MODEL_DIR = Path(__file__).resolve().parent.parent / "Strata-data/embeddings/bge-small-en-v1.5"
+MODEL_DIR = data_dir(Path(__file__).resolve().parent.parent) / "embeddings/bge-small-en-v1.5"
 
 
 class Pins(unittest.TestCase):

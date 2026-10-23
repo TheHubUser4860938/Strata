@@ -596,7 +596,10 @@ class Strata:
         except (OSError, ValueError):
             s = {}
         d = s.get("data_dir") if isinstance(s, dict) else None
-        return Path(d) if d else self.root.parent / "Strata-data"
+        # strata_control/datafolder.py is the one resolver (single-root law, 2026-10-23); this is the
+        # MCP server's twin of it, guard included: a remembered folder that no longer exists is not
+        # a data folder, and trusting it is how a store silently moves to an empty tree.
+        return Path(d) if d and Path(d).is_dir() else self.root.parent / "Strata-data"
 
     def allowed_roots(self) -> list[Path]:
         return [norm(self.root), norm(self.data_dir())]
