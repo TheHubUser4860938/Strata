@@ -1789,6 +1789,30 @@ def check_gpus(sel, found, what="", yes=False, named=False) -> None:
         fail(f"GPU {i}{'' if g is None else ' (' + g['name'] + ')'} {what}cannot be used: {p}", hint)
 
 
+def arch_numbers(value) -> list:
+    """The CUDA architectures of a BUILD.json `archs` / `vision_archs` value, as numbers.  The packaging recipes write the picture
+    reader's as ONE string ("75;86;89;120", packaging/package_engine.py stamp_vision_archs, build_cuda_linux.sh), the engine's own as a
+    list of numbers ([75, 86, 89, 120]); [60, "sm_61", "70-real", "compute_89"] and "60,61 70" are read too (#3810: a string was
+    iterated character by character and setup stopped with int(';'))."""
+    if value is None or value == "":
+        return []
+    parts = list(value) if isinstance(value, (list, tuple, set)) else re.split(r"[;,\s]+", str(value))
+    out: list = []
+    for part in parts:
+        m = re.search(r"\d+", str(part))
+        if m and int(m.group()) not in out:
+            out.append(int(m.group()))
+    return out
+
+
+def arch_names(value) -> list:
+    """The AMD architectures ("gfx1100") of a BUILD.json `archs` / `vision_archs` value, as strings: a list or one ";" / "," separated string."""
+    if value is None or value == "":
+        return []
+    parts = list(value) if isinstance(value, (list, tuple, set)) else re.split(r"[;,\s]+", str(value))
+    return [str(p) for p in parts if str(p)]
+
+
 def engine_archs(toolkit=13):
     """The GPU generations the installed engine has code for: (archs, ptx), or None when there is none."""
     info = engine_dir(toolkit) / "BUILD.json"
@@ -1796,7 +1820,7 @@ def engine_archs(toolkit=13):
         meta = json.loads(info.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
-    return [int(x) for x in meta.get("archs", [])], bool(meta.get("ptx"))
+    return arch_numbers(meta.get("archs")), bool(meta.get("ptx"))
 
 
 def engine_archs_hip():
@@ -1805,7 +1829,7 @@ def engine_archs_hip():
         meta = json.loads((ROOT / "engine" / "BUILD.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
-    return [str(x) for x in meta.get("archs", [])] if meta.get("backend") == "hip" else None
+    return arch_names(meta.get("archs")) if meta.get("backend") == "hip" else None
 
 
 def engine_runs_on(g, toolkit=13) -> bool:
@@ -4533,7 +4557,7 @@ def get_prebuilt_hip(url_base, gpu, updating=False) -> Path | None:
             meta = {}
         ver = tuple(int(x) for x in str(meta.get("version", "0")).split(".")[:4] if x.isdigit())
         if meta.get("backend") == "hip" and meta.get("source") == "prebuilt" and ver >= WIN_HIP_MIN_ENGINE and \
-                gpu["arch"] in meta.get("archs", []) and not updating:
+                gpu["arch"] in arch_names(meta.get("archs")) and not updating:
             ok("ready-made AMD engine already installed")
             return eng
     if not url_base:
@@ -4575,11 +4599,11 @@ def get_prebuilt_hip(url_base, gpu, updating=False) -> Path | None:
         why = "it is not a HIP engine"
     elif ver < WIN_HIP_MIN_ENGINE:
         why = f"it is version {meta.get('version')}; this setup needs {'.'.join(map(str, WIN_HIP_MIN_ENGINE))}"
-    elif gpu["arch"] not in meta.get("archs", []):
-        why = (f"it is built for {', '.join(meta.get('archs', []))}; your GPU is {gpu['arch']}.  A card it has no code "
+    elif gpu["arch"] not in arch_names(meta.get("archs")):
+        why = (f"it is built for {', '.join(arch_names(meta.get('archs')))}; your GPU is {gpu['arch']}.  A card it has no code "
                "for runs from a self-build of the engine: see docs/AMD_HIP.md (--build)")   # #881
         if is_strix_halo(gpu):                         # never a zip without gfx1151 code: say so, and what to do
-            why = (f"it is built for {', '.join(meta.get('archs', [])) or 'other GPUs'} and has no gfx1151 code: your "
+            why = (f"it is built for {', '.join(arch_names(meta.get('archs'))) or 'other GPUs'} and has no gfx1151 code: your "
                    f"{gpu['name']} (Strix Halo) needs a ready-made engine from Strata 0.1.40 or newer, whose zip is "
                    "built for gfx1151 too.  Until then: the Linux guide docs/STRIX_HALO.md, or compile the engine "
                    "here with tools\\hip\\build_windows.bat (its default list has gfx1151) and start setup with "
@@ -4593,7 +4617,7 @@ def get_prebuilt_hip(url_base, gpu, updating=False) -> Path | None:
     shutil.rmtree(tmp, ignore_errors=True)
     drop_archive(z)
     hip_runtime_beside_exe(eng)                        # #468 #461
-    ok(f"ready-made AMD engine {meta.get('version', '')} for {', '.join(meta.get('archs', []))} "
+    ok(f"ready-made AMD engine {meta.get('version', '')} for {', '.join(arch_names(meta.get('archs')))} "
        f"(ROCm {meta.get('rocm', '?')})")
     return eng
 
@@ -4721,12 +4745,12 @@ def build_engine_hip(gpu, llama, vision="none") -> Path:
     meta = json.loads(stamp.read_text(encoding="utf-8")) if stamp.exists() else {}
     src, vsrc = source_hash(ENGINE_SOURCES), source_hash(VISION_SOURCES)
     archs = sorted(set(gpu.get("archs") or [gpu["arch"]]))
-    has_archs = set(archs) <= set(meta.get("archs", []))
+    has_archs = set(archs) <= set(arch_names(meta.get("archs")))
     floor = cpu_floor(cpu_info()[1])                     # "" on an AVX2 CPU: the normal engine
     engine_ok = meta.get("backend") == "hip" and (eng / EXE).exists() and meta.get("src") == src and has_archs and \
         (meta.get("isa_floor") or "") == floor and not stale_binary(eng / EXE)
     vision_ok = vision == "none" or ((eng / VEXE).exists() and meta.get("vision_src") == vsrc and
-                                     (vision != "gpu" or ((eng / HVEXE).exists() and set(archs) <= set(meta.get("vision_archs", [])))))
+                                     (vision != "gpu" or ((eng / HVEXE).exists() and set(archs) <= set(arch_names(meta.get("vision_archs"))))))
     if engine_ok and vision_ok:
         ok("engine already built for this PC")
         return eng
@@ -4786,8 +4810,8 @@ def reader_archs(eng: Path) -> list:
         except (OSError, ValueError):
             continue
         for key in keys:
-            if isinstance(data, dict) and isinstance(data.get(key), list) and data[key]:
-                return [str(x) for x in data[key]]
+            if isinstance(data, dict) and arch_names(data.get(key)):
+                return arch_names(data.get(key))
     return []
 
 
@@ -5300,7 +5324,7 @@ def get_prebuilt(url_base, gpu, vision, updating=False, toolkit=13) -> Path | No
         ver = tuple(int(x) for x in str(meta.get("version", "0")).split(".")[:4] if x.isdigit())
         if meta.get("source") == "local":              # compiled here: build_engine checks its source and cards
             return None
-        have = [int(a) for a in meta.get("archs", [])]
+        have = arch_numbers(meta.get("archs"))
         miss = [int(x) for x in gpu.get("archs", [gpu["arch"]])
                 if have and int(x) not in have and not (meta.get("ptx") and int(x) > max(have))]
         if miss:                                       # a card it has no code for (#128): compiled here instead
@@ -5361,7 +5385,7 @@ def get_prebuilt(url_base, gpu, vision, updating=False, toolkit=13) -> Path | No
         shutil.rmtree(tmp, ignore_errors=True)
         drop_archive(z)
         return None
-    archs = [int(a) for a in meta.get("archs", [])]
+    archs = arch_numbers(meta.get("archs"))
     miss = [int(x) for x in gpu.get("archs", [gpu["arch"]])
             if int(x) not in archs and not (meta.get("ptx") and int(x) > max(archs))]
     if miss:
@@ -5470,11 +5494,11 @@ def update_installed_engine(url_base, toolkit=None) -> None:
         if meta.get("src") != source_hash(ENGINE_SOURCES) or stale_binary(eng / EXE):
             try:
                 usable = [x for x in amd_gpus() if amd_problem(x) is None]
-                g = next((x for x in usable if x["arch"] in meta.get("archs", [])), usable[0] if usable else None)
+                g = next((x for x in usable if x["arch"] in arch_names(meta.get("archs"))), usable[0] if usable else None)
                 if g is None:
                     raise RuntimeError("no supported AMD GPU found")
                 # every architecture it was built for (a layer split across two families keeps both)
-                build_engine_hip({**g, "archs": [x for x in meta.get("archs", []) if x in AMD_ARCHS] or [g["arch"]]},
+                build_engine_hip({**g, "archs": [x for x in arch_names(meta.get("archs")) if x in AMD_ARCHS] or [g["arch"]]},
                                  get_llama_cpp(), meta.get("vision") or "none")
             except (Exception, SystemExit) as e:
                 warn(f"could not compile the updated engine{'' if isinstance(e, SystemExit) else f' ({e})'}: "
@@ -5502,9 +5526,9 @@ def update_installed_engine(url_base, toolkit=None) -> None:
         try:                                           # a failed compile must not stop the model from starting
             if gpu is None:
                 raise RuntimeError("no NVIDIA GPU found")
-            gpu = {**gpu, "archs": sorted({int(gpu["arch"]), *(int(x) for x in meta.get("archs", []))})}
+            gpu = {**gpu, "archs": sorted({int(gpu["arch"]), *arch_numbers(meta.get("archs"))})}
             if int(toolkit) == 12:                     # the cards it was compiled for (the main GPU may be newer)
-                gpu["archs"] = sorted({int(x) for x in meta.get("archs", [])}) or gpu["archs"]
+                gpu["archs"] = sorted(arch_numbers(meta.get("archs"))) or gpu["archs"]
             build_engine(gpu, vision, False, get_llama_cpp(), toolkit=toolkit)
         except (Exception, SystemExit) as e:
             warn(f"could not compile the updated engine{'' if isinstance(e, SystemExit) else f' ({e})'}: starting the installed one")
@@ -5513,7 +5537,7 @@ def update_installed_engine(url_base, toolkit=None) -> None:
     if gpu is not None:
         try:
             if int(toolkit) == 12:                     # the cards the CUDA 12 engine serves, not the newest one
-                gpu = {**gpu, "archs": [x for x in (int(a) for a in meta.get("archs", [])) if x < CUDA13_MIN_ARCH]
+                gpu = {**gpu, "archs": [x for x in arch_numbers(meta.get("archs")) if x < CUDA13_MIN_ARCH]
                        or [int(gpu["arch"])]}
             new = get_prebuilt(url_base, gpu, "gpu", updating=True, toolkit=toolkit)
         except Exception as e:                         # a failed download must not stop the model from starting
@@ -5762,7 +5786,7 @@ def prebuilt_vision(meta: dict, gpu: dict, vision: str) -> str:
     of compiling one, which fails on most Windows PCs (no Visual Studio / CUDA toolkit); --build compiles it."""
     if vision != "gpu":
         return vision
-    va = [int(x) for x in meta.get("vision_archs", meta.get("archs", []))]
+    va = arch_numbers(meta.get("vision_archs", meta.get("archs")))
     if va and int(gpu["arch"]) not in va and not (meta.get("ptx") and int(gpu["arch"]) > max(va)):
         warn(f"the ready-made image encoder has no code for your GPU (sm_{gpu['arch']}): it runs on the CPU instead "
              "(images take longer; setup --build compiles one for your GPU)")
@@ -5787,7 +5811,7 @@ def build_engine(gpu, vision, yes, llama, toolkit=None) -> Path:
     local = meta.get("source") == "local"
     src, vsrc = source_hash(ENGINE_SOURCES), source_hash(VISION_SOURCES)
     archs = sorted({int(x) for x in gpu.get("archs", [gpu["arch"]])})    # every card the model runs on
-    built = {int(x) for x in meta.get("archs", [])}
+    built = set(arch_numbers(meta.get("archs")))
     # a card the engine has no code for (a GPU added with --gpus, #128) needs a compile even when the source is the
     # same; the compile keeps the generations it was built for
     new_arch = local and not set(archs) <= built
@@ -7406,7 +7430,7 @@ def ensure_engine_for(cards, cfg_path: Path, cfg: dict, yes: bool) -> dict:
     say("  The installed engine has no code for " + ", ".join(f"{g['name']} (sm_{g['arch']})" for g in missing) +
         ": it is compiled for " + ("these cards" if len(cards) > 1 else "it") + " now.")
     main = gpu_info(cards[0]["index"])
-    archs = sorted({int(x) for x in meta.get("archs", [])} | {int(g["arch"]) for g in cards})
+    archs = sorted(set(arch_numbers(meta.get("archs"))) | {int(g["arch"]) for g in cards})
     vision = meta.get("vision") or ("gpu" if (eng / VEXE).exists() else "none")
     build_engine({**main, "archs": archs}, vision, yes, get_llama_cpp(), toolkit=tk)
     dirs = json.loads(info.read_text(encoding="utf-8")).get("cuda_dirs") or []
