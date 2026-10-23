@@ -18,7 +18,7 @@
 #   remove: systemctl --user disable --now strata-sweep.timer
 # Install where cron DOES exist (every 30 min, mail-quiet):
 #   (crontab -l 2>/dev/null | grep -v sweep_cron.sh; \
-#    echo '*/30 * * * * ~/Projects/Strata-MAM-cartrige-mod/tools/sweep_cron.sh >> ~/Projects/Strata-MAM-cartrige-mod/tools/state/cron.log 2>&1') | crontab -
+#    echo '*/30 * * * * ~/Projects/Strata-Mnemosyne/tools/sweep_cron.sh >> ~/Projects/Strata-Mnemosyne/tools/state/cron.log 2>&1') | crontab -
 # Remove: crontab -l | grep -v sweep_cron.sh | crontab -
 set -u
 cd "$(dirname "$0")/.."
