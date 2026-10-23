@@ -37,6 +37,10 @@ import argparse, collections, random, shutil, sys, tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from strata_control.datafolder import data_dir                    # noqa: E402  the one data folder (2026-10-23)
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
 import re
@@ -123,7 +127,7 @@ def cosine_cut(rows, m, cap):
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--dir", default="Strata-data/memory-eval")
+    ap.add_argument("--dir", default=str(data_dir(ROOT) / "memory-eval"))
     ap.add_argument("--cap", type=int, default=90, help="bucket size cap: must sit under the 96-note block")
     ap.add_argument("--probes", type=int, default=24)
     ap.add_argument("--notes", type=int, default=96)
@@ -139,7 +143,7 @@ def main() -> int:
         if (src / f).exists():
             shutil.copy2(src / f, work / f)
     m = MemoryService(str(work), recall_limit=a.notes, max_block_chars=a.chars,
-                      embedder=Embedder(str(ROOT / "Strata-data/embeddings/bge-small-en-v1.5"), threads=4))
+                      embedder=Embedder(str(data_dir(ROOT) / "embeddings/bge-small-en-v1.5"), threads=4))
     tab = m._dedupe_tables()
     rng = random.Random(7)
     print(f"store {m.stats()['memories']} rows | bucket cap {a.cap} (the block shows {a.notes} notes) | "

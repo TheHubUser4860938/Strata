@@ -49,6 +49,10 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
+
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from strata_control.datafolder import data_dir                    # noqa: E402  the one data folder (2026-10-23)
 sys.path.insert(0, str(ROOT / "spikes" / "window"))
 sys.path.insert(0, str(ROOT / "spikes" / "d2_dissect"))
 from venue_render import load_tokenizer, load_template, live_render   # server-exact render
@@ -630,7 +634,7 @@ def main():
                 import numpy as np
                 from serve import memory as _M
                 from serve.embedder import Embedder
-                law_emb = Embedder(str(ROOT / "Strata-data/embeddings/bge-small-en-v1.5"), threads=4)
+                law_emb = Embedder(str(data_dir(ROOT) / "embeddings/bge-small-en-v1.5"), threads=4)
                 sdir = stats.get("dir") or (os.path.dirname(db_path) if db_path else "")
                 with _M.attach(sdir) as con:
                     raw = con.execute("select m.id, m.text, m.scope, e.vec from memories m "

@@ -31,6 +31,10 @@ import argparse, collections, json, shutil, sys, tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from strata_control.datafolder import data_dir                    # noqa: E402  the one data folder (2026-10-23)
 sys.path.insert(0, str(ROOT))
 from serve.memory import MemoryService, STOP, norm_text           # noqa: E402
 
@@ -47,7 +51,7 @@ def jac(a, b):
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--dir", default="Strata-data/memory-eval")
+    ap.add_argument("--dir", default=str(data_dir(ROOT) / "memory-eval"))
     ap.add_argument("--limit", type=int, default=0, help="cap curated rows examined")
     ap.add_argument("--floor", type=float, default=0.12,
                     help="minimum content-word Jaccard to count as derived from a half at all")

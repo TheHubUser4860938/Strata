@@ -29,6 +29,10 @@ import argparse, json, shutil, sys, tempfile, time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from strata_control.datafolder import data_dir                    # noqa: E402  the one data folder (2026-10-23)
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
 from serve.memory import MemoryService, STOP, norm_text            # noqa: E402
@@ -67,7 +71,7 @@ def gather(wide, tab, anchor_n, min_shared):
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--dir", default="Strata-data/memory-venue")
+    ap.add_argument("--dir", default=str(data_dir(ROOT) / "memory-venue"))
     ap.add_argument("--work", default="/tmp/opencode/venue-ab-store/hyb",
                     help="an already-embedded copy (the A/B tool's --work dir), so no re-embedding")
     ap.add_argument("--data", default="/tmp/opencode/longmemeval/data/longmemeval_oracle.json")
@@ -83,7 +87,7 @@ def main() -> int:
     import _storeclone
     _storeclone.clone_store(src, work)    # R5b: honest dump/restore; the old file loop copied
                                           # legacy sqlite files (or nothing) on a PG store
-    emb = Embedder(str(ROOT / "Strata-data/embeddings/bge-small-en-v1.5"), threads=4)
+    emb = Embedder(str(data_dir(ROOT) / "embeddings/bge-small-en-v1.5"), threads=4)
     sealed = False                        # a Postgres-native clone is born readable at rest
     svc = MemoryService(str(work), recall_limit=a.wide, max_block_chars=24000, embedder=emb,
                         encrypt=sealed, key_file=str(work / "memory.key"))

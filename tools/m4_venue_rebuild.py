@@ -26,6 +26,10 @@ import argparse, json, sys, time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from strata_control.datafolder import data_dir                    # noqa: E402  the one data folder (2026-10-23)
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
 import lme_harness as H                                       # noqa: E402  day_of, chunk_turn - the laws
@@ -38,7 +42,7 @@ def main() -> int:
     ap.add_argument("--dir", default="/tmp/opencode/venue")
     ap.add_argument("--data", default="/tmp/opencode/longmemeval/data/longmemeval_oracle.json")
     ap.add_argument("--map", dest="map_path", default="")
-    ap.add_argument("--model", default=str(ROOT / "Strata-data/embeddings/bge-small-en-v1.5"))
+    ap.add_argument("--model", default=str(data_dir(ROOT) / "embeddings/bge-small-en-v1.5"))
     ap.add_argument("--threads", type=int, default=4)
     ap.add_argument("--limit", type=int, default=0, help="first N questions only (smoke)")
     a = ap.parse_args()

@@ -31,6 +31,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from serve.memory import attach                    # noqa: E402  (ADR-002: the store is Postgres)
 
 ROOT = Path(__file__).resolve().parent.parent
+
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from strata_control.datafolder import data_dir                    # noqa: E402  the one data folder (2026-10-23)
 STOP = set("a an and are as at be by can could did do does for from had has have he her his how i "
            "if in is it its me my no not of on or our she so than that the their them then there "
            "these they this to us we what when where which who whom whose why will with would you "
@@ -43,7 +47,7 @@ def toks(t: str) -> set:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--db", default=str(ROOT / "Strata-data/memory-eval"),
+    ap.add_argument("--db", default=str(data_dir(ROOT) / "memory-eval"),
                     help="store DIRECTORY (a .../memory.db path still resolves to its dir)")
     ap.add_argument("--turns", type=int, default=12, help="newest N injected turns to analyze")
     ap.add_argument("--df-max", type=int, default=56, help="rare-token bar (m2_merge law)")

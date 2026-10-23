@@ -49,9 +49,9 @@
      "enabled": true,
      "max_chars": 12000
     },
-    "dir": "<T>/Strata-data/memory",
+    "dir": "<T>/data/memory",
     "embedder": {
-     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "dir": "<T>/data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
@@ -67,7 +67,7 @@
    "model_name": "qwen3.8-flash-next-iq3_s",
    "port": 8005,
    "slot_retain": 6,
-   "slot_save_path": "<T>/Strata-data/sessions",
+   "slot_save_path": "<T>/data/sessions",
    "tokenizer": "<T>/data/packs/iq3_s/tokenizer",
    "vision": {
     "exe": "<T>/engine/strata-vision",
@@ -128,9 +128,9 @@
      "enabled": true,
      "max_chars": 12000
     },
-    "dir": "<T>/Strata-data/memory",
+    "dir": "<T>/data/memory",
     "embedder": {
-     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "dir": "<T>/data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
@@ -146,7 +146,7 @@
    "model_name": "qwen3.8-flash-next-iq3_xxs",
    "port": 8005,
    "slot_retain": 6,
-   "slot_save_path": "<T>/Strata-data/sessions",
+   "slot_save_path": "<T>/data/sessions",
    "tokenizer": "<T>/data/packs/iq3_xxs/tokenizer",
    "vision": {
     "exe": "<T>/engine/strata-vision",
@@ -207,9 +207,9 @@
      "enabled": true,
      "max_chars": 12000
     },
-    "dir": "<T>/Strata-data/memory",
+    "dir": "<T>/data/memory",
     "embedder": {
-     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "dir": "<T>/data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
@@ -225,7 +225,7 @@
    "model_name": "qwen3.8-flash-next-q2_0",
    "port": 8005,
    "slot_retain": 6,
-   "slot_save_path": "<T>/Strata-data/sessions",
+   "slot_save_path": "<T>/data/sessions",
    "tokenizer": "<T>/data/packs/q2_0/tokenizer",
    "vision": {
     "exe": "<T>/engine/strata-vision",
@@ -286,9 +286,9 @@
      "enabled": true,
      "max_chars": 12000
     },
-    "dir": "<T>/Strata-data/memory",
+    "dir": "<T>/data/memory",
     "embedder": {
-     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "dir": "<T>/data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
@@ -304,7 +304,7 @@
    "model_name": "qwen3.8-flash-next-iq3_s",
    "port": 8005,
    "slot_retain": 6,
-   "slot_save_path": "<T>/Strata-data/sessions",
+   "slot_save_path": "<T>/data/sessions",
    "tokenizer": "<T>/data/packs/iq3_s/tokenizer",
    "vision": {
     "exe": "<T>/engine/strata-vision",
@@ -367,9 +367,9 @@
      "enabled": true,
      "max_chars": 12000
     },
-    "dir": "<T>/Strata-data/memory",
+    "dir": "<T>/data/memory",
     "embedder": {
-     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "dir": "<T>/data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
@@ -385,7 +385,7 @@
    "model_name": "qwen3.8-flash-next-unsloth-ud-q4_k_xl",
    "port": 8005,
    "slot_retain": 6,
-   "slot_save_path": "<T>/Strata-data/sessions",
+   "slot_save_path": "<T>/data/sessions",
    "tokenizer": "<T>/data/packs/unsloth-ud-q4_k_xl/tokenizer",
    "vision": {
     "exe": "<T>/engine/strata-vision",
@@ -446,9 +446,9 @@
    "log": "<T>/strata-iq3_s.log",
    "memory": {
     "auto_shelve": true,
-    "dir": "<T>/Strata-data/memory",
+    "dir": "<T>/data/memory",
     "embedder": {
-     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "dir": "<T>/data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
@@ -464,7 +464,7 @@
    "model_name": "qwen3.8-flash-next-iq3_s",
    "port": 8005,
    "slot_retain": 6,
-   "slot_save_path": "<T>/Strata-data/sessions",
+   "slot_save_path": "<T>/data/sessions",
    "tokenizer": "<T>/data/packs/iq3_s/tokenizer",
    "vision": {
     "exe": "<T>/engine/strata-vision",
@@ -525,9 +525,9 @@
    "log": "<T>/strata-iq3_xxs.log",
    "memory": {
     "auto_shelve": true,
-    "dir": "<T>/Strata-data/memory",
+    "dir": "<T>/data/memory",
     "embedder": {
-     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "dir": "<T>/data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
@@ -543,7 +543,7 @@
    "model_name": "qwen3.8-flash-next-iq3_xxs",
    "port": 8005,
    "slot_retain": 6,
-   "slot_save_path": "<T>/Strata-data/sessions",
+   "slot_save_path": "<T>/data/sessions",
    "tokenizer": "<T>/data/packs/iq3_xxs/tokenizer",
    "vision": {
     "exe": "<T>/engine/strata-vision",
@@ -604,9 +604,9 @@
    "log": "<T>/strata-q2_0.log",
    "memory": {
     "auto_shelve": true,
-    "dir": "<T>/Strata-data/memory",
+    "dir": "<T>/data/memory",
     "embedder": {
-     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "dir": "<T>/data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
@@ -622,7 +622,7 @@
    "model_name": "qwen3.8-flash-next-q2_0",
    "port": 8005,
    "slot_retain": 6,
-   "slot_save_path": "<T>/Strata-data/sessions",
+   "slot_save_path": "<T>/data/sessions",
    "tokenizer": "<T>/data/packs/q2_0/tokenizer",
    "vision": {
     "exe": "<T>/engine/strata-vision",
@@ -683,9 +683,9 @@
    "log": "<T>/strata-iq3_xxs.log",
    "memory": {
     "auto_shelve": true,
-    "dir": "<T>/Strata-data/memory",
+    "dir": "<T>/data/memory",
     "embedder": {
-     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "dir": "<T>/data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
@@ -701,7 +701,7 @@
    "model_name": "qwen3.8-flash-next-iq3_xxs",
    "port": 8005,
    "slot_retain": 6,
-   "slot_save_path": "<T>/Strata-data/sessions",
+   "slot_save_path": "<T>/data/sessions",
    "tokenizer": "<T>/data/packs/iq3_xxs/tokenizer",
    "vision": {
     "exe": "<T>/engine/strata-vision",
@@ -759,9 +759,9 @@
    "log": "<T>/strata-unsloth-ud-q4_k_xl.log",
    "memory": {
     "auto_shelve": true,
-    "dir": "<T>/Strata-data/memory",
+    "dir": "<T>/data/memory",
     "embedder": {
-     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "dir": "<T>/data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
@@ -777,7 +777,7 @@
    "model_name": "qwen3.8-flash-next-unsloth-ud-q4_k_xl",
    "port": 8005,
    "slot_retain": 6,
-   "slot_save_path": "<T>/Strata-data/sessions",
+   "slot_save_path": "<T>/data/sessions",
    "tokenizer": "<T>/data/packs/unsloth-ud-q4_k_xl/tokenizer",
    "vision": {
     "exe": "<T>/engine/strata-vision",
@@ -836,9 +836,9 @@
    "log": "<T>/strata-iq3_s.log",
    "memory": {
     "auto_shelve": true,
-    "dir": "<T>/Strata-data/memory",
+    "dir": "<T>/data/memory",
     "embedder": {
-     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "dir": "<T>/data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
@@ -854,7 +854,7 @@
    "model_name": "qwen3.8-flash-next-iq3_s",
    "port": 8005,
    "slot_retain": 6,
-   "slot_save_path": "<T>/Strata-data/sessions",
+   "slot_save_path": "<T>/data/sessions",
    "tokenizer": "<T>/data/packs/iq3_s/tokenizer",
    "vision": {
     "exe": "<T>/engine/strata-vision",
@@ -914,9 +914,9 @@
    "log": "<T>/strata-iq3_xxs.log",
    "memory": {
     "auto_shelve": true,
-    "dir": "<T>/Strata-data/memory",
+    "dir": "<T>/data/memory",
     "embedder": {
-     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "dir": "<T>/data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
@@ -932,7 +932,7 @@
    "model_name": "qwen3.8-flash-next-iq3_xxs",
    "port": 8005,
    "slot_retain": 6,
-   "slot_save_path": "<T>/Strata-data/sessions",
+   "slot_save_path": "<T>/data/sessions",
    "tokenizer": "<T>/data/packs/iq3_xxs/tokenizer",
    "vision": {
     "exe": "<T>/engine/strata-vision",
@@ -991,9 +991,9 @@
    "log": "<T>/strata-q2_0.log",
    "memory": {
     "auto_shelve": true,
-    "dir": "<T>/Strata-data/memory",
+    "dir": "<T>/data/memory",
     "embedder": {
-     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "dir": "<T>/data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
@@ -1009,7 +1009,7 @@
    "model_name": "qwen3.8-flash-next-q2_0",
    "port": 8005,
    "slot_retain": 6,
-   "slot_save_path": "<T>/Strata-data/sessions",
+   "slot_save_path": "<T>/data/sessions",
    "tokenizer": "<T>/data/packs/q2_0/tokenizer",
    "vision": {
     "exe": "<T>/engine/strata-vision",
@@ -1069,9 +1069,9 @@
    "log": "<T>/strata-iq3_xxs.log",
    "memory": {
     "auto_shelve": true,
-    "dir": "<T>/Strata-data/memory",
+    "dir": "<T>/data/memory",
     "embedder": {
-     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "dir": "<T>/data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
@@ -1087,7 +1087,7 @@
    "model_name": "qwen3.8-flash-next-iq3_xxs",
    "port": 8005,
    "slot_retain": 6,
-   "slot_save_path": "<T>/Strata-data/sessions",
+   "slot_save_path": "<T>/data/sessions",
    "tokenizer": "<T>/data/packs/iq3_xxs/tokenizer",
    "vision": {
     "exe": "<T>/engine/strata-vision",
@@ -1144,9 +1144,9 @@
    "log": "<T>/strata-unsloth-ud-q4_k_xl.log",
    "memory": {
     "auto_shelve": true,
-    "dir": "<T>/Strata-data/memory",
+    "dir": "<T>/data/memory",
     "embedder": {
-     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "dir": "<T>/data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
@@ -1162,7 +1162,7 @@
    "model_name": "qwen3.8-flash-next-unsloth-ud-q4_k_xl",
    "port": 8005,
    "slot_retain": 6,
-   "slot_save_path": "<T>/Strata-data/sessions",
+   "slot_save_path": "<T>/data/sessions",
    "tokenizer": "<T>/data/packs/unsloth-ud-q4_k_xl/tokenizer",
    "vision": {
     "exe": "<T>/engine/strata-vision",
@@ -1214,9 +1214,9 @@
    "log": "<T>/strata-iq3_s.log",
    "memory": {
     "auto_shelve": true,
-    "dir": "<T>/Strata-data/memory",
+    "dir": "<T>/data/memory",
     "embedder": {
-     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "dir": "<T>/data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
@@ -1232,7 +1232,7 @@
    "model_name": "qwen3.8-flash-next-iq3_s",
    "port": 8005,
    "slot_retain": 6,
-   "slot_save_path": "<T>/Strata-data/sessions",
+   "slot_save_path": "<T>/data/sessions",
    "tokenizer": "<T>/data/packs/iq3_s/tokenizer",
    "vision": {
     "exe": "<T>/engine/strata-vision",
@@ -1285,9 +1285,9 @@
    "log": "<T>/strata-iq3_xxs.log",
    "memory": {
     "auto_shelve": true,
-    "dir": "<T>/Strata-data/memory",
+    "dir": "<T>/data/memory",
     "embedder": {
-     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "dir": "<T>/data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
@@ -1303,7 +1303,7 @@
    "model_name": "qwen3.8-flash-next-iq3_xxs",
    "port": 8005,
    "slot_retain": 6,
-   "slot_save_path": "<T>/Strata-data/sessions",
+   "slot_save_path": "<T>/data/sessions",
    "tokenizer": "<T>/data/packs/iq3_xxs/tokenizer",
    "vision": {
     "exe": "<T>/engine/strata-vision",
@@ -1364,9 +1364,9 @@
      "enabled": true,
      "max_chars": 12000
     },
-    "dir": "<T>/Strata-data/memory",
+    "dir": "<T>/data/memory",
     "embedder": {
-     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "dir": "<T>/data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
@@ -1382,7 +1382,7 @@
    "model_name": "qwen3.8-flash-next-q2_0",
    "port": 8005,
    "slot_retain": 6,
-   "slot_save_path": "<T>/Strata-data/sessions",
+   "slot_save_path": "<T>/data/sessions",
    "tokenizer": "<T>/data/packs/q2_0/tokenizer",
    "vision": {
     "exe": "<T>/engine/strata-vision",
@@ -1433,9 +1433,9 @@
    "log": "<T>/strata-iq3_s.log",
    "memory": {
     "auto_shelve": true,
-    "dir": "<T>/Strata-data/memory",
+    "dir": "<T>/data/memory",
     "embedder": {
-     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "dir": "<T>/data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
@@ -1451,7 +1451,7 @@
    "model_name": "qwen3.8-flash-next-iq3_s",
    "port": 8005,
    "slot_retain": 6,
-   "slot_save_path": "<T>/Strata-data/sessions",
+   "slot_save_path": "<T>/data/sessions",
    "tokenizer": "<T>/data/packs/iq3_s/tokenizer",
    "vision": {
     "exe": "<T>/engine/strata-vision",
@@ -1513,9 +1513,9 @@
      "enabled": true,
      "max_chars": 12000
     },
-    "dir": "<T>/Strata-data/memory",
+    "dir": "<T>/data/memory",
     "embedder": {
-     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "dir": "<T>/data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
@@ -1531,7 +1531,7 @@
    "model_name": "qwen3.8-flash-next-unsloth-ud-q4_k_xl",
    "port": 8005,
    "slot_retain": 6,
-   "slot_save_path": "<T>/Strata-data/sessions",
+   "slot_save_path": "<T>/data/sessions",
    "tokenizer": "<T>/data/packs/unsloth-ud-q4_k_xl/tokenizer",
    "vision": {
     "exe": "<T>/engine/strata-vision",
@@ -1590,9 +1590,9 @@
      "enabled": true,
      "max_chars": 12000
     },
-    "dir": "<T>/Strata-data/memory",
+    "dir": "<T>/data/memory",
     "embedder": {
-     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "dir": "<T>/data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
@@ -1608,7 +1608,7 @@
    "model_name": "qwen3.8-flash-next-iq3_s",
    "port": 8005,
    "slot_retain": 6,
-   "slot_save_path": "<T>/Strata-data/sessions",
+   "slot_save_path": "<T>/data/sessions",
    "tokenizer": "<T>/data/packs/iq3_s/tokenizer",
    "vision": {
     "exe": "<T>/engine/strata-vision",
@@ -1668,9 +1668,9 @@
      "enabled": true,
      "max_chars": 12000
     },
-    "dir": "<T>/Strata-data/memory",
+    "dir": "<T>/data/memory",
     "embedder": {
-     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "dir": "<T>/data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
@@ -1686,7 +1686,7 @@
    "model_name": "qwen3.8-flash-next-iq3_xxs",
    "port": 8005,
    "slot_retain": 6,
-   "slot_save_path": "<T>/Strata-data/sessions",
+   "slot_save_path": "<T>/data/sessions",
    "tokenizer": "<T>/data/packs/iq3_xxs/tokenizer",
    "vision": {
     "exe": "<T>/engine/strata-vision",
@@ -1746,9 +1746,9 @@
      "enabled": true,
      "max_chars": 12000
     },
-    "dir": "<T>/Strata-data/memory",
+    "dir": "<T>/data/memory",
     "embedder": {
-     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "dir": "<T>/data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
@@ -1764,7 +1764,7 @@
    "model_name": "qwen3.8-flash-next-q2_0",
    "port": 8005,
    "slot_retain": 6,
-   "slot_save_path": "<T>/Strata-data/sessions",
+   "slot_save_path": "<T>/data/sessions",
    "tokenizer": "<T>/data/packs/q2_0/tokenizer",
    "vision": {
     "exe": "<T>/engine/strata-vision",
@@ -1824,9 +1824,9 @@
      "enabled": true,
      "max_chars": 12000
     },
-    "dir": "<T>/Strata-data/memory",
+    "dir": "<T>/data/memory",
     "embedder": {
-     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "dir": "<T>/data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
@@ -1842,7 +1842,7 @@
    "model_name": "qwen3.8-flash-next-iq3_s",
    "port": 8005,
    "slot_retain": 6,
-   "slot_save_path": "<T>/Strata-data/sessions",
+   "slot_save_path": "<T>/data/sessions",
    "tokenizer": "<T>/data/packs/iq3_s/tokenizer",
    "vision": {
     "exe": "<T>/engine/strata-vision",
@@ -1904,9 +1904,9 @@
      "enabled": true,
      "max_chars": 12000
     },
-    "dir": "<T>/Strata-data/memory",
+    "dir": "<T>/data/memory",
     "embedder": {
-     "dir": "<T>/Strata-data/embeddings/bge-small-en-v1.5",
+     "dir": "<T>/data/embeddings/bge-small-en-v1.5",
      "threads": 4
     },
     "encrypt": 1,
@@ -1922,7 +1922,7 @@
    "model_name": "qwen3.8-flash-next-unsloth-ud-q4_k_xl",
    "port": 8005,
    "slot_retain": 6,
-   "slot_save_path": "<T>/Strata-data/sessions",
+   "slot_save_path": "<T>/data/sessions",
    "tokenizer": "<T>/data/packs/unsloth-ud-q4_k_xl/tokenizer",
    "vision": {
     "exe": "<T>/engine/strata-vision",

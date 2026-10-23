@@ -37,6 +37,10 @@ import argparse, collections, json, sys, time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from strata_control.datafolder import data_dir                    # noqa: E402  the one data folder (2026-10-23)
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
 import lme_harness as H                                       # noqa: E402
@@ -76,7 +80,7 @@ def main() -> int:
     ap.add_argument("--store", default="/tmp/opencode/ground-new-replay")
     ap.add_argument("--data", default="/tmp/opencode/longmemeval/data/longmemeval_oracle.json")
     ap.add_argument("--map", dest="map_path", default=str(ROOT / "spikes/lme/oracle-20261013-full.map"))
-    ap.add_argument("--model", default=str(ROOT / "Strata-data/embeddings/bge-small-en-v1.5"))
+    ap.add_argument("--model", default=str(data_dir(ROOT) / "embeddings/bge-small-en-v1.5"))
     ap.add_argument("--threads", type=int, default=4)
     ap.add_argument("--floors", default="0,0.010,0.011,0.012,0.0125,0.013,0.0135,0.014,0.0145,0.015,0.0164")
     ap.add_argument("--shapes", default="96:24000,8:2000", help="k:budget pairs - the head block and the per-turn block")

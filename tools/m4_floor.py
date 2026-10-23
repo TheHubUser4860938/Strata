@@ -27,6 +27,10 @@ import argparse, collections, json, sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from strata_control.datafolder import data_dir                    # noqa: E402  the one data folder (2026-10-23)
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
 from serve.memory import MemoryService                                        # noqa: E402
@@ -44,7 +48,7 @@ def toks(t):
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--db", default=str(ROOT / "Strata-data/memory-eval"),
+    ap.add_argument("--db", default=str(data_dir(ROOT) / "memory-eval"),
                     help="the store DIRECTORY (not the .db file - memory_dir() owns that join)")
     ap.add_argument("--turns", type=int, default=20)
     ap.add_argument("--floors", default="0.0,0.40,0.45,0.50,0.55,0.60")
@@ -68,7 +72,7 @@ def main() -> int:
           f"({len(snap)} rows)")
 
     m = MemoryService(a.db, recall_limit=a.recall_limit, max_block_chars=a.block_chars,
-                      embedder=Embedder(str(ROOT / "Strata-data/embeddings/bge-small-en-v1.5"),
+                      embedder=Embedder(str(data_dir(ROOT) / "embeddings/bge-small-en-v1.5"),
                                         threads=4))
     df = collections.Counter()
     for r in c.execute("select text from memories where invalid_at is null"):

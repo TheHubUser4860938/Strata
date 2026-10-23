@@ -9811,8 +9811,16 @@ def main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> in
         if isinstance(ed, str):
             ed = {"dir": ed}
         if not ed:
-            _emb = Path(cfg.get("cwd") or ".") / "Strata-data/embeddings/bge-small-en-v1.5"
-            if (_emb / "model.onnx").exists():
+            # the embedder rides in the one data folder, beside the store (setup writes both there,
+            # 2026-10-23); the old beside-the-install spelling stays as the fallback, so a config from
+            # before the single-root change still finds the model it was fetched next to
+            _md, _base = mcfg.get("dir"), Path(cfg.get("cwd") or ".")
+            _cands = []
+            if isinstance(_md, str) and _md.strip():
+                _cands.append((_base / _md).parent / "embeddings" / "bge-small-en-v1.5")
+            _cands.append(_base / "Strata-data/embeddings/bge-small-en-v1.5")
+            _emb = next((p for p in _cands if (p / "model.onnx").exists()), None)
+            if _emb:
                 ed = {"dir": str(_emb)}
         try:
             svc.memory = memory_api.MemoryService(

@@ -37,6 +37,10 @@ import argparse, collections, json, random, shutil, sys, tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from strata_control.datafolder import data_dir                    # noqa: E402  the one data folder (2026-10-23)
 sys.path.insert(0, str(ROOT))
 from serve.memory import MemoryService, STOP, norm_text          # noqa: E402
 from serve.embedder import Embedder                              # noqa: E402
@@ -61,8 +65,8 @@ def probes(rows, tab, n, rng):
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--dir", default="Strata-data/memory-eval")
-    ap.add_argument("--model", default="Strata-data/embeddings/bge-small-en-v1.5")
+    ap.add_argument("--dir", default=str(data_dir(ROOT) / "memory-eval"))
+    ap.add_argument("--model", default=str(data_dir(ROOT) / "embeddings/bge-small-en-v1.5"))
     ap.add_argument("--probes", type=int, default=20, help="probes per shelf")
     ap.add_argument("--min-rows", type=int, default=40, help="shelves smaller than this cannot fill a block")
     ap.add_argument("--budgets", default="96:24000,192:48000,384:96000")

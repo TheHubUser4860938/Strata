@@ -32,6 +32,10 @@ import argparse, collections, json, shutil, sys, tempfile, time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from strata_control.datafolder import data_dir                    # noqa: E402  the one data folder (2026-10-23)
 sys.path.insert(0, str(ROOT))
 from serve.memory import MemoryService, STOP, norm_text            # noqa: E402
 
@@ -86,12 +90,12 @@ def block_cost(m, find, fam_of, queries):
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--dir", default="Strata-data/memory-eval")
+    ap.add_argument("--dir", default=str(data_dir(ROOT) / "memory-eval"))
     ap.add_argument("--limit-families", type=int, default=12)
     ap.add_argument("--queries", type=int, default=300,
                     help="render this many REAL journal blocks and count duplicate slots per block "
                          "(0 skips the pass; it needs the embedder, so it costs ~1 min)")
-    ap.add_argument("--model", default="Strata-data/embeddings/bge-small-en-v1.5")
+    ap.add_argument("--model", default=str(data_dir(ROOT) / "embeddings/bge-small-en-v1.5"))
     ap.add_argument("--json", default="", help="optional path for the full record")
     a = ap.parse_args()
 

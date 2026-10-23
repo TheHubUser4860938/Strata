@@ -45,6 +45,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from strata_control.datafolder import data_dir                    # noqa: E402  the one data folder (2026-10-23)
+
 # task -> (HF config name, rows to keep) for the BIG-Bench Hard pulls
 BBH_TASKS = ["boolean_expressions", "multistep_arithmetic_two", "date_understanding",
              "logical_deduction_seven_objects", "formal_fallacies"]
@@ -95,7 +99,7 @@ def bbh_rows(task: str, n=100) -> list:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--dir", default=str(ROOT / "Strata-data" / "bench"))
+    ap.add_argument("--dir", default=str(data_dir(ROOT) / "bench"))
     ap.add_argument("--verify", action="store_true", help="re-hash existing files, no network")
     a = ap.parse_args()
     d = Path(a.dir)

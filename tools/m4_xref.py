@@ -43,6 +43,10 @@ import argparse, collections, json, random, shutil, sys, tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from strata_control.datafolder import data_dir                    # noqa: E402  the one data folder (2026-10-23)
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
 from serve.memory import MemoryService, STOP, norm_text          # noqa: E402
@@ -64,8 +68,8 @@ def subjects_of(rows, tab, max_sub=6):
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--dir", default="Strata-data/memory-eval")
-    ap.add_argument("--model", default="Strata-data/embeddings/bge-small-en-v1.5")
+    ap.add_argument("--dir", default=str(data_dir(ROOT) / "memory-eval"))
+    ap.add_argument("--model", default=str(data_dir(ROOT) / "embeddings/bge-small-en-v1.5"))
     ap.add_argument("--probes", type=int, default=20, help="probes per shelf, plus the wild bucket")
     ap.add_argument("--min-rows", type=int, default=40)
     ap.add_argument("--df-max", type=int, default=20, help="a subject is a token this rare or rarer")

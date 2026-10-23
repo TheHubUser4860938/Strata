@@ -33,6 +33,10 @@ import argparse, collections, json, shutil, sys, tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from strata_control.datafolder import data_dir                    # noqa: E402  the one data folder (2026-10-23)
 sys.path.insert(0, str(ROOT))
 from serve.memory import MemoryService                          # noqa: E402
 from serve.embedder import Embedder                             # noqa: E402
@@ -57,8 +61,8 @@ def fresh_copy(src: Path) -> tuple[Path, Path]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--db-dir", default=str(ROOT / "Strata-data/memory-eval"))
-    ap.add_argument("--model", default=str(ROOT / "Strata-data/embeddings/bge-small-en-v1.5"))
+    ap.add_argument("--db-dir", default=str(data_dir(ROOT) / "memory-eval"))
+    ap.add_argument("--model", default=str(data_dir(ROOT) / "embeddings/bge-small-en-v1.5"))
     ap.add_argument("--threads", type=int, default=4)
     ap.add_argument("--turns", type=int, default=40, help="newest N journaled turns to replay")
     ap.add_argument("--window", type=int, default=12)

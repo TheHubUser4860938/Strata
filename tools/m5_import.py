@@ -32,6 +32,10 @@ from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from strata_control.datafolder import data_dir                    # noqa: E402  the one data folder (2026-10-23)
 sys.path.insert(0, str(ROOT))
 import psycopg                                                  # noqa: E402
 from psycopg.types.json import Jsonb                            # noqa: E402
@@ -40,7 +44,7 @@ from serve.memory import MemoryService                          # noqa: E402
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--dir", default=str(ROOT / "Strata-data/memory-eval"),
+    ap.add_argument("--dir", default=str(data_dir(ROOT) / "memory-eval"),
                     help="the store dir (holds memory.db; the cluster lands in <dir>/pgdata)")
     ap.add_argument("--check-only", action="store_true",
                     help="import and verify against a throwaway copy; touch nothing real")

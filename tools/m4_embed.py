@@ -18,11 +18,16 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from serve.embedder import Embedder                                        # noqa: E402
 
+ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from strata_control.datafolder import data_dir                    # noqa: E402  the one data folder (2026-10-23)
+
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--dir", default="Strata-data/memory-eval")
-    ap.add_argument("--model", default="Strata-data/embeddings/bge-small-en-v1.5")
+    ap.add_argument("--dir", default=str(data_dir(ROOT) / "memory-eval"))
+    ap.add_argument("--model", default=str(data_dir(ROOT) / "embeddings/bge-small-en-v1.5"))
     ap.add_argument("--threads", type=int, default=4)
     ap.add_argument("--limit", type=int, default=0, help="cap rows this pass (0 = all)")
     a = ap.parse_args()

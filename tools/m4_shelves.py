@@ -42,6 +42,11 @@ from serve.memory import attach, norm_text, STOP                  # noqa: E402
 import urllib.request as U                                        # noqa: E402
 import json                                                       # noqa: E402
 
+ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from strata_control.datafolder import data_dir                    # noqa: E402  the one data folder (2026-10-23)
+
 
 def rows_with_vectors(conn, emb, want_class):
     """(id, text, class, vec) for every ACTIVE row, embedded from the store when the blob is
@@ -114,8 +119,8 @@ def shared_terms(texts, df: Counter, bar: int):
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--dir", default="Strata-data/memory-eval")
-    ap.add_argument("--model", default="Strata-data/embeddings/bge-small-en-v1.5")
+    ap.add_argument("--dir", default=str(data_dir(ROOT) / "memory-eval"))
+    ap.add_argument("--model", default=str(data_dir(ROOT) / "embeddings/bge-small-en-v1.5"))
     ap.add_argument("--bar", type=float, default=0.62, help="cosine to join a cluster")
     ap.add_argument("--min", type=int, default=5, help="smallest cluster worth proposing")
     ap.add_argument("--all", action="store_true", help="cluster every active row, not only wild")

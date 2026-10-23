@@ -41,6 +41,10 @@ import argparse, collections, fnmatch, json, sys, urllib.request as U
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from strata_control.datafolder import data_dir                    # noqa: E402  the one data folder (2026-10-23)
 sys.path.insert(0, str(ROOT))
 from serve.memory import MemoryService                     # noqa: E402
 
@@ -57,7 +61,7 @@ def classify_via_api(url: str, rid: int, klass: str) -> bool:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--dir", default=str(ROOT / "Strata-data/memory-eval"))
+    ap.add_argument("--dir", default=str(data_dir(ROOT) / "memory-eval"))
     ap.add_argument("--url", default="http://127.0.0.1:8005")
     ap.add_argument("--apply", action="store_true", help="land the proposals (default: dry run)")
     ap.add_argument("--show", type=int, default=2, help="exemplars printed per proposed drawer")

@@ -58,6 +58,10 @@ import argparse, datetime, json, re, sys, time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from strata_control.datafolder import data_dir                    # noqa: E402  the one data folder (2026-10-23)
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
 import lme_harness as H                                          # noqa: E402
@@ -141,7 +145,7 @@ def store(a, arm: str) -> MemoryService:
     Path(d).mkdir(parents=True, exist_ok=True)
     return MemoryService(d, recall_limit=192, max_block_chars=48000,
                          embedder=__import__("serve.embedder", fromlist=["Embedder"]).Embedder(
-                             str(ROOT / "Strata-data/embeddings/bge-small-en-v1.5"), threads=4))
+                             str(data_dir(ROOT) / "embeddings/bge-small-en-v1.5"), threads=4))
 
 
 def ckpt_path(a, stage: str, arm: str) -> Path:

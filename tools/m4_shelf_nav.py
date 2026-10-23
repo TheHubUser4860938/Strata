@@ -38,6 +38,11 @@ from serve.embedder import Embedder                              # noqa: E402
 
 K = 96                       # the shipped note budget: the size a shelf has to fit under to navigate
 from serve.memory import ROUTE_W, shelf_vote       # noqa: E402  (line above imports the module already)
+
+ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from strata_control.datafolder import data_dir                    # noqa: E402  the one data folder (2026-10-23)
 W = ROUTE_W                  # THE store's law object, not the probe's copy - see vote()
 
 
@@ -128,8 +133,8 @@ def score(m, probes, shelf_of, arm):
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--dir", default="Strata-data/memory-eval")
-    ap.add_argument("--model", default="Strata-data/embeddings/bge-small-en-v1.5")
+    ap.add_argument("--dir", default=str(data_dir(ROOT) / "memory-eval"))
+    ap.add_argument("--model", default=str(data_dir(ROOT) / "embeddings/bge-small-en-v1.5"))
     ap.add_argument("--probes", type=int, default=200)
     ap.add_argument("--sizes", default="600,1300,2655")
     ap.add_argument("--max-shelf", type=int, default=90, help="dense cap: must sit BELOW the block, or the navigable-shelf claim is vacuous")

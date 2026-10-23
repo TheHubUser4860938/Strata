@@ -3134,11 +3134,13 @@ def _sha_ok(f: Path, size: int, sha: str) -> bool:
     return h.hexdigest() == sha
 
 
-def fetch_embedder(root: Path) -> bool:
-    """The memory store's ONNX embedder, beside the install. Idempotent: files already on disk with
-    the pinned hashes are skipped without asking the server. Network or hash trouble is a warning -
-    the store runs lexical and the server banner says so out loud - so the install never dies here."""
-    dst = root / "Strata-data" / "embeddings" / EMBEDDER_NAME
+def fetch_embedder(root: Path, data: Path | None = None) -> bool:
+    """The memory store's ONNX embedder, in the one data folder (the folder is explained once, in
+    strata_control/datafolder.py; with no data folder given, the old beside-the-install spelling).
+    Idempotent: files already on disk with the pinned hashes are skipped without asking the server.
+    Network or hash trouble is a warning - the store runs lexical and the server banner says so out
+    loud - so the install never dies here."""
+    dst = (Path(data) if data else root / "Strata-data") / "embeddings" / EMBEDDER_NAME
     host = hf_endpoint()
     ready = True
     for rp, (name, size, sha) in EMBEDDER_FILES.items():
@@ -3182,7 +3184,7 @@ def last_memory_block() -> dict | None:
 
 
 def fork_memory_cfg(root: Path, ram: float | None = None, model: str | None = None,
-                    prev: dict | None = None) -> dict:
+                    prev: dict | None = None, data: Path | None = None) -> dict:
     """The "memory" block setup writes: the shape the development store runs, with every budget at a
     measured value - 96 recall notes under a 48,000-char cap (m4_blockcov: the CHAR cap is what binds
     long rows, and at 96 notes the everyday block is ~15k chars, so the wider cap costs nothing and
@@ -3200,11 +3202,13 @@ def fork_memory_cfg(root: Path, ram: float | None = None, model: str | None = No
     2026-10-19 RAM law beats carry-over; an explicit "enabled": false in prev stays false). Opt out
     of memory entirely with "memory": {"enabled": false}; every other edit tunes rather than
     disables."""
-    out = {"dir": str(root / "Strata-data" / "memory"), "recall_limit": 96,
+    base = Path(data) if data else root / "Strata-data"   # the one data folder (strata_control.datafolder, 2026-10-23);
+                                                          # with no data folder given, the old beside-the-install default
+    out = {"dir": str(base / "memory"), "recall_limit": 96,
            "max_block_chars": 48000, "per_turn": True, "turn_recall_limit": 12,
            "turn_block_chars": 24000, "tool_rounds": 0, "encrypt": 1, "tool": True,
            "auto_shelve": True, "soul": "soul.md",
-           "embedder": {"dir": str(root / "Strata-data" / "embeddings" / EMBEDDER_NAME),
+           "embedder": {"dir": str(base / "embeddings" / EMBEDDER_NAME),
                         "threads": 4}}
     need = (MODELS.get(model) or {}).get("ram_gb")
     if ram is not None and need is not None and ram - need >= CARTRIDGE_MIN_HEADROOM_GB:
@@ -7870,10 +7874,10 @@ def install_own_path(a, family, gpu, hip, amd, cuda_tk, multi, port, ram, adopte
     cfg = {"exe": engine_exe(eng), "args": args, "cwd": str(ROOT), "tokenizer": str(pack / "tokenizer"),
            "model_name": f"{fam['name']}-{model.lower()}", "arch": fam["arch"],
            "log": str(home() / f"strata-{tag.lower()}.log"), "lib_dirs": lib_dirs, "port": port}   # v0.2.0: logs live in the user's home folder
-    cfg["memory"] = fork_memory_cfg(ROOT, ram, model, prev=last_memory_block())   # memory-core fork: memory on by default, and the
-    cfg["slot_save_path"] = str(ROOT / "Strata-data" / "sessions")   # slot save/restore + the cartridges' file dir
+    cfg["memory"] = fork_memory_cfg(ROOT, ram, model, prev=last_memory_block(), data=data)   # memory-core fork: memory on by default, and the
+    cfg["slot_save_path"] = str((data or ROOT / "Strata-data") / "sessions")   # slot save/restore + the cartridges' file dir: the one data folder (2026-10-23)
     cfg["slot_retain"] = 6                             # prune to the 6 newest saves: the dev box's disk law
-    fetch_embedder(ROOT)                               # hybrid arm's model is part of the install
+    fetch_embedder(ROOT, data)                         # hybrid arm's model is part of the install
     if cuda_tk == 12:
         cfg["cuda"] = 12
     if hip:
@@ -9439,8 +9443,8 @@ def main() -> int:
     cfg = {"exe": engine_exe(eng), "args": args, "cwd": str(ROOT), "tokenizer": str(pack / "tokenizer"),
            "model_name": f"{fam['name']}-{model.lower()}", "log": str(home() / f"strata-{tag.lower()}.log"),
            "lib_dirs": lib_dirs, "port": port}
-    cfg["memory"] = fork_memory_cfg(ROOT, ram, model, prev=last_memory_block())   # memory-core fork: on every time, opt-out by config
-    cfg["slot_save_path"] = str(ROOT / "Strata-data" / "sessions")   # slot save/restore + the cartridges' file dir
+    cfg["memory"] = fork_memory_cfg(ROOT, ram, model, prev=last_memory_block(), data=data)   # memory-core fork: on every time, opt-out by config
+    cfg["slot_save_path"] = str((data or ROOT / "Strata-data") / "sessions")   # slot save/restore + the cartridges' file dir: the one data folder (2026-10-23)
     cfg["slot_retain"] = 6                             # prune to the 6 newest saves: the dev box's disk law
     if ple_io_user is not None:                        # the --ple-io answer: durable against the RAM formula on reruns
         cfg["user_args"] = user_args.set_flag(cfg.get("user_args") or [], "--ple-io", ple_io_user)
@@ -9459,7 +9463,7 @@ def main() -> int:
         # outranks it as always. Injects with thinking on and off both (measured), so every harness
         # dialect gets the framing.
         cfg["reason_mode"] = "auto"
-    fetch_embedder(ROOT)
+    fetch_embedder(ROOT, data)
     if cuda_tk == 12:                                  # the experimental CUDA 12 engine (engine-cuda12/)
         cfg["cuda"] = 12
     if (uenv := unsloth_default_env(family, model, hip, in_budget)):

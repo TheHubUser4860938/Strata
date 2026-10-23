@@ -22,6 +22,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from serve.memory import MemoryService, WORD_RE, STOP, norm_text            # noqa: E402
 from serve.embedder import Embedder                                 # noqa: E402
 
+ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from strata_control.datafolder import data_dir                    # noqa: E402  the one data folder (2026-10-23)
+
 # paraphrase probes: (query, substring that must be in the target row). Written by hand against
 # the dev store's own facts; the target is identified by a text substring, never by id, so the
 # probe keeps working as the store churns.
@@ -133,8 +138,8 @@ def rank_of_id(hits, rid: int) -> int:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--dir", default="Strata-data/memory-eval")
-    ap.add_argument("--model", default="Strata-data/embeddings/bge-small-en-v1.5")
+    ap.add_argument("--dir", default=str(data_dir(ROOT) / "memory-eval"))
+    ap.add_argument("--model", default=str(data_dir(ROOT) / "embeddings/bge-small-en-v1.5"))
     ap.add_argument("--limit", type=int, default=48)
     ap.add_argument("--queries", nargs="*", default=None)
     ap.add_argument("--auto", type=int, default=0,

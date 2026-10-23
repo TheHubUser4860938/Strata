@@ -35,6 +35,10 @@ import argparse, collections, json, random, shutil, sys, time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from strata_control.datafolder import data_dir                    # noqa: E402  the one data folder (2026-10-23)
 sys.path.insert(0, str(ROOT))
 from serve.memory import MemoryService, scope_name                 # noqa: E402
 sys.path.insert(0, str(ROOT / "tools"))
@@ -115,7 +119,7 @@ def main() -> int:
     tmp = Path("/tmp/opencode/pos-render-store")
     if tmp.exists():
         shutil.rmtree(tmp)
-    src = ROOT / "Strata-data" / "memory-eval"
+    src = data_dir(ROOT) / "memory-eval"
     import _storeclone
     _storeclone.clone_store(src, tmp)     # R5b: honest dump/restore; the old db+wal+shm loop
     renderer = MemoryService(str(tmp), recall_limit=96, max_block_chars=BUDGET, embedder=None)

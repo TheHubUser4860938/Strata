@@ -27,6 +27,11 @@ from pathlib import Path
 sys.path.insert(0, __file__.rsplit("/", 2)[0])
 from serve.memory import STOP, attach, norm_text  # noqa: E402  (same identity + same stop-words the store dedups on)
 
+ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from strata_control.datafolder import data_dir                    # noqa: E402  the one data folder (2026-10-23)
+
 NEG = {"not", "no", "never", "n't", "none", "without", "isnt", "arent"}
 WH = ("who", "what", "when", "where", "which", "why", "how", "is", "are", "was",
      "does", "did", "do", "in", "on", "at", "can", "has", "have", "name", "list")
@@ -117,7 +122,7 @@ def groups(rows, df, bar):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--db", default="Strata-data/memory-eval",
+    ap.add_argument("--db", default=str(data_dir(ROOT) / "memory-eval"),
                     help="store DIRECTORY (ADR-002: the cluster lives inside it; a path ending in "
                          "memory.db still resolves to its directory, for old hands' sake)")
     ap.add_argument("--url", default="http://127.0.0.1:8005")

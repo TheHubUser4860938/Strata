@@ -56,6 +56,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))   # the offline arm opens serve.memory
 import lme_harness as H                                          # noqa: E402
 
+ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from strata_control.datafolder import data_dir                    # noqa: E402  the one data folder (2026-10-23)
+
 ARMS = (("lexical", True), ("hybrid", False))                    # (label, no_embedder)
 METRICS = (("turn_top1", "turn_top1"), ("turn_top3", "turn_top3"),
            ("row_cov", "row_coverage"), ("sess_cov", "session_coverage"))
@@ -219,7 +224,7 @@ def main(argv=None) -> int:
     ap.add_argument("--dump", default="", help="write one JSONL line per question per arm: the hit "
                                                "list plus its metrics, so a per-type regression can be "
                                                "read question by question instead of re-running")
-    ap.add_argument("--model", default="Strata-data/embeddings/bge-small-en-v1.5")
+    ap.add_argument("--model", default=str(data_dir(ROOT) / "embeddings/bge-small-en-v1.5"))
     ap.add_argument("--threads", type=int, default=4)
     ap.add_argument("--recall-k", type=int, default=10, help="slots to score (the accuracy run's k)")
     ap.add_argument("--wide-k", type=int, default=0, help="optional second pass at the block budget")

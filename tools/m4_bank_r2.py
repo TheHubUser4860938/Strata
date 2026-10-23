@@ -30,6 +30,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from strata_control.datafolder import data_dir                    # noqa: E402  the one data folder (2026-10-23)
+
 BBH = {  # task -> (shape, instruction, checker kind)
     "boolean_expressions":              ("bbh_bool",    "Answer with just True or False.", "tf"),
     "multistep_arithmetic_two":         ("bbh_arith",   "Answer with just the number.",    "int"),
@@ -163,7 +167,7 @@ def _lines(path):
         return [json.loads(ln) for ln in f if ln.strip()]
 
 def probes(bench_dir=None, force=False, full=False):
-    d = Path(bench_dir) if bench_dir else ROOT / "Strata-data" / "bench"
+    d = Path(bench_dir) if bench_dir else data_dir(ROOT) / "bench"
     man = json.loads((d / "manifest.json").read_text())
     for name, meta in man.items():
         p = d / name
