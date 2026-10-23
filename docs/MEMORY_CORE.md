@@ -65,10 +65,13 @@ python serve/server.py --engine strata --config strata-iq3_s.json --port 8005
                 # either side is by hand, and exactly one engine runs at a time still.
 ```
 
-- Model files are **not duplicated**: `Strata-data -> ~/Strata-data` (a symlink; git-ignored) shares
-  `models/`, `mtp/`, `packs/` with production. Writes keep hygiene rules: dev logs into this tree,
-  session files into `Strata-data/sessions-dev/`, rebuilt packs into new `packs/<name>-dev/` dirs — never
-  overwrite production artifacts in place.
+- Model files are **not duplicated**: the dev box reads the **one data folder** — `settings.json`'s
+  `data_dir`, resolved by `strata_control/datafolder.py` (the single-root law of 2026-10-23) — and it
+  shares `models/`, `mtp/`, `packs/` with production. Until that day the bridge was a git-ignored
+  `Strata-data -> ~/Strata-data` symlink inside the repo; the symlink is gone and the resolver
+  replaced it. Writes keep hygiene rules: dev logs into this tree, session files into
+  `<data>/sessions-dev/`, rebuilt packs into new `packs/<name>-dev/` dirs — never overwrite
+  production artifacts in place.
 - `engine/` was copied from the production build: `engine/BUILD.json` records `source=local, arch=89,
   src=1e0c97588848ea0f` at v0.1.42 — this checkout's source recompiled for the RTX 4090. `build/` is not
   copied (CMake caches are path-baked); first C++ work regenerates it (nvcc wants production down: ~1-2 GiB
@@ -450,6 +453,14 @@ never a stale read. Facts beyond `max_chars` keep riding the tier-3 block: a sma
 standing status, never knowledge. Every failure path leaves the request completely normal - the
 cartridge adds speed and never risk. `GET /memory` grows a `cartridges` view (shelves, facts,
 left-for-block, file, bytes, state); `POST {"op": "cartridge"}` re-seeds now, 400 when off.
+
+The numbers setup actually ships (cross-checked against the code 2026-10-23, for whoever starts the
+next cartridge rung): `fork_memory_cfg` in `setup.py` writes `"cartridges": {"enabled": true,
+"class_prefixes": ["USR", "DEC"], "max_chars": 12000}` — the **12,000**-char standing set, not the
+4,000 that `cartridge_text()`'s own signature defaults to — and it enables the feature only when the
+PC keeps 8 GB of RAM free of the model's all-in need. The file lands in the **one data folder's**
+`sessions/`, the same directory `slot_save_path` names, never inside the install folder; `slot_retain`
+prunes that folder to the newest saves and must never evict the cartridge's applied file.
 
 **The store's own page (item D).** `GET /memory-ui` (only when memory is on) serves a panel:
 stats cards (rows/cap/pressure, pending turns, at-rest seal, cartridge state), search with

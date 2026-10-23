@@ -46,8 +46,9 @@ Version 0.2.3 · engine 0.1.48
 Two things arrive switched **on**, and everything else stays byte-identical to upstream Strata:
 
 - **Memory.** On by default in this fork — someone who does not want the built-in memory
-  system would not be using this fork to begin with. Setup writes the block below and fetches
-  the embedder it ships with, so hybrid recall works out of the box. To turn it off, set
+  system would not be using this fork to begin with. Setup writes the block below (paths into
+  the one data folder beside the install, or wherever `--data-dir` put it) and fetches the
+  embedder it ships with, so hybrid recall works out of the box. To turn it off, set
   `"memory": { "enabled": false }` — every path then returns to upstream Strata, byte for byte:
 
   ```json

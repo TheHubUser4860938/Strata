@@ -75,6 +75,19 @@ Linux/macOS, pixeltable-pgserver on Windows. And postgresql.org dated the clock:
 released 2026-10-15, stable 18.6 - we build on 18 stable, and 19 is a wheel swap + pg_upgrade
 when it ships final, not a rebase event.**
 
+**The wheel's one operational trap (measured 2026-10-23, by fire drill).** A running cluster keeps
+the library path of the binaries that started it, and PostgreSQL loads its text-search stemmer
+(`dict_snowball`) lazily - on the first full-text query, not at boot. So renaming or moving the
+install folder, or reinstalling the venv that carries `embedded-postgres`, while a store's cluster
+is still live leaves the postmaster pointing at a path that no longer exists, and every recall query
+dies with `could not access file "dict_snowball": No such file or directory` while the model keeps
+answering. The rule: **stop the server (which stops its cluster) before you move the install or
+rebuild the venv.** No data moves either way - the store's identity is the physical `pgdata`
+directory, so it comes back with the same rows. The second half of the lesson: a cluster can
+outlive every server restart, because `embedded_postgres` stops a cluster on exit only when the
+exiting process is the sole entry in `pgdata/.handle_pids.json`; a killed run leaves a dead pid
+behind and from then on no clean exit stops the cluster (this box had nine dead pids in that list).
+
 **Driver - psycopg 3.3 `psycopg[binary]`** bundles libpq in one wheel (psycopg.org, 2025-12);
 the sync API fits the one-lock threading model unchanged; `psycopg_pool` exists for the
 post-flip multi-writer future. Nothing is installed in `.venv` today (checked: no psycopg,

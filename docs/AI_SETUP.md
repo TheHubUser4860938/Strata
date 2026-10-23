@@ -114,7 +114,7 @@ The flags (all of them, with examples: `strata launch --help`):
 | `--gpu LIST` | card numbers, e.g. `0` or `0,1` (several cards share the model) |
 | `--tune quick\|thorough\|skip` | find the fastest settings first (default here: `skip`) |
 | `--access local\|lan\|cloudflare\|tailscale` | who can connect; beyond `local` a key is made for you |
-| `--port N` | the server port (default 8080) |
+| `--port N` | the server port (this fork: **8005**; upstream 8080/8095) |
 | `--api-key KEY`, `--api-key-env NAME`, `--new-key` | the key clients must send |
 | `--no-api-key` | share without a key (a warning, not a refusal; recommended only on a network you trust) |
 | `--save-preset NAME` | keep these choices; `strata launch --preset NAME` starts them again |
@@ -193,7 +193,7 @@ directory. Tuning (all optional): `"recall_limit"`, `"max_block_chars"`, `"per_t
 `"turn_recall_limit"`, `"turn_block_chars"`, `"encrypt"`, `"tool"`, `"auto_shelve"`,
 `"embedder"`, `"cartridges"`, `"soul"`; setup bundles the store at the dev-verified budgets
 (96 notes under a 48,000-char cap, per-turn 12 notes under 24,000, unlimited tool rounds), writes
-`"slot_save_path": "<Strata folder>/Strata-data/sessions"` with `"slot_retain": 6` (slot
+`"slot_save_path": "<data folder>/sessions"` with `"slot_retain": 6` (slot
 save/restore, and the directory the cartridges need), and ships the tier-2 cartridges ON only when
 the PC keeps at least 8 GB of system RAM free of the model's all-in need (an IQ3_S box with 64 GB
 gets no cartridges; a 128 GB box does) - the knobs measured and shipped off (`floor_cosine`,
