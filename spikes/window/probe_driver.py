@@ -142,10 +142,10 @@ def phase_b1(url):
         return
     # dissect with the byte-verified tool (import, not shell, so failures are loud)
     sys.path.insert(0, str(HERE.parents[1] / "tools"))
+    sys.path.insert(0, str(HERE.parents[1]))
     import strata_session as ss
-    sess = Path("Strata-data/sessions-dev") / fn
-    if not sess.exists():
-        sess = Path("../Strata-data/sessions-dev") / fn
+    from strata_control.datafolder import data_dir      # single-root law (2026-10-23): one data folder, resolved not guessed
+    sess = data_dir(HERE.parents[1]) / "sessions-dev" / fn
     try:
         info = ss.parse_session(str(sess))
         record("b1", {"step": "dissect", "file": str(sess), "bytes": info["file_size"],

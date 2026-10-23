@@ -9,8 +9,9 @@
 set -u
 DEVROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$DEVROOT" || exit 1
-SRC="Strata-data/models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf"
-OUT="${1:-Strata-data/ple-copies/q8-shard2-d2.gguf}"
+DATA="${STRATA_DATA:-$HOME/Strata-data}"       # the one data folder (this box; override with STRATA_DATA) - the repo symlink is gone (2026-10-23)
+SRC="$DATA/models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf"
+OUT="${1:-$DATA/ple-copies/q8-shard2-d2.gguf}"
 PLAN="spikes/window/d2_plan.json"
 PY="${PY:-$HOME/Strata-data/venvs/spikeC/bin/python}"
 [ -f "$PLAN" ] || { echo "missing $PLAN - run: $PY spikes/window/build_d2_plan.py"; exit 1; }

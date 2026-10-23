@@ -182,7 +182,9 @@ def encode(packs, texts):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--pairs")
-    ap.add_argument("--src", default=str(ple.ORACLE_INC.parents[2] / "Strata-data/models/IQ3_S/"
+    sys.path.insert(0, str(ple.ORACLE_INC.parents[2]))
+    from strata_control.datafolder import data_dir      # single-root law (2026-10-23): the table lives in the data folder
+    ap.add_argument("--src", default=str(data_dir(ple.ORACLE_INC.parents[2]) / "models/IQ3_S/"
                     "Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf"))
     ap.add_argument("--tokenizer", help="pack tokenizer dir (for --tokens)")
     ap.add_argument("--tokens", help="comma 'marker_text|fact_text' pairs, encoded with --tokenizer")

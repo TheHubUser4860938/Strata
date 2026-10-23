@@ -54,7 +54,7 @@ from venue_render import load_tokenizer, load_template, live_render, rows16_stre
 from d2_rules import make_rules
 from build_d2_plan import STOP
 
-STOCK = "Strata-data/models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf"
+STOCK = "models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf"   # under data_dir() - the single-root law (2026-10-23)
 # pre-registered cue-venue preamble: instruction FIRST so the rare cue tokens stay adjacent to
 # the generation tail (anything said after the cue would push it out of tap reach).
 CUE_PREAMBLE = ("Name the person, place or thing each cue line is about. One line: the name "
@@ -68,7 +68,8 @@ def main():
     tok = load_tokenizer()
     tpl = load_template()
     mk = json.loads((ROOT / "spikes/window/markers.json").read_text())
-    info = ple.table_info(str(ROOT / STOCK))
+    from strata_control.datafolder import data_dir      # single-root law (2026-10-23): the table lives in the data folder
+    info = ple.table_info(str(data_dir(ROOT) / STOCK))
 
     # one definition, shared with the offline gates (spikes/d2_dissect/d2_rules.py): the
     # token's TEXT (byte-BPE space marker stripped) compared against the stop words - v1's

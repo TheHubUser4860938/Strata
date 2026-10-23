@@ -45,7 +45,9 @@ from gate1_driver import cold_map, hit, norm, rows               # noqa: E402
 from venue_render import load_template, load_tokenizer, live_render  # noqa: E402
 from serve.memory import MemoryService                              # noqa: E402
 
-STORE = ROOT / "Strata-data" / "memory-eval"
+from strata_control.datafolder import data_dir                       # noqa: E402  single-root law (2026-10-23)
+
+STORE = data_dir(ROOT) / "memory-eval"
 ARMS = {"live8": dict(limit=8, budget=6000, muted=False),
         "local8": dict(limit=8, budget=6000, muted=True),
         "local16": dict(limit=16, budget=12000, muted=True)}

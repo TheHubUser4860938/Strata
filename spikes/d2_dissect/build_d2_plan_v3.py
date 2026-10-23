@@ -41,8 +41,8 @@ from venue_render import load_tokenizer, load_template, live_render, rows16_stre
 from d2_rules import make_rules
 from build_d2_plan_v2 import CUE_PREAMBLE
 
-STOCK = "Strata-data/models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf"
-DST = "Strata-data/ple-copies/q8-shard2-d2v3.gguf"
+STOCK = "models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf"   # under data_dir() - the single-root law (2026-10-23)
+DST = "ple-copies/q8-shard2-d2v3.gguf"                                        # ditto: the plan record keeps it data-relative
 STEER_SRC_TEXT = "Happy New Year"
 STEER_CUES = {"steer-target": "Fenmorrow-Harbor almanac",
               "steer-ctrl-1": "Draylemere-Ferry charter",
@@ -57,7 +57,9 @@ def main():
     tpl = load_template()
     mk = json.loads((ROOT / "spikes/window/markers.json").read_text())
     v2cues = json.loads((HERE / "state/v2_build.json").read_text())["cue"]
-    info = ple.table_info(str(ROOT / STOCK))
+    sys.path.insert(0, str(ROOT))
+    from strata_control.datafolder import data_dir      # single-root law (2026-10-23): the table lives in the data folder
+    info = ple.table_info(str(data_dir(ROOT) / STOCK))
     stop_form, is_content = make_rules(tok)
 
     # ---------------- marker pairs: gold spans + the emit-pre window (H6's src)

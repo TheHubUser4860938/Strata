@@ -16,7 +16,11 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
 
-TOKDIR = ROOT / "Strata-data/packs/iq3_s/tokenizer"
+from strata_control.datafolder import data_dir      # the single-root law (2026-10-23): packs live in the data folder
+
+# The pack tokenizer the running server itself builds (serve/server.py L6149-6157). The symlink era
+# spelled this repo/Strata-data; the symlink is gone, so the path is resolved, not guessed.
+TOKDIR = data_dir(ROOT) / "packs/iq3_s/tokenizer"
 
 
 def load_tokenizer():

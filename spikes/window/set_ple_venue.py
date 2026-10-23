@@ -21,10 +21,11 @@ import json, shutil, sys
 from pathlib import Path
 
 CFG = Path(__file__).resolve().parents[2] / "strata-dev.json"
-DEFAULT_SHARD2 = ("Strata-data/models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S"
-                  "-00002-of-00002.gguf")
-NATIVE1 = ("Strata-data/models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S"
-           "-00001-of-00002.gguf")
+sys.path.insert(0, str(CFG.parent))
+from strata_control.datafolder import data_dir      # single-root law (2026-10-23): configs spell these paths absolutely
+
+DEFAULT_SHARD2 = str(data_dir(CFG.parent) / "models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf")
+NATIVE1 = str(data_dir(CFG.parent) / "models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf")
 
 
 def current(cfg):

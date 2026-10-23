@@ -284,11 +284,14 @@ def selftest() -> int:
 
 
 def main():
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    from strata_control.datafolder import data_dir      # single-root law (2026-10-23): the table lives in the data folder
     ap = argparse.ArgumentParser()
     ap.add_argument("--selftest", action="store_true")
     ap.add_argument("--oracle", action="store_true",
                     help="run the ref/ngram.py oracle-vector check and exit")
-    ap.add_argument("--table", default="Strata-data/models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf")
+    ap.add_argument("--table", default=str(data_dir(Path(__file__).resolve().parents[2])
+                    / "models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf"))
     ap.add_argument("--rows", help="comma token ids: print each token's 16 rows + byte homes")
     ap.add_argument("--dequant", help="row number: print its 160 floats")
     ap.add_argument("--apply", help="plan JSON to apply")

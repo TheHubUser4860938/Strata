@@ -35,6 +35,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / "spikes" / "d2_dissect"))
 from venue_render import load_tokenizer, load_template, live_render  # noqa: E402
+from strata_control.datafolder import data_dir                       # noqa: E402  single-root law (2026-10-23)
 
 
 def http(url, payload=None, headers=None, timeout=960):
@@ -63,7 +64,7 @@ def http(url, payload=None, headers=None, timeout=960):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--url", default="http://127.0.0.1:8005")
-    ap.add_argument("--slot-dir", default=str(ROOT / "Strata-data/sessions-dev"),
+    ap.add_argument("--slot-dir", default=str(data_dir(ROOT) / "sessions-dev"),
                     help="the directory the boot's --slot-save-path points at (for byte-hashing "
                          "the files the server writes)")
     ap.add_argument("--filename", default="c2_plumb_probe")

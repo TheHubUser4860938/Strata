@@ -26,7 +26,9 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
+sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "spikes" / "ple-overlay"))
+from strata_control.datafolder import data_dir      # single-root law (2026-10-23): the data folder is resolved, not repo/Strata-data
 sys.path.insert(0, str(ROOT / "tools"))
 import ple_ngram as ple  # oracle-exact hash mirror
 
@@ -40,8 +42,8 @@ def main():
     ids_of = lambda s: tok.encode(s, parse_special=True)
     stop_ids = {i for w in STOP for i in ids_of(w)}
     mk = json.loads((HERE / "markers.json").read_text())
-    rel = "Strata-data/models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf"
-    src = str(ROOT / rel)
+    rel = "models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf"
+    src = str(data_dir(ROOT) / rel)
     info = ple.table_info(src)
     writes, seen, skipped, per_pair = [], {}, {}, []
     for pr in mk["pairs"]:
@@ -90,7 +92,7 @@ def main():
 
 def _load_tokenizer():
     import strata_tokenizer as ST
-    tdir = ROOT / "Strata-data/packs/iq3_s/tokenizer"
+    tdir = data_dir(ROOT) / "packs/iq3_s/tokenizer"
     vocab = json.loads((tdir / "vocab.json").read_text(encoding="utf-8"))
     tokens = [None] * len(vocab)
     for t, i in vocab.items():
