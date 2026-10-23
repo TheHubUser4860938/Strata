@@ -410,6 +410,9 @@ class Requirements(unittest.TestCase):
         deps = {"markupsafe", "certifi", "charset-normalizer", "idna", "urllib3", "colorama",
                 "fasteners", "platformdirs"}   # the pinned transitive set, kept current as the
                                                # direct list grows (ADR-002 added the last two)
+        # the packages it has stay as they are; only truststore (#3722: the operating system's certificates) is new, and it is wanted
+        self.assertEqual(self.pip(legacy, lines, installed=deps)[0], ['truststore==0.10.5; python_version >= "3.10"'])
+        deps.add("truststore")
         self.assertEqual(self.pip(legacy, lines, installed=deps)[0], [])
         missing = [p for p in legacy if p != "psutil"]                         # an older list without psutil
         ran, _ = self.pip(missing, lines, installed=deps)

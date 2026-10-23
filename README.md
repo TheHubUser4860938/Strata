@@ -6,10 +6,11 @@ itself, so every client (OpenCode, Claude Code, Codex, the web app) shares one s
 harness ever has to re-send history. The server remembers, and it remembers the same way no
 matter which app is knocking.
 
-This fork is based on upstream Strata 0.2.2 (engine 0.1.47) — Main/Helper/Off GPU roles,
-Gyro on Intel Arc and Macs, the RX 6000 package, the NUMA pool split, one models folder for
-the app and the Terminal, `strata models move`, the Strix Halo changes, the unified speed
-number — and adds the memory system and the reason-mode steering described below.
+This fork is based on upstream Strata 0.2.3 (engine 0.1.48) — faster Strix Halo (+6% to +19% on
+the test PC), Intel Arc as a released engine package, the DFlash2 drafter (opt-in, Terminal only),
+an agent chat that copes with a full context, HTTPS through the operating system's certificates
+(#3722), better defaults for CPU workers, VRAM and the conversation cache (#3493), a steadier
+Terminal and app — and adds the memory system and the reason-mode steering described below.
 
 ## The two names, and they are not decoration
 
@@ -101,16 +102,16 @@ line under the table.
 
 | System | Your graphics card | File to download |
 | --- | --- | --- |
-| **Windows 10 / 11** | NVIDIA RTX, driver 580 or newer | [`Strata-0.2.2-windows-cuda13.exe`](https://github.com/Niko1221/Strata/releases/latest/download/Strata-0.2.2-windows-cuda13.exe) |
-| | NVIDIA, older card or driver older than 580 | [`Strata-0.2.2-windows-cuda12.exe`](https://github.com/Niko1221/Strata/releases/latest/download/Strata-0.2.2-windows-cuda12.exe) |
-| | AMD Radeon RX 9000 series or Radeon AI PRO R9700 | [`Strata-0.2.2-windows-hip.exe`](https://github.com/Niko1221/Strata/releases/latest/download/Strata-0.2.2-windows-hip.exe) |
-| | AMD Radeon RX 7000 series or Ryzen AI Max (Strix Halo) | [`Strata-0.2.2-windows-hip-rdna3.exe`](https://github.com/Niko1221/Strata/releases/latest/download/Strata-0.2.2-windows-hip-rdna3.exe) |
-| **Linux** | NVIDIA RTX, driver 580 or newer | [`Strata-0.2.2-linux-nvidia-cuda13.AppImage`](https://github.com/Niko1221/Strata/releases/latest/download/Strata-0.2.2-linux-nvidia-cuda13.AppImage) |
-| | NVIDIA, older card or driver older than 580 | [`Strata-0.2.2-linux-nvidia-cuda12.AppImage`](https://github.com/Niko1221/Strata/releases/latest/download/Strata-0.2.2-linux-nvidia-cuda12.AppImage) |
-| | AMD Radeon RX 9000 series or Radeon AI PRO R9700 | [`Strata-0.2.2-linux-amd-rx9070.AppImage`](https://github.com/Niko1221/Strata/releases/latest/download/Strata-0.2.2-linux-amd-rx9070.AppImage) |
-| | AMD Radeon RX 7000 series | [`Strata-0.2.2-linux-amd-rx7900.AppImage`](https://github.com/Niko1221/Strata/releases/latest/download/Strata-0.2.2-linux-amd-rx7900.AppImage) |
-| | AMD Ryzen AI Max (Strix Halo) | [`Strata-0.2.2-linux-amd-strixhalo.AppImage`](https://github.com/Niko1221/Strata/releases/latest/download/Strata-0.2.2-linux-amd-strixhalo.AppImage) |
-| **Mac** (Apple Silicon, macOS 15 or newer) | built in | [`Strata-0.2.2-mac.dmg`](https://github.com/Niko1221/Strata/releases/latest/download/Strata-0.2.2-mac.dmg) |
+| **Windows 10 / 11** | NVIDIA RTX, driver 580 or newer | [`Strata-0.2.3-windows-cuda13.exe`](https://github.com/Niko1221/Strata/releases/latest/download/Strata-0.2.3-windows-cuda13.exe) |
+| | NVIDIA, older card or driver older than 580 | [`Strata-0.2.3-windows-cuda12.exe`](https://github.com/Niko1221/Strata/releases/latest/download/Strata-0.2.3-windows-cuda12.exe) |
+| | AMD Radeon RX 9000 series or Radeon AI PRO R9700 | [`Strata-0.2.3-windows-hip.exe`](https://github.com/Niko1221/Strata/releases/latest/download/Strata-0.2.3-windows-hip.exe) |
+| | AMD Radeon RX 7000 series or Ryzen AI Max (Strix Halo) | [`Strata-0.2.3-windows-hip-rdna3.exe`](https://github.com/Niko1221/Strata/releases/latest/download/Strata-0.2.3-windows-hip-rdna3.exe) |
+| **Linux** | NVIDIA RTX, driver 580 or newer | [`Strata-0.2.3-linux-nvidia-cuda13.AppImage`](https://github.com/Niko1221/Strata/releases/latest/download/Strata-0.2.3-linux-nvidia-cuda13.AppImage) |
+| | NVIDIA, older card or driver older than 580 | [`Strata-0.2.3-linux-nvidia-cuda12.AppImage`](https://github.com/Niko1221/Strata/releases/latest/download/Strata-0.2.3-linux-nvidia-cuda12.AppImage) |
+| | AMD Radeon RX 9000 series or Radeon AI PRO R9700 | [`Strata-0.2.3-linux-amd-rx9070.AppImage`](https://github.com/Niko1221/Strata/releases/latest/download/Strata-0.2.3-linux-amd-rx9070.AppImage) |
+| | AMD Radeon RX 7000 series | [`Strata-0.2.3-linux-amd-rx7900.AppImage`](https://github.com/Niko1221/Strata/releases/latest/download/Strata-0.2.3-linux-amd-rx7900.AppImage) |
+| | AMD Ryzen AI Max (Strix Halo) | [`Strata-0.2.3-linux-amd-strixhalo.AppImage`](https://github.com/Niko1221/Strata/releases/latest/download/Strata-0.2.3-linux-amd-strixhalo.AppImage) |
+| **Mac** (Apple Silicon, macOS 15 or newer) | built in | [`Strata-0.2.3-mac.dmg`](https://github.com/Niko1221/Strata/releases/latest/download/Strata-0.2.3-mac.dmg) |
 
 **If you are unsure:** for NVIDIA, take `cuda13` if your driver is version 580 or newer, otherwise `cuda12`. `cuda12` is
 for older cards and older drivers. The `hip` and `amd` files are for AMD cards. RX 6000 cards have no installer of
@@ -248,15 +249,28 @@ against the store before it is stored (the supersession arm: 88 flags, correct v
 first live hours); ingest reunites abbreviation splits ("8 U.S.C." no longer dies mid-citation)
 and refuses shards that cannot stand alone.
 
+**Where it stands, read from the store's own stats on 2026-10-23:** **966** live rows across 138
+shelves (one row still unclassified), 1,521 retired rows behind them, 2,508 journaled turns, and
+the invariant holds — the embedder reports 966 vectors for 966 live rows. The store now runs on
+**native PostgreSQL** (ADR-002, the owner's decision 2026-10-16): psycopg 3, no SQLite backend, no
+dialect shim, no dual-backend matrix. The measurements that justified it are on the record —
+1.6 ms a query at 2,707 rows, a fresh test database in 3 ms, the whole live store loaded in 0.03 s —
+and the encrypted `pg_dump` backup round-trips (1.7 s, restore byte-verified by identical lexical
+rankings). Encryption at rest is the honest shape for a server database: a 0700 data directory plus
+a key file, so a running store is readable by whoever owns the machine and a stopped one is only as
+private as that directory. The persona layer has its own constitution (`soul.md`, V4) and its own
+budget gate — 14,000 characters, the owner's numbers, raised from 6,000 on 2026-10-20 and to 14,000
+on 2026-10-21 — and it fails closed to the plain path when it overflows.
+
 ## How it works today
 
-**Tier 3 — curated text memory (live).** ~1,050 facts on subject shelves, recalled server-side
+**Tier 3 — curated text memory (live).** ~970 facts on 138 subject shelves, recalled server-side
 and injected as one hidden system block that rides all three dialects (OpenAI, Anthropic,
 Responses). A journal feeds itself from conversations; a curation loop classifies, dedups and
 consolidates with human-gated merge review; a budget speaks before it's full; `?since=`/`?until=`
-windows answer when-said questions; encryption at rest seals atomically and shreds plaintext on
-clean shutdown. Opt-in: the model browses its own store mid-answer with a `memory_search` tool
-the server runs itself — no client wiring.
+windows answer when-said questions; a CPU-only embedder (pinned by SHA-256, MIT, ~130 MB) makes
+recall understand paraphrase. Opt-in: the model browses its own store mid-answer with a
+`memory_search` tool the server runs itself — no client wiring.
 
 **What it measures like, on LongMemEval-V1 (oracle, 500 questions × 3 repeats):** the built-in
 memory answers **0.72** correctly at the shipped budget. The control line is the one to trust:
@@ -267,13 +281,15 @@ and the one intervention ever measured to move that weak spot (writing facts wit
 dates) gained **+0.207** on the same 127 questions, McNemar p ≤ 1.2e-12, and it ships in the
 curation loop. Full protocol and records: `docs/MEMORY_CORE.md`.
 
-**Tier 2 — KV cartridges (built; waiting on RAM).** The store's standing shelves are seeded
-once as an engine session file and restored ahead of every conversation: restore **81 ms** for
+**Tier 2 — KV cartridges (built, and riding on a big-RAM box).** The store's standing shelves are
+seeded once as an engine session file and restored ahead of every conversation: restore **81 ms** for
 247 MB, the pin law **refuses foreign files** by config fingerprint, and the knowledge delta is
-real — warm 3/3 correct, cold 3/3 `idk`, wrong-cartridge control 0 leaks. What is *not* claimed:
-prefill skipped for strangers (engine resume extends one conversation, not across them —
-measured, and the docs say so). The venue re-record that would settle its economics sits queued
-behind the RAM upgrade below.
+real — warm 3/3 correct, cold 3/3 `idk`, wrong-cartridge control 0 leaks. The RAM gate is met on
+this box now: 125 GB since 2026-10-22, and the standing cartridge rides live — 63 shelved facts on
+two shelves, 285 MB, restored at boot in **150.3 ms** (the engine's own line: read+check 142.0 ms).
+What is *not* claimed: prefill skipped for strangers (engine resume extends one conversation, not
+across them — measured, and the docs say so). The venue re-record that would settle its economics
+is unblocked and queued.
 
 **Phase 2 — state-without-text (open research).** Porting the *AKBASCORE MAM / NIRVANA
 cognitive cartridge* idea — knowledge stored as model-produced K/V and read back with no source
@@ -372,13 +388,18 @@ tokens per second. The engine version behind each number is in [DETAILS.md](docs
 
 The claim list, what each measurement was run on, and what beta-1 refuses to claim:
 [`docs/BETA1.md`](docs/BETA1.md). The engine-heavy queue — benchmark re-record on the current
-weights, cartridges — waits on the 128 GB RAM upgrade
-(~2026-10-22): this dev box runs ~52 GB of weights on a 62 GB machine, and the engine, not the
-memory system, is the pressure (measured: Postgres holds 20 MiB resident, the embedder
-~130 MiB, engine RSS flat). The memory-and-tooling line shipped six releases on October 17
-alone: pairs, thinking levels, autonomous mode, the Settings menu, auto-pick observability and
-the store purge above. The server's own test suite — 1,012 tests, no GPU and no downloads
-needed — passes on that box.
+weights, cartridges — was waiting on the RAM upgrade, and the RAM upgrade landed on 2026-10-22:
+this box now has **125 GB**, KV streaming is on (`--kv-resident 32768`), and the engine's own
+counters moved — expert cache 5,709 → 7,236 slots, decode-cache hit rate 87.0-87.4% → 93.3%,
+traffic served over PCIe 3.4-3.6% → 1.5%. No speed number is claimed from that: mixed traffic, no
+repeats, and the protocol is temperature 0.8/1.0 with at least three repeats before anything is
+said. Huge pages were tested and reverted the same day — the reservation ate the page cache, and
+the arena was already running on 2 MiB pages through transparent huge pages. The
+memory-and-tooling line shipped six releases on October 17 alone: pairs, thinking levels,
+autonomous mode, the Settings menu, auto-pick observability and the store purge above. The
+full-size intelligence run — five published suites at full size, 21,336 generations, temperature
+1.0, three repeats — was launched on 2026-10-22 and has not landed a number yet. The server's own
+test suite — 1,012 tests, no GPU and no downloads needed — passes on this box.
 
 Engine and server changes live on the `memory-core` branch; `main` stays a near-mirror of
 [upstream Strata](https://github.com/Niko1221/Strata) (MIT, by Niko1221). MAM-derived code
