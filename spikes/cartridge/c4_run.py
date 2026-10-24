@@ -424,11 +424,15 @@ def main():
         ledger[N] = led
         print(f"[bank{N}] ledger {json.dumps(led)}", flush=True)
         if not a.keep_files:                                     # slot_retain is 6: stay light
+            # The engine keeps slot filenames AS GIVEN - smoke2/3 proved it (the files landed
+            # without the .bin my cleaner first tried, 4 x 253 MB of honest litter). Sweep
+            # both name variants; missing_ok keeps it quiet.
             for nm in (f"c4_bank{N}_{a.tag}", f"c4_dec{N}_{a.tag}"):
-                try:
-                    (SESSIONS / f"{nm}.bin").unlink(missing_ok=True)
-                except OSError:
-                    pass
+                for cand in (nm, nm + ".bin"):
+                    try:
+                        (SESSIONS / cand).unlink(missing_ok=True)
+                    except OSError:
+                        pass
 
     # ---- verdict, mechanically per C4_PRE_REG.md -------------------------------------------
     p100 = ledger.get(100, {}).get("leak_rate")
