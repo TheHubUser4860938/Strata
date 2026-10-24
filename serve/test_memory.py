@@ -843,6 +843,12 @@ class MemoryTool(unittest.TestCase):
         # select read confidence only to feed the blend then dropped it, and hits was never
         # selected at all - the same on the cosine-only arm.
         self.assertEqual(d["facts"][0]["confidence"], 0.8, "confidence is real, not null")
+        # THE RELEVANCE LINE (2026-10-24): every q-row carries "rel" - the blended score that
+        # ranked it (rank-share + freshness + confidence) - because P2's mechanism is the model
+        # judging what it fetched, and a flat list asks it to judge blindness. The walk verb
+        # carries no rel on purpose: a drawer lists what is newest, not what matches.
+        self.assertIsInstance(d["facts"][0]["rel"], (int, float), "rel rides every q-row")
+        self.assertGreater(d["facts"][0]["rel"], 0.0, "a found row carries positive belief")
         self.assertEqual(d["facts"][0]["hits"], 0, "hits starts visible at zero")
         again = json.loads(tool_result(self.svc.memory, {"q": "zygost scale"}, scope="fw")["text"])
         self.assertEqual(again["facts"][0]["hits"], 1,

@@ -298,9 +298,10 @@ MEMORY_TOOL = {
                     "questions. Use it whenever the memory block in context is not enough, or you are "
                     "unsure a fact is really there - and call it again with other words or another shelf "
                     "before you give up: one look is not a search. Returned facts carry 'when' (the date "
-                    "said), 'confidence' and 'hits' (times served); 'found: 0' is an honest zero - if it "
-                    "finds nothing after two tries, say so plainly. Call with no arguments to get the "
-                    "menu back."),
+                    "said), 'confidence' and 'hits' (times served); q-rows carry 'rel' - the search's "
+                    "own belief that a row answers you (~1 top pick, ~0.1 a polite maybe; judge what "
+                    "you fetched by it). 'found: 0' is an honest zero - if it finds nothing after two "
+                    "tries, say so plainly. Call with no arguments to get the menu back."),
     "parameters": {
         "type": "object",
         "properties": {
@@ -388,7 +389,17 @@ def tool_result(mem: "MemoryService", arguments, scope: str = "default",
         when = {r[0]: r[1].date().isoformat() for r in got}
     facts = [{"id": h["id"], "class": h.get("class") or "", "text": h["text"],
               "confidence": h.get("confidence"), "hits": h.get("hits"),
-              "when": when.get(h["id"])} for h in hits]
+              "when": when.get(h["id"]),
+              # THE RELEVANCE LINE (2026-10-24, the research-drop's trigger fired: browse-arm
+              # abstention 0.700 < the 0.75 bar the relevance line was named at). P2's mechanism
+              # is the MODEL JUDGING what it fetched - and judgment was blind: search() blends
+              # rank-share + freshness + confidence into a score and then THROWS IT AWAY at the
+              # render. Now the first row says why it is first: rel is that blend (0-1, top of
+              # the list ~0.8-1.1, marginal tails ~0.1-0.3), so "found: 8" becomes eight graded
+              # claims instead of a flat crowd. Walks and the map carry no rel on purpose: a
+              # drawer lists what is newest, not what matches - position there is order, not
+              # evidence, and inventing a score for it would be decoration.
+              "rel": h.get("score")} for h in hits]
     mem.note_tool("searches", not facts)
     return _tool_done(t0, True, json.dumps({"found": len(facts), "facts": facts}, ensure_ascii=False))
 
