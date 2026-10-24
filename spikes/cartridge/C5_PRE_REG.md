@@ -93,6 +93,11 @@ grafting, fork work).
 Pending — Clio awaits the countersign before any C5 ask is generated.
 The runner ENFORCES this: `c5_run.py` refuses the engine without `--i-countersigned`.
 
+**SIGNED 2026-10-24 (evening), owner in-session: "Okay I sign off on all of these."**
+The pre-signature amendment (measured rungs 20/100/187/294, the probe law, the deterministic
+aggregation) is part of what was signed. The ladder runs this evening on the boot of the
+label fix, tag v1, on the same production store the plan was measured from.
+
 ## Amendment, pre-signature (2026-10-24 evening) — the dry-run facts, appended not rewritten
 
 The runner's first `--dry-run` (zero engine calls; plan in `state/c5_plan_*.json`) measured

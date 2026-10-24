@@ -68,3 +68,7 @@ they cannot quietly become the headline later:
 
 Owner ratifies (or edits) the bands above; c4_run.py follows the c3v3_run.py pattern after
 sign-off; the engine is shared, so the run schedule is his call, not this file's.
+
+**SIGNED 2026-10-24 (evening), owner in-session: "Okay I sign off on all of these."**
+C4's runner is still to be built - C5 runs first on the same signed basis; the pen precedes
+the ask, the runner follows the pen.

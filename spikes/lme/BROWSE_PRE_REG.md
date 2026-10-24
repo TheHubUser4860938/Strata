@@ -101,3 +101,7 @@ not a literal empty result - which is exactly what the pilot's five abstention q
 
 Pending countersign on P1-P6 and the decision rule. C5 (bank composition) is the cartridge
 line's own probe, signed separately; Browse Day does not wait for it.
+
+**SIGNED 2026-10-24 (evening), owner in-session: "Okay I sign off on all of these."**
+P1-P6 and the decision rule stand as written; Browse Day now waits only on its venue evening
+(pilot-20 first, the block-off/tool-on arm).
