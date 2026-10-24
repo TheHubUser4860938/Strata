@@ -204,6 +204,10 @@ def main() -> int:
     ap.add_argument("--model", default=str(data_dir(ROOT) / "embeddings/bge-small-en-v1.5"))
     ap.add_argument("--limit", type=int, default=0, help="sample N provenance units (default: all)")
     ap.add_argument("--json", default="", help="write every graded record here")
+    ap.add_argument("--block-floor", type=float, default=0.0,
+                    help="the production block floor (huihui json: 0.15) - the DEMOTE arm's "
+                         "contamination cut IS this floor eating sunk scores, so a run without "
+                         "it measures the reorder, not the delivery")
     ap.add_argument("--route-demote", type=float, default=0.0,
                     help="0 = the shipped FILTER arm; 0 < d < 1 = the DEMOTE delivery "
                          "(serve/memory.py _router_search, 2026-10-24) - same picks, nothing hidden")
@@ -217,11 +221,12 @@ def main() -> int:
         _storeclone.clone_store(Path(a.dir).resolve(), work)      # R5b honest dump/restore, works live
         svc = MemoryService(str(work), recall_limit=96, max_block_chars=48000,
                             embedder=Embedder(a.model, threads=4), route_shelves=True,
-                            route_demote=a.route_demote)
+                            route_demote=a.route_demote, block_min_score=a.block_floor)
         st = svc.stats()
         out = [f"routegrade: clone of {a.dir} - {st['memories']} active rows, "
                f"{(st.get('embedder') or {}).get('vectors')} vectors, {st['turns']} turns, "
-               f"router on ({st['router']['on']}{f', demote x{a.route_demote:g}' if a.route_demote else ''})"]
+               f"router on ({st['router']['on']}{f', demote x{a.route_demote:g}' if a.route_demote else ''}"
+               f"{f', floor {a.block_floor:g}' if a.block_floor else ''})"]
 
         up, wild = units_provenance(svc, a.limit)
         out.append(f"provenance leg: {len(up)} turn-units ({wild} WILD gold rows counted, never addressable)")
