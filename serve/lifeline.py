@@ -103,7 +103,14 @@ def start_of(p):
         out = subprocess.run(["ps", "-o", "lstart=,stat=", "-p", str(p)], capture_output=True, text=True, timeout=5).stdout.strip()
     except Exception:
         return None
-    return None if not out or out.endswith("Z") else "s:" + out
+    # IDENTITY = lstart ONLY (the first five fields: "Sat Oct 24 12:34:56 2026"). The old token
+    # carried the STAT column too, and STAT is ephemeral: a child captured mid-exec reads "R"
+    # and sleeps as "S" one heartbeat later, so the comparison said "not my process" and the
+    # watcher walked away from the very orphan it was hired to end (test_lifeline caught it on
+    # Linux via the forced-watcher case, 2026-10-24 - the bug's real home is macOS, the only
+    # production platform without PR_SET_PDEATHSIG). Zombie rejection stays: it never outlives
+    # the capture, the Z check reads the raw line before the trim below.
+    return None if not out or out.endswith("Z") else "s:" + " ".join(out.split()[:5])
 os.set_blocking(0, True)
 data = b""
 while True:
@@ -134,12 +141,15 @@ _watchers_lock = threading.Lock()
 
 
 def _start_token(pid: int) -> str:
+    """The watcher's identity for a child: its start time, which no reused PID can share.
+    Five fields, never the STAT column - see the IDENTITY note in _WATCHER (the R->S drift in
+    a child's first seconds is exactly what made the old token mismatch and orphan the child)."""
     try:
         out = subprocess.run(["ps", "-o", "lstart=,stat=", "-p", str(pid)], capture_output=True, text=True,
                              timeout=5).stdout.strip()
     except (OSError, subprocess.SubprocessError):
         return ""
-    return "" if not out or out.endswith("Z") else "s:" + out
+    return "" if not out or out.endswith("Z") else "s:" + " ".join(out.split()[:5])
 
 
 def _watch(child: subprocess.Popen) -> None:
