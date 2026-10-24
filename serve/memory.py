@@ -453,8 +453,13 @@ def time_bound(value) -> float | None:
     raise ValueError(f"bad date {s!r}: use YYYY-MM-DD, an ISO datetime, or epoch seconds")
 
 
-AUTO_SHELF_CAP = 200      # the most LEARNED sub-drawers one store may auto-mint; past the cap the
-                          # taxonomy goes back to human review (m4_shelves propose mode)
+AUTO_SHELF_CAP = None     # the most LEARNED sub-drawers one store may auto-mint; None = UNLIMITED
+                          # (owner's ruling, venue day 2026-10-24: the 200 budget was pre-throttling
+                          # the stress test - a year of memories ingested in twenty minutes spent all
+                          # 200 inside 626 rows, and the exam must meet what lives BEHIND the wall,
+                          # not the wall. The production stream had never reached it: eval sat at 153
+                          # learned in ten days. Past a cap, minting yielded to human review
+                          # (m4_shelves propose mode); past None, the corpus is the budget.)
 
 FTS_CFG = "strata_fts"    # the store's OWN text-search configuration, created by the schema below.
 _TSV_TOK = re.compile(r"'((?:[^']|'')*)':([0-9,]+)")
@@ -873,7 +878,9 @@ class MemoryService:
             has ever shelved stays wild, exactly as today;
           * cutter collisions do not hijack: if Parent/CUTTER already exists anchored to a
             different entity, this fact stays wild rather than joining a stranger's drawer;
-          * AUTO_SHELF_CAP bounds taxonomy explosion.
+          * AUTO_SHELF_CAP bounds taxonomy explosion - retired to None on the 2026-10-24 venue day
+            (owner's ruling: a stress test that re-hits its own cap learns nothing new); 200 stays
+            in git as the budget that once was, and the check short-circuits free past None.
 
         The learned taxonomy is STORE data (the shelves table: name, source, anchor), not code -
         a new category needs no deploy and no reboot, which is the whole point the Postgres port
@@ -897,9 +904,10 @@ class MemoryService:
                                   "select distinct class, %s, 'seed' from memories where class != ''"
                                   " on conflict do nothing", (self._dt(now),))
                 self.conn.commit()          # lazy seed: the table learns the shelves the store already has
-            if self.conn.execute("select count(*) from shelves where source='learned'").fetchone()[0] \
+            if AUTO_SHELF_CAP is not None and self.conn.execute(
+                    "select count(*) from shelves where source='learned'").fetchone()[0] \
                     >= AUTO_SHELF_CAP:
-                return ""                   # past the cap: propose, do not mint
+                return ""                   # past the cap: propose, do not mint; None = no wall
             # RAREST SUBJECT WINS (docstring law, made real 2026-10-16 by the backfill's dry-run):
             # text order let a passing mention of the store's busiest entity (Strata: 77 wild rows)
             # outvote the fact's actual subject (cognee, longmemeval, onnx) - the drawer would have

@@ -3,8 +3,9 @@
 
 The rebuild tool delivers its 10k evidence rows as a lump. The store's own auto law
 (auto_classify: a drawer opens on the SECOND mention of an entity, near a neighbour that already
-carries a class, minting sub-drawers up to AUTO_SHELF_CAP) needs pre-shelved neighbours to inherit
-from, and the keyword naming law (fact_class) lives in the sweep, which never touches raw evidence.
+carries a class - minting freely since AUTO_SHELF_CAP retired to None, 2026-10-24) needs
+pre-shelved neighbours to inherit from, and the keyword naming law (fact_class) lives in the sweep,
+which never touches raw evidence.
 A blank store handed the lump gets neither: every row rides wild, the shelf vote has nothing to
 count, and the router can never exercise on the venue - the first venue day exited 2 with the
 ledger reading tries 501 / picks 0 to prove it.
