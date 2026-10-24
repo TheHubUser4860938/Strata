@@ -49,7 +49,8 @@ they cannot quietly become the headline later:
   pays the SEED once. The ledger measures exactly this resident-prefix price (MAM's design parks
   its bank OUTSIDE the window and injects only a selection per ask - whether our resident price
   bends badly with size is one of the numbers C5 will weigh for that path-B argument); and the
-  one-time re-seed/install cost per conversation start as the bank grows.
+  one-time re-seed/install cost per conversation start as the bank grows. Reported, not
+  gated - this probe's product is the CURVE, not a verdict.
 - **Cold control**: every probe family idk-proven blind first; any fact with a cold hit is replaced
   before install (Gate-1 law, non-negotiable - priors are what voided C3-v2).
 
