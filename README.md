@@ -404,7 +404,7 @@ Swift, Gyro and NVFP4 bring their own tables and are never asked.
 
 For swift models you can run them with the Q8 PLE N-gram table adjust your .json file to look like this.
 
-"--native",
+  "--native",
   "Strata-data/models/swift-IQ3_S/Swift-Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf",
   "--native-dense-gguf",
   "Strata-data/models/swift-IQ3_S/Swift-Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf",
