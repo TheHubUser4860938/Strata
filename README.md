@@ -1,4 +1,4 @@
-# Strata Mnemosyne — Strata with built-in long-term memory
+# Strata Mnemosyne — Strata with built-in long-term memory (Still in development not ready for everyday use yet) 
 
 An 180-billion-parameter model running on a normal PC — one graphics card, some system RAM —
 that **remembers**. Not in the client, not per-app: the memory lives at the inference server
