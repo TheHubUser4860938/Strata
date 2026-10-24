@@ -1944,6 +1944,18 @@ class AutoShelve(unittest.TestCase):
         self.assertEqual(set(self._classes(m)), {""},
                          "auto opens SUB-drawers, never new top-level shelves: top stays human-gated")
 
+    def test_entityless_personal_fact_falls_back_to_the_parent_shelf(self):
+        """Patch #1 (venue day 2026-10-24, owner's ruling): the haystack stress census stranded
+        12.3% of the store in pronoun-only prose - the cutter law found no entity to key on and
+        the facts rode wild. First-person AND no entity candidate now reuses the personal top
+        shelf; without a USR family in the store, wild stays the honest answer."""
+        m = self._svc(auto_shelve=True)
+        m.remember("The user prefers window seats on flights", scope="fw", klass="USR")
+        self.assertEqual(m.auto_classify("I'm thinking of getting my car detailed soon."), "USR",
+                         "entity-less + first person + a USR family that exists -> the parent")
+        self.assertEqual(m.auto_classify("Zephyrbus latency budgets need revisiting weekly."), "",
+                         "no first person, no inheritance: wild is still honest")
+
     def test_cutter_collision_refuses_the_stranger_drawer(self):
         m = self._svc(auto_shelve=True)
         m.remember("The city of Klornish-Reach burns every winter", scope="fw", klass="FIC/VOLDR")

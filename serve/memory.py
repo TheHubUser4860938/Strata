@@ -461,6 +461,14 @@ AUTO_SHELF_CAP = None     # the most LEARNED sub-drawers one store may auto-mint
                           # learned in ten days. Past a cap, minting yielded to human review
                           # (m4_shelves propose mode); past None, the corpus is the budget.)
 
+FIRST_PERSON = frozenset(("i", "m", "im", "me", "my", "mine", "myself"))
+                          # patch #1 (venue day 2026-10-24, owner's ruling): the markers of a
+                          # PERSONAL statement. Pronoun-only prose has no entity for the cutter
+                          # law to key on, and the haystack stress census stranded 12.3% of the
+                          # store that way; such a fact now stands on the personal top shelf WHEN
+                          # THE STORE HAS ONE - tops stay human-gated, the fallback reuses USR and
+                          # never mints it.
+
 FTS_CFG = "strata_fts"    # the store's OWN text-search configuration, created by the schema below.
 _TSV_TOK = re.compile(r"'((?:[^']|'')*)':([0-9,]+)")
 # one tsvector ENTRY: 'lexeme':1,4,7A. The position list is the term frequency - the only exact
@@ -896,6 +904,16 @@ class MemoryService:
                 seen.add(w.lower())
                 cands.append(w)
         if not cands:
+            # PATCH #1 (venue day 2026-10-24, owner's ruling): an entity-less fact that speaks of
+            # itself is a PERSONAL fact - "I'm thinking of getting my car detailed soon" carries no
+            # noun for a cutter to cut, and the stress census stranded 1,346 rows (12.3%, 98%
+            # user-side) for want of a handle. Such a fact now stands with its family on the
+            # human-gated USR top - REUSED only: a store without a USR shelf keeps its wild facts
+            # wild, so "auto mints SUB-shelves, never new tops" still holds to the letter.
+            if (set(norm_text(text).split()) & FIRST_PERSON
+                    and self.conn.execute("select 1 from memories where class = 'USR' "
+                                          "or class like 'USR/%' limit 1").fetchone()):
+                return "USR"
             return ""
         now = time.time()
         with self.lock:
