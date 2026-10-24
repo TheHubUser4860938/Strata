@@ -121,7 +121,7 @@ def copy_dir(src: Path, dst: Path) -> None:
 
 
 def open_copy(dir_path: Path, model: str, threads: int, embed: bool, dedup: bool = True,
-              route: bool = False):
+              route: bool = False, route_demote: float = 0.0):
     """`dedup=False` turns off the READ-PATH near-dupe collapse only (serve.memory dedup_recall),
     the ranking untouched. It exists for the knowledge-update question raised twice from outside
     on 2026-10-15: Primnox measured that retiring old facts HURTS on real two-person chats (plain
@@ -137,16 +137,18 @@ def open_copy(dir_path: Path, model: str, threads: int, embed: bool, dedup: bool
         kw["embedder"] = Embedder(model, threads=threads)
     if route:
         kw["route_shelves"] = True      # gives the instance the production _route() - see RoutedService
+        if route_demote:
+            kw["route_demote"] = route_demote   # the 2026-10-24 delivery the venue json stages
     return MemoryService(str(dir_path), recall_limit=192, max_block_chars=48000, encrypt=True,
                          dedup_recall=dedup, key_file=str(dir_path / "memory.key"), **kw)
 
 
 class RoutedService:
     """Duck-typed twin of MemoryService for the --router-ab arm: answers sweep_offline's plain
-    search() call with the PRODUCTION injection law - the store's own _route() (credit-free lexical
-    stage 1 + shelf_vote) and the exact fail-open block_for runs when a pick finds nothing. The law
-    is not spelled out again here; it is CALLED, so this arm measures the machine that answers
-    conversations, not a sketch of it. .embedder rides through so sweep_offline's arm echo keeps
+    search() call with the PRODUCTION delivery: since 2026-10-24 the whole law lives in
+    _router_search (vote, FILTER + fail-open or DEMOTE per route_demote) and this twin CALLS it
+    rather than re-spelling it, so the arm measures the machine that answers conversations on
+    whichever delivery the store boots. The re-spelled two-call shape it replaced is in git. .embedder rides through so sweep_offline's arm echo keeps
     its meaning (both arms are the reranker path; the lever here is ROUTING, not the vector arm)."""
 
     def __init__(self, svc):
@@ -154,11 +156,10 @@ class RoutedService:
         self.fallbacks = 0
 
     def search(self, query, scope="default", limit=None, **kw):
-        pick = self.svc._route(query, scope)
-        hits = self.svc.search(query, scope=scope, limit=limit, classes=pick)
-        if pick and not hits:                       # the block_for fail-open, spelled by its shape
+        f0 = self.svc._route_stats["fallbacks"]     # count what THIS arm caused, for the report
+        hits = self.svc._router_search(query, scope, None, True, limit=limit)
+        if self.svc._route_stats["fallbacks"] > f0:
             self.fallbacks += 1
-            hits = self.svc.search(query, scope=scope, limit=limit)
         return hits
 
     def close(self):
@@ -174,7 +175,11 @@ def prepare_offline(store_dir: str, model: str, threads: int, work: Path) -> tup
     embedded copy is reused when it is already there (the copy step is a no-op overwrite and the
     plaintext db outranks the stale .enc - the husk rule tells them apart)."""
     src = Path(store_dir).resolve()
-    if not (src / "memory.db").exists() and not (src / "memory.db.enc").exists():
+    # PG-native (ADR-002): a store is a pgdata cluster now; the memory.db(.enc) spellings stay in
+    # the check for the venue-era husks and the SQLite-era copies that --work dirs still carry.
+    # Before this line the Postgres-only fixtures of tools/test_lme_harness died here with
+    # "no store in ..." - the rebase's blind spot, found by running the suite 2026-10-24.
+    if not any((src / m).exists() for m in ("memory.db", "memory.db.enc", "pgdata")):
         print(f"no store in {src}", file=sys.stderr)
         raise SystemExit(2)
     hyb = work / "hyb"
@@ -241,6 +246,11 @@ def main(argv=None) -> int:
                          "over the SAME rerank-equipped instance on the same copy. Every 'reranker' "
                          "wording then names the SHELF ROUTER; coverage flat + lists moved is the "
                          "mechanism half of the gate for flipping memory.route_shelves' default")
+    ap.add_argument("--route-demote", dest="route_demote", type=float, default=0.0,
+                    help="--router-ab only: the routed arm's DELIVERY - 0 = FILTER as shipped, "
+                         "0 < d < 1 = the 2026-10-24 DEMOTE arm the venue json stages; the "
+                         "knowledge-update question the 2026-10-15 dedup A/B left at -0.139 "
+                         "gets its demote answer through this lever")
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--types", default="")
     a = ap.parse_args(argv)
@@ -282,11 +292,14 @@ def main(argv=None) -> int:
                 # same copy, so the only difference between them is the routing law; the lex copy
                 # (built for the embedder A/B) simply goes unused. "lexical"/"hybrid" stay the arm
                 # KEYS the table code reads - their labels below say what the arms actually are.
-                base = open_copy(hyb, a.model, a.threads, True, dedup=nd, route=True)
+                base = open_copy(hyb, a.model, a.threads, True, dedup=nd, route=True,
+                                 route_demote=a.route_demote)
                 services = {"lexical": base, "hybrid": RoutedService(base)}
                 print("[ab] router-ab: left arm = the SHIPPED search, right arm = the PRODUCTION "
                       "ROUTING LAW (serve.memory._route + block_for's fail-open) - reranker ON in "
                       "both arms, one instance, one copy", flush=True)
+                print("[ab] routed-arm DELIVERY = " + (f"DEMOTE x{a.route_demote:g}"
+                      if a.route_demote else "FILTER (shipped)"), flush=True)
             else:
                 services = {"lexical": open_copy(lex, a.model, a.threads, False, dedup=nd),
                             "hybrid": open_copy(hyb, a.model, a.threads, True, dedup=nd)}

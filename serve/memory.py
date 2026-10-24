@@ -1999,7 +1999,8 @@ class MemoryService:
             self._route_stats["picked"] = h
         return pick or None
 
-    def _router_search(self, query: str, scope: str, classes, semantic: bool, exclude=(), pick=None):
+    def _router_search(self, query: str, scope: str, classes, semantic: bool, exclude=(),
+                       pick=None, limit: int | None = None):
         """Deliver the router's pick: FILTER or DEMOTE, never both (2026-10-24, step 1 of the
         tier-3 focus - the fix m4_routegrade named, and the shape the 2026 field converged on).
         An explicit classes= ALWAYS filters - a human address holds, fail closed, the 2026-10-15
@@ -2023,10 +2024,12 @@ class MemoryService:
         fail-open keeps its exact 2026-10-17 wording: a pick that finds nothing NEW falls back,
         not only one that finds nothing at all. `pick` lets a grader that already voted
         (tools/m4_routegrade) score the SAME pick it delivers with - no second vote, no
-        double-counted histogram, no race between the graded list and the delivered one."""
+        double-counted histogram, no race between the graded list and the delivered one.
+        `limit` rides through to the underlying search (the A/B harnesses sweep at their own k);
+        None keeps the store's recall default - the block paths stay byte-identical to tonight's."""
         want = classes if classes is not None else (self._route(query, scope) if pick is None else pick)
         if classes is None and want and 0.0 < self.route_demote < 1.0:
-            hits = self.search(query, scope=scope, classes=None, semantic=semantic)
+            hits = self.search(query, scope=scope, classes=None, semantic=semantic, limit=limit)
             if exclude:
                 hits = [h for h in hits if h["id"] not in exclude]
             for h in hits:
@@ -2035,12 +2038,12 @@ class MemoryService:
                     h["score"] = round((h["score"] or 0.0) * self.route_demote, 6)
             hits.sort(key=lambda x: -(x["score"] or 0.0))   # stable: pre-demotion order breaks ties
             return hits
-        hits = self.search(query, scope=scope, classes=want, semantic=semantic)
+        hits = self.search(query, scope=scope, classes=want, semantic=semantic, limit=limit)
         if exclude:
             hits = [h for h in hits if h["id"] not in exclude]
         if classes is None and want and not hits:
             self._route_stats["fallbacks"] += 1
-            hits = self.search(query, scope=scope, classes=None, semantic=semantic)
+            hits = self.search(query, scope=scope, classes=None, semantic=semantic, limit=limit)
             if exclude:
                 hits = [h for h in hits if h["id"] not in exclude]
         return hits
