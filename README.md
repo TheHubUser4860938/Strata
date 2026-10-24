@@ -268,13 +268,16 @@ on 2026-10-21 — and it fails closed to the plain path when it overflows.
 
 ## How it works today
 
-**Tier 3 — curated text memory (live).** ~970 facts on 138 subject shelves, recalled server-side
-and injected as one hidden system block that rides all three dialects (OpenAI, Anthropic,
-Responses). A journal feeds itself from conversations; a curation loop classifies, dedups and
-consolidates with human-gated merge review; a budget speaks before it's full; `?since=`/`?until=`
-windows answer when-said questions; a CPU-only embedder (pinned by SHA-256, MIT, ~130 MB) makes
-recall understand paraphrase. Opt-in: the model browses its own store mid-answer with a
-`memory_search` tool the server runs itself — no client wiring.
+**Tier 3 — curated text memory (live).** ~930 facts on 134 subject shelves (plus 24 index
+cartridges cataloging the map), recalled server-side and injected as one hidden system block
+that rides all three dialects (OpenAI, Anthropic, Responses). A journal feeds itself from
+conversations; a curation loop classifies, dedups and consolidates with human-gated merge
+review, and relabels the index cartridges every 30 minutes; a budget speaks before it's full;
+`?since=`/`?until=` windows answer when-said questions; a CPU-only embedder (pinned by SHA-256,
+MIT, ~130 MB) makes recall understand paraphrase. Opt-in: the model browses its own store
+mid-answer with a `memory_search` tool the server runs itself — one tool, three verbs: search
+with words, ask for the card map of the shelves (counts, dates, curated labels), or walk a
+shelf newest-first — no client wiring.
 
 **What it measures like, on LongMemEval-V1 (oracle, 500 questions × 3 repeats):** the built-in
 memory answers **0.72** correctly at the shipped budget. The control line is the one to trust:

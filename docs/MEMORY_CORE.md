@@ -448,6 +448,27 @@ turn, the tool is the model reaching for another shelf), a call naming none inhe
 conversation's filter, and a junk date comes back as an honest tool error rather than a silently
 widened window. The request's own `memory_search` tool wins the name clash, as on MCP.
 
+**Three verbs and the card map (2026-10-24, the Browse Day pre-registration, countersigned the
+same evening).** `q` stays the bm25 + cosine blend, and its rows now carry `when` - the date the
+fact was said. `catalog:true` returns the live SQL map of the browsable store: exact shelf marks,
+row counts, newest date, biggest first, top 24 visible and an honest `hidden_drawers`/`hidden_rows`
+rollup (no query, no picker - a librarian reading the index). A bare `class` walks that drawer
+newest-first, no words needed; `catalog:true` plus `class` drills the subtree and its rows in one
+call. The map carries curated labels from the **index cartridges** (`tools/m4_catalog.py`): rows of
+class `MEM/CAT` in the **user scope** - which joins every browsable scope, so one library map
+serves every study room - one per visible drawer, text contract `SHELF - words`, maintained by
+the 30-minute sweep tick (SQL reads, API writes, no engine: a quiet tick plans nothing, chains
+grow only when a shelf's words move, and a word in four of every ten visible drawers labels none
+of them). `X-Strata-Memory-Block: off` declines the injected block while the journal and the tool
+stay on - the arm Browse Day runs. `stats()` gained the browse ledger (`tool`: calls, searches,
+walks, maps, and `empty` - the honest zeros, because abstention by browsing *is* the found:0
+event). What is NOT yet measured is whether browsing ANSWERS better than being served: that is
+`spikes/lme/BROWSE_PRE_REG.md`'s question. The cartridge line's own probe has answered beside it
+(`spikes/cartridge/C5_PRE_REG.md`, run 2026-10-24): a composed 294-fact bank restores in 121 ms
+and rode all 261 asks - the STATE composes - while answering from inside it dilutes with bank
+size the way context rots with input length; the bank survives as an index (aggregation held
+4/5 flat across the ladder) even where it fades as an answer.
+
 **The tier-2 standing cartridge (M3b): the store's K/V, once.** The spike measured the facts the
 design rests on (engine 0.1.43.1, k8v4, RTX 4090): save 1,973 tokens -> 260,614,468 bytes in
 0.19 s (**132 KB/token** - the file is the whole slot state: QSA KV plus a ~240 MB fixed
