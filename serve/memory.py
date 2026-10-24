@@ -329,9 +329,10 @@ def _tool_done(t0: float, ok: bool, text: str) -> dict:
 
 MEMORY_OFF_NOTICE = (
     "[strata memory] The recall block is OFF for this request: the memory store is invisible to "
-    "you except through the memory_search tool. Before answering \"I don't know\" about anything "
-    "the user might have said - or you might have been told - consult the store: ask with words "
-    "(q), or call catalog:true to read the map of shelves.")
+    "you except through the memory_search tool, and it holds facts this conversation has never "
+    "seen. RULE: before answering \"I don't know\" about anything the user might have said - or "
+    "you might have been told - call memory_search at least once: ask with words (q), or call "
+    "catalog:true to read the map of shelves.")
 
 
 def tool_result(mem: "MemoryService", arguments, scope: str = "default",
@@ -2553,6 +2554,12 @@ def request_state(mem: "MemoryService | None", messages: list[dict], headers, re
         # so, once, in the slot the block would have ridden - and only when the tool is actually
         # offered (the server's own gate: config tool:true or the Tool header), because a sign on a
         # missing door is a lie. Served requests and muted requests never see these bytes.
+        # v3, the same night (owner chose lever A after pilot v2): permission became OBLIGATION.
+        # Forensics across both pilots - browsed rows scored 8 correct of 8, never-browsed 3 of 31,
+        # yet only 5 of 20 questions ever looked. The tool pays when consulted; the bottleneck is
+        # the trigger, so the notice now commands at least one call before any "I don't know" and
+        # tells the model the store holds what this conversation has never seen. The notice is the
+        # lever and its clauses ride together - pilot v3 tests the sentence, not its parts.
         notice = ""
         if (mem.tool or (headers.get("X-Strata-Memory-Tool") or "").strip().lower()
                 in ("1", "on", "true")):
