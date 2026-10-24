@@ -864,11 +864,19 @@ class MemoryTool(unittest.TestCase):
             self.assertEqual(st, 200, r)
             st, r = self.http("POST", "/memory", {"op": "classify", "id": r["id"], "class": shelf})
             self.assertEqual(st, 200, r)
+        st, r = self.http("POST", "/memory", {"op": "remember", "scope": "user", "class": "MEM/CAT",
+                                              "text": "USR/PREF - zygost, calibration, oil"})
+        self.assertEqual(st, 200, r)
         d = json.loads(tool_result(m, {"catalog": True}, scope="fw")["text"])
         self.assertEqual(d["mode"], "map")
         shelves = {s["shelf"]: s["rows"] for s in d["shelves"]}
         self.assertEqual(shelves.get("USR/PREF"), 2, "the map counts the live drawer")
         self.assertTrue(all(s["newest"] for s in d["shelves"]), "every branch shows its newest date")
+        lab = next(s for s in d["shelves"] if s["shelf"] == "USR/PREF")
+        self.assertEqual(lab.get("label"), "zygost, calibration, oil",
+                         "the MEM/CAT row labels the shelf it NAMES, not the CAT_CLASS it shares "
+                         "(the end-to-end catch of 2026-10-24: a class-keyed dict collapsed all "
+                         "labels into one and the model paid ten calls to notice)")
         w = json.loads(tool_result(m, {"class": "USR/PREF"}, scope="fw")["text"])
         self.assertEqual(w["mode"], "walk", "class with no q walks the drawer")
         self.assertEqual(w["total_rows"], 2)

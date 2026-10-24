@@ -54,6 +54,9 @@ from psycopg.types.json import Jsonb
 
 SCOPE_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,39}\Z")
 USER_SCOPE = "user"                     # the profile shared by every client and project
+CAT_CLASS = "MEM/CAT"                   # the index cartridges (2026-10-24): the browse map's label
+                                        # shelf - rows of "SHELF - words", maintained by
+                                        # tools/m4_catalog.py, merged by MemoryService.browse()
 DEFAULT_PROJECT = "default"             # requests that name no scope land in this project bucket
 WORD_RE = re.compile(r"\w{2,}", re.UNICODE)
 MAX_QUERY_WORDS = 12                    # a MATCH over more words than these stops being a query and becomes noise
@@ -1830,14 +1833,17 @@ class MemoryService:
                 f"select m.id, coalesce(m.class, ''), m.text, m.confidence, coalesce(m.hits, 0),"
                 f" m.created_at from memories m where {where}"
                 f" order by m.created_at desc, m.id desc limit %s", params + [limit]).fetchall()
-            labels = {r[0]: r[1] for r in self.conn.execute(
-                "select coalesce(class, ''), text from memories where invalid_at is null"
-                " and class like 'MEM/CAT%%' and scope = any(%s)", (scopes,)).fetchall()}
+            label_rows = self.conn.execute(
+                "select text from memories where invalid_at is null and class = %s"
+                " and scope = any(%s)", (CAT_CLASS, scopes)).fetchall()
             self.conn.commit()
         # MEM/CAT label contract (the builder tool keeps it honest): text is "SHELF - words".
+        # KEYED BY THE SHELF THE ROW NAMES, not by the CAT_CLASS every row shares - the first
+        # live map read that dict collapsed 24 labels into one and the model paid ten tool
+        # calls to re-open drawers the map had already labeled (caught end-to-end, 2026-10-24).
         lab = {}
-        for shelf_mark, text in labels.items():
-            head, sep, tail = text.partition(" - ")
+        for (ltext,) in label_rows:
+            head, sep, tail = ltext.partition(" - ")
             if sep and head.strip():
                 lab[head.strip()] = tail.strip()
         total = sum(r[1] for r in shelves)

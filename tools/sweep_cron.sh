@@ -30,6 +30,12 @@ nums=$(curl -sf --max-time 5 "$URL/memory" 2>/dev/null | python3 -c \
   || exit 0   # server down or memory off: nothing to do, no cron mail
 read -r pressure pending <<<"$nums"
 
+# MEM/CAT index cartridges (Phase 1, 2026-10-24): keep the browse map's labels fresh each tick.
+# SQL reads + API writes only - no engine touch, no embedder; --quiet prints only when a shelf's
+# WORDS actually moved, and "|| true" means the catalog never fails a sweep tick. Reads attach
+# the store directly, writes ride $URL - the m2 pattern, live-server caches included.
+.venv/bin/python tools/m4_catalog.py --apply --quiet --url "$URL" >> tools/state/cron.log 2>&1 || true
+
 if [ "${pressure:-0}" = "1" ] || [ "${pending:-0}" -gt "$PENDING_MAX" ]; then
     echo "$(date '+%F %T') sweep: pressure=$pressure pending=$pending"
     # VENV python, not bare python3: the system interpreter has no psycopg (measured
