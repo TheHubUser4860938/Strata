@@ -15,7 +15,7 @@ import unittest
 from pathlib import Path
 
 from serve.frontend import ChatTemplate
-from serve.memory import compose_soul, prepend_head, request_state, soul_boot
+from serve.memory import SOUL_BUDGET, compose_soul, prepend_head, request_state, soul_boot
 from serve.server import ByteTokenizer, MockEngine, Service, serve
 from serve.test_memory import MemoryService
 
@@ -46,7 +46,9 @@ class Compose(unittest.TestCase):
         self.assertLess(b.index("Who I am"), b.index("dressed mind"), "A before B, always")
 
     def test_over_budget_fails_closed(self):
-        b, v, why = compose_soul("# x\n" + "y" * 14001, False)
+        # Budget-relative on purpose (the tripwire moved 6k->12k->14k->16k): "over" is the
+        # constant + 1, never a hardcoded size that would need surgery at every move.
+        b, v, why = compose_soul("# x\n" + "y" * (SOUL_BUDGET + 1), False)
         self.assertEqual(b, "")
         self.assertEqual(v, "off")
         self.assertIn("budget", why)
@@ -186,7 +188,7 @@ class Inject(unittest.TestCase):
     def test_over_budget_soul_leaves_the_box_pre_soul(self):
         big = self.soulfile.name + ".big"
         with open(big, "w", encoding="utf-8") as f:
-            f.write("z" * 14001)
+            f.write("z" * (SOUL_BUDGET + 1))
         try:
             self.svc.reason_enabled = False
             soul_boot(self.svc, {"memory": {"soul": big}})

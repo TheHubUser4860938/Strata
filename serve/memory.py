@@ -414,9 +414,11 @@ def prepend_head(messages: list[dict], text: str) -> list[dict]:
     return [{"role": "system", "content": text}] + list(messages)
 
 
-SOUL_BUDGET = 14000           # soul.md's load-time budget (the soul plan's enforced-at-load law; 6000 -> 12000
-                              # for v4, 12000 -> 14000 2026-10-21, both the owner's signature — v1 shipped 5,995
-                              # raw, v4 with its two 2026-10-21 laws ships ~12.4k)
+SOUL_BUDGET = 16000           # soul.md's load-time budget (the soul plan's enforced-at-load law; 6000 -> 12000
+                              # for v4, 12000 -> 14000 2026-10-21, 14000 -> 16000 2026-10-24 so the browsed-
+                              # store laws fit - all three moves the owner's signature; v1 shipped 5,995 raw,
+                              # v4 ships 12,960 (its two 2026-10-21 laws + the 2026-10-22 signing law), and
+                              # v5 drafts inside 16k with room, not cryptograms)
 
 
 def compose_soul(raw: str, gate_on: bool) -> tuple[str, str, str]:
@@ -424,8 +426,8 @@ def compose_soul(raw: str, gate_on: bool) -> tuple[str, str, str]:
     return ("", "off", why) and the box runs the byte-identical pre-soul path - a
     half-soul is never served. Pure and offline (no server, no store, no model):
     - Budget: the RAW file must be <= SOUL_BUDGET chars (tripwire sizes move on the owner's
-      signature: 6,000 for v1, 12,000 for v4, 14,000 2026-10-21; the budget is a tripwire
-      against drift, not a squeeze).
+      signature: 6,000 for v1, 12,000 for v4, 14,000 2026-10-21, 16,000 2026-10-24; the budget
+      is a tripwire against drift, not a squeeze).
     - HTML comments are load-time INSTRUCTIONS, not soul bytes: stripped, whitespace
       re-normalized. The same file always composes to the same bytes.
     - Part B (first line starting "## B.") composes ONLY when the gate is on -
