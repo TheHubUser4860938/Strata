@@ -279,6 +279,14 @@ mid-answer with a `memory_search` tool the server runs itself — one tool, thre
 with words, ask for the card map of the shelves (counts, dates, curated labels), or walk a
 shelf newest-first — no client wiring.
 
+**Measured head-to-head (2026-10-24 venue, same fixture, same judge):** browsed **0.682** vs
+served **0.666** — browsing wins the judgment classes (abstention +0.20, multi-session +0.12),
+being served wins the summaries (preference 0.69 -> 0.20 when the model must fetch what the
+block used to digest), and the countersigned ruling is HYBRID: block default, verbs as the
+escalation path. One sentence of honesty ships with it: when the block is off, the server SAYS
+so, because a hidden store that never announces itself buys free "idk"s — two revisions of that
+sentence moved the 20-question pilot 0.25 -> 0.70.
+
 **What it measures like, on LongMemEval-V1 (oracle, 500 questions × 3 repeats):** the built-in
 memory answers **0.72** correctly at the shipped budget. The control line is the one to trust:
 with memory muted, **98.4–98.7% of answers are `idk`** and gold leaks 2 in 1,500 — the model is

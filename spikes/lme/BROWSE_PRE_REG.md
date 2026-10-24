@@ -105,3 +105,23 @@ line's own probe, signed separately; Browse Day does not wait for it.
 **SIGNED 2026-10-24 (evening), owner in-session: "Okay I sign off on all of these."**
 P1-P6 and the decision rule stand as written; Browse Day now waits only on its venue evening
 (pilot-20 first, the block-off/tool-on arm).
+
+## Results (appended 2026-10-24 after the run; the rubric above is untouched, never erase)
+
+500x1, v3 arm (obligation notice), boot 10:05:47, sealed fixture verified before and after
+(10,978 active both times): **overall 0.682 vs banked served 0.666**. Rubric: P1 PASS (826
+calls = 1.65/answer; 423/500 browsed); P2 PASS (abstention 0.700 >= 0.58); P3 PASS
+(multi-session 0.636 >= 0.58); P4 MISS (single-user -0.042, outside +-0.03); P5 MISS upward
+(temporal +0.071, outside +-0.05); P6 REPORTED (median 4.1 s, p95 15.3 s = 2.2x control).
+Decision rule as signed: 0.682 in [0.646, 0.686] with P2+P3 held -> **band 2: HYBRID IS LAW**
+(block served default; catalog + walk verbs ship as the escalation path). Two questions
+(341/500 vs 343) under promotion; the pre-authorized x3 repeats (~2.5 h) were offered and the
+owner closed the day instead - the verdict stands as banded, repeats waived, not forgotten.
+Pilot history (the gate doing its job): v1 0.25 FAILED (16/20 idk with zero calls - the
+unmarked door), notice v2 0.30 (means flat, shape moved: single-user 0.0 -> 0.6), obligation
+v3 0.70 PASSED (17/20 browsed). Pooled across pilots: browsed 21/26 correct vs never-browsed
+4/34; the day widened it to 0.801 (n=423) vs 0.026 (n=77). Defiance constant: ~15% never look
+(3/20 pilots, 77/500 day) - one prompt lever still on the table. Records:
+bench/browse_pilot_2026-10-24.jsonl, browse_pilot_v{2,3}_2026-10-24.jsonl,
+browse_day_2026-10-24.jsonl + .metrics.json sidecar. The hybrid arm (block on + tool on) is a
+NEW arm, not this one's continuation: it gets its own pre-registration and venue day.

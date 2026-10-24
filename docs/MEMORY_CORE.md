@@ -469,6 +469,31 @@ and rode all 261 asks - the STATE composes - while answering from inside it dilu
 size the way context rots with input length; the bank survives as an index (aggregation held
 4/5 flat across the ladder) even where it fades as an answer.
 
+**The Browse Day verdict (2026-10-24, night; `bench/browse_day_2026-10-24.jsonl` + sidecar).**
+The question answered. Three pilots first: the arm failed its gate at 0.25 — 16 of 20 answered
+`idk` in half a second without looking, because the description's "when the block in context is
+not enough" says nothing when there is no block: an absent thing is never "not enough". The
+contract's pre-authorized prompt-side fix shipped the same night (`MEMORY_OFF_NOTICE`: the arm
+that hides the store says so, one sentence, gated by the server's own tool-offer condition — no
+sign on a missing door), and its obligation revision moved the pilot 0.25 -> 0.30 -> 0.70. The
+day proper, 500x1 on the sealed venue2 fixture against the banked control with the same judge:
+**browsed 0.682 vs served 0.666**. Rubric as fixed before the run: P1 PASS (826 calls, 1.65 per
+answer, 85% of the arm looked), P2 PASS (abstention 0.500 -> 0.700), P3 PASS (multi-session
+0.515 -> 0.636), P4 MISS (single-session-user -0.042, outside the flat band), P5 MISS upward
+(temporal +0.071), P6 reported not gated (median 4.1 s, p95 15.3 s, 2.2x the served control).
+The signed decision rule put 0.682 inside the +-0.02 band with P2+P3 held: **hybrid is law** —
+the block stays the served default, the catalog and walk verbs ship as the escalation path —
+two questions (0.682 vs 0.686) short of promoting browse outright. The shape is the finding:
+browsing wins where the task is judgment over fetched text (abstention +0.200, multi-session
++0.121, knowledge-update +0.097, temporal +0.071) and loses where the block pre-digests a
+summary (single-session-preference 0.689 -> 0.200 with half the class idk-ing,
+single-session-assistant -0.202, single-session-user -0.042); browsed rows scored 0.801 correct
+against 0.026 for never-browsed rows at n=500. Follow-ups the day licensed: every q-row now
+carries the **relevance line** (`rel`, the blended score that ranked it — P2's mechanism is the
+model judging what it fetched, and the judgment had been blind), and the hybrid arm — block on
+plus tool on, the shape the config already runs — is a NEW measurement needing its own
+pre-registration and its own venue day before it may claim to beat both banked numbers.
+
 **The tier-2 standing cartridge (M3b): the store's K/V, once.** The spike measured the facts the
 design rests on (engine 0.1.43.1, k8v4, RTX 4090): save 1,973 tokens -> 260,614,468 bytes in
 0.19 s (**132 KB/token** - the file is the whole slot state: QSA KV plus a ~240 MB fixed
@@ -2372,6 +2397,16 @@ scans, plus every flagged row read by eye) found, and what was done about it:
 - Curation cadence verified, not assumed: `strata-sweep.timer` (systemd USER timer - a system-level
   `list-timers` misses it, which briefly produced a wrong "no scheduler" row, corrected in-store)
   ticks every 30 minutes since 2026-10-12, last tick 14:09.
+- **The geometry gate self-measures (2026-10-24).** The cold-score law in `tools/curate_loop.py`
+  compared exact prompt-token equality between a locally rendered probe and the server's count -
+  sound while the boot consumed the `{REASON:off}` directive for free, blind the day boots
+  started counting it as 7 literal tokens: every cold pass voided for a WEEK (2026-10-17 -> 24,
+  484 candidates UNSCORED, 987 void passes, zero scored verdicts) while turns were marked
+  processed and the harvest discarded - the extraction leg never checks geometry, so the sweep
+  looked alive. The venue drain of 2026-10-24 found it by dying loudly on camera; the fix probes
+  the boot's directive cost twice per run and adds it to `want` (a consuming boot measures 0 and
+  the banked law survives byte-identical). The law earned from it rides soul v5: instruments
+  freeze inside experiments; fix between them, and log the fix.
 - What WAS missing - a backup-and-consolidate cadence - is installed: `strata-consolidate.timer`
   (units mirrored in `tools/systemd/`), weekly, `Persistent=true`, guarded on the server answering
   `GET /memory` before it touches anything: `m6_backup` then `m7_consolidate --go`. First tick
