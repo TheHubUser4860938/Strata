@@ -1835,7 +1835,9 @@ class MemoryService:
                 f" order by m.created_at desc, m.id desc limit %s", params + [limit]).fetchall()
             label_rows = self.conn.execute(
                 "select text from memories where invalid_at is null and class = %s"
-                " and scope = any(%s)", (CAT_CLASS, scopes)).fetchall()
+                " and scope = any(%s) order by id", (CAT_CLASS, scopes)).fetchall()
+            # order by id: if the builder ever lands two rows naming one shelf, the merge is
+            # deterministic - the newest label wins, same newest-first law the map walks by.
             self.conn.commit()
         # MEM/CAT label contract (the builder tool keeps it honest): text is "SHELF - words".
         # KEYED BY THE SHELF THE ROW NAMES, not by the CAT_CLASS every row shares - the first
@@ -1859,12 +1861,16 @@ class MemoryService:
     def note_tool(self, mode: str, empty: bool) -> None:
         """One memory_search tool call into the stats() ledger (see the BROWSE LEDGER note in
         __init__): mode is searches / walks / maps, and empty marks the honest zeros - abstention
-        by browsing IS the found:0 event, so its count is the venue-day number that matters."""
-        self._tool["calls"] += 1
-        if mode in self._tool:
-            self._tool[mode] += 1
-        if empty:
-            self._tool["empty"] += 1
+        by browsing IS the found:0 event, so its count is the venue-day number that matters.
+        Under the store lock (polish, 2026-10-24): socketserver answers each request in its own
+        thread and += is read-modify-write - this ledger is Browse Day's only tool-usage witness,
+        and a silently dropped increment is a lost piece of evidence."""
+        with self.lock:
+            self._tool["calls"] += 1
+            if mode in self._tool:
+                self._tool[mode] += 1
+            if empty:
+                self._tool["empty"] += 1
 
     @_heals
     def _vec_matrix(self):
