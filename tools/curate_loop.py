@@ -834,14 +834,39 @@ def main():
             print(f"  [{c['turn_id']}] {c['fact'][:100]}")
         return 0
 
+    # SELF-MEASURED GEOMETRY (instrument fix 2026-10-24, found by the venue drain): ask() sends
+    # "{REASON:off}\n\n" as a text prefix, but want below is rendered WITHOUT it - so the exact-
+    # equality geometry gate passes only while the boot consumes the directive template-side at
+    # zero tokens, which is what the banked C-series channel measured. The fork's reason-modes
+    # update (2026-10-17) moved to boots that COUNT the directive literally (+7 measured, prod
+    # and venue alike) - every cold pass since has voided: 484 candidates UNSCORED, 987 void
+    # passes, zero scored classes from 2026-10-17 08:10 to tonight, turns marked processed the
+    # whole time while the harvest was discarded. The channel bytes stay banked; want now grows
+    # by whatever THIS boot charges, probed twice per run. A consuming boot measures 0 and prod
+    # geometry law survives byte-identical; a counting boot gets honest geometry back.
+    def directive_delta():
+        def ptok_of(content):
+            body = {"model": model, "messages": [{"role": "user", "content": content}],
+                    "temperature": 0.8, "reasoning_effort": "off", "max_tokens": 1, "stream": False}
+            st, r = http(url + "/v1/chat/completions", body,
+                         headers={"X-Strata-Memory": "off"}, timeout=30)
+            return (r.get("usage") or {}).get("prompt_tokens") if st == 200 else None
+        plain, with_d = ptok_of("hi"), ptok_of("{REASON:off}\n\nhi")
+        if plain is None or with_d is None:
+            print("[geom] directive probe failed (transport) - want stays banked", flush=True)
+            return 0
+        return with_d - plain
+
     # ---- cold score ----------------------------------------------------------------------
     stored = {"FILL": 0, "STABILIZE": 0, "CORRECT": 0, "DONT-STORE": 0}
     unscored = 0
+    ddelta = 0 if a.dry_run else directive_delta()
+    print(f"[geom] directive overhead measured this boot: {ddelta:+d} tok", flush=True)
     review: list[str] = []
     for c in candidates:
         text = f"{COLD_PREAMBLE}\n{c['probe']}"
         ids, _ = live_render(tok, tpl, [{"role": "user", "content": text}], "off")
-        want = len(ids)
+        want = len(ids) + ddelta
         cold = []
         for p in range(a.passes):
             ans, ptok, geom = ask(text, 24, want_geom=want, kind="cold")
