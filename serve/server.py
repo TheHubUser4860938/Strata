@@ -9920,11 +9920,14 @@ def main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> in
                 expose_cap=int(mcfg.get("expose_cap") or 3),
                 route_shelves=mcfg.get("route_shelves") is True
                               or str(mcfg.get("route_shelves") or "").lower() in ("1", "on", "true"),
+                route_demote=float(mcfg.get("route_demote") or 0.0),
                 embedder=ed or None)
         except (ValueError, OSError, TypeError) as e:
             raise SystemExit(f"[strata] memory: {e}")
         at_rest_line = ("data-dir 0700, encrypted pg_dump backups: tools/m6_backup.py"
                         if svc.memory.encrypt else "data-dir 0700")   # ADR-002: the seal law retired
+        rt = ("off" if not svc.memory.route_shelves else "on (bm25 vote, unaddressed blocks only" +
+              (f", demote x{svc.memory.route_demote:g})" if svc.memory.route_demote else ")"))
         print(f"[strata] memory core on: {svc.memory.db_path} "
               f"(inject {'on' if svc.memory.inject else 'off'}, recall {svc.memory.recall_limit} notes "
               f"<= {svc.memory.max_block_chars} chars; per-turn {'on ' if svc.memory.per_turn else 'off'}"
@@ -9934,7 +9937,7 @@ def main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> in
               f"auto-shelve {svc.memory.auto_shelve and 'on (sub-shelves only)' or 'off'}; "
               f"block floor {svc.memory.block_min_score or 'off (quota)'}; "
               f"exposure decay {svc.memory.expose_step and f'on ({svc.memory.expose_window} turns, step {svc.memory.expose_step}, cap {svc.memory.expose_cap})' or 'off'}; "
-              f"shelf router {svc.memory.route_shelves and 'on (bm25 vote, unaddressed blocks only)' or 'off'}; "
+              f"shelf router {rt}; "
               f"at-rest {at_rest_line}; "
               f"tool {svc.memory.tool and 'on' or 'off'} "
               f"({svc.memory.tool_rounds and f'{svc.memory.tool_rounds} rounds' or 'unlimited rounds'} per "

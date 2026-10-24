@@ -124,18 +124,19 @@ def units_provenance(svc, limit):
 
 
 def grade_one(svc, q, scope, gold_classes, gold_ids):
-    """The shipped decision, step by step: the pick; the scoped block (with the server's own
-    fail-open fallback); the unscoped block the store showed before routing existed."""
+    """The shipped decision, step by step: the pick; the routed block delivered by the STORE'S OWN
+    _router_search - whichever arm the service boots (FILTER with its fail-open fallback, or the
+    2026-10-24 DEMOTE arm, where rescue is structurally impossible because nothing was filtered);
+    and the unscoped block the store showed before routing existed."""
     pick = svc._route(q, scope)
     rec = {"pick": pick, "abstain": pick is None, "fallback": False,
            "hidden": False, "rescue": False}
     if pick:
-        hits = svc.search(q, scope=scope, classes=pick, semantic=True)
-        if not hits:
-            rec["fallback"] = rec["rescue"] = True
-            shown = []
-        else:
-            _, shown = svc._render_block(hits, svc.max_block_chars, scope)
+        f0 = svc._route_stats["fallbacks"]
+        hits = svc._router_search(q, scope, None, True, pick=pick)
+        rec["rescue"] = svc._route_stats["fallbacks"] > f0     # the filter arm's fail-open fired
+        rec["fallback"] = rec["rescue"]
+        _, shown = svc._render_block(hits, svc.max_block_chars, scope) if hits else (None, [])
     else:
         shown = []
     hits_u = svc.search(q, scope=scope, classes=None, semantic=True)
@@ -203,6 +204,9 @@ def main() -> int:
     ap.add_argument("--model", default=str(data_dir(ROOT) / "embeddings/bge-small-en-v1.5"))
     ap.add_argument("--limit", type=int, default=0, help="sample N provenance units (default: all)")
     ap.add_argument("--json", default="", help="write every graded record here")
+    ap.add_argument("--route-demote", type=float, default=0.0,
+                    help="0 = the shipped FILTER arm; 0 < d < 1 = the DEMOTE delivery "
+                         "(serve/memory.py _router_search, 2026-10-24) - same picks, nothing hidden")
     a = ap.parse_args()
 
     work = Path(tempfile.mkdtemp(prefix="routegrade-"))
@@ -212,11 +216,12 @@ def main() -> int:
         import _storeclone
         _storeclone.clone_store(Path(a.dir).resolve(), work)      # R5b honest dump/restore, works live
         svc = MemoryService(str(work), recall_limit=96, max_block_chars=48000,
-                            embedder=Embedder(a.model, threads=4), route_shelves=True)
+                            embedder=Embedder(a.model, threads=4), route_shelves=True,
+                            route_demote=a.route_demote)
         st = svc.stats()
         out = [f"routegrade: clone of {a.dir} - {st['memories']} active rows, "
                f"{(st.get('embedder') or {}).get('vectors')} vectors, {st['turns']} turns, "
-               f"router on ({st['router']['on']})"]
+               f"router on ({st['router']['on']}{f', demote x{a.route_demote:g}' if a.route_demote else ''})"]
 
         up, wild = units_provenance(svc, a.limit)
         out.append(f"provenance leg: {len(up)} turn-units ({wild} WILD gold rows counted, never addressable)")

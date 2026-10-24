@@ -1420,6 +1420,44 @@ class ShelfRouter(unittest.TestCase):
                               "rescue an address that holds nothing with an unscoped block")
         self.assertEqual(self.on.stats()["router"]["tries"], 0)
 
+    def test_demote_arm_hides_nothing_the_filter_arm_hid(self):
+        # step 1 (2026-10-24): the pick stays identical, only DELIVERY changes - non-picked rows
+        # multiply by route_demote instead of being filtered out. The WILD gold row below is the
+        # extreme the routegrade counted: a wild row matches no prefix, so the filter arm hides
+        # it ALWAYS; the demote arm sinks it instead of burying it.
+        dm = MemoryService(self.tmp.name + "/dm", route_shelves=True, route_demote=0.5)
+        try:
+            self._seed(dm)
+            wild = dm.remember("arsa citizenship records the founding of the colony",
+                               scope="ops")["id"]                      # WILD on purpose
+            b_f, shown_f, _ = self.on.block_for(self.MSGS, "ops")
+            b_d, shown_d, _ = dm.block_for(self.MSGS, "ops")
+            ids_f = {h["id"] for h in shown_f}
+            ids_d = {h["id"] for h in shown_d}
+            self.assertNotIn(wild, ids_f, "the FILTER arm hides a wild gold row - no pick covers it")
+            self.assertIn(wild, ids_d, "the DEMOTE arm sank it, never hid it - the recall returns")
+            self.assertTrue(ids_f <= ids_d, "demote delivery can only ADD BACK what the filter hid")
+            self.assertIn("arsa citizenship act", b_d, "picked-shelf gold rides undemoted")
+            r = dm.stats()["router"]
+            self.assertEqual(r["demote"], 0.5, "stats proves which arm boots - the activation-verify law")
+            self.assertEqual(self.on.stats()["router"]["demote"], 0.0,
+                             "the shipped arm stays 0.0 - byte-identical until a config flips it")
+        finally:
+            dm.close()
+
+    def test_demote_arm_never_overrides_a_human_address(self):
+        # explicit classes= FILTERS in both arms - the caller chose, fail closed (2026-10-15 law)
+        dm = MemoryService(self.tmp.name + "/dm2", route_shelves=True, route_demote=0.5)
+        try:
+            self._seed(dm)
+            b, _, _ = dm.block_for(self.MSGS, "ops", classes=["EVAL"])
+            self.assertIn("venue ledger", b)
+            self.assertNotIn("arsa citizenship", b,
+                             "demote is the ROUTER's delivery, not a veto over a named address")
+            self.assertEqual(dm.stats()["router"]["tries"], 0)
+        finally:
+            dm.close()
+
     def test_all_wild_store_abstains_byte_identically(self):
         wild = MemoryService(self.tmp.name + "/wild", route_shelves=True)
         wild.remember("the completely unshelved fact about flurbow stats", scope="ops")
