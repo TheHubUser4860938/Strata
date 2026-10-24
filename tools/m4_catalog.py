@@ -157,6 +157,22 @@ def apply(url: str, p: dict) -> list[str]:
     return notes
 
 
+def stats_memories(url: str):
+    """One GET, the server's own count of active rows - its store fingerprint for the guard."""
+    try:
+        with urllib.request.urlopen(f"{url}/memory?limit=1", timeout=10) as r:
+            return json.load(r)["stats"].get("memories")
+    except Exception:                                       # noqa: BLE001 - a missing server means no write tick
+        return None
+
+
+def active_count(db: str) -> int:
+    con = attach(db, autocommit=True)
+    n = con.execute("select count(*) from memories where invalid_at is null").fetchone()[0]
+    con.close()
+    return n
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--db", default=str(data_dir(ROOT) / "memory-eval"),
@@ -181,6 +197,19 @@ def main(argv=None) -> int:
         for _old, cls, old, label in p["moved"]:
             print(f"  ~ [{cls}] was: {old}\n           now: {label}")
     if a.apply and moved:
+        # STORE IDENTITY GUARD (venue lesson, 2026-10-24): reads come from --db, writes go to
+        # $URL - the pair names ONE store only while the server on that port serves THAT dir.
+        # The venue boot broke the assumption silently: reads saw prod's 930 rows, writes went
+        # to the venue's API - filing two prod labels into the venue and invalidating two
+        # VENUE fixture rows whose ids happened to collide with the prod labels' ids. Counts
+        # are the cheap fingerprint: if the server's active-row count and --db's disagree, this
+        # tick is a stranger in the shop and skips. A mid-write race on the live store can
+        # disagree by a row and skip one tick too - maintenance passes are allowed to wait.
+        remote, local = stats_memories(a.url), active_count(a.db)
+        if remote is not None and local is not None and remote != local:
+            print(f"  [guard] {a.url} serves {remote} active rows but --db holds {local}"
+                  " - different stores (venue boot?), write tick skipped")
+            return 0
         for note in apply(a.url, p):
             print(f"  [apply] {note}")
     elif moved:
