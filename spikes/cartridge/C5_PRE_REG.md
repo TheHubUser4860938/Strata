@@ -91,3 +91,44 @@ grafting, fork work).
 ## Owner signature
 
 Pending — Clio awaits the countersign before any C5 ask is generated.
+The runner ENFORCES this: `c5_run.py` refuses the engine without `--i-countersigned`.
+
+## Amendment, pre-signature (2026-10-24 evening) — the dry-run facts, appended not rewritten
+
+The runner's first `--dry-run` (zero engine calls; plan in `state/c5_plan_*.json`) measured
+what the venue will actually carry, and fixed three things this contract left open:
+
+- **Rung sizes measured, not assumed**: the live store has only ~6 shelves of >=20 rows, so
+  the rungs are 20 / 100 / 187 / **294** facts (R20 = 20 shelves x UP TO 20, newest first,
+  nested by construction - every small-rung probe is re-asked verbatim at every big rung).
+  "20 facts per shelf fixed" survives as a CAP: equal weight per drawer stands, invented
+  padding dies.
+- **Probe law** (fills "two probes per shelf, a fact VERBATIM ... asked in plain words"):
+  CUE = a token with df==1 in the bank, quoted in the question; GOLD = a second df==1 token
+  from the SAME fact, required in the answer's final line (M3c's criterion) - the question
+  never echoes the gold, so scoring cannot be circular. Content words outrank digit tokens
+  (work-log dates and sha fragments are rare but unreproducible in free speech - a shelf
+  probed on one false-misses even with perfect composition); a digit fallback prints a NOTE
+  in the plan for the owner's eye before signing. Trailing punctuation is cut from tokens -
+  a gold of "drafting." is a typography test, not a memory test.
+- **Aggregation mechanics** (fills "five cross-shelf questions ... scored by the harness's
+  judge"): five fixed pairs over the top-5 shelves, each question quotes one df==1 cue per
+  shelf and demands both shelf marks by name; the judge is deterministic (both marks present,
+  no `idk`), records kept in the JSONL for any later re-score. The multi-session class in
+  miniature, asked the way a browser would.
+
+Mechanics detail: every probe rides a FRESH restore (c3v3's pattern), guarded per ask by the
+engine's own bookkeeping - `cache_n >= n_restored - 8` AND `prompt_n <= 200` (a probe that
+re-read the bank is not riding it). Once per rung a turn-2 follow-up extends the last prompt
+WITHOUT restoring - C0's strict-extension condition, tested at bank scale. Muted control
+once per rung per rep; a gold from it is a leak and exits 2.
+
+One scope note (the owner's cartridge law: soul rides INSIDE the standing text): C5's seeds
+are muted, so what composes here is the SHELF BLOCKS; the soul bytes ride seed and probe
+prompts identically and cannot confound the composition question either way.
+
+Research basis unchanged and load-bearing: C0's port law (PREFILL-FREE, not TEXT-FREE - the
+probes resend the bank's text and skip only its prefill; `C0_save_restore_code_map.md`,
+stored) and the upstream AKBASCORE panel fetched 2026-10-24 (READ-by-geometric-addressing
+selects WHICH knowledge rides - C5 says whether riding it composed still ANSWERS; the fork's
+GDN state grafting stays Spike B either way).
