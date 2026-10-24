@@ -43,8 +43,13 @@ they cannot quietly become the headline later:
   passing rung and the first failing one.
 - **Leak gate**: foreign-bank asks answered correctly <= the 100-rung's observed leak rate (c3v3's
   zero-leak precedent; binomial allowance stated at run time).
-- **Cost ledger**: tok/s, first-token latency, seed/install seconds, and standing-text tokens are
-  recorded per rung - reported, not gated (this probe's product is the CURVE, not a verdict).
+- **Cost ledger**: per-answer latency and tokens at each rung. Stated precisely so nobody reads it
+  as re-prefill: the cartridge is PREFILL-FREE, not free - the bank occupies CONTEXT POSITIONS on
+  every request, every decoded token ATTENDS over the standing KV, and a COLD cache or moved text
+  pays the SEED once. The ledger measures exactly this resident-prefix price (MAM's design parks
+  its bank OUTSIDE the window and injects only a selection per ask - whether our resident price
+  bends badly with size is one of the numbers C5 will weigh for that path-B argument); and the
+  one-time re-seed/install cost per conversation start as the bank grows.
 - **Cold control**: every probe family idk-proven blind first; any fact with a cold hit is replaced
   before install (Gate-1 law, non-negotiable - priors are what voided C3-v2).
 
