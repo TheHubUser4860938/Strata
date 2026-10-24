@@ -9942,7 +9942,8 @@ def main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> in
               f"tool {svc.memory.tool and 'on' or 'off'} "
               f"({svc.memory.tool_rounds and f'{svc.memory.tool_rounds} rounds' or 'unlimited rounds'} per "
               f"request; the header X-Strata-Memory-Tool: 1/on/true turns the tool ON for one request - it "
-              f"is a switch, not a count); "
+              f"is a switch, not a count; X-Strata-Memory-Block: off declines the block for one request, "
+              f"the tool and the journal stay on - the browse arm); "
               f"embedder {svc.memory.embedder and 'on: ' + getattr(svc.memory.embedder, 'model_name', '?') + ' (CPU, hybrid rerank)' or (svc.memory.embedder_error and 'FAILED - lexical only: ' + svc.memory.embedder_error or 'off')}; "
               f"GET /memory to inspect)", flush=True)
         # M3b: the tier-2 standing cartridge rides the same config - {"cartridges": {"enabled": true,

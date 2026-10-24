@@ -850,7 +850,54 @@ class MemoryTool(unittest.TestCase):
         bad = tool_result(self.svc.memory, {"q": "zygost", "since": "last tuesday"}, scope="fw")
         self.assertFalse(bad["ok"], "a junk date is an honest tool error, not a widened window")
         empty = tool_result(self.svc.memory, {}, scope="fw")
-        self.assertFalse(empty["ok"], "q is required")
+        self.assertFalse(empty["ok"], "a call naming no verb is refused with the menu")
+        self.assertIn("catalog:true", empty["text"])
+
+    def test_browse_verbs_map_walk_when(self):
+        # The step-0 build (2026-10-24, Browse Day pre-registration): one tool, three verbs,
+        # dated rows, and a ledger that makes browsing depth HTTP-readable instead of folklore.
+        m = self.svc.memory
+        for text, shelf in [("The zygost scale reads 41.2 after calibration", "USR/PREF"),
+                            ("The oil change was due March 3", "USR/PREF"),
+                            ("Klornish towers over the river district", "DEC")]:
+            st, r = self.http("POST", "/memory", {"op": "remember", "text": text, "scope": "fw"})
+            self.assertEqual(st, 200, r)
+            st, r = self.http("POST", "/memory", {"op": "classify", "id": r["id"], "class": shelf})
+            self.assertEqual(st, 200, r)
+        d = json.loads(tool_result(m, {"catalog": True}, scope="fw")["text"])
+        self.assertEqual(d["mode"], "map")
+        shelves = {s["shelf"]: s["rows"] for s in d["shelves"]}
+        self.assertEqual(shelves.get("USR/PREF"), 2, "the map counts the live drawer")
+        self.assertTrue(all(s["newest"] for s in d["shelves"]), "every branch shows its newest date")
+        w = json.loads(tool_result(m, {"class": "USR/PREF"}, scope="fw")["text"])
+        self.assertEqual(w["mode"], "walk", "class with no q walks the drawer")
+        self.assertEqual(w["total_rows"], 2)
+        self.assertEqual(len(w["rows"]), 2)
+        self.assertIn("when", w["rows"][0], "rows off a drawer carry their date")
+        s = json.loads(tool_result(m, {"q": "zygost"}, scope="fw")["text"])
+        self.assertIn("when", s["facts"][0], "searched facts carry their date too")
+        t = m.stats()["tool"]
+        self.assertEqual((t["maps"], t["walks"], t["searches"], t["calls"]), (1, 1, 1, 3),
+                         "the browse ledger counts by mode")
+
+    def test_block_off_header_declines_block_keeps_journal(self):
+        # The browse arm's switch: no block bytes in the prompt, ctx still built (turn journaling
+        # and the tool gate both satisfied), hits [] - the block served nothing: an honest zero.
+        self.http("POST", "/memory", {"op": "remember",
+                                      "text": "The zygost scale reads 41.2 after calibration",
+                                      "scope": "fw"})
+        msgs = [{"role": "user", "content": "what does memory say about the zygost scale?"}]
+        out, ctx = request_state(self.svc.memory, msgs,
+                                 {"X-Strata-Memory-Scope": "fw", "X-Strata-Memory-Block": "off"},
+                                 {"model": "m"})
+        self.assertEqual(out, msgs, "with the block declined no bytes join the prompt")
+        self.assertIsNotNone(ctx, "the turn still journals and the tool is still offered")
+        self.assertEqual(ctx["hits"], [])
+        out2, ctx2 = request_state(self.svc.memory, msgs, {"X-Strata-Memory-Scope": "fw"},
+                                   {"model": "m"})
+        self.assertNotEqual(out2, msgs, "absent the header the block rides as before")
+        self.assertTrue(any(isinstance(m, dict) and m.get("role") == "system" for m in out2),
+                        "the default path still prepends its block")
 
 
 class MemoryToolRounds(unittest.TestCase):

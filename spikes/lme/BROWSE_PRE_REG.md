@@ -59,6 +59,12 @@ tool on. The pilot passes only if the tool counter moves (the model can drive th
 template) and answers stay sane. If it fails, the fix is prompt-side (tool description /
 header pressure), NOT a venue day spent finding that out.
 
+Real-store note, found building step 0 (2026-10-24 clone smoke): a nonsense question returned
+`found: 8` - the cosine arm always fills the list (top-K neighbours, no absolute floor), so
+`found: 0` is rare for q-calls; it IS honest for shelf walks and class-filtered searches. P2's
+mechanism is therefore the MODEL JUDGING what it fetched (the returned text and `when` dates),
+not a literal empty result - which is exactly what the pilot's five abstention questions grade.
+
 ## Predictions (fixed before running; the day decides)
 
 - P1 — the model browses: mean >= 1.0 `tool` calls per answer. Below 0.5 the verdict is

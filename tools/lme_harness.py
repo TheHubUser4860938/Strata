@@ -218,19 +218,29 @@ def recall(url: str, q: dict, scope: str, where: dict, k: int, no_embedder: bool
 
 
 def ask(url: str, q: dict, scope: str, muted: bool, style: str = "direct",
-        no_embedder: bool = False) -> str:
-    """One fresh conversation, one answer. The server injects from the question's own scope
-    (that IS the product path); a muted control request carries the header that turns
-    memory off, and the cold baseline gets no scope at all."""
+        no_embedder: bool = False, browse: bool = False) -> dict:
+    """One fresh conversation, one answer - with the clock and the browse trace attached. The
+    server injects from the question's own scope (that IS the product path); a muted control
+    request carries the header that turns memory off, and the cold baseline gets no scope at all.
+    browse (2026-10-24) is the tool arm of the Browse Day pre-registration: the block is declined
+    per request (X-Strata-Memory-Block: off) and the tool is named ON (the config may already run
+    it - the header makes the arm independent of the boot's config). sec is wall time per answer
+    (prediction P6's latency ledger); rounds counts the server-side tool calls the response trace
+    reports - browsing depth as data, not folklore (the venue-day scar: prints died with the
+    terminal; the trace and the stats counter cannot)."""
     hdrs = ({"X-Strata-Memory": "off"} if muted
             else {"X-Strata-Memory-Scope": scope}
-                 | ({"X-Strata-Memory-Embedder": "off"} if no_embedder else {}))
+                 | ({"X-Strata-Memory-Embedder": "off"} if no_embedder else {})
+                 | ({"X-Strata-Memory-Block": "off", "X-Strata-Memory-Tool": "1"} if browse else {}))
     body = {"model": "", "messages": [{"role": "user",
                                        "content": "{REASON:off}\n\n"
                                                   f"{q['question']}\n\n{ANSWER_RULES[style]}"}],
             "max_tokens": 500, "temperature": 0.8, "reasoning_effort": "off"}
+    t0 = time.time()
     r = post(url, "/v1/chat/completions", body, headers=hdrs)
-    return (r["choices"][0]["message"].get("content") or "").strip()
+    msg = r["choices"][0]["message"]
+    return {"text": (msg.get("content") or "").strip(), "sec": round(time.time() - t0, 1),
+            "rounds": sum(1 for e in (msg.get("strata_mcp") or []) if e.get("event") == "call")}
 
 
 def anscheck_prompt(qtype: str, question: str, answer: str, response: str, abstain: bool) -> str:
@@ -322,7 +332,7 @@ def load_map(map_path: str) -> dict[str, dict[int, tuple[bool, str]]]:
 def run(url: str, data: list[dict], out_path: str, repeats: int, k: int, types: set,
         skip_ingest: bool, use_judge: bool, muted_control: bool, limit: int,
         style: str = "direct", map_path: str | None = None, no_embedder: bool = False,
-        log=print) -> dict:
+        browse: bool = False, log=print) -> dict:
     done, map_path = {}, map_path or out_path + ".map"
     try:
         for line in open(out_path):
@@ -361,8 +371,10 @@ def run(url: str, data: list[dict], out_path: str, repeats: int, k: int, types: 
             for rep in range(repeats):
                 if rep in done.get(qid, ()):
                     continue
-                hyp = scrub(ask(url, q, scope, muted=False, style=style, no_embedder=no_embedder))
-                cold = scrub(ask(url, q, scope, muted=True)) if muted_control else None
+                a = ask(url, q, scope, muted=False, style=style, no_embedder=no_embedder,
+                        browse=browse)
+                hyp = scrub(a["text"])
+                cold = scrub(ask(url, q, scope, muted=True)["text"]) if muted_control else None
                 ok = judge(url, q, hyp) if use_judge else None
                 if ok is not None:
                     correct_votes.append(ok)
@@ -370,6 +382,10 @@ def run(url: str, data: list[dict], out_path: str, repeats: int, k: int, types: 
                        # which arm served it, read back from the server's own reply - not from a flag
                        # the run hoped it had set
                        "arm": rec.get("arm"),
+                       # the browse ledger rides every line (sec always honest, rounds the
+                       # server-traced tool calls; the served arm shows rounds 0 unless the config
+                       # offers the tool and the model reaches - the venue-day blind spot no more)
+                       "sec": a["sec"], "rounds": a["rounds"],
                        "hypothesis": hyp, "gold": scrub(q["answer"]), "correct": ok,
                        "cold_hypothesis": cold, "judge": None if ok is None else
                        "official LongMemEval checker prompt; local judge (same model, memory "
@@ -445,6 +461,11 @@ def main(argv=None) -> int:
                     help="answer instruction: direct, or the authors' recommended extract-then-answer")
     ap.add_argument("--map", dest="map_path", default=None,
                     help="gold-map sidecar (default: OUT.map) - point at an earlier run's map to --skip-ingest")
+    ap.add_argument("--browse", action="store_true",
+                    help="the TOOL ARM (Browse Day, 2026-10-24): every ask declines the injected "
+                         "block (X-Strata-Memory-Block: off) and names the memory tool ON - the "
+                         "model gets nothing served and must fetch; sec and rounds ride every line "
+                         "and the store's tool counters print after the run")
     a = ap.parse_args(argv)
     data = json.load(open(a.data))
     # 32 of the 500 oracle questions carry answer as an int (the counting questions). Both the
@@ -460,11 +481,16 @@ def main(argv=None) -> int:
               "on a dedicated venue store - the oracle set alone is ~6k rows", file=sys.stderr)
     got = run(a.url, data, a.out, a.repeats, a.recall_k, {t.strip() for t in a.types.split(",")
             if t.strip()}, a.skip_ingest, not a.no_judge, a.muted_control, a.limit, a.style, a.map_path,
-                   no_embedder=a.no_embedder)
+                   no_embedder=a.no_embedder, browse=a.browse)
     with open(a.out + ".metrics.json", "w") as f:                  # the venue record
         json.dump({"data": a.data, "url": a.url, "repeats": a.repeats, "recall_k": a.recall_k,
-                   "muted_control": a.muted_control, "style": a.style,
-                   "no_embedder": a.no_embedder, "arm": "lexical" if a.no_embedder else "hybrid", **got}, f, indent=1)
+                   "muted_control": a.muted_control, "style": a.style, "browse": a.browse,
+                   "no_embedder": a.no_embedder,
+                   "arm": "browse" if a.browse else ("lexical" if a.no_embedder else "hybrid"),
+                   **got}, f, indent=1)
+    if a.browse:      # the store's own ledger of the day (P1's evidence): calls by mode + honest
+        st = get(a.url, "/memory", {"limit": 1}).get("stats", {})   # zeros; per-line rounds ride on
+        print(f"[lme] browse ledger: {st.get('tool')}")
     return 0
 
 

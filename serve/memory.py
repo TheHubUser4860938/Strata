@@ -285,22 +285,36 @@ def attach(store_dir: str, **kw):
 # flattens the client's nested tools before this is appended, so flat is the only correct shape.
 MEMORY_TOOL = {
     "name": "memory_search",
-    "description": ("Search this machine's long-term memory store - facts the user stated, decisions taken, "
-                    "and ingested documents, all kept on shelves by subject. Use it whenever the memory block "
-                    "already in context is not enough, or you are unsure a fact is really there: ask with the "
-                    "words of the question. Narrow with class (a shelf prefix like POL, TECH, USR, or MEM/CRG) "
-                    "and/or since/until dates (YYYY-MM-DD) for when-said questions. Call it directly, do not "
-                    "narrate first. Answer from the facts it returns; if it finds nothing, say so plainly."),
+    "description": ("Search this machine's long-term memory store - facts the user stated, decisions "
+                    "taken, and ingested documents, all kept on shelves by subject. Three ways to "
+                    "browse with one tool: ask with WORDS (q searches); ask for the MAP (catalog:true "
+                    "lists the shelves with row counts, newest dates and curated labels - read it first "
+                    "when you do not know where to look); name a SHELF (class alone walks that drawer's "
+                    "newest rows, no words needed). Narrow any call with class (a shelf prefix like POL, "
+                    "TECH, USR, or MEM/CRG) and/or since/until dates (YYYY-MM-DD) for when-said "
+                    "questions. Use it whenever the memory block in context is not enough, or you are "
+                    "unsure a fact is really there - and call it again with other words or another shelf "
+                    "before you give up: one look is not a search. Returned facts carry 'when' (the date "
+                    "said), 'confidence' and 'hits' (times served); 'found: 0' is an honest zero - if it "
+                    "finds nothing after two tries, say so plainly. Call with no arguments to get the "
+                    "menu back."),
     "parameters": {
         "type": "object",
         "properties": {
-            "q": {"type": "string", "description": "the words to recall (a question or key phrase)"},
-            "class": {"type": "string", "description": "optional comma-separated shelf prefixes to filter by"},
+            "q": {"type": "string", "description": "the words to recall (a question or key phrase); "
+                                                   "optional when catalog or class carries the call"},
+            "catalog": {"type": "boolean", "description": "true = the shelf map instead of a search: "
+                                                          "branch names, row counts, newest dates, "
+                                                          "curated MEM/CAT labels; class then chooses "
+                                                          "the branch to open"},
+            "class": {"type": "string", "description": "optional comma-separated shelf prefixes: "
+                                                       "narrows a search or a map, or - with no q - "
+                                                       "walks that drawer newest-first"},
             "since": {"type": "string", "description": "optional lower date bound: YYYY-MM-DD or epoch seconds"},
             "until": {"type": "string", "description": "optional upper date bound: YYYY-MM-DD or epoch seconds"},
             "limit": {"type": "integer", "description": "max facts to return, 1-20 (default 8)"},
         },
-        "required": ["q"],
+        "required": [],
 }
 }
 
@@ -312,31 +326,59 @@ def _tool_done(t0: float, ok: bool, text: str) -> dict:
 
 def tool_result(mem: "MemoryService", arguments, scope: str = "default",
                 classes: list[str] | None = None) -> dict:
-    """Run one memory_search call from the model (C, agentic recall 2026-10-12). Returns the same
-    dict shape the MCP tool loop produces (ok/text/chars/truncated/ms) so run_with_mcp treats both
-    executors alike. The search is scoped like the request that enabled the tool: same project plus
-    the user scope. The shelf filter differs on purpose: a call that names classes browses to those
-    shelves even when the conversation's header filter rides different ones - the header decides
-    what every turn carries passively, the tool is the model reaching for another shelf on purpose,
-    which is exactly the browsing this feature exists to give it. A call naming no classes inherits
-    the conversation's filter, so a filtered conversation never silently widens."""
+    """Run one memory_search call from the model (C, agentic recall 2026-10-12; the browse verbs
+    2026-10-24 per the Browse Day pre-registration). Returns the same dict shape the MCP tool loop
+    produces (ok/text/chars/truncated/ms) so run_with_mcp treats both executors alike. One tool,
+    three verbs: q SEARCHES (bm25 + cosine blend, as always - facts now carry 'when'); catalog:true
+    returns the card MAP of the browsable store (drilling under class when named); class alone WALKS
+    that drawer newest-first with no words. The search is scoped like the request that enabled the
+    tool: same project plus the user scope. The shelf filter differs on purpose: a call that names
+    classes browses to those shelves even when the conversation's header filter rides different ones
+    - the header decides what every turn carries passively, the tool is the model reaching for
+    another shelf on purpose, which is exactly the browsing this feature exists to give it. A call
+    naming no classes inherits the conversation's filter, so a filtered conversation never silently
+    widens. A call naming no verb at all is refused with the menu - fail closed, like reason_mode."""
     t0 = time.perf_counter()
     args = dict(arguments or {})
     q = str(args.get("q") or "").strip()
-    if not q:
-        return _tool_done(t0, False, '{"error": "q (the words to recall) is required"}')
+    cat = args.get("catalog")
+    catalog = cat is True or (isinstance(cat, str) and cat.strip().lower() in ("1", "true", "on", "yes"))
+    named = [x.strip() for x in str(args.get("class") or "").split(",") if x.strip()]
     try:
         limit = max(1, min(20, int(args.get("limit") or 8)))
-        named = [x.strip() for x in str(args.get("class") or "").split(",") if x.strip()]
         # An explicit class argument that names no shelf returns nothing, not the whole store (see
         # class_list); no argument at all still means the server's default classes, byte-identical.
         cls = class_list(named) if named else classes
         since, until = time_bound(args.get("since")), time_bound(args.get("until"))
     except (TypeError, ValueError) as e:
         return _tool_done(t0, False, json.dumps({"error": f"bad argument: {e}"}))
+    if catalog:
+        out = mem.browse(scope, prefixes=cls or None, limit=limit, since=since, until=until)
+        out["mode"] = "map"
+        mem.note_tool("maps", not out["shelves"])
+        return _tool_done(t0, True, json.dumps(out, ensure_ascii=False))
+    if not q:
+        if not cls:
+            return _tool_done(t0, False, '{"error": "give words (q), a shelf (class), or '
+                                          'catalog:true - this store has a map, drawers, and a '
+                                          'search; or call with nothing to get this menu"}')
+        out = mem.browse(scope, prefixes=cls, limit=limit, since=since, until=until)
+        out["mode"] = "walk"
+        mem.note_tool("walks", not out["rows"])
+        return _tool_done(t0, True, json.dumps(out, ensure_ascii=False))
     hits = mem.search(q, scope=scope, limit=limit, classes=cls, since=since, until=until)
+    when: dict[int, str] = {}
+    if hits:      # the date a fact was said - temporal browsing reads dated cards (2026-10-24);
+        # one indexed PK pass, kept out of search() so every block byte stays exactly what it was.
+        with mem.lock:
+            got = mem.conn.execute("select id, created_at from memories where id = any(%s)",
+                                   ([h["id"] for h in hits],)).fetchall()
+            mem.conn.commit()
+        when = {r[0]: r[1].date().isoformat() for r in got}
     facts = [{"id": h["id"], "class": h.get("class") or "", "text": h["text"],
-              "confidence": h.get("confidence"), "hits": h.get("hits")} for h in hits]
+              "confidence": h.get("confidence"), "hits": h.get("hits"),
+              "when": when.get(h["id"])} for h in hits]
+    mem.note_tool("searches", not facts)
     return _tool_done(t0, True, json.dumps({"found": len(facts), "facts": facts}, ensure_ascii=False))
 
 
@@ -641,6 +683,12 @@ class MemoryService:
         # keeps it in the filter arm, where nothing is hidden and nothing is penalized either.
         self.route_demote = min(1.0, max(0.0, float(route_demote)))
         self._route_stats = {"tries": 0, "picks": 0, "fallbacks": 0, "picked": {}}  # observability, see stats()
+        # BROWSE LEDGER (2026-10-24, the venue-day scar): tool prints rode server stdout into the
+        # double-click terminal and died with the window, so whether the model browsed at all became
+        # unmeasured history. These counters answer it over HTTP instead: every memory_search tool
+        # call lands here by mode. Counters, not facts - no lock: one lost increment in a busy boot
+        # is honest noise; a wrong block byte is not. See note_tool() and stats().
+        self._tool = {"calls": 0, "searches": 0, "walks": 0, "maps": 0, "empty": 0}
         # BLOCK FLOOR (cap-not-quota, m4_blockrule 2026-10-16): _render_block stops taking
         # candidates once the fused RRF score falls below this floor - the budget stays as the
         # hard ceiling, but a full block of weak rows no longer beats an honest short one.
@@ -1744,6 +1792,75 @@ class MemoryService:
         return hits
 
     @_heals
+    def browse(self, scope: str, prefixes: list[str] | None = None, limit: int = 8,
+               since: float | None = None, until: float | None = None) -> dict:
+        """The card map and the shelf walk (browse verbs, 2026-10-24, Browse Day pre-registration):
+        SQL over exactly the scopes a tool call can reach (the user scope plus this project's), with
+        NO query and NO picker - a librarian reads the index, not a ranking. Every branch is shown
+        by its exact shelf mark with its row count and newest date, biggest first, top 24 visible
+        and an honest hidden_drawers/hidden_rows rollup (the 75%-confetti shelves must never drown
+        the map, and a rollup must never hide the count). MEM/CAT rows, when they exist, ride as
+        curated labels under the shelf they name (the stored half of the owner's option 3; the
+        counts are always the live half). With prefixes the map drills that subtree AND answers the
+        same call with the subtree's newest rows up to `limit` - so walking a drawer needs no
+        keywords, one call is the whole move. Rows are newest-first because a memory library is
+        read like a ledger of the recent, with dates as the page numbers. since/until bound the
+        rows exactly as search() bounds its candidates; a name that is no shelf shows nothing."""
+        scopes = [USER_SCOPE]
+        s = scope_name(scope)
+        if s != USER_SCOPE:
+            scopes.append(s)
+        where = "m.invalid_at is null and m.scope = any(%s)"
+        params: list = [scopes]
+        if prefixes:
+            frag, fp = shelf_sql("m.class", prefixes)
+            where += " and (" + frag + ")"
+            params += fp
+        if since is not None:
+            where += " and m.created_at >= to_timestamp(%s)"
+            params.append(float(since))
+        if until is not None:
+            where += " and m.created_at <= to_timestamp(%s)"
+            params.append(float(until))
+        with self.lock:
+            shelves = self.conn.execute(
+                f"select coalesce(m.class, ''), count(*), max(m.created_at) from memories m"
+                f" where {where} group by 1 order by 2 desc, 1", params).fetchall()
+            rows = self.conn.execute(
+                f"select m.id, coalesce(m.class, ''), m.text, m.confidence, coalesce(m.hits, 0),"
+                f" m.created_at from memories m where {where}"
+                f" order by m.created_at desc, m.id desc limit %s", params + [limit]).fetchall()
+            labels = {r[0]: r[1] for r in self.conn.execute(
+                "select coalesce(class, ''), text from memories where invalid_at is null"
+                " and class like 'MEM/CAT%%' and scope = any(%s)", (scopes,)).fetchall()}
+            self.conn.commit()
+        # MEM/CAT label contract (the builder tool keeps it honest): text is "SHELF - words".
+        lab = {}
+        for shelf_mark, text in labels.items():
+            head, sep, tail = text.partition(" - ")
+            if sep and head.strip():
+                lab[head.strip()] = tail.strip()
+        total = sum(r[1] for r in shelves)
+        shown = [{"shelf": r[0] or "(unclassified)", "rows": r[1],
+                  "newest": r[2].date().isoformat() if r[2] else None,
+                  **({"label": lab[r[0]]} if r[0] in lab else {})} for r in shelves[:24]]
+        return {"shelves": shown, "total_rows": total,
+                "hidden_drawers": max(0, len(shelves) - 24),
+                "hidden_rows": max(0, total - sum(r[1] for r in shelves[:24])),
+                "rows": [{"id": r[0], "class": r[1], "text": r[2], "confidence": r[3],
+                          "hits": r[4], "when": r[5].date().isoformat()} for r in rows]}
+
+    def note_tool(self, mode: str, empty: bool) -> None:
+        """One memory_search tool call into the stats() ledger (see the BROWSE LEDGER note in
+        __init__): mode is searches / walks / maps, and empty marks the honest zeros - abstention
+        by browsing IS the found:0 event, so its count is the venue-day number that matters."""
+        self._tool["calls"] += 1
+        if mode in self._tool:
+            self._tool[mode] += 1
+        if empty:
+            self._tool["empty"] += 1
+
+    @_heals
     def _vec_matrix(self):
         """(ids, mat, scope, class, created, updated, conf) for every ACTIVE row that carries a
         vector, cached; rebuilt when a write dirtied it OR the embedded-count moved (a backfill ran
@@ -2297,6 +2414,7 @@ class MemoryService:
                 "per_turn": self.per_turn, "turn_recall_limit": self.turn_recall_limit,
                 "turn_block_chars": self.turn_block_chars,
                 "pinned_blocks": len(self._blocks),
+                "tool": dict(self._tool),                     # the browse ledger (note_tool)
                 # the router's own ledger (2026-10-17): tries = unaddressed blocks that asked for a
                 # pick, picks = votes that named >=1 shelf, fallbacks = picks that found NOTHING and
                 # fail-opened to unscoped. picks/tries is not accuracy (that needs a gold shelf) - it
@@ -2396,9 +2514,20 @@ def request_state(mem: "MemoryService | None", messages: list[dict], headers, re
     # The per-request embedder mute (arm-C A/B): the SAME store, the SAME vector set, one boot - only
     # the ranking differs. Absent header, absent embedder: nothing changes anywhere.
     semantic = (headers.get("X-Strata-Memory-Embedder") or "").strip().lower() not in ("off", "mute", "0")
-    block, hits, query = mem.block_for(messages, scope, classes, semantic=semantic)
     users = [text_of(m.get("content")) for m in messages if isinstance(m, dict) and m.get("role") == "user"]
     last_user = next((u for u in reversed(users) if u.strip()), "")
+    # The BROWSE SWITCH (2026-10-24, Browse Day pre-registration): X-Strata-Memory-Block: off
+    # declines the injected block for THIS request only - the picker is not consulted, no bytes join
+    # the prompt, no serve is credited (an honest zero, not an empty one) - while the turn still
+    # journals and the tool stays offered, because ctx is built. The mute header X-Strata-Memory: off
+    # cannot do this: it kills the tool with the block (mem_ctx is not None is the tool gate's first
+    # condition), which is why "browsed" needed its own word. Absent header: every byte as before.
+    if (headers.get("X-Strata-Memory-Block") or "").strip().lower() in ("off", "mute", "0"):
+        if not last_user.strip():
+            return messages, None
+        return messages, {"scope": scope, "user": last_user, "model": req.get("model"),
+                          "query": last_user, "classes": classes, "hits": []}
+    block, hits, query = mem.block_for(messages, scope, classes, semantic=semantic)
     if block is None:
         # journal even when nothing was recalled: a quiet turn today is tomorrow's curation source,
         # and a scope with no facts yet could never bootstrap otherwise. No bytes join the prompt -
