@@ -898,7 +898,15 @@ class MemoryTool(unittest.TestCase):
         out, ctx = request_state(self.svc.memory, msgs,
                                  {"X-Strata-Memory-Scope": "fw", "X-Strata-Memory-Block": "off"},
                                  {"model": "m"})
-        self.assertEqual(out, msgs, "with the block declined no bytes join the prompt")
+        # LAW UPDATE 2026-10-24 (browse notice, pilot v1's pre-authorized fix): this fixture
+        # OFFERS the tool (config tool:true - that is why the class can drive the loop at all),
+        # so the arm-wide notice now rides the block's slot; what must still never ride is the
+        # block ITSELF - no picker bytes, no rows. Byte-identity survives in the no-tool case
+        # below (test_block_off_without_tool...).
+        sys0 = next(m for m in out if m.get("role") == "system")
+        self.assertIn("recall block is OFF", sys0["content"],
+                      "a hidden store must announce itself when the tool is the only door")
+        self.assertNotIn("zygost", sys0["content"], "the declined block leaves no bytes behind")
         self.assertIsNotNone(ctx, "the turn still journals and the tool is still offered")
         self.assertEqual(ctx["hits"], [])
         out2, ctx2 = request_state(self.svc.memory, msgs, {"X-Strata-Memory-Scope": "fw"},
@@ -906,6 +914,32 @@ class MemoryTool(unittest.TestCase):
         self.assertNotEqual(out2, msgs, "absent the header the block rides as before")
         self.assertTrue(any(isinstance(m, dict) and m.get("role") == "system" for m in out2),
                         "the default path still prepends its block")
+
+    def test_block_off_notice_matrix(self):
+        # NO DOOR, NO SIGN; A SIGN AT EVERY REAL DOOR (pilot v1's pre-authorized fix, reading
+        # the server's own tool gate): the notice rides exactly when the tool would be OFFERED.
+        # Case A: config off + no header - the plain block-off world, byte-identity survives.
+        # Case B: config off + Tool:1 header - the generic client's browse arm earns the notice.
+        # Case C (config-on) is covered by the test above: this fixture's default offers the
+        # tool by config and the notice rode. mem.tool is a pure in-memory config flag: flip it
+        # for the calls, restore in finally.
+        msgs = [{"role": "user", "content": "what does memory say about the zygost scale?"}]
+        mem = self.svc.memory
+        tool, mem.tool = mem.tool, False
+        try:
+            out0, ctx0 = request_state(mem, msgs, {"X-Strata-Memory-Scope": "fw",
+                                                   "X-Strata-Memory-Block": "off"}, {"model": "m"})
+            self.assertEqual(out0, msgs, "no tool offered, no notice: bytes as the old world wrote them")
+            self.assertIsNotNone(ctx0, "journaling survives the notice law")
+            out1, _ = request_state(mem, msgs, {"X-Strata-Memory-Scope": "fw",
+                                                "X-Strata-Memory-Block": "off",
+                                                "X-Strata-Memory-Tool": "1"}, {"model": "m"})
+            sys1 = next(m for m in out1 if m.get("role") == "system")
+            self.assertIn("recall block is OFF", sys1["content"],
+                          "the header that offers the tool also earns the notice")
+            self.assertNotIn("zygost", sys1["content"], "the notice is boilerplate: no rows ride")
+        finally:
+            mem.tool = tool
 
 
 class MemoryToolRounds(unittest.TestCase):

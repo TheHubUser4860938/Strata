@@ -327,6 +327,13 @@ def _tool_done(t0: float, ok: bool, text: str) -> dict:
             "ms": int((time.perf_counter() - t0) * 1000)}
 
 
+MEMORY_OFF_NOTICE = (
+    "[strata memory] The recall block is OFF for this request: the memory store is invisible to "
+    "you except through the memory_search tool. Before answering \"I don't know\" about anything "
+    "the user might have said - or you might have been told - consult the store: ask with words "
+    "(q), or call catalog:true to read the map of shelves.")
+
+
 def tool_result(mem: "MemoryService", arguments, scope: str = "default",
                 classes: list[str] | None = None) -> dict:
     """Run one memory_search call from the model (C, agentic recall 2026-10-12; the browse verbs
@@ -2537,8 +2544,22 @@ def request_state(mem: "MemoryService | None", messages: list[dict], headers, re
     if (headers.get("X-Strata-Memory-Block") or "").strip().lower() in ("off", "mute", "0"):
         if not last_user.strip():
             return messages, None
-        return messages, {"scope": scope, "user": last_user, "model": req.get("model"),
-                          "query": last_user, "classes": classes, "hits": []}
+        # BROWSE NOTICE (pilot v1 2026-10-24; the prompt-side fix the signed contract pre-authorized
+        # - "the fix is prompt-side (tool description / header pressure), NOT a venue day spent
+        # finding that out"): with the block off, the model answered "idk" in half a second WITHOUT
+        # consulting the store on 16 of 20 questions - the description's "whenever the memory block
+        # in context is not enough" describes a block that is ABSENT, and an absent thing is never
+        # "not enough", so the door stood open and unmarked. The arm that hides the store now says
+        # so, once, in the slot the block would have ridden - and only when the tool is actually
+        # offered (the server's own gate: config tool:true or the Tool header), because a sign on a
+        # missing door is a lie. Served requests and muted requests never see these bytes.
+        notice = ""
+        if (mem.tool or (headers.get("X-Strata-Memory-Tool") or "").strip().lower()
+                in ("1", "on", "true")):
+            notice = MEMORY_OFF_NOTICE
+        return (prepend_head(messages, notice) if notice else messages), {
+            "scope": scope, "user": last_user, "model": req.get("model"),
+            "query": last_user, "classes": classes, "hits": []}
     block, hits, query = mem.block_for(messages, scope, classes, semantic=semantic)
     if block is None:
         # journal even when nothing was recalled: a quiet turn today is tomorrow's curation source,
