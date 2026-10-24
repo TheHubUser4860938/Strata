@@ -1,0 +1,343 @@
+[c5] snapshot: 133 shelved drawers; rungs [shelves, facts]: R1=1/20, R5=5/100, R10=10/187, R20=20/294
+  probe [MEM] cue 'enforced' -> gold 'rolls' :: Strata memory core, two laws now enforced in code and test (2026-10-23
+  probe [MEM] cue 'tooling' -> gold 'debt' :: Strata memory tooling audit (2026-10-16, corrected 2026-10-23): the de
+  probe [AI] cue 'agent-memory' -> gold 'survey' :: The 2026-10-24 agent-memory field survey found the leaders converging 
+  probe [AI] cue 'chronology' -> gold 'relocated' :: Clio work log 2026-10-12: 2 session entries filed at /home/eugene/Docu
+  probe [MEM/USER] cue 'grapheneos' -> gold 'phone' :: User runs GrapheneOS on their phone
+  probe [MEM/USER] cue 'political' -> gold 'drafting' :: User wants AI to reference their political documents when drafting.
+  probe [OPS] cue 'runner' -> gold 'run.py' :: C5 runner BUILT 2026-10-24 (spikes/cartridge/c5_run.py, commit 4d7d618
+  probe [OPS] cue 'catalog.py' -> gold 'contract' :: Phase 1 BUILT and landed 2026-10-24 (owner's 'continue building'): MEM
+  probe [DEC] cue 'ratified' -> gold 'cartridge-first' :: Owner's cartridge plan ratified 2026-10-24 (option 3 + cartridge-first
+  probe [DEC] cue 'llm' -> gold 'queries' :: Owner's architecture ruling 2026-10-24: tier-3 recall rethought from S
+  probe [EVAL] cue 'tags' -> gold 'stripped' :: On 2026-10-17, it was confirmed that valid tags are stripped from the 
+  probe [EVAL] cue 'ingested' -> gold 'suggested' :: On 2026-10-16, a '500 already ingested' error on a fresh directory sug
+  probe [HW] cue 'distributes' -> gold 'frequent' :: 2026-10-17 (corrected): Strata distributes its 180B MoE (Qwen3.8-Flash
+  probe [HW] cue 'vram-reserve-mib' -> gold 'recommends' :: The Strata-MAM-cartrige-mod project defaults the `--vram-reserve-mib` 
+  probe [MEM/STRAT] cue 'setup' -> gold 'start-here.bat' :: The Strata-MAM-cartrige-mod project uses a setup script (`./setup.sh` 
+  probe [MEM/STRAT] cue 'protocols' -> gold 'require' :: Strata measurement protocols require testing at temperature 0.8 or 1.0
+  probe [MEM/LONGM] cue 'instrument' -> gold 'validated' :: The LME retrieval offline instrument was validated to three decimal pl
+  probe [MEM/LONGM] cue 'affects' -> gold 'residual' :: Arm C is designated for testing if retrieval order affects accuracy at
+  probe [MEM/TECH] cue 'exposure-decay' -> gold 'trilogy' :: The exposure-decay feature in the stuffing trilogy was shipped OFF bec
+  probe [MEM/TECH] cue 'partial' -> gold 'supplied' :: The mechanism is real but partial — the dated arm supplied a year to o
+  probe [USR/PREF] cue 'designer' -> gold 'turbo' :: DavidAU is the designer of the turbo brilliance system that the user w
+  probe [USR/PREF] cue 're-affirmed' -> gold 'probing' :: The user re-affirmed on 2026-10-15 that Strata must never run a second
+  probe [STR] cue 'reverted' -> gold 'threading' :: On 2026-10-16, the STRATA configuration was reverted to pure upstream 
+  probe [STR] cue 'inference' -> gold 'bound' :: The inference server's decode phase is bound by PCIe/expert-cache limi
+  probe [DEC/POSTG] cue 'shipping' -> gold 'rebased' :: Strata's beta-1 shipping plan was rebased to native PostgreSQL per ADR
+  probe [DEC/POSTG] cue 'migrated' -> gold 'reveal' :: On 2026-10-16, the user's project migrated `serve/memory.py` to native
+  probe [MEM/OPENC] cue 'caches' -> gold 'startup' :: The OpenCode service caches its configuration at startup, preventing l
+  probe [MEM/OPENC] cue 'retries' -> gold 'shredding' :: On 2026-10-16, the OpenCode dev provider `strata-dev` (:8005) was conf
+  probe [TECH/PYTHO] cue 'bin' -> gold 'dependency' :: The project's memory sweep cron script was fixed on 2026-10-16 to use 
+  probe [TECH/PYTHO] cue 'pgserver' -> gold 'mainline' :: The user's Python virtual environment is version 3.14, but the pgserve
+  probe [POL] cue 'joint' -> gold 'resolutionproposing' :: Document 'JOINT RESOLUTIONProposing an amendment to the Constitution o
+  probe [POL] cue 'anyone' -> gold 'rebuttals' :: Document 'To anyone reading this Article' (.txt, 759 words, sha256 2c2
+  probe [USR] cue 'klornish-reach' -> gold 'fictional' :: Klornish-Reach is a fictional metropolis from the user's fiction, not 
+  probe [USR] cue 'preference' -> gold 'klee' :: The assistant's name is Clio, pronounced KLEE-oh (the user's preferenc
+  probe [TECH/RESPO] cue 'wrong-cartridge' -> gold 'show' :: The user's venue scripts read timings from RESPONSES rather than logs,
+  probe [TECH/RESPO] cue 'strict' -> gold 'constraint' :: The project enforces a strict constraint that the chat-template delimi
+  probe [HW/NVME] cue 'snapshots' -> gold 'sufficient' :: On 2026-10-16, the user's local engine refused to save memory snapshot
+  probe [HW/NVME] cue 'minimum' -> gold 'mib' :: The engine enforces a minimum free RAM of 2560 MiB (`--conversation-ca
+  probe [MEM/COGNE] cue 'worklog-2026-10-15.txt' -> gold '9ce15e63 [digit-token fallback]' :: Clio work log 2026-10-15: 20 session entries filed at /home/eugene/Doc
+  probe [MEM/COGNE] cue 'chunks' -> gold 'lose' :: Cognee enforces a byte-exact tiling invariant where stored chunks conc
+  agg   [MEM x AI] cues 'enforced' / 'agent-memory'
+  agg   [MEM/USER x DEC] cues 'grapheneos' / 'ratified'
+  agg   [OPS x MEM] cues 'runner' / 'enforced'
+  agg   [AI x OPS] cues 'agent-memory' / 'runner'
+  agg   [DEC x MEM/USER] cues 'ratified' / 'grapheneos'
+[c5] standing cartridge to restore at the end: MEM-CRG-b4ebcb3d.bin (state=loaded) - M3c rule: nothing else touches the port
+[c5] R1: 1 shelves, 20 facts standing
+  [seed R1] 1 blocks in 6.8s, 1282 standing tokens, save_ms=135.6
+  [direct] MEM                    miss/RIDE-OK cache=1305 prompt=50 0.5s
+  [turn2] turn2-followup         miss/RIDE-OK cache=1361 prompt=28 0.2s
+  [direct] MEM                    GOLD/RIDE-OK cache=1305 prompt=50 0.4s
+  [control] muted-no-bank          idk  cache=0 prompt=47 0.3s
+  [direct] MEM                    miss/RIDE-OK cache=1305 prompt=50 0.3s
+  [direct] MEM                    GOLD/RIDE-OK cache=1305 prompt=50 0.3s
+  [control] muted-no-bank          idk  cache=0 prompt=47 0.3s
+  [direct] MEM                    miss/RIDE-OK cache=1305 prompt=50 0.2s
+  [direct] MEM                    GOLD/RIDE-OK cache=1305 prompt=50 0.3s
+  [control] muted-no-bank          idk  cache=0 prompt=47 0.3s
+[c5] R5: 5 shelves, 100 facts standing
+  [seed R5] 5 blocks in 9.2s, 6814 standing tokens, save_ms=171.5
+  [direct] MEM                    miss/RIDE-OK cache=6838 prompt=49 0.3s
+  [turn2] turn2-followup         miss/RIDE-OK cache=6889 prompt=28 0.2s
+  [direct] MEM                    GOLD/RIDE-OK cache=6838 prompt=49 0.3s
+  [direct] AI                     miss/RIDE-OK cache=6838 prompt=49 0.4s
+  [direct] AI                     GOLD/RIDE-OK cache=6838 prompt=49 0.3s
+  [direct] MEM/USER               GOLD/RIDE-OK cache=6838 prompt=50 0.3s
+  [direct] MEM/USER               miss/RIDE-OK cache=6838 prompt=48 0.3s
+  [direct] OPS                    miss/RIDE-OK cache=6838 prompt=48 0.4s
+  [direct] OPS                    miss/RIDE-OK cache=6838 prompt=49 0.3s
+  [direct] DEC                    GOLD/RIDE-OK cache=6838 prompt=49 0.5s
+  [direct] DEC                    idk /RIDE-OK cache=6838 prompt=49 0.3s
+  [agg] MEM x AI               GOLD/RIDE-OK cache=6838 prompt=66 0.6s
+  [agg] MEM/USER x DEC         miss/RIDE-OK cache=6838 prompt=67 0.6s
+  [agg] OPS x MEM              GOLD/RIDE-OK cache=6838 prompt=65 0.5s
+  [agg] AI x OPS               GOLD/RIDE-OK cache=6838 prompt=65 0.4s
+  [agg] DEC x MEM/USER         miss/RIDE-OK cache=6838 prompt=67 0.4s
+  [control] muted-no-bank          idk  cache=40 prompt=7 0.1s
+  [direct] MEM                    miss/RIDE-OK cache=6838 prompt=49 0.3s
+  [direct] MEM                    GOLD/RIDE-OK cache=6838 prompt=49 0.3s
+  [direct] AI                     miss/RIDE-OK cache=6838 prompt=49 0.3s
+  [direct] AI                     GOLD/RIDE-OK cache=6838 prompt=49 0.5s
+  [direct] MEM/USER               GOLD/RIDE-OK cache=6838 prompt=50 0.5s
+  [direct] MEM/USER               miss/RIDE-OK cache=6838 prompt=48 0.4s
+  [direct] OPS                    miss/RIDE-OK cache=6838 prompt=48 0.6s
+  [direct] OPS                    miss/RIDE-OK cache=6838 prompt=49 0.3s
+  [direct] DEC                    miss/RIDE-OK cache=6838 prompt=49 0.4s
+  [direct] DEC                    miss/RIDE-OK cache=6838 prompt=49 0.3s
+  [agg] MEM x AI               GOLD/RIDE-OK cache=6838 prompt=66 0.5s
+  [agg] MEM/USER x DEC         miss/RIDE-OK cache=6838 prompt=67 0.5s
+  [agg] OPS x MEM              GOLD/RIDE-OK cache=6838 prompt=65 0.4s
+  [agg] AI x OPS               GOLD/RIDE-OK cache=6838 prompt=65 0.4s
+  [agg] DEC x MEM/USER         GOLD/RIDE-OK cache=6838 prompt=67 0.5s
+  [control] muted-no-bank          idk  cache=0 prompt=47 0.3s
+  [direct] MEM                    miss/RIDE-OK cache=6838 prompt=49 0.3s
+  [direct] MEM                    GOLD/RIDE-OK cache=6838 prompt=49 0.3s
+  [direct] AI                     miss/RIDE-OK cache=6880 prompt=7 0.2s
+  [direct] AI                     miss/RIDE-OK cache=6838 prompt=49 0.4s
+  [direct] MEM/USER               GOLD/RIDE-OK cache=6838 prompt=50 0.3s
+  [direct] MEM/USER               miss/RIDE-OK cache=6838 prompt=48 0.3s
+  [direct] OPS                    miss/RIDE-OK cache=6838 prompt=48 0.4s
+  [direct] OPS                    miss/RIDE-OK cache=6838 prompt=49 0.9s
+  [direct] DEC                    miss/RIDE-OK cache=6838 prompt=49 0.3s
+  [direct] DEC                    miss/RIDE-OK cache=6838 prompt=49 0.3s
+  [agg] MEM x AI               GOLD/RIDE-OK cache=6838 prompt=66 0.6s
+  [agg] MEM/USER x DEC         miss/RIDE-OK cache=6838 prompt=67 0.5s
+  [agg] OPS x MEM              GOLD/RIDE-OK cache=6838 prompt=65 0.5s
+  [agg] AI x OPS               GOLD/RIDE-OK cache=6838 prompt=65 0.4s
+  [agg] DEC x MEM/USER         miss/RIDE-OK cache=6838 prompt=67 0.5s
+  [control] muted-no-bank          idk  cache=0 prompt=47 0.3s
+[c5] R10: 10 shelves, 187 facts standing
+  [seed R10] 10 blocks in 66.2s, 10314 standing tokens, save_ms=195.0
+  [direct] MEM                    miss/RIDE-OK cache=10317 prompt=49 0.5s
+  [turn2] turn2-followup         miss/RIDE-OK cache=10359 prompt=42 0.3s
+  [direct] MEM                    GOLD/RIDE-OK cache=10317 prompt=49 0.4s
+  [direct] AI                     GOLD/RIDE-OK cache=10317 prompt=49 0.5s
+  [direct] AI                     idk /RIDE-OK cache=10317 prompt=49 0.3s
+  [direct] MEM/USER               GOLD/RIDE-OK cache=10317 prompt=50 0.3s
+  [direct] MEM/USER               miss/RIDE-OK cache=10317 prompt=48 0.3s
+  [direct] OPS                    miss/RIDE-OK cache=10317 prompt=48 0.4s
+  [direct] OPS                    miss/RIDE-OK cache=10317 prompt=49 0.4s
+  [direct] DEC                    miss/RIDE-OK cache=10317 prompt=49 0.4s
+  [direct] DEC                    miss/RIDE-OK cache=10317 prompt=49 0.3s
+  [direct] EVAL                   GOLD/RIDE-OK cache=10317 prompt=48 0.4s
+  [direct] EVAL                   miss/RIDE-OK cache=10317 prompt=49 0.3s
+  [direct] HW                     miss/RIDE-OK cache=10317 prompt=50 0.3s
+  [direct] HW                     GOLD/RIDE-OK cache=10317 prompt=53 0.4s
+  [direct] MEM/STRAT              GOLD/RIDE-OK cache=10317 prompt=48 0.4s
+  [direct] MEM/STRAT              miss/RIDE-OK cache=10317 prompt=48 0.4s
+  [direct] MEM/LONGM              GOLD/RIDE-OK cache=10317 prompt=48 0.3s
+  [direct] MEM/LONGM              miss/RIDE-OK cache=10317 prompt=49 0.3s
+  [direct] MEM/TECH               miss/RIDE-OK cache=10317 prompt=52 0.3s
+  [direct] MEM/TECH               miss/RIDE-OK cache=10317 prompt=48 0.3s
+  [agg] MEM x AI               GOLD/RIDE-OK cache=10317 prompt=66 0.5s
+  [agg] MEM/USER x DEC         GOLD/RIDE-OK cache=10317 prompt=67 0.5s
+  [agg] OPS x MEM              GOLD/RIDE-OK cache=10317 prompt=65 0.4s
+  [agg] AI x OPS               miss/RIDE-OK cache=10317 prompt=65 0.5s
+  [agg] DEC x MEM/USER         GOLD/RIDE-OK cache=10317 prompt=67 0.5s
+  [control] muted-no-bank          idk  cache=40 prompt=7 0.1s
+  [direct] MEM                    miss/RIDE-OK cache=10359 prompt=7 0.1s
+  [direct] MEM                    GOLD/RIDE-OK cache=10317 prompt=49 0.4s
+  [direct] AI                     GOLD/RIDE-OK cache=10317 prompt=49 0.3s
+  [direct] AI                     miss/RIDE-OK cache=10317 prompt=49 0.3s
+  [direct] MEM/USER               GOLD/RIDE-OK cache=10317 prompt=50 0.3s
+  [direct] MEM/USER               miss/RIDE-OK cache=10317 prompt=48 0.4s
+  [direct] OPS                    miss/RIDE-OK cache=10317 prompt=48 0.3s
+  [direct] OPS                    miss/RIDE-OK cache=10317 prompt=49 0.3s
+  [direct] DEC                    miss/RIDE-OK cache=10317 prompt=49 0.4s
+  [direct] DEC                    miss/RIDE-OK cache=10317 prompt=49 0.3s
+  [direct] EVAL                   GOLD/RIDE-OK cache=10317 prompt=48 0.3s
+  [direct] EVAL                   idk /RIDE-OK cache=10317 prompt=49 0.2s
+  [direct] HW                     miss/RIDE-OK cache=10317 prompt=50 0.3s
+  [direct] HW                     GOLD/RIDE-OK cache=10317 prompt=53 0.4s
+  [direct] MEM/STRAT              GOLD/RIDE-OK cache=10317 prompt=48 0.3s
+  [direct] MEM/STRAT              miss/RIDE-OK cache=10317 prompt=48 0.3s
+  [direct] MEM/LONGM              GOLD/RIDE-OK cache=10317 prompt=48 0.3s
+  [direct] MEM/LONGM              miss/RIDE-OK cache=10317 prompt=49 0.3s
+  [direct] MEM/TECH               miss/RIDE-OK cache=10317 prompt=52 0.5s
+  [direct] MEM/TECH               miss/RIDE-OK cache=10317 prompt=48 0.2s
+  [agg] MEM x AI               miss/RIDE-OK cache=10317 prompt=66 0.6s
+  [agg] MEM/USER x DEC         GOLD/RIDE-OK cache=10317 prompt=67 0.5s
+  [agg] OPS x MEM              miss/RIDE-OK cache=10317 prompt=65 0.4s
+  [agg] AI x OPS               GOLD/RIDE-OK cache=10317 prompt=65 1.0s
+  [agg] DEC x MEM/USER         GOLD/RIDE-OK cache=10317 prompt=67 0.5s
+  [control] muted-no-bank          idk  cache=0 prompt=47 0.3s
+  [direct] MEM                    miss/RIDE-OK cache=10317 prompt=49 0.3s
+  [direct] MEM                    GOLD/RIDE-OK cache=10317 prompt=49 0.4s
+  [direct] AI                     miss/RIDE-OK cache=10317 prompt=49 0.3s
+  [direct] AI                     miss/RIDE-OK cache=10317 prompt=49 0.4s
+  [direct] MEM/USER               GOLD/RIDE-OK cache=10317 prompt=50 0.3s
+  [direct] MEM/USER               miss/RIDE-OK cache=10317 prompt=48 0.4s
+  [direct] OPS                    miss/RIDE-OK cache=10317 prompt=48 0.4s
+  [direct] OPS                    miss/RIDE-OK cache=10317 prompt=49 0.4s
+  [direct] DEC                    miss/RIDE-OK cache=10317 prompt=49 0.3s
+  [direct] DEC                    miss/RIDE-OK cache=10317 prompt=49 0.4s
+  [direct] EVAL                   GOLD/RIDE-OK cache=10317 prompt=48 0.3s
+  [direct] EVAL                   miss/RIDE-OK cache=10317 prompt=49 0.3s
+  [direct] HW                     miss/RIDE-OK cache=10317 prompt=50 0.4s
+  [direct] HW                     GOLD/RIDE-OK cache=10317 prompt=53 0.5s
+  [direct] MEM/STRAT              GOLD/RIDE-OK cache=10317 prompt=48 0.3s
+  [direct] MEM/STRAT              miss/RIDE-OK cache=10317 prompt=48 0.4s
+  [direct] MEM/LONGM              GOLD/RIDE-OK cache=10317 prompt=48 0.3s
+  [direct] MEM/LONGM              miss/RIDE-OK cache=10317 prompt=49 0.3s
+  [direct] MEM/TECH               miss/RIDE-OK cache=10317 prompt=52 0.3s
+  [direct] MEM/TECH               miss/RIDE-OK cache=10317 prompt=48 0.3s
+  [agg] MEM x AI               GOLD/RIDE-OK cache=10317 prompt=66 0.5s
+  [agg] MEM/USER x DEC         GOLD/RIDE-OK cache=10317 prompt=67 0.5s
+  [agg] OPS x MEM              GOLD/RIDE-OK cache=10317 prompt=65 0.5s
+  [agg] AI x OPS               miss/RIDE-OK cache=10317 prompt=65 0.5s
+  [agg] DEC x MEM/USER         GOLD/RIDE-OK cache=10317 prompt=67 0.5s
+  [control] muted-no-bank          idk  cache=0 prompt=47 0.3s
+[c5] R20: 20 shelves, 294 facts standing
+  [seed R20] 20 blocks in 28.6s, 15400 standing tokens, save_ms=228.3
+  [direct] MEM                    miss/RIDE-OK cache=15401 prompt=49 0.4s
+  [turn2] turn2-followup         miss/RIDE-OK cache=15443 prompt=39 0.3s
+  [direct] MEM                    GOLD/RIDE-OK cache=15401 prompt=49 0.4s
+  [direct] AI                     miss/RIDE-OK cache=15401 prompt=49 0.4s
+  [direct] AI                     idk /RIDE-OK cache=15401 prompt=49 0.3s
+  [direct] MEM/USER               GOLD/RIDE-OK cache=15401 prompt=50 0.3s
+  [direct] MEM/USER               miss/RIDE-OK cache=15401 prompt=48 0.3s
+  [direct] OPS                    miss/RIDE-OK cache=15401 prompt=48 0.4s
+  [direct] OPS                    miss/RIDE-OK cache=15401 prompt=49 0.4s
+  [direct] DEC                    miss/RIDE-OK cache=15401 prompt=49 0.4s
+  [direct] DEC                    miss/RIDE-OK cache=15401 prompt=49 0.3s
+  [direct] EVAL                   GOLD/RIDE-OK cache=15401 prompt=48 0.4s
+  [direct] EVAL                   miss/RIDE-OK cache=15401 prompt=49 0.3s
+  [direct] HW                     miss/RIDE-OK cache=15401 prompt=50 0.3s
+  [direct] HW                     GOLD/RIDE-OK cache=15401 prompt=53 0.4s
+  [direct] MEM/STRAT              miss/RIDE-OK cache=15401 prompt=48 0.3s
+  [direct] MEM/STRAT              miss/RIDE-OK cache=15401 prompt=48 0.4s
+  [direct] MEM/LONGM              GOLD/RIDE-OK cache=15401 prompt=48 0.3s
+  [direct] MEM/LONGM              idk /RIDE-OK cache=15401 prompt=49 0.2s
+  [direct] MEM/TECH               miss/RIDE-OK cache=15401 prompt=52 0.5s
+  [direct] MEM/TECH               idk /RIDE-OK cache=15401 prompt=48 0.3s
+  [direct] USR/PREF               miss/RIDE-OK cache=15401 prompt=49 0.2s
+  [direct] USR/PREF               miss/RIDE-OK cache=15401 prompt=50 0.3s
+  [direct] STR                    GOLD/RIDE-OK cache=15401 prompt=49 0.3s
+  [direct] STR                    miss/RIDE-OK cache=15401 prompt=49 0.3s
+  [direct] DEC/POSTG              miss/RIDE-OK cache=15401 prompt=48 0.3s
+  [direct] DEC/POSTG              miss/RIDE-OK cache=15401 prompt=49 0.3s
+  [direct] MEM/OPENC              GOLD/RIDE-OK cache=15401 prompt=49 0.5s
+  [direct] MEM/OPENC              miss/RIDE-OK cache=15401 prompt=49 0.3s
+  [direct] TECH/PYTHO             miss/RIDE-OK cache=15401 prompt=48 0.3s
+  [direct] TECH/PYTHO             miss/RIDE-OK cache=15401 prompt=49 0.3s
+  [direct] POL                    miss/RIDE-OK cache=15401 prompt=48 0.3s
+  [direct] POL                    miss/RIDE-OK cache=15401 prompt=49 0.2s
+  [direct] USR                    GOLD/RIDE-OK cache=15401 prompt=52 0.3s
+  [direct] USR                    miss/RIDE-OK cache=15401 prompt=49 0.3s
+  [direct] TECH/RESPO             GOLD/RIDE-OK cache=15401 prompt=50 0.3s
+  [direct] TECH/RESPO             miss/RIDE-OK cache=15401 prompt=48 0.4s
+  [direct] HW/NVME                miss/RIDE-OK cache=15401 prompt=49 0.3s
+  [direct] HW/NVME                GOLD/RIDE-OK cache=15401 prompt=48 0.3s
+  [direct] MEM/COGNE              miss/RIDE-OK cache=15401 prompt=61 0.4s
+  [direct] MEM/COGNE              miss/RIDE-OK cache=15401 prompt=48 0.3s
+  [agg] MEM x AI               GOLD/RIDE-OK cache=15401 prompt=66 0.6s
+  [agg] MEM/USER x DEC         miss/RIDE-OK cache=15401 prompt=67 0.5s
+  [agg] OPS x MEM              GOLD/RIDE-OK cache=15401 prompt=65 0.5s
+  [agg] AI x OPS               GOLD/RIDE-OK cache=15401 prompt=65 0.5s
+  [agg] DEC x MEM/USER         miss/RIDE-OK cache=15401 prompt=67 0.5s
+  [control] muted-no-bank          idk  cache=40 prompt=7 0.1s
+  [direct] MEM                    miss/RIDE-OK cache=15443 prompt=7 0.1s
+  [direct] MEM                    GOLD/RIDE-OK cache=15401 prompt=49 0.3s
+  [direct] AI                     GOLD/RIDE-OK cache=15401 prompt=49 0.4s
+  [direct] AI                     miss/RIDE-OK cache=15401 prompt=49 0.4s
+  [direct] MEM/USER               GOLD/RIDE-OK cache=15401 prompt=50 0.3s
+  [direct] MEM/USER               miss/RIDE-OK cache=15401 prompt=48 0.3s
+  [direct] OPS                    miss/RIDE-OK cache=15401 prompt=48 0.4s
+  [direct] OPS                    miss/RIDE-OK cache=15401 prompt=49 0.4s
+  [direct] DEC                    miss/RIDE-OK cache=15401 prompt=49 0.3s
+  [direct] DEC                    idk /RIDE-OK cache=15401 prompt=49 0.3s
+  [direct] EVAL                   GOLD/RIDE-OK cache=15401 prompt=48 0.3s
+  [direct] EVAL                   miss/RIDE-OK cache=15401 prompt=49 0.4s
+  [direct] HW                     miss/RIDE-OK cache=15401 prompt=50 0.3s
+  [direct] HW                     miss/RIDE-OK cache=15401 prompt=53 0.5s
+  [direct] MEM/STRAT              miss/RIDE-OK cache=15401 prompt=48 0.3s
+  [direct] MEM/STRAT              miss/RIDE-OK cache=15401 prompt=48 0.3s
+  [direct] MEM/LONGM              GOLD/RIDE-OK cache=15401 prompt=48 0.3s
+  [direct] MEM/LONGM              idk /RIDE-OK cache=15401 prompt=49 0.2s
+  [direct] MEM/TECH               miss/RIDE-OK cache=15401 prompt=52 0.3s
+  [direct] MEM/TECH               miss/RIDE-OK cache=15401 prompt=48 0.3s
+  [direct] USR/PREF               GOLD/RIDE-OK cache=15401 prompt=49 0.3s
+  [direct] USR/PREF               miss/RIDE-OK cache=15401 prompt=50 0.3s
+  [direct] STR                    GOLD/RIDE-OK cache=15401 prompt=49 0.3s
+  [direct] STR                    miss/RIDE-OK cache=15401 prompt=49 0.4s
+  [direct] DEC/POSTG              miss/RIDE-OK cache=15401 prompt=48 0.3s
+  [direct] DEC/POSTG              miss/RIDE-OK cache=15401 prompt=49 0.3s
+  [direct] MEM/OPENC              miss/RIDE-OK cache=15401 prompt=49 0.3s
+  [direct] MEM/OPENC              GOLD/RIDE-OK cache=15401 prompt=49 0.3s
+  [direct] TECH/PYTHO             miss/RIDE-OK cache=15401 prompt=48 0.3s
+  [direct] TECH/PYTHO             miss/RIDE-OK cache=15401 prompt=49 0.3s
+  [direct] POL                    miss/RIDE-OK cache=15401 prompt=48 0.3s
+  [direct] POL                    GOLD/RIDE-OK cache=15401 prompt=49 0.3s
+  [direct] USR                    GOLD/RIDE-OK cache=15401 prompt=52 0.3s
+  [direct] USR                    miss/RIDE-OK cache=15401 prompt=49 0.3s
+  [direct] TECH/RESPO             GOLD/RIDE-OK cache=15401 prompt=50 0.3s
+  [direct] TECH/RESPO             miss/RIDE-OK cache=15401 prompt=48 0.3s
+  [direct] HW/NVME                miss/RIDE-OK cache=15401 prompt=49 0.3s
+  [direct] HW/NVME                GOLD/RIDE-OK cache=15401 prompt=48 0.3s
+  [direct] MEM/COGNE              miss/RIDE-OK cache=15401 prompt=61 0.9s
+  [direct] MEM/COGNE              miss/RIDE-OK cache=15401 prompt=48 0.3s
+  [agg] MEM x AI               GOLD/RIDE-OK cache=15401 prompt=66 0.5s
+  [agg] MEM/USER x DEC         miss/RIDE-OK cache=15401 prompt=67 0.5s
+  [agg] OPS x MEM              GOLD/RIDE-OK cache=15401 prompt=65 0.5s
+  [agg] AI x OPS               GOLD/RIDE-OK cache=15401 prompt=65 0.5s
+  [agg] DEC x MEM/USER         GOLD/RIDE-OK cache=15401 prompt=67 0.4s
+  [control] muted-no-bank          idk  cache=0 prompt=47 0.3s
+  [direct] MEM                    miss/RIDE-OK cache=15401 prompt=49 0.3s
+  [direct] MEM                    GOLD/RIDE-OK cache=15401 prompt=49 0.3s
+  [direct] AI                     GOLD/RIDE-OK cache=15401 prompt=49 0.4s
+  [direct] AI                     GOLD/RIDE-OK cache=15401 prompt=49 0.4s
+  [direct] MEM/USER               GOLD/RIDE-OK cache=15401 prompt=50 0.3s
+  [direct] MEM/USER               GOLD/RIDE-OK cache=15401 prompt=48 0.3s
+  [direct] OPS                    miss/RIDE-OK cache=15401 prompt=48 0.3s
+  [direct] OPS                    miss/RIDE-OK cache=15401 prompt=49 0.3s
+  [direct] DEC                    miss/RIDE-OK cache=15401 prompt=49 0.4s
+  [direct] DEC                    miss/RIDE-OK cache=15401 prompt=49 0.3s
+  [direct] EVAL                   miss/RIDE-OK cache=15401 prompt=48 0.3s
+  [direct] EVAL                   miss/RIDE-OK cache=15401 prompt=49 0.4s
+  [direct] HW                     miss/RIDE-OK cache=15401 prompt=50 0.3s
+  [direct] HW                     GOLD/RIDE-OK cache=15401 prompt=53 0.5s
+  [direct] MEM/STRAT              GOLD/RIDE-OK cache=15401 prompt=48 0.3s
+  [direct] MEM/STRAT              miss/RIDE-OK cache=15401 prompt=48 0.4s
+  [direct] MEM/LONGM              miss/RIDE-OK cache=15401 prompt=48 0.3s
+  [direct] MEM/LONGM              idk /RIDE-OK cache=15401 prompt=49 0.2s
+  [direct] MEM/TECH               miss/RIDE-OK cache=15401 prompt=52 0.3s
+  [direct] MEM/TECH               miss/RIDE-OK cache=15401 prompt=48 0.3s
+  [direct] USR/PREF               miss/RIDE-OK cache=15401 prompt=49 0.3s
+  [direct] USR/PREF               miss/RIDE-OK cache=15401 prompt=50 0.3s
+  [direct] STR                    GOLD/RIDE-OK cache=15401 prompt=49 0.3s
+  [direct] STR                    idk /RIDE-OK cache=15401 prompt=49 0.3s
+  [direct] DEC/POSTG              GOLD/RIDE-OK cache=15401 prompt=48 0.3s
+  [direct] DEC/POSTG              miss/RIDE-OK cache=15401 prompt=49 0.3s
+  [direct] MEM/OPENC              miss/RIDE-OK cache=15401 prompt=49 0.3s
+  [direct] MEM/OPENC              miss/RIDE-OK cache=15401 prompt=49 0.3s
+  [direct] TECH/PYTHO             miss/RIDE-OK cache=15401 prompt=48 0.3s
+  [direct] TECH/PYTHO             miss/RIDE-OK cache=15401 prompt=49 0.3s
+  [direct] POL                    miss/RIDE-OK cache=15401 prompt=48 0.3s
+  [direct] POL                    miss/RIDE-OK cache=15401 prompt=49 0.6s
+  [direct] USR                    GOLD/RIDE-OK cache=15401 prompt=52 0.3s
+  [direct] USR                    miss/RIDE-OK cache=15401 prompt=49 0.3s
+  [direct] TECH/RESPO             miss/RIDE-OK cache=15401 prompt=50 0.3s
+  [direct] TECH/RESPO             miss/RIDE-OK cache=15401 prompt=48 0.3s
+  [direct] HW/NVME                GOLD/RIDE-OK cache=15401 prompt=49 0.9s
+  [direct] HW/NVME                GOLD/RIDE-OK cache=15401 prompt=48 0.3s
+  [direct] MEM/COGNE              miss/RIDE-OK cache=15401 prompt=61 0.8s
+  [direct] MEM/COGNE              miss/RIDE-OK cache=15401 prompt=48 0.3s
+  [agg] MEM x AI               GOLD/RIDE-OK cache=15401 prompt=66 0.5s
+  [agg] MEM/USER x DEC         miss/RIDE-OK cache=15401 prompt=67 0.5s
+  [agg] OPS x MEM              GOLD/RIDE-OK cache=15401 prompt=65 0.5s
+  [agg] AI x OPS               GOLD/RIDE-OK cache=15401 prompt=65 0.5s
+  [agg] DEC x MEM/USER         GOLD/RIDE-OK cache=15401 prompt=67 0.4s
+  [control] muted-no-bank          idk  cache=0 prompt=47 0.3s
+[c5] standing cartridge MEM-CRG-b4ebcb3d.bin restored (85.6 ms) - venue closed
+[c5] R1: restore 65.5 ms, rides 6/6 (contaminated-retried 0), min-per-shelf 0.5, agg best None, control idk 3/3
+[c5] R5: restore 104.9 ms, rides 45/45 (contaminated-retried 0), min-per-shelf 0.0, agg best 4, control idk 3/3
+[c5] R10: restore 104.0 ms, rides 75/75 (contaminated-retried 0), min-per-shelf 0.0, agg best 4, control idk 3/3
+[c5] R20: restore 121.5 ms, rides 135/135 (contaminated-retried 0), min-per-shelf 0.0, agg best 4, control idk 3/3
+P1 mechanics (restore < 1 s, every ask rides, turn-2 rides): PASS
+P2 min-per-shelf >= 0.90 at R20 (THE gate): FAIL at 0.0
+P3 aggregation >= 3/5 at R20 and non-decreasing: PASS (best [4, 4, 4])
+P4 cost curve roughly linear: reported, not gated (budget law)
+P5 muted controls idk, zero leaks: PASS
+Decision rule (C5_PRE_REG): P2 holds at R20 -> bank buildable, MEM/CAT is its card catalog; falls at rung k -> product caps at k-1, many-per-request waits for Spike B.

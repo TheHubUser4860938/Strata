@@ -1,0 +1,6 @@
+P1 mechanics (restore < 1 s, every ask rides, turn-2 rides): PASS
+P2 min-per-shelf >= 0.90 at R20 (THE gate): FAIL at 0.0
+P3 aggregation >= 3/5 at R20 and non-decreasing: PASS (best [4, 4, 4])
+P4 cost curve roughly linear: reported, not gated (budget law)
+P5 muted controls idk, zero leaks: PASS
+Decision rule (C5_PRE_REG): P2 holds at R20 -> bank buildable, MEM/CAT is its card catalog; falls at rung k -> product caps at k-1, many-per-request waits for Spike B.

@@ -1,0 +1,163 @@
+{
+ "tag": "v1",
+ "repeats": 3,
+ "sizes": {
+  "R1": [
+   1,
+   20
+  ],
+  "R5": [
+   5,
+   100
+  ],
+  "R10": [
+   10,
+   187
+  ],
+  "R20": [
+   20,
+   294
+  ]
+ },
+ "rungs": {
+  "R1": {
+   "shelves": 1,
+   "facts": 20,
+   "restore_ms_median": 65.5,
+   "asks": 6,
+   "ride_fails": 0,
+   "contaminated_retried": 0,
+   "turn2_ride_ok": true,
+   "min_per_shelf": 0.5,
+   "per_shelf": {
+    "MEM": 0.5
+   },
+   "agg_best": null,
+   "agg_by_rep": [],
+   "control_idk": "3/3",
+   "seed_secs": 6.8,
+   "seed_tokens": 1282,
+   "save_ms": 135.6,
+   "n_written": 256103576,
+   "ask_secs_median": 0.3,
+   "ask_ptok_median": 1355.0
+  },
+  "R5": {
+   "shelves": 5,
+   "facts": 100,
+   "restore_ms_median": 104.9,
+   "asks": 45,
+   "ride_fails": 0,
+   "contaminated_retried": 0,
+   "turn2_ride_ok": true,
+   "min_per_shelf": 0.0,
+   "per_shelf": {
+    "MEM": 0.5,
+    "AI": 0.333,
+    "MEM/USER": 0.5,
+    "OPS": 0.0,
+    "DEC": 0.167
+   },
+   "agg_best": 4,
+   "agg_by_rep": [
+    3,
+    3,
+    4
+   ],
+   "control_idk": "3/3",
+   "seed_secs": 9.2,
+   "seed_tokens": 6814,
+   "save_ms": 171.5,
+   "n_written": 340588284,
+   "ask_secs_median": 0.3,
+   "ask_ptok_median": 6887.0
+  },
+  "R10": {
+   "shelves": 10,
+   "facts": 187,
+   "restore_ms_median": 104.0,
+   "asks": 75,
+   "ride_fails": 0,
+   "contaminated_retried": 0,
+   "turn2_ride_ok": true,
+   "min_per_shelf": 0.0,
+   "per_shelf": {
+    "MEM": 0.5,
+    "AI": 0.333,
+    "MEM/USER": 0.5,
+    "OPS": 0.0,
+    "DEC": 0.0,
+    "EVAL": 0.5,
+    "HW": 0.5,
+    "MEM/STRAT": 0.5,
+    "MEM/LONGM": 0.5,
+    "MEM/TECH": 0.0
+   },
+   "agg_best": 4,
+   "agg_by_rep": [
+    3,
+    4,
+    4
+   ],
+   "control_idk": "3/3",
+   "seed_secs": 66.2,
+   "seed_tokens": 10314,
+   "save_ms": 195.0,
+   "n_written": 393734920,
+   "ask_secs_median": 0.3,
+   "ask_ptok_median": 10366.0
+  },
+  "R20": {
+   "shelves": 20,
+   "facts": 294,
+   "restore_ms_median": 121.5,
+   "asks": 135,
+   "ride_fails": 0,
+   "contaminated_retried": 0,
+   "turn2_ride_ok": true,
+   "min_per_shelf": 0.0,
+   "per_shelf": {
+    "MEM": 0.5,
+    "AI": 0.5,
+    "MEM/USER": 0.667,
+    "OPS": 0.0,
+    "DEC": 0.0,
+    "EVAL": 0.333,
+    "HW": 0.333,
+    "MEM/STRAT": 0.167,
+    "MEM/LONGM": 0.333,
+    "MEM/TECH": 0.0,
+    "USR/PREF": 0.167,
+    "STR": 0.5,
+    "DEC/POSTG": 0.167,
+    "MEM/OPENC": 0.333,
+    "TECH/PYTHO": 0.0,
+    "POL": 0.167,
+    "USR": 0.5,
+    "TECH/RESPO": 0.333,
+    "HW/NVME": 0.667,
+    "MEM/COGNE": 0.0
+   },
+   "agg_best": 4,
+   "agg_by_rep": [
+    3,
+    4,
+    4
+   ],
+   "control_idk": "3/3",
+   "seed_secs": 28.6,
+   "seed_tokens": 15400,
+   "save_ms": 228.3,
+   "n_written": 471377776,
+   "ask_secs_median": 0.3,
+   "ask_ptok_median": 15450.0
+  }
+ },
+ "leaks": 0,
+ "predictions": {
+  "P1": true,
+  "P2": false,
+  "P3": true,
+  "P5": true
+ }
+}

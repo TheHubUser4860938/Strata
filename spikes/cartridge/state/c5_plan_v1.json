@@ -1,0 +1,375 @@
+{
+ "tag": "v1",
+ "sizes": {
+  "R1": [
+   1,
+   20
+  ],
+  "R5": [
+   5,
+   100
+  ],
+  "R10": [
+   10,
+   187
+  ],
+  "R20": [
+   20,
+   294
+  ]
+ },
+ "probes": {
+  "MEM": [
+   {
+    "mark": "MEM",
+    "cue": "enforced",
+    "gold": "rolls",
+    "fact": "Strata memory core, two laws now enforced in code and test (2026-10-23 end-to-end audit): a failed read rolls back the store's single psycop",
+    "digit_note": false
+   },
+   {
+    "mark": "MEM",
+    "cue": "tooling",
+    "gold": "debt",
+    "fact": "Strata memory tooling audit (2026-10-16, corrected 2026-10-23): the debt list is stale. m4_position, m4_shelfcall, m4_subject and m4_xref no",
+    "digit_note": false
+   }
+  ],
+  "AI": [
+   {
+    "mark": "AI",
+    "cue": "agent-memory",
+    "gold": "survey",
+    "fact": "The 2026-10-24 agent-memory field survey found the leaders converging on OUR laws: Hermes Agent = bounded MEMORY.md/USER.md frozen-snapshot ",
+    "digit_note": false
+   },
+   {
+    "mark": "AI",
+    "cue": "chronology",
+    "gold": "relocated",
+    "fact": "Clio work log 2026-10-12: 2 session entries filed at /home/eugene/Documents/Clio's_Journal/2026-10/worklog-2026-10-12.txt (713 chars, sha8 5",
+    "digit_note": false
+   }
+  ],
+  "MEM/USER": [
+   {
+    "mark": "MEM/USER",
+    "cue": "grapheneos",
+    "gold": "phone",
+    "fact": "User runs GrapheneOS on their phone",
+    "digit_note": false
+   },
+   {
+    "mark": "MEM/USER",
+    "cue": "political",
+    "gold": "drafting",
+    "fact": "User wants AI to reference their political documents when drafting.",
+    "digit_note": false
+   }
+  ],
+  "OPS": [
+   {
+    "mark": "OPS",
+    "cue": "runner",
+    "gold": "run.py",
+    "fact": "C5 runner BUILT 2026-10-24 (spikes/cartridge/c5_run.py, commit 4d7d6185): the bank-composition probe is ready to run the moment the owner co",
+    "digit_note": false
+   },
+   {
+    "mark": "OPS",
+    "cue": "catalog.py",
+    "gold": "contract",
+    "fact": "Phase 1 BUILT and landed 2026-10-24 (owner's 'continue building'): MEM/CAT index cartridges via tools/m4_catalog.py - 24 label rows (ids 450",
+    "digit_note": false
+   }
+  ],
+  "DEC": [
+   {
+    "mark": "DEC",
+    "cue": "ratified",
+    "gold": "cartridge-first",
+    "fact": "Owner's cartridge plan ratified 2026-10-24 (option 3 + cartridge-first): MAM index cartridges approved as live-SQL catalog verb PLUS stored ",
+    "digit_note": false
+   },
+   {
+    "mark": "DEC",
+    "cue": "llm",
+    "gold": "queries",
+    "fact": "Owner's architecture ruling 2026-10-24: tier-3 recall rethought from SERVED to BROWSED - the answering LLM queries the memory store agentica",
+    "digit_note": false
+   }
+  ],
+  "EVAL": [
+   {
+    "mark": "EVAL",
+    "cue": "tags",
+    "gold": "stripped",
+    "fact": "On 2026-10-17, it was confirmed that valid tags are stripped from the prompt while the invalid 'xultra' tag leaks through as literal text.",
+    "digit_note": false
+   },
+   {
+    "mark": "EVAL",
+    "cue": "ingested",
+    "gold": "suggested",
+    "fact": "On 2026-10-16, a '500 already ingested' error on a fresh directory suggested that the resume logic was reading the map file instead of the s",
+    "digit_note": false
+   }
+  ],
+  "HW": [
+   {
+    "mark": "HW",
+    "cue": "distributes",
+    "gold": "frequent",
+    "fact": "2026-10-17 (corrected): Strata distributes its 180B MoE (Qwen3.8-Flash-Next; earlier rows said 125B, owner corrected 2026-10-17) across GPU,",
+    "digit_note": false
+   },
+   {
+    "mark": "HW",
+    "cue": "vram-reserve-mib",
+    "gold": "recommends",
+    "fact": "The Strata-MAM-cartrige-mod project defaults the `--vram-reserve-mib` flag to 700 but explicitly recommends setting it to 3072 for AMD deskt",
+    "digit_note": false
+   }
+  ],
+  "MEM/STRAT": [
+   {
+    "mark": "MEM/STRAT",
+    "cue": "setup",
+    "gold": "start-here.bat",
+    "fact": "The Strata-MAM-cartrige-mod project uses a setup script (`./setup.sh` or `START-HERE.bat`) with a `--check` flag that performs a system audi",
+    "digit_note": false
+   },
+   {
+    "mark": "MEM/STRAT",
+    "cue": "protocols",
+    "gold": "require",
+    "fact": "Strata measurement protocols require testing at temperature 0.8 or 1.0 (never 0) with at least 3 repeats per ask and probe max_tokens of at ",
+    "digit_note": false
+   }
+  ],
+  "MEM/LONGM": [
+   {
+    "mark": "MEM/LONGM",
+    "cue": "instrument",
+    "gold": "validated",
+    "fact": "The LME retrieval offline instrument was validated to three decimal places on 2026-10-15, matching live metrics exactly (turn_top1 0.517, tu",
+    "digit_note": false
+   },
+   {
+    "mark": "MEM/LONGM",
+    "cue": "affects",
+    "gold": "residual",
+    "fact": "Arm C is designated for testing if retrieval order affects accuracy at the current budget, with a flat result implying residual errors are d",
+    "digit_note": false
+   }
+  ],
+  "MEM/TECH": [
+   {
+    "mark": "MEM/TECH",
+    "cue": "exposure-decay",
+    "gold": "trilogy",
+    "fact": "The exposure-decay feature in the stuffing trilogy was shipped OFF because replay on 40 real turns showed related% falling from 53.0 to 49.6",
+    "digit_note": false
+   },
+   {
+    "mark": "MEM/TECH",
+    "cue": "partial",
+    "gold": "supplied",
+    "fact": "The mechanism is real but partial \u2014 the dated arm supplied a year to one explicit date (\"2024-03-22\") but not to its siblings.",
+    "digit_note": false
+   }
+  ],
+  "USR/PREF": [
+   {
+    "mark": "USR/PREF",
+    "cue": "designer",
+    "gold": "turbo",
+    "fact": "DavidAU is the designer of the turbo brilliance system that the user wants Strata to adapt to autonomously.",
+    "digit_note": false
+   },
+   {
+    "mark": "USR/PREF",
+    "cue": "re-affirmed",
+    "gold": "probing",
+    "fact": "The user re-affirmed on 2026-10-15 that Strata must never run a second server instance, even for probing, and prefers testing on the current",
+    "digit_note": false
+   }
+  ],
+  "STR": [
+   {
+    "mark": "STR",
+    "cue": "reverted",
+    "gold": "threading",
+    "fact": "On 2026-10-16, the STRATA configuration was reverted to pure upstream threading defaults by removing experimental flags, while retaining the",
+    "digit_note": false
+   },
+   {
+    "mark": "STR",
+    "cue": "inference",
+    "gold": "bound",
+    "fact": "The inference server's decode phase is bound by PCIe/expert-cache limits (~5% PCIe streaming), making additional SMT sibling workers ineffec",
+    "digit_note": false
+   }
+  ],
+  "DEC/POSTG": [
+   {
+    "mark": "DEC/POSTG",
+    "cue": "shipping",
+    "gold": "rebased",
+    "fact": "Strata's beta-1 shipping plan was rebased to native PostgreSQL per ADR-002, replacing the earlier SQLite-through-beta-1 plan.",
+    "digit_note": false
+   },
+   {
+    "mark": "DEC/POSTG",
+    "cue": "migrated",
+    "gold": "reveal",
+    "fact": "On 2026-10-16, the user's project migrated `serve/memory.py` to native PostgreSQL, retiring seal/reveal/husk mechanisms while keeping the ke",
+    "digit_note": false
+   }
+  ],
+  "MEM/OPENC": [
+   {
+    "mark": "MEM/OPENC",
+    "cue": "caches",
+    "gold": "startup",
+    "fact": "The OpenCode service caches its configuration at startup, preventing live updates until a reboot.",
+    "digit_note": false
+   },
+   {
+    "mark": "MEM/OPENC",
+    "cue": "retries",
+    "gold": "shredding",
+    "fact": "On 2026-10-16, the OpenCode dev provider `strata-dev` (:8005) was configured with `\"reasoning_effort\": \"off\"` to stop hidden title-agent ret",
+    "digit_note": false
+   }
+  ],
+  "TECH/PYTHO": [
+   {
+    "mark": "TECH/PYTHO",
+    "cue": "bin",
+    "gold": "dependency",
+    "fact": "The project's memory sweep cron script was fixed on 2026-10-16 to use .venv/bin/python instead of bare python3 to resolve a missing psycopg ",
+    "digit_note": false
+   },
+   {
+    "mark": "TECH/PYTHO",
+    "cue": "pgserver",
+    "gold": "mainline",
+    "fact": "The user's Python virtual environment is version 3.14, but the pgserver mainline library only supports up to version 3.12.",
+    "digit_note": false
+   }
+  ],
+  "POL": [
+   {
+    "mark": "POL",
+    "cue": "joint",
+    "gold": "resolutionproposing",
+    "fact": "Document 'JOINT RESOLUTIONProposing an amendment to the Constitution of the United States restoring the original understanding of ' (.txt, 3",
+    "digit_note": false
+   },
+   {
+    "mark": "POL",
+    "cue": "anyone",
+    "gold": "rebuttals",
+    "fact": "Document 'To anyone reading this Article' (.txt, 759 words, sha256 2c20ca5ef4cbeee4) is filed at /home/eugene/Documents/Rebuttals to Article",
+    "digit_note": false
+   }
+  ],
+  "USR": [
+   {
+    "mark": "USR",
+    "cue": "klornish-reach",
+    "gold": "fictional",
+    "fact": "Klornish-Reach is a fictional metropolis from the user's fiction, not the user's name. The user's first name is Dustin; Eugene is their midd",
+    "digit_note": false
+   },
+   {
+    "mark": "USR",
+    "cue": "preference",
+    "gold": "klee",
+    "fact": "The assistant's name is Clio, pronounced KLEE-oh (the user's preference from 2026-10-16: 'I prefer the KLEE OH pronunciation, it's just easi",
+    "digit_note": false
+   }
+  ],
+  "TECH/RESPO": [
+   {
+    "mark": "TECH/RESPO",
+    "cue": "wrong-cartridge",
+    "gold": "show",
+    "fact": "The user's venue scripts read timings from RESPONSES rather than logs, and wrong-cartridge/control tests must show 0 leaks or the venue exit",
+    "digit_note": false
+   },
+   {
+    "mark": "TECH/RESPO",
+    "cue": "strict",
+    "gold": "constraint",
+    "fact": "The project enforces a strict constraint that the chat-template delimiter byte-sequence must never be emitted in responses.",
+    "digit_note": false
+   }
+  ],
+  "HW/NVME": [
+   {
+    "mark": "HW/NVME",
+    "cue": "snapshots",
+    "gold": "sufficient",
+    "fact": "On 2026-10-16, the user's local engine refused to save memory snapshots because the RAM floor check (--conversation-cache-min-free-mib 2560)",
+    "digit_note": false
+   },
+   {
+    "mark": "HW/NVME",
+    "cue": "minimum",
+    "gold": "mib",
+    "fact": "The engine enforces a minimum free RAM of 2560 MiB (`--conversation-cache-min-free-mib`) and a minimum free disk space of 4096 MiB (`--sessi",
+    "digit_note": false
+   }
+  ],
+  "MEM/COGNE": [
+   {
+    "mark": "MEM/COGNE",
+    "cue": "worklog-2026-10-15.txt",
+    "gold": "9ce15e63",
+    "fact": "Clio work log 2026-10-15: 20 session entries filed at /home/eugene/Documents/Clio's_Journal/2026-10/worklog-2026-10-15.txt (5127 chars, sha8",
+    "digit_note": true
+   },
+   {
+    "mark": "MEM/COGNE",
+    "cue": "chunks",
+    "gold": "lose",
+    "fact": "Cognee enforces a byte-exact tiling invariant where stored chunks concatenated in order must equal the source text, but it lacks section hie",
+    "digit_note": false
+   }
+  ]
+ },
+ "agg": [
+  {
+   "a": "MEM",
+   "b": "AI",
+   "ca": "enforced",
+   "cb": "agent-memory"
+  },
+  {
+   "a": "MEM/USER",
+   "b": "DEC",
+   "ca": "grapheneos",
+   "cb": "ratified"
+  },
+  {
+   "a": "OPS",
+   "b": "MEM",
+   "ca": "runner",
+   "cb": "enforced"
+  },
+  {
+   "a": "AI",
+   "b": "OPS",
+   "ca": "agent-memory",
+   "cb": "runner"
+  },
+  {
+   "a": "DEC",
+   "b": "MEM/USER",
+   "ca": "ratified",
+   "cb": "grapheneos"
+  }
+ ]
+}
