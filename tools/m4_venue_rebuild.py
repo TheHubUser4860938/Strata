@@ -9,7 +9,11 @@ day_of fix of 2026-10-15 makes it real), same assistant-role lead, same chunk_tu
 riding every piece, same guard=False evidence law (a haystack is evidence, not proposals - the
 semantic guard must not move the gold), same first-session/OR-of-gold map merge, same sidecar
 format - so a retrieval sweep (m4_blockrule, lme_retrieval_ab --offline, a rerank probe) sees
-exactly the store the venue would have served.
+exactly the store the venue would have served. Auto-shelve mirrors the venue-day server's ingest
+law at write time (2026-10-24) - though the first census showed the venue cannot exercise the
+shelf router either way: 0 of 10,978 rows match the domain's enumerative taxonomy, the haystacks
+are wild by design, the vote has no shelves, and router-ab exits 2 with cause. The venue's role
+for the router is the no-harm outcome gate, never the win measure.
 
 Embedding rides the write (the hybrid arm needs it): the filed ~40 min for 11k rows on the CPU
 embedder is the cost, paid once per reboot, in the background, while the live server works.
@@ -56,7 +60,10 @@ def main() -> int:
     except FileNotFoundError:
         pass
 
-    svc = MemoryService(a.dir, embedder=Embedder(a.model, a.threads))
+    svc = MemoryService(a.dir, embedder=Embedder(a.model, a.threads),
+                        auto_shelve=True)   # ingest-law parity with the venue-day server (2026-10-24);
+                                            # the first census kept ALL 10,978 rows wild - the taxonomy
+                                            # enumerates our domain, so the shelf router stays mute here
     data = json.load(open(a.data))
     if a.limit:
         data = data[:a.limit]

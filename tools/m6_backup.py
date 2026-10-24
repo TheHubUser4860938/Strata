@@ -94,10 +94,20 @@ def _uri(store: str) -> str:
     return srv.get_uri(store_dbname(store))
 
 
-def _key_bytes(store: str, key_path: str) -> bytes:
+def _key_bytes(store: str, key_path: str, create: bool = False) -> bytes:
     path = key_path or os.path.join(memory_dir(store), "memory.key")   # the store's own key-file,
-    with open(path, "rb") as f:                                         # the 0600 file the seal
-        key = f.read()                                                  # created and read
+    if create and not os.path.exists(path):                             # the 0600 file the seal
+        try:                                                            # CREATED and read - the
+            fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL,    # service's law mirrored
+                         0o600)                                         # here (serve/memory.py
+            try:                                                        # _key_bytes) so a young
+                os.write(fd, os.urandom(32))                            # store can seal; O_EXCL
+            finally:                                                    # closes the create race,
+                os.close(fd)                                            # a loser reads the
+        except FileExistsError:                                         # winner's key. RESTORE
+            pass                                                        # never creates: a keyless
+    with open(path, "rb") as f:                                         # restore still says so.
+        key = f.read()
     if len(key) != 32:
         raise ValueError(f"key-file {path} is {len(key)} bytes, expected 32")
     return key
@@ -168,7 +178,7 @@ def main() -> int:
                 if "does not exist" in " ".join(msg) else "")
         print(f"[m6] pg_dump failed{hint}:", *(["  " + m] for m in msg[:4]), sep="\n")
         return 2
-    blob = seal(r.stdout, _key_bytes(a.dir, a.key), pw)
+    blob = seal(r.stdout, _key_bytes(a.dir, a.key, create=True), pw)   # the seal mints a young
     dst_dir = a.out or os.path.join(memory_dir(a.dir), "backups")
     os.makedirs(dst_dir, mode=0o700, exist_ok=True)
     dst = os.path.join(dst_dir, "memory-" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
